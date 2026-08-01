@@ -1,0 +1,35 @@
+<?php
+$argv = $_SERVER['argv'];
+if(count($argv) < 2) {
+    printf("Usage: %s /path/to/wiki/index.php [--delete-find-cache]\n", $argv[0]);
+    exit(1);
+}
+
+require_once(dirname(__FILE__) . '/common');
+eval_index_php($argv[1]);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+printf("update wiki %s\n", $argv[1]);
+
+printf("\tdelete helper cache .. ");
+cache_delete('', 'wiki-helper-info');
+printf("done.\n");
+
+if(isset($argv[2]) && $argv[2] == '--delete-find-cache') {
+    printf("\tdelete find cache .. ");
+    cache_delete('', 'page_find_');
+    $pages = page_find('', array('is_pagename_only' => true));
+    foreach($pages as $page) {
+	cache_delete($page['name'], 'page_find_');
+    }
+    printf("done.\n");
+}
+
+printf("\ttheme [%s] .. ", THEME);
+if(theme_convert(THEME))
+    printf("done.\n");
+else
+    printf("failed.\n");
+
+?>

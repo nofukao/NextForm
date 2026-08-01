@@ -1,0 +1,319 @@
+<?php
+define('UNIQUE_USER_TIMEOUT', 60 * 10); // sec
+
+date_default_timezone_set('Asia/Tokyo');
+
+$LOG_FORMARTS = array(
+    'hostedcombined' => array(
+	'regex' => '/(.*?) (.*?) .*? .*? \[(.*?)\] "(\S+?)(?: +(.*?) +\S*?)?" (.*?) .*? ".*?" "(.*?)"/',
+	'map' => array(
+	    'host' => 1,
+	    'remote' => 2,
+	    'apachetime' => 3,
+	    'method' => 4,
+	    'path' => 5,
+	    'status' => 6,
+	    'agent' => 7,
+	    )
+	),
+    'hostedcommon' => array(
+	'regex' => '/^(.*?) (.*?) .*? .*? \[(.*?)\] "(\S+?)(?: +(.*?) +\S*?)?" (.*?) .*?/',
+	'map' => array(
+	    'host' => 1,
+	    'remote' => 2,
+	    'apachetime' => 3,
+	    'method' => 4,
+	    'path' => 5,
+	    'status' => 6,
+	    )
+	),
+    'combined' => array(
+	'regex' => '/(.*?) .*? .*? \[(.*?)\] "(\S+?)(?: +(.*?) +\S*?)?" (.*?) .*? ".*?" "(.*?)"/',
+	'map' => array(
+	    'remote' => 1,
+	    'apachetime' => 2,
+	    'method' => 3,
+	    'path' => 4,
+	    'status' => 5,
+	    'agent' => 6,
+	    )
+	),
+    'common' => array(
+	'regex' => '/^(.*?) .*? .*? \[(.*?)\] "(\S+?)(?: +(.*?) +\S*?)?" (.*?) .*?/',
+	'map' => array(
+	    'remote' => 1,
+	    'apachetime' => 2,
+	    'method' => 3,
+	    'path' => 4,
+	    'status' => 5,
+	    )
+	),
+    );
+
+$COUNT_HTTP_STATUS = array('200', '304');
+
+function read_sites() {
+    $sites_text = stream_get_contents(STDIN);
+    $lines = explode("\n", $sites_text);
+    $sites = array();
+    foreach($lines as $line) {
+	$fields = explode("\t", $line);
+	if(count($fields) == 2) {
+	    $site_url = $fields[1];
+	    $index_file = $fields[0];
+
+	    if(!file_exists($index_file)) {
+		fprintf(STDERR, "file '%s' not found.\n", $index_file);
+		continue;
+	    }
+
+	    $url_info = parse_url($site_url);
+	    if(!isset($url_info['path']))
+		$url_info['path'] = '/';
+	    $url_info['path_length'] = strlen($url_info['path']);
+	    $url_info['path_slash'] = $url_info['path'] . '/';
+
+	    $sites[$site_url] = array(
+		'index_file' => $index_file,
+		'url' => $site_url,
+		'url_info' => $url_info,
+		'add_count' => 0,
+		);
+	}
+    }
+    return $sites;
+}
+
+function analyze_reader_main() {
+    if(count($_SERVER['argv']) != 3) {
+	fprintf(STDERR, "Usage: %s resumefile logfile\n", $_SERVER['argv'][0]);
+	fprintf(STDERR, "       %s resumefile --delete-all\n", $_SERVER['argv'][0]);
+	exit(1);
+    }
+    if($_SERVER['argv'][2] === '--delete-all')
+	analyze_reader_delete_all();
+    else
+	analyze_reader_add();
+}
+
+function analyze_reader_delete_all() {
+    $sites = read_sites();
+
+    $resume_file_path = $_SERVER['argv'][1];
+
+    foreach($sites as $url => &$site)  {
+	$command = array('php', dirname(__FILE__) . '/analyze_weblog_writer', $site['index_file'], '--delete-all');
+	$command = array_map('escapeshellarg', $command);
+	$command = implode(' ', $command);
+	exec($command);
+    }
+    if(file_exists($resume_file_path)) {
+	$resume_records = unserialize(file_get_contents($resume_file_path));
+	if($resume_records !== false)
+	    unlink($resume_file_path);
+    }
+}
+
+function analyze_reader_add() {
+    global $LOG_FORMARTS, $COUNT_HTTP_STATUS;
+
+    $sites = read_sites();
+
+    $resume_file_path = $_SERVER['argv'][1];
+    $log_file_path = $_SERVER['argv'][2];
+
+    $resume_records = array();
+    if(is_readable($resume_file_path)) {
+	$resume_records = unserialize(file_get_contents($resume_file_path));
+	if($resume_records === false) {
+	    fprintf(STDERR, "'%s' is not resume file.\n", $resume_file_path);
+	    return 1;
+	}
+    }
+    if(isset($resume_records[$log_file_path]))
+	$resume_record = $resume_records[$log_file_path];
+    else
+	$resume_record = array();
+
+    $fp = fopen($log_file_path, 'rb');
+    if(!$fp) {
+	fprintf(STDERR, "can not open log file '%s'.\n", $log_file_path);
+	return 1;
+    }
+    
+    $stat = fstat($fp);
+    $users = array();
+    $buffer = array();
+    
+    if(isset($resume_record['position'])) {
+	if(!empty($stat['ino']) && isset($resume_record['stat']['ino']) &&
+	   $stat['ino'] != $resume_record['stat']['ino']) {
+	    fprintf(STDERR, "inode changed. reread log file.\n");
+	} else if(isset($stat['size']) && isset($resume_record['stat']['size']) &&
+		  $stat['size'] < $resume_record['stat']['size']) {
+	    fprintf(STDERR, "size is reduced. reread log file.\n");
+	} else {
+	    fprintf(STDERR, "resume '%s', skip %d bytes.\n", $log_file_path, $resume_record['position']);
+	    $users = $resume_record['users'];
+	    fseek($fp, $resume_record['position']);
+	}
+    } else {
+	fprintf(STDERR, "new '%s'.\n", $log_file_path);
+    }
+
+    $log_format = false;
+    $map = false;
+
+    while(!feof($fp)) {
+	$line = fgets($fp);
+	if($log_format === false) {
+	    foreach($LOG_FORMARTS as $format_id => $c_log_format) {
+		if(preg_match($c_log_format['regex'], $line)) {
+		    $log_format = $c_log_format;
+		    //fprintf(STDERR, "log format '%s'.\n", $format_id);
+		    $map = $log_format['map'];
+		    break;
+		}
+	    }
+	}
+	if($log_format !== false && preg_match($log_format['regex'], $line, $matches)) {
+	    $request = array(
+		'remote' => $matches[$map['remote']],
+		'apachetime' => $matches[$map['apachetime']],
+		'method' => $matches[$map['method']],
+		'path' => $matches[$map['path']],
+		'status' => $matches[$map['status']]
+		);
+	    if(!in_array($request['status'], $COUNT_HTTP_STATUS))
+		continue;
+	    if(isset($map['agent']))
+		$request['agent'] = $matches[$map['agent']];
+	    if(isset($map['host']))
+		$request['host'] = $matches[$map['host']];
+	    $request['time'] = apachetime_to_time($request['apachetime']);
+
+	    foreach($sites as $site_url => &$site) {
+		if(isset($request['host']) && $request['host'] !== $site['url_info']['host'])
+		    continue;
+		$path_head = substr($request['path'], 0, $site['url_info']['path_length']);
+		if($path_head == $site['url_info']['path']) {
+		    $path_fname = substr($request['path'], $site['url_info']['path_length']);
+		    $pagename = false;
+		    //if(preg_match('!^(?:/|/index\.php|index\.php)?\?([^=]+)(&.*action=raw.*)?$!',
+		    if(preg_match('!^(?:/|/index\.php|index\.php)?\?([^=]+)$!',
+				  $path_fname, $matches)) {
+			$pagename = urldecode($matches[1]);
+			$pagename = preg_replace('/[\x00-\x08\x0b-\x1f\x7f]/', '', $pagename);
+			if(!preg_match('//u', $pagename))
+			    continue;
+ 		    } else if(preg_match('!^(?:|/|/index\.php|index\.php)$!', $path_fname)) {
+			$pagename = '';
+		    }
+		    
+		    if($pagename !== false) {
+			$id = $request['remote'];
+			if(isset($request['agent']))
+			    $id .= '|' . $request['agent'];
+
+			$site['last_request_time'] = $request['time'];
+			$is_dup = '';
+			if(isset($users[$site_url][$id][$pagename]) &&
+			   $request['time'] - UNIQUE_USER_TIMEOUT < $users[$site_url][$id][$pagename]) {
+			    break;
+			}
+			$users[$site_url][$id][$pagename] = $request['time'];
+			
+			$site['add_count']++;
+			$buffer[$site_url][$pagename][] = $request['time'];
+			break;
+		    }
+		}
+	    }
+	}
+    }
+    flush_buffer($sites, $buffer);
+
+    foreach($users as $site_url => &$site_users) {
+	if(!isset($sites[$site_url]['last_request_time']))
+	    continue;
+	foreach($site_users as $id => &$pages) {
+	    foreach($pages as $pagename => $time) {
+		if($sites[$site_url]['last_request_time'] - UNIQUE_USER_TIMEOUT > $time)
+		    unset($pages[$pagename]);
+	    }
+	    if(empty($pages)) unset($site_users[$id]);
+	}
+	if(empty($site_users)) unset($users[$site_url]);
+    }
+    
+    $resume_record['position'] = ftell($fp);
+    fclose($fp);
+
+    foreach($sites as &$site) {
+	if($site['add_count'] > 0)
+	    fprintf(STDERR, "%s: %d records added.\n", $site['url'], $site['add_count']);
+    }
+
+    for($i = 0; $i < 13; $i++) unset($stat[$i]);
+
+    $resume_record['stat'] = $stat;
+    $resume_record['users'] = $users;
+    $resume_records[$log_file_path] = $resume_record;
+    if(file_put_contents($resume_file_path, serialize($resume_records)) === false) {
+	fprintf(STDERR, "can not write resume file '%s'.\n", $resume_file_path);
+	return 1;
+    }
+    
+    return 0;
+}
+
+function flush_buffer(&$sites, &$buffer) {
+    foreach($sites as $site_url => &$site)  {
+	if(!isset($buffer[$site_url]))
+	    continue;
+
+	$command = array('php', dirname(__FILE__) . '/analyze_weblog_writer', $site['index_file']);
+	$command = array_map('escapeshellarg', $command);
+	$command = implode(' ', $command);
+	$pfp = popen($command, 'wb');
+	if(!$pfp) {
+	    fprintf(STDERR, "can not execute command '%s'\n", $command);
+	    continue;
+	}
+	foreach($buffer[$site_url] as $pagename => $times) {
+	    foreach($times as $time) {
+		fwrite($pfp, $time . "\t" . $pagename . "\n");
+	    }
+	}
+	pclose($pfp);
+    }
+    $buffer = array();
+}
+
+$MONTH_TABLE = array(
+    'Jan' => 1, 'Feb' => 2, 'Mar' => 3, 'Apr' => 4, 'May' => 5, 'Jun' => 6,
+    'Jul' => 7, 'Aug' => 8, 'Sep' => 9, 'Oct' => 10,'Nov' => 11,'Dec' => 12
+);
+
+function apachetime_to_time($aptime){
+    global $MONTH_TABLE;
+    $day = substr($aptime, 0, 2);
+    $mon = $MONTH_TABLE[substr($aptime, 3, 3)];
+    $year = substr($aptime, 7, 4); 
+    $hour = substr($aptime, 12, 2); 
+    $min = substr($aptime, 15, 2); 
+    $sec = substr($aptime, 18, 2); 
+    $zonesign = substr($aptime, 21, 1); 
+    $zonehour = substr($aptime, 22, 2); 
+    $zonemin = substr($aptime, 24, 2);
+    if($zonesign == '+') {
+	$zonehour *= -1;
+	$zonemin *= -1;
+    }
+    $hour += $zonehour;
+    $min += $zonemin;
+    return gmmktime($hour, $min, $sec, $mon, $day, $year);
+}
+
+exit(analyze_reader_main());
+?>

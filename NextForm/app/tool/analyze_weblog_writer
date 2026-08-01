@@ -1,0 +1,74 @@
+<?php
+if(count($_SERVER['argv']) < 2) {
+    fprintf(STDERR, "Usage: %s /path/to/index.php [--delete-all]\n", $_SERVER['argv'][0]);
+    exit(1);
+}
+
+require_once(dirname(__FILE__) . '/common');
+eval_index_php($_SERVER['argv'][1]);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+function analyze_writer_main() {
+    if(isset($_SERVER['argv'][2]) && $_SERVER['argv'][2] === '--delete-all')
+	return analyze_writer_delete_all();
+    else
+	return analyze_writer_add();
+}
+
+function analyze_writer_delete_all() {
+    analyze_pageview_delete_all();
+    return 0;
+}
+
+function analyze_writer_add() {
+    $counts = array();
+
+    $now = time();
+    $life_limit_duration = 60 * 60 * 24 * ANALYZE_STORAGE_LIFE_DAYS;
+    $life_limit_time = $now - $life_limit_duration;
+    $life_limit_date = strftime(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $life_limit_time);
+    while(!feof(STDIN)) {
+	$line = fgets(STDIN);
+	$fields = explode("\t", $line);
+	if(count($fields) != 2)
+	    continue;
+	$time = $fields[0];
+	$pagename = rtrim($fields[1], "\n");
+	if($pagename === '')
+	    $pagename = DEFAULT_PAGENAME;
+
+	countup($counts[ANALYZE_PAGEVIEW_KEY_TOTAL]['allpages']);
+	countup($counts[ANALYZE_PAGEVIEW_KEY_TOTAL]['pages'][$pagename]);
+
+	$date = strftime(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $time);
+	if($life_limit_date <= $date) {
+	    countup($counts[$date]['allpages']);
+	    countup($counts[$date]['pages'][$pagename]);
+	}
+    }
+
+    analyze_pageview_delete($life_limit_time - $life_limit_duration, $life_limit_time);
+
+    foreach($counts as $date => $count) {
+	$cachekey = $date;
+	$data = (int)cache_get('', $cachekey) + $count['allpages'];
+	@cache_create('', $cachekey, $data);
+	
+	foreach($count['pages'] as $pagename => $num) {
+	    $cachekey = $date . '-'. $pagename;
+	    $data = (int)cache_get('', $cachekey) + $num;
+	    @cache_create('', $cachekey, $data);
+	}
+    }
+}
+
+function countup(&$val) {
+    if(!isset($val))
+	$val = 1;
+    else
+	$val++;
+}
+
+exit(analyze_writer_main());
+?>

@@ -1,0 +1,295 @@
+<?php
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+$TEST_RESULTS = array('ok' => array('count' => 0), 'error' => array('count' => 0));
+
+function tests() {
+    global $TEST_RESULTS;
+
+    test_page_path();
+    test_wiki_tokens_is_whitespace();
+    test_template_get_placeholders();
+
+    printf("ok: %d, error: %d, total: %d\n",
+	   $TEST_RESULTS['ok']['count'],
+	   $TEST_RESULTS['error']['count'],
+	   $TEST_RESULTS['ok']['count'] + $TEST_RESULTS['error']['count']);
+
+    return $TEST_RESULTS['error']['count'] > 0 ? 1 : 0;
+}
+
+function test_page_path() {
+    $tests = array(
+	// base, path, answer
+	'',           	    '',               '',
+	'',           	    '.',              '',
+	'',           	    '..',             '',
+	'',           	    'hoge',           'hoge',
+	'',   	            '../../hoge',     'hoge',
+
+	'hoge',        	    '',               '',
+	'hoge',       	    '.',              'hoge',
+	'hoge',       	    'foo',            'foo',
+	'hoge',        	    'hoge',           'hoge',
+	'hoge',       	    'foo/bar',        'foo/bar',
+	'hoge',       	    './bar',          'hoge/bar',
+	'hoge',       	    '././bar',        'hoge/bar',
+	'hoge',       	    '../bar',         'bar',
+	'hoge',       	    '../../bar',      'bar',
+	'hoge',       	    '../../bar/a',    'bar/a',
+
+	'hoge/foo',    	    '',               '',
+	'hoge/foo',   	    '.',              'hoge/foo',
+	'hoge/foo',    	    'hoge',           'hoge',
+	'hoge/foo',  	    'foo',            'foo',
+	'hoge/foo',   	    '..',             'hoge',
+	'hoge/foo',   	    '../..',          '',
+	'hoge/foo',   	    './a',            'hoge/foo/a',
+	'hoge/foo',   	    '../a',           'hoge/a',
+	'hoge/foo',   	    '../../a',        'a',
+	'hoge/foo',   	    './a/..',         'hoge/foo',
+	'hoge/foo',   	    './a/../..',      'hoge',
+	'hoge/foo',   	    './a/../../..',   '',
+	);
+    for($i = 0; $i < count($tests) / 3; $i++) {
+	$base = $tests[$i * 3];
+	$path = $tests[$i * 3 + 1];
+	$answer = $tests[$i * 3 + 2];
+	$result = page_path_to_pagename($path, $base, false);
+	$name = sprintf('page_path_to_pagename(%s, %s, false): %s', $path, $base, $result);
+	test_eq($result, $answer, $name);
+    }
+
+    $tests = array(
+	// from , to
+	'hoge', 'hoge',
+	'hoge', 'hoge/foo',
+	'hoge', 'hoge/foo/bar',
+	'', 'hoge',
+	'', 'hoge/foo',
+	'Top', 'hoge',
+	'A', 'hoge/foo',
+	'hoge/foo', 'hoge',
+	'hoge/foo/bar', 'hoge',
+	'hoge/foo/bar', 'hoge/foo',
+	'hoge/foo/bar', 'hoge/mochi',
+	'hoge/foo/bar', '8',
+	);
+    for($i = 0; $i < count($tests) / 2; $i++) {
+	$from = $tests[$i * 2];
+	$to = $tests[$i * 2 + 1];
+	$rel = page_relative_path($from, $to);
+	$check = page_path_to_pagename($rel, $from, false);
+	test_eq($check, $to, 'page_relative_path(' . $from . ',' . $to . '): ' . $rel);
+    }
+}
+
+function test_wiki_tokens_is_whitespace() {
+    $tests = array(
+	// target, answer
+	'',  true,
+	' ', true,
+	'   ', true,
+	"\t", true,
+	"\r", true,
+	"\n", true,
+	"\r\n", true,
+	"\r\n \t", true,
+	"\v", true,
+	"\f", true,
+	"\x00", true,
+	"a", false,
+	"b", false,
+	"abc", false,
+	" abc ", false,
+	"\nabc\n", false,
+	".", false,
+	"*", false,
+	"  a  ", false,
+	"a  ", false,
+	"  a", false,
+	'\\', false,
+	'\\\\', false,
+	"\xff", false,
+	);
+    for($i = 0; $i < count($tests) / 2; $i++) {
+	$target = $tests[$i * 2];
+	$answer = $tests[$i * 2 + 1];
+	$dummypage = array();
+	$context = wiki_default_context($dummypage);
+	$tokens = wiki_lex($context, $target);
+	$result = wiki_tokens_is_whitespace($tokens);
+	$name = sprintf('No.%d wiki_tokens_is_whitespace(%s): %s', $i, $target, trim(test_var_dump($result)));
+	test_eq($result, $answer, $name);
+    }
+}    
+
+function test_template_get_placeholders() {
+    $template = <<<'EOF'
+@p1@
+@p2=defaultvalue2@
+@p3'#@
+@-p4#'@
+`ignore`
+@ p5#@
+`multiline
+ignore
+`
+@p6#=
+multiline
+default value
+@
+EOF;
+    $answer = array(
+	array(
+	    'template' => '@p1@',
+	    'index' => 0,
+	    'type' => 'text',
+	    'term' => 'p1',
+	    ),
+	array(
+	    'template' => '@p2=defaultvalue2@',
+	    'index' => 1,
+	    'type' => 'text',
+	    'value' => 'defaultvalue2',
+	    'term' => 'p2',
+	    ),
+	array(
+	    'template' => '@p3\'#@',
+	    'index' => 2,
+	    'type' => 'textarea',
+	    'escape' => true,
+	    'term' => 'p3',
+	    ),
+	array(
+	    'template' => '@-p4#\'@',
+	    'index' => 3,
+	    'type' => 'textarea',
+	    'escape' => true,
+	    'wiki_line_head' => '-',
+	    'wiki_operator' => 'list',
+	    'term' => 'p4',
+	    ),
+	array(
+	    'template' => '`ignore`',
+	    'index' => 4,
+	    'type' => 'ignore',
+	    ),
+	array(
+	    'template' => '@ p5#@',
+	    'index' => 5,
+	    'type' => 'textarea',
+	    'wiki_line_head' => ' ',
+	    'wiki_operator' => 'pre',
+	    'term' => 'p5',
+	    ),
+	array(
+	    'template' => "`multiline\nignore\n`",
+	    'index' => 6,
+	    'type' => 'ignore',
+	    ),
+	array (
+	    'template' => "@p6#=\nmultiline\ndefault value\n@",
+	    'index' => 7,
+	    'type' => 'textarea',
+	    'value' => "multiline\ndefault value",
+	    'term' => 'p6',
+	    ),
+	);
+    
+    $result = template_get_placeholders($template);
+    test_eq($result, $answer);
+
+    $args = array('term0' => 'value1', 'term2' => 'hoge & foo', 'term5' => "abc\n\ndef\n");
+    $answer = <<<'EOF'
+value1
+
+hoge && foo
+
+ignore
+ abc
+ 
+ def
+
+multiline
+ignore
+
+
+EOF;
+    $result = template_replace_placeholders_by_input($template, $args);
+    test_eq($result, $answer);
+
+    $result = template_get_regex_pattern($template);
+    $answer = <<<'EOF'
+(.*)
+(.*)
+((?s).*)
+((?:(?m)^\-.*\n?)*)
+((?s).*?)
+((?:(?m)^ .*\n?)*)
+((?s).*?)
+((?s).*)
+EOF;
+    test_eq($result, $answer);
+}
+
+function test_eq($a, $b, $name = 'equals') {
+    $a_str = test_var_dump($a);
+    $b_str = test_var_dump($b);
+    if(is_string($a) && is_string($b) &&
+       strpos($a, "\n") == false && strpos($b, "\n") == false ) {
+	$message = "\t" . $a_str . "\t" . $b_str;
+    } else {
+	$a_lines = explode("\n", $a_str);
+	$b_lines = explode("\n", $b_str);
+	$diff = diff($a_lines,$b_lines);
+	$message = '';
+	foreach($diff as $d) {
+	    if($d['change'] === 'add')
+		$message .= '>' . $d['string'] . "\n";
+	    else if($d['change'] === 'delete')
+		$message .= '<' . $d['string'] . "\n";
+	}
+    }
+
+    if($a === $b)
+	test_ok('test ok: ' . $name .  "\n" . $message);
+    else
+	test_error('test failed: ' . $name .  "\n" . $message);
+}
+
+function test_eq_diff($a, $b, $name = 'equals') {
+    $a_str = test_var_dump($a);
+    $b_str = test_var_dump($b);
+    $a_lines = explode("\n", $a_str);
+    $b_lines = explode("\n", $b_str);
+
+    if($a === $b)
+	test_ok('test ok: ' . $name .  "\n" . $message);
+    else
+	test_error('test failed: ' . $name .  "\n" . $message);
+}
+
+function test_ok($msg = '') {
+    global $TEST_RESULTS;
+    //fprintf(STDOUT, "test ok: %s\n", $msg);
+    $TEST_RESULTS['ok']['count']++;
+}
+
+function test_error($msg) {
+    global $TEST_RESULTS;
+    fprintf(STDERR, "test error: %s\n", $msg);
+    $TEST_RESULTS['error']['count']++;
+}
+
+function test_var_dump($var) {
+    ob_start();
+    var_dump($var);
+    $output = ob_get_contents();
+    ob_end_clean();
+    return $output;
+}
+
+exit(tests());
+?>

@@ -1,0 +1,26 @@
+<IfVersion >= 2.3>
+  Require all denied
+  <Files ".">
+    Require all granted
+  </Files>
+  <Files "index.php">
+    Require all granted
+  </Files>
+  <Files "index.html">
+    Require all granted
+  </Files>
+</IfVersion>
+
+<IfVersion < 2.3>
+  Order Allow,Deny
+  <Files ".">
+    Allow from all
+  </Files>
+  <Files "index.php">
+    Allow from all
+  </Files>
+  <Files "index.html">
+    Allow from all
+  </Files>
+  Deny from all
+</IfVersion>

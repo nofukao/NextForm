@@ -1,0 +1,29 @@
+#! /bin/sh
+
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 <storage dir> <regex command> [-notest]"
+    exit 1
+fi
+
+storage_dir=${1:?storage directory}
+regex_command=${2:?regex command}
+mode=${3:-test}
+
+case "$mode" in
+    -notest)
+	find "$storage_dir/page" -name 'head' | while read file; do
+	    if LANG=C grep '^74797065=77696b69$' "$file" >/dev/null; then
+		perl -pe "$regex_command" "$file" > "$file.tmp"
+		touch -r "$file" "$file.tmp"
+		mv "$file.tmp" "$file"
+	    fi
+	done
+	;;
+    test)
+	find "$storage_dir/page" -name 'head' | while read file; do
+	    if LANG=C grep '^74797065=77696b69$' "$file" >/dev/null; then
+		perl -pe "$regex_command" "$file" | diff "$file" -
+	    fi
+	done
+	;;
+esac

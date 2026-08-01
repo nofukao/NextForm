@@ -1,0 +1,15 @@
+<?php
+if(count($_SERVER['argv']) < 5) {
+    fprintf(STDERR, "Usage: php %s /path/to/index.php wikiURL resumefile logfile\n", $_SERVER['argv'][0]);
+    fprintf(STDERR, "       php %s /path/to/index.php wikiURL resumefile --delete-all\n", $_SERVER['argv'][0]);
+    exit(1);
+}
+$command = array('php', '-d', 'open_basedir=none', dirname(__FILE__) . '/analyze_weblog_reader');
+for($i = 3; isset($_SERVER['argv'][$i]); $i++)
+    $command[] = $_SERVER['argv'][$i];
+$command = array_map('escapeshellarg', $command);
+$command = implode(' ', $command);
+$fp = popen($command, 'wb');
+fwrite($fp, $_SERVER['argv'][1] . "\t" . $_SERVER['argv'][2] . "\n");
+pclose($fp);
+?>

@@ -1,0 +1,26 @@
+<?php
+function eval_index_php($file_path) {
+    $contents = file_get_contents($file_path);
+    if($contents === false || $contents === '') {
+	printf("Can't open %s\n", $file_path);
+	exit(1);
+    }
+    $owner = fileowner($file_path);
+    $you = getmyuid();
+    if($owner !== $you) {
+	printf("bad user. file owner id:%d  you:%d\n", $owner, $you);
+	exit(1);
+    }
+    if(!chdir(dirname($file_path))) {
+	printf("Can't chdir %s\n", dirname($file_path));
+	exit(1);
+    }
+
+    if(!preg_match('/<\?(php)?(.*)(require|include).*boot\.inc.*\;.*\?>/s', $contents, $matches)) {
+	printf("%s is not toratorawiki file\n", $file_path);
+	exit(1);
+    }
+    
+    eval($matches[2]);
+}
+?>

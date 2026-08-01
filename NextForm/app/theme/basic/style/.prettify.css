@@ -1,0 +1,19 @@
+/* code prettify ========================================= */
+/* SPAN elements with the classes below are added by prettyprint. */
+pre.code .pln { color: #000 }  /* plain text */
+
+pre.code .str { color: #080 }  /* string content */
+pre.code .kwd { color: #008 }  /* a keyword */
+pre.code .com { color: #800 }  /* a comment */
+pre.code .typ { color: #606 }  /* a type name */
+pre.code .lit { color: #066 }  /* a literal value */
+/* punctuation, lisp open bracket, lisp close bracket */
+pre.code .pun, pre.code .opn, pre.code .clo { color: #660 }
+pre.code .tag { color: #008 }  /* a markup tag name */
+pre.code .atn { color: #606 }  /* a markup attribute name */
+pre.code .atv { color: #080 }  /* a markup attribute value */
+pre.code .dec, pre.code .var { color: #606 }  /* a declaration; a variable name */
+pre.code .fun { color: red }  /* a function name */
+
+/* Specify class=linenums on a pre to get line numbering */
+pre.code ol.linenums { margin-top: 0; margin-bottom: 0 } /* IE indents via margin-left */

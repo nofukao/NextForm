@@ -1,0 +1,22 @@
+<?php
+$argv = $_SERVER['argv'];
+if(count($argv) != 4) {
+    printf("Usage: %s /path/to/wiki/index.php pagename YYYY-MM-DD\n", $argv[0]);
+    exit(1);
+}
+
+require_once(dirname(__FILE__) . '/common');
+eval_index_php($argv[1]);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+$basepagename = $argv[2];
+$date = $argv[3];
+
+$AUTH_GET_USER_CACHE = array('name' => 'external', 'method' => 'self');
+$AUTH_PERMISSIONS['external'] = 'read';
+$WIKI_CALENDAR_EXTERNAL_INFO = array();
+$day_page_info = wiki_operator_calendar_get_day_page_info_for_external_tool($basepagename, $date);
+
+echo(serialize($day_page_info));
+?>

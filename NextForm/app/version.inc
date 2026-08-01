@@ -1,0 +1,4 @@
+<?php
+define('TORATORAWIKI_VERSION', '1.3.10');
+define('TORATORAWIKI_REVISION', '1285');
+?>

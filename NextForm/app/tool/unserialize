@@ -1,0 +1,3 @@
+<?php
+print_r(unserialize(file_get_contents('php://stdin')));
+?>

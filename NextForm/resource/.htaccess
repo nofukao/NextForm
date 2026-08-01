@@ -1,0 +1,7 @@
+<IfVersion >= 2.3>
+    Require all granted
+</IfVersion>
+
+<IfVersion < 2.3>
+    Allow from all
+</IfVersion>

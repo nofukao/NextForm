@@ -1,0 +1,76 @@
+<?php
+$argv = $_SERVER['argv'];
+if(count($argv) < 3) {
+    printf("Usage: %s path/to/toratorawiki/index.php /absolute/path/to/pukiwiki/install/dir [EUC-JP|UTF-8]\n", $argv[0]);
+    exit(1);
+}
+$pukiwiki_dir = $argv[2];
+if(!empty($argv[3]))
+    $pukiwiki_encode = $argv[3];
+else
+    $pukiwiki_encode = 'EUC-JP';
+
+require_once(dirname(__FILE__) . '/common');
+eval_index_php($_SERVER['argv'][1]);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+$AUTH_GET_USER_CACHE = array('name' => 'import', 'method' => 'self');
+$AUTH_PERMISSIONS['import'] = 'admin';
+
+message_init();
+
+function otherwiki_import_pukiwiki($pukiwiki_dir, $pukiwiki_encode) {
+    global $IMPORT_OTHERWIKI_TYPE;
+
+    $args['otherwiki_type'] = 'pukiwiki';
+    $args['otherwiki_path'] = $pukiwiki_dir;
+    $args['otherwiki_encode'] = $pukiwiki_encode;
+    $args['start_time'] = time();
+
+    $module_path = APP_DIR_PATH . '/otherwiki/' . $args['otherwiki_type'] . '.inc';
+    include($module_path);
+
+    if(!import_otherwiki_form_check($args))
+	return false;
+
+    $queue = import_otherwiki_create_queue($args);
+    if($queue === false) {
+	return false;
+    }
+
+    $show_options = array(
+	'progress' => '$num$ / $totalnum$ pages ($percent$%)',
+	'no_progress' => 'Rebuilding search index..'
+	);
+
+    $dom = dom_create_document();
+
+    $func_arg = false;
+    admin_import_otherwiki_initializer($args, $dom, $func_arg);
+
+    $queue_num = count($queue);
+    $offset = 0;
+    foreach($queue as $q) {
+	if(admin_import_otherwiki_processor($args, $dom, $func_arg, $q) === false)
+	    return false;
+
+	$text = lf($show_options['progress'], 
+		   array('num' => $offset,
+			 'totalnum' => $queue_num,
+			 'percent' => $queue_num == 0 ? 100 : round($offset * 100 / $queue_num, 1)));
+	echo($text . "\n");
+	$offset++;
+    }
+    admin_import_otherwiki_finalizer($args, $dom, $func_arg);
+    return true;
+}
+
+
+if(!otherwiki_import_pukiwiki($pukiwiki_dir, $pukiwiki_encode)) {
+    print(dom_text($messages_dom)."\n");
+    exit(1);
+}
+exit(0);
+
+?>

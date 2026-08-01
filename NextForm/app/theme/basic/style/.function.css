@@ -1,0 +1,614 @@
+/* layout ========================================= */
+
+/* makerless list */
+ul.form,
+form.text_edit ul,
+section.config section.local_config > ul,
+section.summary_window section.summary li {
+    list-style: none;
+}
+
+/* horizontal list */
+form.text_edit ul,
+ul.attach,
+ul.buttons {
+    display: inline-block;
+    margin: 0;
+}
+form.text_edit ul li,
+ul.attach li,
+ul.buttons li {
+    display: inline;
+    margin-right: 8px;
+}
+
+/* horizontal define list */
+dl.page_info,
+dl.page_tags,
+dl.attach {
+    margin: 0;
+}
+dl.page_info dt,
+dl.page_tags dt,
+dl.attach dt {
+    display: inline-block;
+    margin: 0;
+}
+dl.page_info dt:after,
+dl.page_tags dt:after,
+dl.attach dt:after {
+    content: ':\0000a0';
+}
+dl.page_info dd,
+dl.page_tags dd,
+dl.attach dd {
+    display: inline-block;
+    margin-right: 1em;
+    margin-left: 0;
+}
+
+/* checkbox */
+input[type="checkbox"] {
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+/* window */
+.completion_window,
+section.summary_window {
+    border: solid 1px;
+    z-index: 10;
+}
+table.calendar dd.popup {
+    z-index: 9;
+}
+
+/* colse button */
+.text_edit,
+.list_edit {
+    position: relative;
+}
+.text_edit.partial {
+    padding-right: 24px !important;
+}
+.text_edit > button.close,
+section.summary_window > button.close,
+.list_edit > button.close,
+.popup button.close {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    z-index: 11;
+}
+
+form.tag_edit button.close {
+    margin-left: 4px;
+}
+
+/* spacing ========================================= */
+
+/* standard block margin */
+ul.form > li,
+form.refpage h1,
+ul.compare.legend,
+fieldset,
+ul.comment {
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+/* small form margin */
+form.user_history,
+form.export,
+form.select {
+    margin: 4px;
+}
+
+fieldset {
+    padding: 12px;
+}
+
+/* inline parts margin */
+label > input[type="text"]:not([class="child_pagename"]),
+label > input[type="password"],
+label > select {
+    margin-left: 8px;
+}
+
+/* edit area spacing */
+form.text_edit,
+form.file_edit ul.form,
+form.refpage,
+form.newpage_type {
+    padding: 8px;
+}
+.list_edit {
+    padding-bottom: 8px;
+    padding-right: 8px;
+}
+.list_edit > p {
+    margin-left: 8px;
+}
+form.newpage_type {
+    padding-bottom: 0;
+}
+
+/* element special ========================================= */
+
+small.error,
+small.redirect {
+    font-size: 100%;
+}
+
+/* page title */
+small.actual_title {
+    font-size: 55%;
+    line-height: 55%;
+    margin-left: 0.5em;
+}
+
+/* form */
+ul.form {
+    list-style: none;
+}
+textarea {
+    font-family: Osaka-mono, "Osaka-等幅", monospace;
+    line-height: 150%;
+}
+
+/* messages */
+ul.messages {
+    list-style: none;
+    width: 100%;
+    position: relative;
+    margin: 8px 0;
+}
+ul.messages li,
+nav.redirect {
+    padding: 12px;
+    line-height: 100%;
+}
+ul.messages li {
+    margin-bottom: 6px;
+}
+ul.messages button {
+    margin-right: 8px;
+}
+
+/* small form */
+form.user_history, form.export, form.select {
+    display: inline-block;
+}
+
+/* text edit  */
+form.text_edit > ul > li {
+    display: inline-block;
+    margin: 0 4px;
+}
+
+form.text_edit > textarea {
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    margin-bottom: 8px;
+}
+
+/* partial text edit */
+form.partial {
+    text-align: left; /* for table cell edit */
+    clear: both; /* for &include float */
+}
+form.partial textarea {
+    min-width: 140px;
+    overflow: hidden;
+    margin-right: 8px;
+    margin-bottom: 0;
+}
+.main form.partial textarea {
+    width: 70%;
+}
+.side form.partial textarea {
+    width: 90%;
+}
+
+td form.partial textarea,
+th form.partial textarea {
+    width: auto;
+}
+form.partial > ul {
+    margin-top: 4px;
+}
+
+/* reference page edit */
+section.refpage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9;
+}
+form.refpage {
+    position: fixed;
+    width: 60%;
+    top: 15%;
+    left: 20%;
+    padding: 8px;
+}
+form.refpage textarea {
+    min-height: 20em;
+}
+
+/* list edit */
+.list_edit input[type="text"] {
+    max-width: 100%;
+}
+@media screen and <?php echo(THEME_IS_DEVICE_SMALL); ?> {
+    .list_edit li {
+	padding-top: 14px;
+	padding-bottom: 14px;
+    }
+    .list_edit li.has_children {
+	padding-bottom: 0px;
+    }
+}
+.list_edit li > form > button {
+    margin-left: 8px;
+}
+
+/* list item select */
+li.selected > ul,
+li.selected > ol {
+    margin-left: 0px;
+    padding-left: 24px;
+}
+li.selected_top {
+    border-top: 4px solid;
+    position: relative;
+    padding-top: 4px;
+    margin-top: 4px;
+}
+li.selected_bottom {
+    border-bottom: 4px solid;
+    position: relative;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+li.selected_top:before,
+li.selected_bottom:before {
+    content: "";
+    display: inline-block;
+    border-right: 4px solid;
+    border-bottom: 4px solid;
+    width: 8px;
+    height: 8px;
+    position: absolute;
+    left: -24px;
+    transform: rotate(-45deg);
+    -o-transform: rotate(-45deg);
+    -moz-transform: rotate(-45deg);
+    -ms-transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+}
+li.selected_top:before {
+    top: -8px;
+}
+li.selected_bottom:before {
+    bottom: -8px;
+}
+li.selected_top:after,
+li.selected_bottom:after {
+    content: "";
+    display: inline-block;
+    border-bottom: 4px solid;
+    width: 24px;
+    position: absolute;
+    left: -14px;
+}
+li.selected_top:after {
+    top: -4px;
+}
+li.selected_bottom:after {
+    bottom: -4px;
+}
+
+/* conflict , compare */
+article.conflict1,
+article.compare1 {
+    width: 49.5%;
+    float: left;
+}
+article.conflict2,
+article.compare2 {
+    width: 49.5%;
+    float: right;
+}
+article.main > footer {
+    clear: both;
+}
+article.conflict1,
+article.conflict2,
+article.compare1,
+article.compare2 {
+    margin-bottom: 24px;
+}
+
+/* compare diff */
+ul.compare {
+    margin-left: 0;
+}
+ul.compare li {
+    list-style: none;
+    white-space: pre-wrap;
+    font-family: monospace;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+ul.compare li:before {
+    display: inline-block;
+    width: 2em;
+    text-align: center;
+}
+ul.compare li > ins,
+ul.compare li > del {
+    color: inherit;
+    text-decoration: none;
+}
+ul.compare.legend {
+    padding: 4px;
+}
+ul.compare.legend li {
+    display: inline;
+    padding: 4px 8px;
+}
+ul.compare.legend li {
+    border-style: solid;
+    border-width: 1px;
+}
+ul.compare.legend li.delete {
+    border-right-width: 0;
+}
+ul.compare.legend li.add {
+    border-left-width: 0;
+}
+ul.compare.legend li.source {
+    border-width: 0;
+}
+ul.compare li.delete:before {
+    content: "[-] ";
+}
+ul.compare li.add:before {
+    content: "[+] ";
+}
+ul.compare li.same:before {
+    content: "";
+}
+ul.compare.legend.part li:before {
+    display: none;
+}
+
+/* compare metadata */
+table.meta_compare {
+    margin: 8px 0px 0px 10%;
+    width: 70%;
+}
+table.meta_compare caption {
+    margin-left: 10%;
+}
+table.meta_compare td.name {
+    width: 10%;
+}
+table.meta_compare td.value1 {
+    width: 40%;
+}
+table.meta_compare td.value2 {
+    width: 40%;
+}
+
+/* search */
+ul.search_result {
+    list-style: none;
+    margin-left: 0;
+}
+ul.search_result pre {
+    margin-top: 8px;
+    margin-left: 16px;
+}
+ul.search_result .score,
+ul.search_result .mtime {
+    margin-left: 8px;
+    font-size: 75%;
+    float: right;
+}
+mark.keyword_0 {
+    background-color: yellow;
+}
+mark.keyword_1 {
+    background-color: cyan;
+}
+mark.keyword_2 {
+    background-color: magenta;
+}
+mark.keyword_3 {
+    background-color: lime;
+}
+mark.keyword_4 {
+    background-color: skyblue;
+}
+p.search_query a,
+*.tag_notice a {
+    display: inline-block;
+    margin-right: 4px;
+    text-align: center;
+}
+
+/* helper */
+form.text_edit ul.attaches {
+    display: block;
+    width: 100%;
+    list-style-type: none;
+    margin-top: 16px;
+}
+form.text_edit.partial ul.attaches {
+    vertical-align: bottom;
+}
+form.text_edit ul.attaches li {
+    display: list-item;
+    margin: 0;
+}
+form.text_edit ul.attaches li button {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+}
+form.text_edit ul.attaches li button.clicked:after {
+    content: ' *';
+}
+.completion_window {
+    position: absolute;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.completion_window ul {
+    list-style-type: none;
+    margin-left: 0;
+}
+.completion_window li {
+    padding: 0 8px;
+}
+.completion_window li i.entity {
+    vertical-align: middle;
+}
+
+/* optional */
+button.optional {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 14px;
+    padding: 0 1px;
+    text-align: center;
+}
+
+/* summary */
+section.summary_window {
+    white-space: nowrap;
+    position: fixed;
+    top: 0;
+    right: 0;
+    padding: 8px;
+    min-width: 10%;
+    max-width: 30%;
+    max-height: 100%;
+    overflow: auto;
+}
+section.summary_window h1 {
+    margin: 8px 0;
+    position: relative;
+}
+section.summary_window section.summary > ul {
+    margin-left: 0;
+}
+section.summary_window a {
+    display: block;
+}
+
+/* calendar */
+table.calendar dd.popup h1 {
+    margin: 0 0 8px 0;
+}
+
+/* page tags, page info */
+article > footer > dl.page_tags,
+article > footer > dl.page_info {
+    margin: 4px 0;
+}
+ul.tags li.edit_tag a {
+    display: inline-block; /* for android */
+    color: inherit;
+}
+ul.tags li.edit_tag a:before {
+    content: '[';
+}
+ul.tags li.edit_tag a:after {
+    content: ']';
+}
+
+/* table sort */
+.sort_order {
+    float: right;
+}
+
+/* color picker */
+input.color {
+    width: 60px;
+    font-size: 12px;
+}
+
+/* admin setup */
+.setup img.current_image {
+    max-width: 200px;
+    max-height: 52px;
+    vertical-align: middle;
+}
+.setup legend,
+.setup dd {
+    padding: 4px;
+}
+.setup legend,
+.setup dt {
+    font-weight: bold;
+}
+.setup small {
+    margin-left: 16px;
+}
+.setup legend small {
+    margin-left: 8px;
+}
+.setup p.apply {
+    margin-top: 20px;
+}
+
+.setup dl.group {
+    margin-top: -4px;
+}
+.setup dl.group dt {
+    clear: left;
+    float: left;
+    margin: 0;
+    width: 16em;
+}
+.setup dl.group dd {
+    margin: 0;
+}
+.setup input.integer {
+    max-width: 4em;
+}
+.setup textarea {
+    min-width: 50%;
+}
+
+/* meta information edit */
+.meta small {
+    display: block;
+    margin-top: 4px;
+}
+.meta textarea {
+    min-width: 50%;
+}
+
+
+/* media ========================================= */
+/* small device  */
+@media screen and <?php echo(THEME_IS_DEVICE_SMALL); ?> {
+    section.summary_window {
+	font-size: 16px;
+	max-width: 50%;
+    }
+    section.summary_window a {
+	padding: 4px 0;
+    }
+}

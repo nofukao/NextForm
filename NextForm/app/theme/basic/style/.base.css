@@ -1,0 +1,499 @@
+/* common ========================================= */
+/* reset */
+* {
+    margin: 0;
+    padding: 0;
+    font-size: 100%;
+}
+a {
+    text-decoration : none;
+}
+img {
+    border: none;
+    vertical-align : top;
+}
+/* spacing ========================================= */
+
+/* standard block margin */
+section.section > h1,
+section.section > dl,
+section.section > hr,
+section.section > pre,
+section.section > blockquote,
+section.section > section.list,
+section.section > section.division,
+section.section > table,
+section.section > figure,
+section.section > img.math.display,
+h1.pages,
+nav.pages,
+nav.redirect,
+form.templateinput {
+    margin-top: 24px;
+    margin-bottom: 24px;
+}
+section.section > p,
+section.section > section.block {
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+/* small block margin */
+h1,
+dl,
+hr,
+p,
+pre,
+blockquote,
+section.list,
+table,
+figure,
+form.search,
+img.math.display {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* figure margin */
+.figure.gravity_left, 
+.figure.gravity_right {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+.figure.gravity_left {
+    margin-right: 8px;
+}
+.figure.gravity_right {
+    margin-left: 8px;
+}
+
+/* list margin */
+li {
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+li.has_children {
+    padding-bottom: 0;
+}
+
+/* indent */
+section.section section.section,
+ul, ol,
+dd {
+    margin-left: 24px;
+}
+section.page.section > section.section,
+article.page > section.section {
+    margin-left: 0px;
+}
+
+/* bounding box padding */
+pre, blockquote {
+    padding: 4px;
+}
+
+/* layout ========================================= */
+
+/* horizontal list */
+ul.tags {
+    display: inline-block;
+    margin: 0;
+}
+ul.tags li {
+    display: inline;
+    margin-right: 8px;
+}
+
+/* gravity */
+.gravity_left {
+    clear: left;
+    float: left;
+}
+.gravity_right {
+    clear: right;
+    float: right;
+}
+
+/* gravity float clear */
+h1,
+hr,
+pre,
+blockquote,
+table,
+section.list,
+section.section,
+form.templateinput {
+    clear: both;
+}
+section.section:after {
+    display: block;
+    content: "";
+    clear: both;
+}
+
+/* element special ========================================= */
+
+/* heading */
+h1 {
+    line-height: 100%;
+}
+
+/* link */
+a.uri {
+    word-wrap: break-word;
+}
+a.unread {
+    border-bottom: dotted 1px;
+}
+
+/* table */
+table {
+    border-style: solid;
+    border-width: 1px;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+table .center {
+    text-align: center;
+}
+table .left {
+    text-align: left;
+}
+table .right {
+    text-align: right;
+}
+table th.numeric,
+table td.numeric {
+    text-align: right;
+}
+td, th {
+    padding: 4px;
+    border-style: solid;
+    border-width: 1px;
+}
+
+/* pre */
+pre,
+section.page pre.prettyprint {
+    font-family: Osaka-mono, "Osaka-等幅", "ＭＳ ゴシック", monospace;
+}
+pre.code li {
+    margin-left: 12px;
+}
+pre {
+    overflow: auto;
+}
+
+/* proportional ascii art */
+pre.paa, pre.paa * {
+    font-family: IPAMonaPGothic,'IPA モナー Pゴシック',Monapo,Mona,'MS PGothic','ＭＳ Ｐゴシック',sans-serif !important;
+    font-size: 16px;
+    line-height: 18px;
+}
+
+/* blockquote */
+blockquote {
+    white-space: pre;
+    overflow: auto;
+}
+
+/* description list */
+dl dt {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* small */
+small {
+    font-size: 75%;
+}
+
+/* page list and wiki &pages */
+ul.pages_date {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+ul.pages form {
+    display: inline-block;
+}
+
+article.page > header,
+article.page > footer{
+    text-align: right;
+    margin-right: 8px;
+}
+
+article.page > header {
+    margin-top: -20px;
+    margin-bottom: -8px;
+}
+
+nav.pages {
+    width: 240px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: right;
+}
+nav.pages a {
+    padding: 0 8px;
+}
+nav.pages a.first {
+    float: left;
+}
+nav.pages a.prev {
+    float: left;
+}
+nav.pages:after {
+    display: block;
+    content: "";
+    clear: both;
+}
+
+/* wiki &calendar */
+table.calendar {
+    width: 98%;
+    border: none;
+    position: relative;
+}
+table.calendar caption {
+    text-align: center;
+    padding: 4px 0;
+}
+table.calendar caption a.next,
+table.calendar caption a.previous {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+table.calendar caption > h1 {
+    display: inline;
+    vertical-align: middle;
+}
+table.calendar caption > form {
+    display: inline-block;
+    margin-left: 8px;
+}
+table.calendar caption form input[type="text"] {
+    width: 92px;
+}
+table.calendar caption a.next {
+    margin-left: 8px;
+}
+table.calendar caption a.previous {
+    margin-right: 8px;
+}
+table.calendar caption > form a {
+    margin-left: 8px;
+}
+
+@media screen and (min-width: 830px) {
+    article:not(.side) table.calendar caption > form {
+	position: absolute;
+	right: 0;
+    }
+    article:not(.side) table.calendar caption > form a {
+	margin-left: 8px;
+    }
+}
+
+table.calendar th.navigation {
+    position: relative;
+    vertical-align: top;
+    text-align: center;
+}
+table.calendar th.navigation a {
+    display: block;
+    padding: 16px 4px;
+}
+table.calendar th.navigation a.previous {
+    margin-top: 8px;
+}
+table.calendar th.navigation a.next {
+    position: absolute;
+    bottom: 8px;
+}
+
+table.calendar td, table.calendar th  {
+    width: 14%;
+    border: 1px solid #ddd;
+}
+table.calendar td {
+    height: 64px;
+    vertical-align: top;
+}
+table.calendar dl,
+table.calendar dl dt {
+    padding: 0;
+    margin: 0;
+}
+table.calendar dl dt.day {
+    display: inline;
+    white-space: nowrap;
+}
+table.calendar dl dt.event_name {
+    display: inline;
+    margin-left: 4px;
+    font-size: 75%;
+    color: gray;
+}
+table.calendar dl dd {
+    padding: 0;
+    margin: 0 8px;
+}
+table.calendar .summary ul {
+    padding: 0;
+    margin: 0 0 0 8px;
+}
+table.calendar td.month_border.border_top {
+    border-top: solid 2px black;
+}
+table.calendar td.month_border.border_bottom {
+    border-bottom: solid 2px black;
+}
+table.calendar td.month_border.border_left {
+    border-left: solid 2px black;
+}
+table.calendar td.month_border.border_right {
+    border-right: solid 2px black;
+}
+table.calendar td.today {
+    border: solid 3px yellow !important;
+}
+table.calendar td.week_0 {
+    background-color: #fdd;
+}
+table.calendar td.week_6 {
+    background-color: #ddf;
+}
+table.calendar td.holiday {
+    background-color: #fdd;
+}
+table.calendar td.other_month {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAIwAAACMB1fQWXQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAANSURBVAiZY2BgYHAAAABFAEHmOR5KAAAAAElFTkSuQmCC"); /* rbga(0, 0, 0, 0.25) 1x1 pixel image */
+}
+
+/* wiki &calendar side */
+article.side table.calendar caption form input[type="text"] {
+    width: 64px;
+}
+article.side table.calendar dt.event_name {
+    display: none;
+}
+article.side table.calendar td {
+    width: auto;
+    height: 24px;
+}
+
+/* wiki &calendar small */ 
+article.side table.calendar caption > *,
+article.side table.calendar caption > form > a {
+    margin: 4px;
+}
+article.side table.calendar td dt {
+    display: inline;
+    word-wrap: break-word;
+    word-break: break-all;
+}
+article.side table.calendar td.exists dl dd,
+article.side table.calendar td dt span.day_detail {
+    display: none;
+}
+article.side table.calendar td.exists dt.day {
+    border-bottom: solid 1px;
+}
+
+@media screen and <?php echo(THEME_IS_DEVICE_SMALL); ?> {
+    table.calendar caption > *,
+    table.calendar caption > form > a {
+	margin: 4px;
+    }
+    table.calendar td dt {
+	display: inline;
+	word-wrap: break-word;
+	word-break: break-all;
+    }
+    table.calendar td.exists dl dd,
+    table.calendar td dt span.day_detail {
+	display: none;
+    }
+    table.calendar td.exists:after {
+	content: "...";
+    }
+}
+
+/* wiki &include */
+figure.figure {
+    display: inline-block;
+}
+figure.figure figcaption {
+    text-align: center;
+}
+
+iframe.youtube {
+    border: 0px;
+    max-width : 100%;
+}
+
+@media screen and (max-width: 1280px) {
+    img {
+	max-width : 100%;
+	height: auto;
+    }
+}
+
+/* wiki icons */
+i.entity,
+b.toratora {
+    display: inline-block;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    color: transparent;
+}
+i.entity.heart    { background-image: url("<?php trw_theme_css_url('image/icon/heart.png'); ?>"); }
+i.entity.smile    { background-image: url("<?php trw_theme_css_url('image/icon/smile.png'); ?>"); }
+i.entity.bigsmile { background-image: url("<?php trw_theme_css_url('image/icon/bigsmile.png'); ?>"); }
+i.entity.huh      { background-image: url("<?php trw_theme_css_url('image/icon/huh.png'); ?>"); }
+i.entity.oh       { background-image: url("<?php trw_theme_css_url('image/icon/oh.png'); ?>"); }
+i.entity.wink     { background-image: url("<?php trw_theme_css_url('image/icon/wink.png'); ?>"); }
+i.entity.sad      { background-image: url("<?php trw_theme_css_url('image/icon/sad.png'); ?>"); }
+i.entity.worried  { background-image: url("<?php trw_theme_css_url('image/icon/worried.png'); ?>"); }
+b.toratora.taro   { background-image: url("<?php trw_theme_css_url('image/icon/taro.png'); ?>"); }
+b.toratora.toro   { background-image: url("<?php trw_theme_css_url('image/icon/toro.png'); ?>"); }
+
+/* wiki &feed */
+a.feed {
+    margin-left: 3px;
+    padding: 0 0 0 19px;
+    background: url("<?php trw_theme_css_url('image/icon/feed.png'); ?>") no-repeat 0 50%;
+}
+/* wiki template */
+.templateinput input[type="text"] {
+    width: 100%;
+    max-width: 240px;
+}
+.templateinput textarea {
+    width: 100%;
+    max-width: 480px;
+    height: 120px;
+}
+/* wiki &calc */
+ul.calc {
+    list-style-type: none;
+}
+/* wiki &listadd */
+input.listadd_text {
+    width: 60%;
+    max-width: 360px;
+}
+input.listadd_name {
+    width: 20%;
+    max-width: 120px;
+}
+/* wiki &math */
+img.math {
+    vertical-align: middle;
+}
+img.math.display {
+    display: block;
+}

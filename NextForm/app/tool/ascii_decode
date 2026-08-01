@@ -1,0 +1,18 @@
+<?php
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+$stdin = fopen("php://stdin", "r");
+while($line = fgets($stdin)) {
+    $line = preg_replace_callback('!(_/|[\da-fA-F]){4,}!', 'decode_replace', $line);
+    echo($line);
+}
+function decode_replace($matches) {
+    $v = ascii_decode(str_replace('_/','',$matches[0]));
+    if($v == "\n")
+	$v = '\n';
+    //else if(!ctype_print($v))
+    //	$v = $matches[0];
+    return $v;
+}
+?>
