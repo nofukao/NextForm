@@ -6,7 +6,18 @@ $main_page_dom = null;
 if(!defined('INSTALL_INFO_FILE_PATH'))
     define('INSTALL_INFO_FILE_PATH', 'install-info.dat');
 define('SITE_NAME', 'ToraToraWiki Initial setup');
-define('SIDE_PAGENAME', '');
+/*
+ * ここで SIDE_PAGENAME を '' に上書きしてはいけない。
+ *
+ * install_theme() が同じプロセスで theme_convert() を呼んで静的 CSS を生成する。
+ * SIDE_PAGENAME が '' だと .theme.css の optional layout ブロックが
+ * article.main { margin-left: 0; width: 100% } を出力し、「サイドページ無し」の
+ * レイアウトが焼き付く。あとから Side ページを作ってもサイドバーが横に並ばず、
+ * 本文の下に回り込んでしまう。
+ *
+ * インストーラ画面でサイドページのリンクが出る心配は無い。インストール中は
+ * $TOOLS が空で、main.inc の sideapge_tool() は一度も呼ばれない。
+ */
 
 function install_info_load() {
     global $INSTALL_INFO;

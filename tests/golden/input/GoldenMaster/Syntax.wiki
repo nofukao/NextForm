@@ -1,0 +1,35 @@
+*その他の記法
+**整形済みテキスト (&pre)
+長い行が折り返されること。横スクロールにならないこと。
+&pre{{
+ssh -R 12345:localhost:22 user@example.com -L 8080:internal.example.local:80 -N -f -o ServerAliveInterval=30
+https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+}}
+
+**コード表示 (&pre(code)) — 言語指定なし
+&pre(code){{
+function example($argument) { return "test"; }
+}}
+
+**コード表示 (&pre(code)) — 言語指定あり
+&pre(code,php){{
+function example($argument) { return "test"; }
+}}
+
+**アスキーアート (&pre(paa)) — 折り返らない
+&pre(paa){{
+　　　＿＿＿
+　／　　　　　＼
+｜　＾　　　＾　｜
+　＼＿＿＿＿＿／
+}}
+
+**計算
+&calc(1 + 2 * 3);
+
+**インデックス
+&index;
+
+**日本語の見出しとアンカー
+***小見出し あいうえお
+本文テキスト。

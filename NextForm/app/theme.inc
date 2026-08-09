@@ -153,8 +153,20 @@ function trw_theme_url($file_path, $escape = true) {
 	$theme_path = url_make('', array('option' => 'theme', 'path' => $file_path));
     else {
 	$theme_path = THEME_URI . '/' . THEME . '/' . $file_path;
-	if(isset($THEME_AVOID_CACHE_ENABLE) && $THEME_AVOID_CACHE_ENABLE)
+	if(isset($THEME_AVOID_CACHE_ENABLE) && $THEME_AVOID_CACHE_ENABLE) {
 	    $theme_path .= '?' . md5(rand() . uniqid());
+	} else {
+	    /*
+	     * テーマを再生成しても、ブラウザが古い CSS/JS を使い続けてしまう。
+	     * URL が変わらないうえ、この静的ファイルには Cache-Control が付かず
+	     * Last-Modified と ETag しか返らないため。
+	     * 更新時刻をクエリに付けて、再生成したときだけ URL を変える。
+	     * ランダム値 (上の avoid cache) と違い、通常のキャッシュは効いたまま。
+	     */
+	    $mtime = @filemtime(THEME_DIR_PATH . '/' . THEME . '/' . $file_path);
+	    if($mtime !== false)
+		$theme_path .= '?t=' . $mtime;
+	}
     }
     if($escape)
 	echo(htmlspecialchars($theme_path));

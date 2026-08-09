@@ -42,7 +42,7 @@ function wiki_operator_time(&$context, $dom, $tree) {
     if($is_show) {
 	switch($mode) {
 	case 'normal':
-	    $output = strftime($format, $time);
+	    $output = nf_date($format, $time);
 	    break;
 	case 'left':
 	    $diff = -$diff;

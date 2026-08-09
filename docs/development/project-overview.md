@@ -1,0 +1,426 @@
+# NextForm プロジェクト概要
+
+> **このドキュメントの位置づけ**
+> NextForm の目的・上流の実態・ロードマップ・確定した設計判断をまとめた、
+> プロジェクトの基準文書。セッション開始時に最初に読む。
+>
+> 2026-08-02 の実環境調査に基づく。
+
+---
+
+## 1. プロジェクト名と目的
+
+- **プロジェクト名**: NextForm
+- **目的**: 既存の wiki エンジン [toratorawiki](http://toratora.wiki/) をフォークし、
+  最新の PHP 環境への対応、セキュリティ強化、機能追加(特に Markdown 文法対応)を行う。
+- **リポジトリ**: `git@github.com:nofukao/NextForm.git`
+  (v0.1 完成まで private、その後 GPLv3 の OSS として公開)
+
+## 2. 上流 (フォーク元) について
+
+| 項目 | 内容 |
+|---|---|
+| 名称 | ToraToraWiki |
+| バージョン | **1.3.10 (revision 1285)** |
+| baseline | Git のタグ **`upstream/1.3.10`** (2022-04-24 取得の tar.gz を展開したもの) |
+| 公式 | http://toratora.wiki/ |
+| ライセンス | GPLv3 (`license.txt` として同梱) |
+| 言語 | PHP (手続き型)、**212 ファイル / 約 21,800 行** |
+| データ保存 | DB 不使用。DocumentRoot 配下にファイルとして直接保存 |
+| 文法 | PukiWiki ライクな独自記法 |
+| 最終更新 | 2015 年 (PHP 5 時代) |
+
+**上流との関係**: 上流は 2015 年以降更新が止まっているため、**独立した fork として進める**。
+PR は送らない。`license.txt` / `LICENSE` は、**GPLv3 の条文と上流の著作権表示は
+そのまま残したうえで**、fork であることと NextForm の著作権表示・改変告知を
+冒頭に書き加える (GPLv3 §5(a) が改変版に求めているもの)。
+`README.md` にも fork 経緯と GPLv3 継承を明記する。
+
+## 3. 上流ソースの実際の構造
+
+> ⚠️ **重要**: 上流は PukiWiki レイアウト
+> (`plugin/` `skin/` `wiki/` `attach/` `backup/` `cache/` `counter/` `diff/`) では
+> **ない**。実物は以下のとおり。
+
+### 3.1 tar.gz に含まれるもの (= Git で追跡する対象)
+
+```
+toratorawiki/
+├── index.php          ← カスタム設定を書いて app/boot.inc を require するだけの薄いファイル
+├── .htaccess          ← index.php / index.html 以外を全 deny
+├── license.txt        ← GPLv3
+├── app/               ← ロジック全部
+│   ├── boot.inc, main.inc, setup.inc      … 起動・設定
+│   ├── util.inc, page.inc, storage_file.inc … 基盤
+│   ├── search.inc, search/                … 検索 (builtin 2-gram / Elasticsearch)
+│   ├── handler/       … コンテンツ種別ごとの処理
+│   │   ├── wiki.inc, text.inc, file.inc
+│   │   ├── wiki/      … wiki_parse.inc (834行), wiki_convert.inc, wiki_lib.inc
+│   │   │   └── function/  … &calendar, &calc, &table … 記法拡張 30 個超
+│   │   └── file/      … file_image.inc, file_audio.inc, file_video.inc, file_binary.inc
+│   ├── option/        … 画面 (search, history, admin_setup, attach … 40 個超)
+│   ├── otherwiki/     … PukiWiki / @wiki からのインポータ
+│   ├── theme/basic/   … テーマの**ソース** (.base.css, .function.css, html.php, setup.php)
+│   ├── tool/          … CLI ツール (update_wiki, import_pukiwiki, analyze_weblog …)
+│   ├── test/test      … 自前のテストハーネス (テスト 3 件のみ)
+│   ├── manual/        … 組み込みマニュアル
+│   └── plugin/        ← **空ディレクトリ**
+└── resource/          ← js / 画像 (prototype.js, toratora.js, jscolor …)
+```
+
+### 3.2 インストーラが生成するもの (= Git で追跡しない対象)
+
+```
+storage/                ← wiki の実データ
+├── page/
+│   └── 546f70/head     ← ディレクトリ名は bin2hex(ページ名)。"546f70" = "Top"
+│       01781508544      ← 過去版はタイムスタンプ名で同居
+├── cache/              ← 2-gram 検索インデックスなど
+└── setup/              ← サイト設定、認証ダイジェスト
+theme/                  ← app/theme/ からビルドされた静的 CSS/JS
+install-info.dat        ← インストール時の環境記録
+```
+
+- ページ本文は `*.txt` **ではない**。`storage/page/<bin2hex(名前)>/head` が現行版。
+- サブページはディレクトリ名末尾の `_` で表現される
+  (`storage_find_filepaths_by_prefix_recursive()` 参照)。
+
+### 3.3 押さえておくべき既存実装
+
+| 箇所 | 内容 |
+|---|---|
+| `app/search.inc` | 検索は **2-gram インデックス**方式。`storage/cache/` にインデックスを持つ。素朴な全文スキャンではない |
+| `app/search/elasticsearch.inc` | **外部検索エンジンへの差し替え機構が既にある**。`SEARCH_ENGINE` 定数で切り替え |
+| `app/option/search_index.inc` | 管理画面「Rebuild search index」。インデックス再構築 |
+| `app/storage_file.inc` の `storage_page_find()` | 全ディレクトリ走査 + `filemtime()` + `usort()`。**「最新の更新ページ一覧」が遅い原因はここ** |
+| `app/setup.inc` | `TIME_FORMAT` / `DATE_FORMAT` は管理画面から変更可能な **strftime 形式**の文字列 |
+| `app/language.inc` | `l()` によるメッセージ変換。`setlocale()` は**一度も呼ばれない** |
+| `app/test/test` | 自前テストハーネス。`page_path` / `wiki_tokens_is_whitespace` / `template_get_placeholders` の 3 件のみ |
+
+## 4. リポジトリ構成
+
+```
+NextForm/                           ← Git リポジトリのルート
+│
+├── NextForm/                       ← wiki ソース (= 配布単位)
+│   ├── index.php
+│   ├── .htaccess
+│   ├── license.txt
+│   ├── app/
+│   └── resource/
+│
+├── docs/                           ← **利用者向け**
+│   ├── installation.md             新規インストール
+│   ├── upgrade-guide.md            既存サイトのアップグレード
+│   │                                (配布物へ UPGRADE.md として同梱される)
+│   └── development/                ← **開発者向け**
+│       ├── project-overview.md     このファイル
+│       ├── workflow.md             開発フロー
+│       └── setup.md                開発環境の作り方
+│
+├── tests/                          ← ゴールデンマスター + スモークテスト
+├── deploy/                         ← デプロイスクリプト、テストデータ生成
+├── tmp/                            ← スクラッチ (.gitignore)
+│
+├── CLAUDE.md                       ← Claude Code 向けの規約
+├── README.md
+├── LICENSE                         ← license.txt のコピー (GPLv3)
+├── .gitignore
+└── composer.json                   ← 開発用依存のみ (PHPUnit)
+```
+
+**配布パッケージの作成**:
+```bash
+./deploy/scripts/make-dist.sh          # HEAD から
+./deploy/scripts/make-dist.sh v0.1     # tag から
+```
+上流と同じ「展開してブラウザで開けばインストーラが動く」形式になる。
+
+> `tar zcf NextForm.tar.gz NextForm/` としてはいけない。`.gitignore` で
+> 無視しているだけの生成物 (`theme/` `storage/` `install-info.dat`) や
+> 作業中のファイルが紛れ込む。実際、開発中に `php -S` で動かした残骸の
+> `theme/` が作業ツリーに残っていた。`make-dist.sh` は `git archive` で
+> **追跡されているファイルだけ**を固め、生成物が混ざっていないか検査もする。
+
+## 5. 上流の参照インスタンス
+
+素の ToraToraWiki 1.3.10 を別のパスに展開し、**上流の振る舞いの基準**として
+温存しておくと判断が早い。作り方は [setup.md](setup.md) §4。
+
+- 参照インスタンスは**変更しない**。比較の基準として意味がある
+- 素の上流は **PHP 8 では起動しない** (`get_magic_quotes_gpc()` で Fatal error)。
+  起動させるには `app/util.inc` のその 1 行と `app/option/search.inc` の
+  `each()` を除去する必要がある。PHP 8 で削除済みの関数はこの 2 箇所だけ
+- インストールしただけのインスタンスはページが 2 件しかないので、性能計測には
+  使えない。`deploy/scripts/gen-pages.php --count` で別途生成する
+
+差分を見るだけなら Git で足りる。
+
+```bash
+git diff upstream/1.3.10 HEAD -- NextForm/app/
+```
+
+## 6. ロードマップ
+
+### v0.1 — PHP 8 完全対応 ✅ 完了 (2026-08-03 リリース)
+
+「**PHP 8.3 で警告ゼロで完全に動く fork**」をゴールとする。バグ修正・機能追加は含めない。
+土台を固めてから以降の作業に進む。
+
+#### 実測結果 (2026-08-02)
+
+`E_DEPRECATED` を可視化したうえで tora2 の全 41 画面を 1 回巡回したところ、
+**4,977 件**の警告・非推奨が記録された。当初 `strftime()` 33 箇所を主題と
+見積もっていたが、**実際には参照渡しコールバックが件数の 91% を占める**。
+
+| # | 分類 | 件数 | 箇所 |
+|---|---|---:|---|
+| 1 | **参照渡しコールバック** — `usort()` に `function f(&$a, &$b)` を渡している。PHP 8 では値渡しになり警告 | **4,554** | `app/tool.inc:17` (`order_compare`)、`app/storage_file.inc:506` (`storage_page_find_compare_mtime`) |
+| 2 | **null への配列アクセス** — `$args['xxx']` が null | 200+ | `app/handle.inc:114`、`app/storage_file.inc:265`、`app/option/` 配下 9 ファイル |
+| 3 | **null 引数の非推奨** — `explode()` `unpack()` `urlencode()` | 184 | `app/util.inc:78, 257, 265` |
+| 4 | **`strftime()` の非推奨** | 37 | 静的には 33 箇所 / 11 ファイル(下表) |
+| 5 | 非数値の演算、false への配列アクセス | 4 | `app/util.inc:100`、`app/option/password.inc:36` |
+
+- 件数は多いが**発生源は少数**。分類 1 は 2 関数のシグネチャから `&` を外すだけで
+  4,554 件が消える見込み。分類 3 も `app/util.inc` の 3 行に集中している。
+- 分類 2 は `?option=xxx` にページ名を付けずにアクセスした場合に出るもので、
+  正常系でも発生する。null 合体演算子などで個別に潰す必要がある。
+
+> 🚧 **baseline は PHP 8 では起動すらしない。**
+> `app/util.inc:14` の `get_magic_quotes_gpc()` は PHP 8 で削除済みのため
+> **Fatal error** になり、`php -S` / Apache のどちらでも 500 が返る。
+> インストーラにも到達できないため、動作確認環境を作るには
+> **この 1 行の除去が先行して必要**(検証済み: これだけで HTTP 200 になる)。
+> PHP 8 で削除済みの関数は全数調査の結果、この 1 件と
+> `app/option/search.inc:66` の `each()` の **2 箇所のみ**。
+
+#### 作業項目 (すべて 2026-08-02 に完了)
+
+| # | 内容 | 結果 |
+|---|---|---|
+| 1 | 開発サーバーの `E_DEPRECATED` を可視化する | ✅ `/etc/php.d/99-nextform-dev.ini` |
+| 2 | 削除済み関数を除去し起動できるようにする | ✅ `get_magic_quotes_gpc()` / `each()` の 2 箇所 |
+| 3 | ゴールデンマスターと HTTP スモークを整備する | ✅ `tests/golden.sh` / `tests/smoke.sh` |
+| 4 | 参照渡しコールバックを修正する | ✅ 8 関数。4,558 → 0 件 |
+| 5 | `app/util.inc` の null 引数・非数値演算 | ✅ `url_make_query` / `decode_prefixed_number` |
+| 6 | null への配列アクセスを潰す | ✅ ページツール 11 関数。378 件が一括で解消 |
+| 7 | `strftime()` を `date()` ベースのラッパーに置換 | ✅ `nf_date()`。33 箇所 / 11 ファイル |
+| 8 | 警告ゼロを確認する | ✅ 全 42 画面 + 追加 22 経路で **0 件** |
+
+**警告の推移**: 4,980 → 422 → 44 → 38 → **0**
+(全経路でゴールデンマスターは一致し続けており、振る舞いは変わっていない)
+
+#### PHP 8.4 を対象外にした理由 (2026-08-02)
+
+当初は 8.3・8.4 の両方で動作確認する方針だったが、**8.3 のみ**に変更した。
+AlmaLinux 10 の AppStream は 8.3 までで、8.4 には remi の追加が必要になるが、
+コードを照合した結果それに見合う効果が無いと判断した。
+
+| 8.4 の主な非推奨・変更 | 該当 |
+|---|---|
+| 暗黙の nullable 引数 (`Foo $x = null` → `?Foo`) — 8.4 最大の非互換 | ❌ このコードには**型宣言が 1 つも無い** |
+| `E_STRICT` の非推奨 | ❌ 未使用 |
+| `session.sid_length` 等の非推奨 | ❌ 未使用 |
+| ext/dom | ⚠️ `DOMDocument` / `DOMXPath` を使用中。ただし 8.4 の変更は `Dom\HTMLDocument` の**追加**で、従来 API に非推奨は無い |
+| `strftime()` | ✅ 8.4 でも非推奨のまま (削除は 9)。しかも既に呼んでいない |
+
+v0.1 で修正した内容 (null を内部関数に渡す非推奨、参照渡しコールバック) は
+8.1〜8.4 で共通の指摘であり、**PHP 9 で TypeError / 関数削除になる本当の崖**は
+既に越えている。8.4 で新たに出る警告は無い見込み。
+
+#### リリース時の状態 (2026-08-03)
+
+- 全 42 画面 + 追加経路で **PHP の警告ゼロ**
+- ゴールデンマスター 3/3、スモーク 42/42、CSS ルール検査 8/8
+- ブラウザでの手動巡回(編集・保存・競合検出、添付の追加/削除、
+  ロック、リネーム、削除、管理画面)を実施し、問題なしを確認
+- 手動巡回で見つかった 2 件も修正済み:
+  - サイドバーが本文の下に回り込む(インストーラが CSS に焼き付けていた)
+  - Chrome で編集画面のカーソルが行頭で見えない
+- 「ロック中でも編集できる」は上流の設計どおりで不具合ではない(§8)
+
+**次の目標は v0.3(検索バグ修正と性能改善)。**
+
+> ⚠️ **`strftime()` の指定子は `date()` に素直に読み替えられない。**
+> 2015-05-20 09:08:07 を入力に実測して確認した (「読み替え先」は
+> 世間でよく見る対応表の記述):
+>
+> | 指定子 | strftime の出力 | 読み替え先 | `date()` の出力 | |
+> |---|---|---|---|---|
+> | `%j` (通日) | `140` | `z` | `139` | ❌ `z` は **0 始まり**、`%j` は 1 始まりの 3 桁 |
+> | `%W` (週番号) | `20` | `W` | `21` | ❌ `W` は **ISO-8601 週番号**で定義が違う |
+> | `%b` (月名) | `May` | `M` | `May` | ✅ (`setlocale()` 未呼び出しのため英語) |
+> | `%y` `%w` `%Y` `%m` `%d` `%H` `%M` `%S` | | | | ✅ 一致 |
+>
+> ラッパーはこの 2 つを個別に補正する必要がある。
+> `tests/golden/input/Calendar.wiki` が全指定子を決定的な入力で押さえてある。
+
+**`strftime()` の分布**:
+
+| ファイル | 件数 |
+|---|---|
+| `app/handler/wiki/function/wiki_calendar.inc` | 14 |
+| `app/util.inc` | 5 |
+| `app/pagelist.inc` | 4 |
+| `app/handler/wiki/function/wiki_mtime.inc` | 2 |
+| `app/tool/analyze_weblog_writer` | 2 |
+| `app/analyze.inc` / `app/dom.inc` / `app/export.inc` / `app/option/admin_analyze.inc` / `app/handler/wiki/function/wiki_time.inc` | 各 1 |
+| `app/option/feed.inc` | 1 (コメントアウト済み) |
+
+### v0.1.1 — 既存サイトからのアップグレード経路 ✅ 完了 (2026-08-03)
+
+v0.1 の価値は「2015 年で止まった既存サイトを PHP 8 で動かす」ことにあるのに、
+既存サイトを移行する手段が無かった。公開前に塞いだ。
+
+| 成果物 | 内容 |
+|---|---|
+| `NextForm/app/tool/upgrade` | アップグレードスクリプト。配布物に同梱される |
+| `docs/upgrade-guide.md` | 手作業の手順書。**正本はこちら**。`make-dist.sh` がリリース時に `NextForm/UPGRADE.md` としてコピーする |
+| `tests/upgrade.sh` | tora2 の複製に対して両方の経路を実際に走らせる |
+
+**このタイミングでやった理由**: v0.1 時点の変更は `app/` に閉じており、
+`index.php` / `.htaccess` / `resource/` / `license.txt` とページの保存形式は
+上流と同一。アップグレードは「コードを差し替えてテーマを作り直す」だけで済む。
+v0.3 で `storage_page_find()` の性能改善に入るとインデックス形式が変わりうるので、
+データ移行が絡む前に枠組みを作っておく。
+
+#### 実装上の判断
+
+- **消さない。** 配布物に無いファイルが `app/` にあっても削除せず報告する。
+  利用者のプラグイン (`app/plugin/`) や独自テーマ (`app/theme/<名前>/`) を
+  巻き添えにしないため。「知らないものは消さない」を原則とする
+- **静的テーマの再生成をスクリプトに含める。** `app/theme/` はソースで
+  `theme/` が生成物。再生成しないと見た目の修正が一切反映されない。
+  手動では最も忘れられやすい工程
+- **所有者は書き換える前に控えて復元する。** root で実行すると新しいファイルが
+  root 所有になり、web サーバから読めなくなる
+- **手順書もテストから実行する。** 実際これで 2 件のずれが見つかった。
+  手作業では所有者を戻してからテーマを再生成しないと `update_wiki` の
+  所有者チェックに引っかかること、`diff` の見出しがロケールで日本語になり
+  `grep '^Only in app'` に引っかからないこと
+
+### v0.2.0 — 初回公開版 ✅ (2026-08-09)
+
+機能は v0.1.2 と同じ。公開に向けてドキュメントを整えた版。
+
+- `README.md` を日本語で全面的に書き直し、`LICENSE` を NextForm の
+  ステートメントにした (GPLv3 の条文と上流の著作権表示は保持)
+- `docs/` を**利用者向け**、`docs/development/` を**開発者向け**に分けた
+- `docs/installation.md` `CHANGELOG.md` `CONTRIBUTING.md` を新設
+- テストの向け先を `tests/env.local` (`.gitignore` 済み) に追い出し、
+  環境固有の値がリポジトリに入らないようにした
+- **ロードマップの版数を 1 つずつ繰り下げた。** 公開版を v0.2.0 としたため、
+  もともと v0.2 だった「検索バグ修正と性能改善」は v0.3 になる
+
+> 公開にあたり、リポジトリを作り直している。開発時の 46 コミットには
+> テスト記録の docx に管理者パスワードが含まれていたため、
+> 旧リポジトリは `NextForm-pre-publication` として private のまま凍結し、
+> 公開リポジトリは「素の上流 → v0.2.0」の 2 コミットから始めた。
+
+### v0.3 — 検索バグ修正と性能改善
+- 既存の検索バグの再現条件を特定して修正。
+  100 ページを超えたあたりから検索が正常に行えないことがある(2026-08-03 報告)。
+  「検索インデックスを再構築」で解消した可能性があるが未確認
+- `storage_page_find()` の性能改善。ページ数が 100 を超えると `&recent(20)` の
+  表示に 10 秒以上かかる(2026-08-03 報告)。
+  **検索インデックスとは別系統**である点に注意。`&recent` は
+  `storage_page_find()` の全ディレクトリ走査 + `filemtime()` + `usort()` を通る
+- どちらも `deploy/scripts/gen-pages.php --count` で大量生成して計測してから
+  方針を決める
+
+### v0.4 — セキュリティ監査
+- XSS / CSRF / パストラバーサル / ファイルアップロード
+- MD5 認証ダイジェストの見直し
+- **`storage/` のディレクトリ一覧が外部から見える**(2026-08-02 実測)。
+  個別ファイルは 403 で保護されているが、`https://.../storage/` や
+  `.../storage/page/` は mod_autoindex が一覧を返す。tora2 でも同様なので
+  上流の `.htaccess` と httpd.conf の `Options Indexes` の組み合わせに起因する
+  (上流の `.htaccess` は `<Files ".">` に `Require all granted` を与えている)。
+  配布する `.htaccess` に `Options -Indexes` を入れれば全デプロイで塞げる。
+
+### v0.5 — 表示まわりの設定化とテーマ (2026-08-03 のテストで挙がった課題)
+
+- **`&pre` の折り返しを設定で選べるようにする**
+  v0.1 で「常に折り返す」に変更した(`app/theme/basic/style/.base.css` の
+  `pre { white-space: pre-wrap; overflow-wrap: break-word; }`)。
+  横スクロールのほうが読みやすい用途もあるため、
+  「折り返し」/「横スクロール」を選択式にしたい。想定される実装:
+  - サイト全体の既定は `$SETUP_CONSTANTS` に追加して管理画面から選ぶ
+    (`app/setup.inc` の `THEME_*` と同じ要領。CSS テンプレートは PHP なので
+    `<?php if(...) ?>` で出し分けできる)
+  - ページ単位・ブロック単位で変えるなら `&pre(nowrap)` のような
+    パラメータを `app/handler/wiki/function/wiki_pre.inc` に追加する
+    (`code` / `paa` / `linenum` と同じ仕組み)
+  - アスキーアート (`pre.paa`) は折り返すと絵が崩れるので、常に折り返さない
+
+- **`basic` 以外のテーマを開発する**
+  現状テーマは `basic` のみで、管理画面の「テーマ」も実質選択肢が無い
+  (色調の変更は動作する)。テーマは `app/theme/<名前>/` に
+  `html.php` / `setup.php` / `style/*.css` を置く構成で、
+  `theme_convert()` が `theme/<名前>/` に静的ファイルを生成する。
+  新テーマを足す際は `tests/css-rules.sh` の検査もテーマごとに見直すこと。
+
+### v0.6 — Markdown 文法対応
+- `app/handler/` に既存の `wiki.inc` / `text.inc` と並列でハンドラを追加する形が有力
+
+### v0.7 — 検索機能の高度化
+- 正規表現、AND/OR/NOT、タイトル/本文限定、更新日範囲
+
+## 7. 確定した設計判断 (2026-08-02)
+
+| 項目 | 決定 | 理由 |
+|---|---|---|
+| v0.1 スコープ | PHP 8 完全対応のみ | 土台が固まれば以降の作業が安全になる |
+| 対応 PHP | **8.3 のみ** (2026-08-02 に 8.4 を対象外へ変更) | 下記参照 |
+| 開発ツール | **composer は開発用のみ** (PHPUnit) | 「展開するだけで動く」配布形式を維持。ランタイム依存は増やさない |
+| PHP 拡張 | intl / bcmath / zip は**入れない** | 現状の実装に不要 |
+| ソース配置 | リポジトリルート直下の `NextForm/` | `tar zcf NextForm.tar.gz NextForm/` 一発で配布物になる |
+| 上流の取り込み | 素の tar.gz を baseline、tag `upstream/1.3.10` | tora2 の場当たり修正を持ち込まない |
+| テスト戦略 | **ゴールデンマスター + HTTP スモーク** | 手続き型 21,800 行に後からテストを当てるのに最も効く |
+| 確認環境 | tora2 は温存し `/var/www/html/nextform/` を新設 | 上流との振る舞い比較ができる |
+| 日付処理 | `date()` ベースの互換ラッパー **1 つに集約** | 差分が小さく、テストを 1 箇所に集中できる |
+| PHP 設定 | `/etc/php.d/99-nextform-dev.ini` を追加 | `php.ini` 本体を触らないので dnf 更新で消えない |
+| ブランチ | 作業単位ブランチ → `main` マージ | |
+| 公開 | v0.1 まで private、その後 public | 公開前に資格情報・内部ホスト名の点検を行う |
+| 上流との関係 | 独立 fork。PR は送らない | 上流は 11 年間更新なし |
+| 開発フロー | **Superpowers は使わない**。`CLAUDE.md` にルール化 + Claude Code 標準機能 | 詳細は [workflow.md](workflow.md) |
+| 版数の持ち方 (追記 2026-08-03) | `NEXTFORM_VERSION` を `app/version.inc` に追加。`TORATORAWIKI_*` は残す | アップグレードツールが対象サイトの版を判定できる。fork 元がどの上流版かという情報自体にも意味がある |
+| アップグレードツールの置き場 (追記 2026-08-03) | `NextForm/app/tool/upgrade` | 配布物に同梱される (`deploy/scripts/` は同梱されない)。既存の `app/tool/*` と同じ作法に乗る |
+| アップグレード手順書の置き場 (追記 2026-08-03) | 正本は `docs/upgrade-guide.md`。`make-dist.sh` が `UPGRADE.md` として同梱 | tar.gz だけで完結させつつ、二重管理を避ける |
+
+## 8. ロックの仕様 (2026-08-03 に調査、不具合ではない)
+
+「ロック中のページを編集できてしまう」との報告を受けて実測した結果、
+**上流の設計どおり**であることを確認した。修正はしていない。
+
+| 利用者 | ロック中のページ | 実測 |
+|---|---|---|
+| 管理者 (`admin` 権限) | **編集できる**。緑の通知「このページはロックされています．」が出る | 設計どおり |
+| ロックした本人 (`lock` 権限) | 編集できる | 設計どおり |
+| それ以外 (`write` 権限のみ) | **編集できない**。赤いエラーが出て送信ボタンも無効。サーバー側でも `page_write()` が拒否 | 保護は効いている |
+
+- 判定は `app/lock.inc` の `lock_has_permission()`。`admin` 権限があれば無条件に true
+- `app/lock.inc` の `lock_warn()` が、権限ありなら `message_notice`(緑)、
+  権限なしなら `message_error`(赤)を出し分けている
+- 管理者が編集して保存しても**ロック状態は維持される**(実測で確認)
+- PukiWiki の「凍結」と同じ考え方。管理者まで締め出すと解除できなくなるため
+
+> 「ロックしたら管理者も編集できない」挙動に変えたい場合は、
+> `lock_has_permission()` から `admin` の特例を外し、
+> 管理者はいったん解除してから編集する運用にする。
+> セキュリティモデルの変更になるため、必要になった時点で判断する。
+
+## 9. v0.3 以降で決めること
+
+- **検索バグ**の具体的な再現条件(実装を読みながら特定する)
+- **性能改善の方針**: mtime キャッシュ / インデックスファイル / SQLite
+  (`pdo_sqlite` は利用可能。ただし「DB を使わない」設計方針との整合を要検討)
+- **Markdown**: 方言 (CommonMark / GFM)、既存文法との切り替え方法(ページ単位 / サイト全体 / ブロック単位)、
+  ライブラリ選定(ランタイム依存を増やすかどうかが論点)
+- **セキュリティ**: 静的解析ツール (PHPStan / Psalm) の導入可否
+- **timezone**: 管理画面の設定項目として持たせるかどうか
+
+## 10. 参考リンク
+
+- toratorawiki 公式: http://toratora.wiki/
+- Claude Code: https://docs.claude.com/en/docs/claude-code/overview

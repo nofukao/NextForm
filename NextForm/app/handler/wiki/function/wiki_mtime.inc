@@ -10,7 +10,7 @@ function wiki_operator_mtime(&$context, $dom, $tree) {
     $format = default_value($last_value, TIME_FORMAT);
     $page = page_read($pagename);
     if(!empty($page['mtime']))
-	dom_append_text($dom, strftime($format, $page['mtime']));
+	dom_append_text($dom, nf_date($format, $page['mtime']));
     wiki_convert_from_tokens($context, $dom, $tree->target);
 }
 
@@ -26,7 +26,7 @@ function wiki_operator_btime(&$context, $dom, $tree) {
     $format = default_value($last_value, TIME_FORMAT);
     $page = page_read($pagename);
     if(!empty($page['meta']['btime']))
-	dom_append_text($dom, strftime($format, $page['meta']['btime']));
+	dom_append_text($dom, nf_date($format, $page['meta']['btime']));
     wiki_convert_from_tokens($context, $dom, $tree->target);
 }
 

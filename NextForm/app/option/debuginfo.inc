@@ -5,12 +5,13 @@ $TOOLS['page']['debug'] = array(
     );
 
 function debug_tool(&$page, $dom) {
+    $pagename = empty($page) ? '' : $page['name'];
     if(DEBUG_MODE == 'true') {
 	tools_add_link(
 	    $dom,
 	    array('name' => '(' . l('Debug info') . ')',
 		  'disable' => empty($page),
-		  'uri' => url_make($page['name'], array('option' => 'debuginfo'))));
+		  'uri' => url_make($pagename, array('option' => 'debuginfo'))));
     }
 }
 
@@ -50,7 +51,9 @@ function debuginfo_show(&$args, $dom) {
 	$context = wiki_default_context($page);
 	$contents = page_get_contents($page);
 	$tokens = &wiki_lex($context, $contents);
-	array_unshift($tokens, new WikiLineHeadToken('', $tokens[0]->position, 0));
+	// 内容が空のページ (存在しないトップページなど) では字句が 1 つも無い
+	$head_position = empty($tokens) ? 0 : $tokens[0]->position;
+	array_unshift($tokens, new WikiLineHeadToken('', $head_position, 0));
 
 	if(isset($args['token'])) {
 	    $h = dom_append_child($section, 'h1');

@@ -5,12 +5,13 @@ $TOOLS['page']['attach'] = array(
     );
 
 function attach_tool(&$page, $dom) {
+    $pagename = empty($page) ? '' : $page['name'];
     if(page_get_type($page) != 'file') {
 	tools_add_link(
 	    $dom,
 	    array('name' => l('Attach'),
 		  'disable' => empty($page),
-		  'uri' => url_make($page['name'], array('option' => 'attach'))));
+		  'uri' => url_make($pagename, array('option' => 'attach'))));
     }
 }
 

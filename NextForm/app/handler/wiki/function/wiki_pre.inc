@@ -44,9 +44,13 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 
     if($is_code) {
 	head_tags_add_javascript('resource/script/prettify.js');
+	// 言語指定が無いと array_pop() は null を返す。そのまま class に渡すと
+	// setAttribute(null) で非推奨警告が出るうえ、意味の無い class="" が付く
 	$lang = array_pop($langs);
 	if(!empty($lang))
 	    $lang = 'language-' . $lang;
+	else
+	    $lang = '';
 	$pre = dom_append_child($dom, 'pre', 'code prettyprint linenums:' . $linenum);
 	dom_set_position($pre, $block);
 	$code = dom_append_child($pre, 'code', $lang);

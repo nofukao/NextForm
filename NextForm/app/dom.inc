@@ -313,7 +313,7 @@ function dom_append_time($dom, $time, $format = '') {
     $t = dom_append_child($dom, 'time', '',
 			  array('datetime' => time_xmlformat($time)));
     if($format !== '')
-	dom_append_text($t, strftime($format, $time));
+	dom_append_text($t, nf_date($format, $time));
     return $t;
 }
 

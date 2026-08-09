@@ -5,11 +5,12 @@ $TOOLS['page']['meta'] = array(
     );
 
 function meta_tool(&$page, $dom) {
+    $pagename = empty($page) ? '' : $page['name'];
     tools_add_link(
 	$dom,
 	array('name' => l('Meta info'),
 	      'disable' => empty($page),
-	      'uri' => url_make($page['name'], array('option' => 'meta'))));
+	      'uri' => url_make($pagename, array('option' => 'meta'))));
 }
 
 $OPTIONS['meta'] = array(

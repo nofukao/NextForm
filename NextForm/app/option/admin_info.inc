@@ -39,8 +39,11 @@ function admin_info_show(&$args, $dom) {
 
     $dom = dom_append_child($dom, 'section', 'page');
 
+    // NextForm 自身の版数と、fork 元である上流の版数を並べて出す。
+    // アップグレードが反映されたかを画面から確認できるようにするため。
     admin_info_dom_append_section($dom, l('Version'),
-				  array(TORATORAWIKI_VERSION . ' (Revision: ' . $revision . ')'));
+				  array('NextForm ' . NEXTFORM_VERSION,
+					'ToraToraWiki ' . TORATORAWIKI_VERSION . ' (Revision: ' . $revision . ')'));
     
     admin_info_dom_append_section($dom, l('Page type'), array_keys($HANDLERS));
     

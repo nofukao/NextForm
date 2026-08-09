@@ -27,7 +27,7 @@ function analyze_writer_add() {
     $now = time();
     $life_limit_duration = 60 * 60 * 24 * ANALYZE_STORAGE_LIFE_DAYS;
     $life_limit_time = $now - $life_limit_duration;
-    $life_limit_date = strftime(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $life_limit_time);
+    $life_limit_date = nf_date(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $life_limit_time);
     while(!feof(STDIN)) {
 	$line = fgets(STDIN);
 	$fields = explode("\t", $line);
@@ -41,7 +41,7 @@ function analyze_writer_add() {
 	countup($counts[ANALYZE_PAGEVIEW_KEY_TOTAL]['allpages']);
 	countup($counts[ANALYZE_PAGEVIEW_KEY_TOTAL]['pages'][$pagename]);
 
-	$date = strftime(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $time);
+	$date = nf_date(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $time);
 	if($life_limit_date <= $date) {
 	    countup($counts[$date]['allpages']);
 	    countup($counts[$date]['pages'][$pagename]);

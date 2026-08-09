@@ -1,15 +1,26 @@
 <?php
-function eval_index_php($file_path) {
+/*
+ * $check_owner: index.php の所有者と実行ユーザーが一致することを要求するか。
+ *
+ * getmyuid() が返すのは実行プロセスの UID ではなく **スクリプトファイルの
+ * 所有者** なので、配布物を展開した場所の所有者に結果が左右される。
+ * app/tool/upgrade は root で実行して apache 所有のサイトを書き換えるため、
+ * この判定を外し、代わりに書き込み可否を自前で確認している。
+ * 既存のツールの挙動は変えない (既定は従来どおり要求する)。
+ */
+function eval_index_php($file_path, $check_owner = true) {
     $contents = file_get_contents($file_path);
     if($contents === false || $contents === '') {
 	printf("Can't open %s\n", $file_path);
 	exit(1);
     }
-    $owner = fileowner($file_path);
-    $you = getmyuid();
-    if($owner !== $you) {
-	printf("bad user. file owner id:%d  you:%d\n", $owner, $you);
-	exit(1);
+    if($check_owner) {
+	$owner = fileowner($file_path);
+	$you = getmyuid();
+	if($owner !== $you) {
+	    printf("bad user. file owner id:%d  you:%d\n", $owner, $you);
+	    exit(1);
+	}
     }
     if(!chdir(dirname($file_path))) {
 	printf("Can't chdir %s\n", dirname($file_path));

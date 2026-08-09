@@ -11,11 +11,6 @@ function args_get() {
 	if(is_string($val))
 	    $val = normalize_string($val);
     }
-    if(get_magic_quotes_gpc()) {
-	foreach($args as $key => &$val) {
-	    $val = stripslashes($val);
-	}
-    }
     return $args;
 }
 
@@ -66,7 +61,7 @@ function scalar_walk(&$v, $func, &$opt = null) {
     }
 }
 
-function order_compare(&$a, &$b) {
+function order_compare($a, $b) {
     if($a['order'] < $b['order'])
 	return -1;
     else if($a['order'] > $b['order'])
@@ -90,6 +85,8 @@ function decode_prefixed_number($val) {
     if($l < 1)
 	return $val;
     $last = strtolower($val[strlen($val)-1]);
+    if($last === 't' || $last === 'g' || $last === 'm' || $last === 'k')
+	$val = (int)substr($val, 0, -1);
 
     switch($last) {
     case 't':
@@ -262,7 +259,10 @@ function url_path_encode($pagename) {
 function url_make_query($h) {
     $records = array();
     foreach($h as $name => $value) {
-	$records[] = urlencode($name) . '='. urlencode($value);
+	// default_value() は参照渡しなので、未設定のキーを引くと $args に null を
+	// 作ってしまう。それがそのままクエリに流れてくる。
+	// urlencode(null) と urlencode('') の出力は同じなので変換して受ける。
+	$records[] = urlencode($name) . '='. urlencode($value === null ? '' : $value);
     }
     return implode('&', $records);
 }
@@ -401,12 +401,124 @@ function logical_conditions_eval($conditions, $values, $wildcard = false) {
     return true;
 }
 
+/*
+ * strftime() の互換ラッパー。
+ *
+ * strftime() は PHP 8.1 で非推奨、PHP 9 で削除される。TIME_FORMAT / DATE_FORMAT は
+ * 管理画面から変更できる strftime 形式の文字列なので、書式そのものは維持したまま
+ * date() で実装し直す。日付処理はこの 1 箇所に集約する。
+ *
+ * date() は strftime の素直な置き換えにならない。実測で確認した差異:
+ *   %j  strftime は 1 始まりの 3 桁。date('z') は 0 始まり (2015-05-20: 140 対 139)
+ *   %W  strftime は月曜始まりの週番号。date('W') は ISO-8601 で定義が違う (20 対 21)
+ * この 2 つは個別に計算する。
+ *
+ * 桁詰め抑制の %-X (glibc) と %#X (MSVC) にも対応する。app/language.inc の
+ * 日本語定義が '%Y年%-m月' / '%Y年%#m月' を OS で切り替えて使っている。
+ * なお glibc の strftime は %# を解さず '%#m' を 05 と出していたが、ここでは
+ * MSVC の意図どおり 5 にする。OS の strftime を呼ばなくなったので
+ * language.inc の OS 分岐はどちらの形でも同じ結果になる。
+ *
+ * 未知の指定子はそのまま出力する。setlocale() はこのアプリでは呼ばれないため、
+ * ロケール依存の %a %A %b %B %x %X は C ロケール相当 (英語) になる。これは
+ * strftime() 時代の挙動と同じ。
+ */
+function nf_date($format, $timestamp = null) {
+    if($timestamp === null)
+	$timestamp = time();
+    $output = '';
+    $length = strlen($format);
+    for($i = 0; $i < $length; $i++) {
+	if($format[$i] !== '%') {
+	    $output .= $format[$i];
+	    continue;
+	}
+	$i++;
+	if($i >= $length) {
+	    $output .= '%';
+	    break;
+	}
+	$nopad = false;
+	if($format[$i] === '-' || $format[$i] === '#') {
+	    $nopad = true;
+	    $i++;
+	    if($i >= $length) {
+		$output .= '%';
+		break;
+	    }
+	}
+	$output .= nf_date_specifier($format[$i], $timestamp, $nopad);
+    }
+    return $output;
+}
+
+function nf_date_specifier($specifier, $t, $nopad) {
+    switch($specifier) {
+    case 'a': return date('D', $t);
+    case 'A': return date('l', $t);
+    case 'b': case 'h': return date('M', $t);
+    case 'B': return date('F', $t);
+    case 'C': return nf_date_pad((int)((int)date('Y', $t) / 100), 2, $nopad);
+    case 'd': return date($nopad ? 'j' : 'd', $t);
+    case 'D': return date('m/d/y', $t);
+    case 'e': return $nopad ? date('j', $t) : sprintf('%2d', (int)date('j', $t));
+    case 'F': return date('Y-m-d', $t);
+    case 'g': return substr(date('o', $t), -2);
+    case 'G': return date('o', $t);
+    case 'H': return date($nopad ? 'G' : 'H', $t);
+    case 'I': return date($nopad ? 'g' : 'h', $t);
+    case 'j': return nf_date_pad((int)date('z', $t) + 1, 3, $nopad);
+    case 'k': return date('G', $t);
+    case 'l': return date('g', $t);
+    case 'm': return date($nopad ? 'n' : 'm', $t);
+    case 'M': return $nopad ? (string)(int)date('i', $t) : date('i', $t);
+    case 'n': return "\n";
+    case 'p': return date('A', $t);
+    case 'P': return date('a', $t);
+    case 'r': return date('h:i:s A', $t);
+    case 'R': return date('H:i', $t);
+    case 's': return date('U', $t);
+    case 'S': return $nopad ? (string)(int)date('s', $t) : date('s', $t);
+    case 't': return "\t";
+    case 'T': return date('H:i:s', $t);
+    case 'u': return date('N', $t);
+    case 'U': return nf_date_week_number($t, 0, $nopad);
+    case 'V': return date('W', $t);
+    case 'w': return date('w', $t);
+    case 'W': return nf_date_week_number($t, 1, $nopad);
+    case 'x': return date('Y-m-d', $t);
+    case 'X': return date('H:i:s', $t);
+    case 'y': return $nopad ? (string)(int)date('y', $t) : date('y', $t);
+    case 'Y': return date('Y', $t);
+    case 'z': return date('O', $t);
+    case 'Z': return date('T', $t);
+    case '%': return '%';
+    }
+    return '%' . $specifier;
+}
+
+function nf_date_pad($value, $width, $nopad) {
+    return $nopad ? (string)$value : sprintf('%0' . $width . 'd', $value);
+}
+
+/*
+ * %U (日曜始まり) と %W (月曜始まり) の週番号。
+ * date('W') は ISO-8601 週番号で定義が違うので使えない。
+ */
+function nf_date_week_number($t, $first_weekday, $nopad) {
+    $yday = (int)date('z', $t);
+    $wday = (int)date('w', $t);
+    if($first_weekday === 1)
+	$wday = ($wday + 6) % 7;
+    return nf_date_pad((int)(($yday + 7 - $wday) / 7), 2, $nopad);
+}
+
 function time_format($t, $type = 'time') {
     if($t == 'now')
 	return l('Now');
     if($type == 'date')
-	return strftime(DATE_FORMAT, $t);
-    return strftime(TIME_FORMAT, $t);
+	return nf_date(DATE_FORMAT, $t);
+    return nf_date(TIME_FORMAT, $t);
 }
 
 function time_xmlformat($time) {
@@ -428,7 +540,7 @@ function time_get_timezones() {
 define('DATEPAGE_REGEX', '\d{4}\-\d{2}\-\d{2}');
 
 function datepage_format($t) {
-    return strftime('%Y-%m-%d', $t);
+    return nf_date('%Y-%m-%d', $t);
 }
 
 function datepage_is_date($string) {
@@ -514,7 +626,9 @@ function ob_buffer_writer($buffer) {
 
 function ob_error_handler($str) {
     $error = error_get_last();
-    if ($error && $error["type"] == E_USER_ERROR || $error["type"] == E_ERROR) {
+    // && は || より強く結合するため、括弧が無いと null チェックが 2 つ目の条件に
+    // 掛からず、error_get_last() が null のときに $error["type"] を読んでしまう
+    if ($error && ($error["type"] == E_USER_ERROR || $error["type"] == E_ERROR)) {
 	return "$error[message] in $error[file] on line $error[line]\n";
     }
     return $str;
@@ -600,7 +714,7 @@ function run_queue($args, $dom, $show_options, &$queue,
     $elapsed = time() - $args['start_time'];
     dom_append_text(
 	$p, ' ' . lf('Elapsed time $time$',
-		     array('time' => strftime('%H:%M:%S', $elapsed - date('Z')))));
+		     array('time' => nf_date('%H:%M:%S', $elapsed - date('Z')))));
 
     if(!empty($args['done'])) {
 	if(!empty($finalizer))
@@ -650,7 +764,7 @@ if(DEBUG_MODE === 'true') {
 	$frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 	$frame = reset($frames);
 
-	$output = strftime(TIME_FORMAT) . ' ';
+	$output = nf_date(TIME_FORMAT) . ' ';
 	$output .= basename($frame['file']) .':'. $frame['line'] . ' ';
 	if(is_scalar($message)) {
 	    if(strpos($message, "\n") === false) {

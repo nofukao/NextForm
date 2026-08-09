@@ -482,7 +482,7 @@ function export_replace_template(&$output, &$page, $template_pagename, $template
 		    $time = $page['meta'][$name];
 		}
 		if($time != null)
-		    $replace_data[$match[0]] = $prefix . strftime($format, $time) . $suffix;
+		    $replace_data[$match[0]] = $prefix . nf_date($format, $time) . $suffix;
 		else
 		    $replace_data[$match[0]] = '';
 		break;

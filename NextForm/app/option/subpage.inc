@@ -5,13 +5,14 @@ $TOOLS['page']['subpage'] = array(
     );
 
 function subpage_tool(&$page, $dom) {
+    $pagename = empty($page) ? '' : $page['name'];
     if(page_get_type($page) != 'file') {
 	tools_add_link(
 	    $dom,
 	    array('name' => l('Subpage'),
 		  'disable' => empty($page),
 		  'seo_follow' => true,
-		  'uri' => url_make($page['name'], array('option' => 'subpage'))));
+		  'uri' => url_make($pagename, array('option' => 'subpage'))));
     }
 }
 

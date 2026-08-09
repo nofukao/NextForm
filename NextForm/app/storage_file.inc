@@ -528,16 +528,16 @@ function storage_page_find_sort(&$pages, $condition) {
     }
 }
 
-function storage_page_find_compare_mtime(&$a, &$b) {
+function storage_page_find_compare_mtime($a, $b) {
     return ($b['mtime'] - $a['mtime']);
 }
-function storage_page_find_compare_btime(&$a, &$b) {
+function storage_page_find_compare_btime($a, $b) {
     return default_value($b['meta']['btime'], 0) - default_value($a['meta']['btime'], 0);
 }
-function storage_page_find_compare_size(&$a, &$b) {
+function storage_page_find_compare_size($a, $b) {
     return ($b['contents_size'] - $a['contents_size']);
 }
-function storage_page_find_compare_pageview(&$a, &$b) {
+function storage_page_find_compare_pageview($a, $b) {
     return ($b['pageview'] - $a['pageview']);
 }
 

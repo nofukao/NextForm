@@ -181,10 +181,26 @@ pre.code li {
     margin-left: 12px;
 }
 pre {
+    /*
+     * 1 行がページ幅より長いとき、横スクロールではなく折り返して表示する。
+     * pre 要素の既定は white-space: pre で折り返さないため、長いコード行や
+     * URL がページからはみ出し、横スクロールバーでの移動が必要になっていた。
+     * overflow-wrap は空白の無い長い連続文字 (長い URL など) を途中で折る。
+     *
+     * TODO: 折り返すか横スクロールかを設定で選べるようにする
+     *       (docs/development/project-overview.md の v0.5 を参照)
+     */
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
     overflow: auto;
 }
 
 /* proportional ascii art */
+/* アスキーアートは折り返すと絵が崩れるので、従来どおり折り返さない */
+pre.paa {
+    white-space: pre;
+    overflow-wrap: normal;
+}
 pre.paa, pre.paa * {
     font-family: IPAMonaPGothic,'IPA モナー Pゴシック',Monapo,Mona,'MS PGothic','ＭＳ Ｐゴシック',sans-serif !important;
     font-size: 16px;

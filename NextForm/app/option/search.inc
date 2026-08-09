@@ -63,7 +63,7 @@ function search_show(&$args, $dom) {
 				     ));
 
 	if(!empty($args['top']) && !empty($search_results)) {
-	    list($pagename, $dummy) = each($search_results);
+	    $pagename = array_key_first($search_results);
 	    header('Location: ' . url_make($pagename, array('query' => $args['query'])));
 	    exit(0);
 	}

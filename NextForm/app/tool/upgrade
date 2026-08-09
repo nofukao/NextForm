@@ -1,0 +1,627 @@
+<?php
+/*
+ * 既存の ToraToraWiki / NextForm サイトを、この配布物の版へアップグレードする。
+ *
+ *   php NextForm/app/tool/upgrade /path/to/wiki/index.php [オプション]
+ *
+ *     --dry-run          何も書き換えず、やることだけ表示する
+ *     --yes  -y          確認を求めない
+ *     --backup-dir <dir> バックアップ先 (既定: サイトの隣に <名前>.backup-<日時>)
+ *     --full-backup      storage/ も含めてサイト全体をバックアップする
+ *     --no-backup        バックアップを取らない (非推奨)
+ *     --force            版数の判定を無視して強行する
+ *
+ * このツールが行うことは docs/upgrade-guide.md (配布物では UPGRADE.md) の
+ * 手動手順と 1 対 1 に対応している。片方だけ変えないこと。
+ *
+ * 方針:
+ *
+ *   - 利用者のものには触らない。
+ *     index.php (認証設定が入っている) / install-info.dat / storage/ は読まない。
+ *   - 消さない。
+ *     配布物に無いファイルが app/ にあっても削除せず、報告するだけにする。
+ *     利用者が置いたプラグインや独自テーマを巻き添えにしないため。
+ *   - 静的 CSS を必ず再生成する。
+ *     app/theme/ はソースで、theme/ が生成物。再生成しないと見た目の修正が
+ *     一切反映されない。手動手順で最も忘れられやすい工程なので自動で行う。
+ *   - 所有者とパーミッションを元に戻す。
+ *     root で実行すると新しいファイルが root 所有になり、web サーバから
+ *     読めなくなる。書き換える前に属性を控えておき、最後に復元する。
+ */
+
+$argv = $_SERVER['argv'];
+
+define('UPGRADE_TARGET_DIRS',  'app,resource');
+define('UPGRADE_TARGET_FILES', 'license.txt');
+
+/*
+ * 既定でバックアップするもの = このツールが書き換える範囲 + サイトの設定。
+ *
+ * storage/ (ページと添付ファイル) はこのツールが一切触らないのでコピーしない。
+ * 業務 wiki の実測では storage/ が 7.4 GB で、書き換える範囲は 2 MB だった。
+ * 触らないもののためにディスクを倍使い、数分間止まったように見え、
+ * 無関係な場所にある異物で失敗する — 割に合わない。
+ * サイト全体を控えたいときは --full-backup。
+ *
+ * theme/ は書き換えないが再生成するので入れる。
+ * index.php / install-info.dat / .htaccess も触らないが、失うと痛いうえに
+ * 数 KB しかないので入れておく。
+ */
+define('UPGRADE_BACKUP_DIRS',  'app,resource,theme');
+define('UPGRADE_BACKUP_FILES', 'license.txt,index.php,install-info.dat,.htaccess');
+
+function upgrade_usage() {
+    fprintf(STDERR, "Usage: php upgrade <path/to/wiki/index.php> [--dry-run] [--yes]\n");
+    fprintf(STDERR, "                   [--backup-dir <dir>] [--full-backup] [--no-backup]\n");
+    fprintf(STDERR, "                   [--force]\n");
+    exit(1);
+}
+
+function upgrade_out($format) {
+    $args = func_get_args();
+    array_shift($args);
+    vprintf($format . "\n", $args);
+}
+
+function upgrade_fatal($format) {
+    $args = func_get_args();
+    array_shift($args);
+    fprintf(STDERR, "エラー: " . vsprintf($format, $args) . "\n");
+    exit(1);
+}
+
+/* define('NAME', 'value') を実行せずに読む。対象サイトのコードは読み込まない。 */
+function upgrade_read_define($file_path, $name) {
+    $contents = @file_get_contents($file_path);
+    if($contents === false)
+	return null;
+    $pattern = '/define\s*\(\s*[\'"]' . preg_quote($name, '/') . '[\'"]\s*,\s*[\'"]([^\'"]*)[\'"]/';
+    if(!preg_match($pattern, $contents, $matches))
+	return null;
+    return $matches[1];
+}
+
+/* $dir 以下のファイルを相対パスで列挙する (ディレクトリ自体は含めない)。 */
+function upgrade_list_files($dir, $prefix = '') {
+    $result = array();
+    $entries = @scandir($dir);
+    if($entries === false)
+	return $result;
+    foreach($entries as $entry) {
+	if($entry === '.' || $entry === '..')
+	    continue;
+	$path = $dir . '/' . $entry;
+	$rel = ($prefix === '' ? $entry : $prefix . '/' . $entry);
+	if(is_dir($path) && !is_link($path))
+	    $result = array_merge($result, upgrade_list_files($path, $rel));
+	else
+	    $result[] = $rel;
+    }
+    return $result;
+}
+
+/* 書き換える前の所有者・パーミッションを控える。最後に復元するため。 */
+function upgrade_capture_attrs($path, $rel, &$attrs) {
+    if(!file_exists($path))
+	return;
+    $attrs[$rel] = array('uid'  => fileowner($path),
+			 'gid'  => filegroup($path),
+			 'mode' => fileperms($path) & 07777);
+    if(is_dir($path) && !is_link($path)) {
+	foreach(scandir($path) as $entry) {
+	    if($entry === '.' || $entry === '..')
+		continue;
+	    upgrade_capture_attrs($path . '/' . $entry, $rel . '/' . $entry, $attrs);
+	}
+    }
+}
+
+/*
+ * 控えておいた属性を戻す。控えに無いファイル (新しく置いたもの) は
+ * 親ディレクトリの所有者に合わせる。上から順に処理するので、親は必ず先に直る。
+ */
+function upgrade_restore_attrs($path, $rel, &$attrs, $uid, $gid) {
+    if(!file_exists($path))
+	return;
+    if(isset($attrs[$rel])) {
+	$uid = $attrs[$rel]['uid'];
+	$gid = $attrs[$rel]['gid'];
+	@chmod($path, $attrs[$rel]['mode']);
+    }
+    @chown($path, $uid);
+    @chgrp($path, $gid);
+    if(is_dir($path) && !is_link($path)) {
+	foreach(scandir($path) as $entry) {
+	    if($entry === '.' || $entry === '..')
+		continue;
+	    upgrade_restore_attrs($path . '/' . $entry, $rel . '/' . $entry, $attrs, $uid, $gid);
+	}
+    }
+}
+
+/*
+ * $src を $dst へ再帰コピーする。$dst にある余分なファイルは消さない。
+ * 失敗したら $error に「どのパスで何ができなかったか」を入れて false を返す。
+ *
+ * シンボリックリンクは **辿らずにリンクのまま複製する** (cp -a と同じ)。
+ * copy() はリンク先を読むので、辿ると次の 2 つの問題が起きる:
+ *
+ *   - リンク切れがあると copy() が失敗し、バックアップ全体が止まる。
+ *     実際、移行してきた業務 wiki のバックアップがこれで失敗した
+ *     (2026-08-09。サイト直下にサイト外を指す壊れたリンクが残っていた)
+ *   - サイトの外を指すリンクだと、外にある実体まで抱え込んでしまう
+ *
+ * パーミッション・更新時刻・所有者も引き継ぐ。バックアップから戻したときに
+ * 元どおりになる必要があるため。
+ */
+function upgrade_copy_tree($src, $dst, &$error = null) {
+    if(is_link($src)) {
+	$target = @readlink($src);
+	if($target === false) {
+	    $error = sprintf('リンクが読めません: %s', $src);
+	    return false;
+	}
+	if(is_link($dst) || file_exists($dst))
+	    @unlink($dst);
+	if(!@symlink($target, $dst)) {
+	    $error = sprintf('リンクを作れません: %s', $dst);
+	    return false;
+	}
+	@chown($dst, fileowner($src));   /* リンク自身の所有者 (lchown 相当) */
+	@chgrp($dst, filegroup($src));
+	return true;
+    }
+
+    if(is_dir($src)) {
+	if(!is_dir($dst) && !@mkdir($dst, 0755, true)) {
+	    $error = sprintf('ディレクトリを作れません: %s', $dst);
+	    return false;
+	}
+	$entries = @scandir($src);
+	if($entries === false) {
+	    $error = sprintf('ディレクトリを読めません: %s', $src);
+	    return false;
+	}
+	foreach($entries as $entry) {
+	    if($entry === '.' || $entry === '..')
+		continue;
+	    if(!upgrade_copy_tree($src . '/' . $entry, $dst . '/' . $entry, $error))
+		return false;
+	}
+	upgrade_copy_attrs($src, $dst);
+	return true;
+    }
+
+    if(!is_file($src)) {
+	/* ソケットや FIFO。wiki のデータではないので複製できない */
+	$error = sprintf('通常ファイルでもディレクトリでもないので複製できません: %s', $src);
+	return false;
+    }
+
+    if(!@copy($src, $dst)) {
+	$error = sprintf('コピーできません: %s', $src);
+	return false;
+    }
+    upgrade_copy_attrs($src, $dst);
+    return true;
+}
+
+function upgrade_copy_attrs($src, $dst) {
+    @chmod($dst, fileperms($src) & 07777);
+    @chown($dst, fileowner($src));
+    @chgrp($dst, filegroup($src));
+    @touch($dst, filemtime($src));
+}
+
+/* バックアップに必要な容量を見積もる。シンボリックリンクは実体を持たない。 */
+function upgrade_tree_size($path) {
+    if(is_link($path))
+	return 0;
+    if(is_file($path))
+	return (int)@filesize($path);
+    if(!is_dir($path))
+	return 0;
+    $total = 0;
+    $entries = @scandir($path);
+    if($entries === false)
+	return 0;
+    foreach($entries as $entry) {
+	if($entry === '.' || $entry === '..')
+	    continue;
+	$total += upgrade_tree_size($path . '/' . $entry);
+    }
+    return $total;
+}
+
+function upgrade_format_size($bytes) {
+    $units = array('B', 'KB', 'MB', 'GB', 'TB');
+    $i = 0;
+    while($bytes >= 1024 && $i < count($units) - 1) {
+	$bytes /= 1024;
+	$i++;
+    }
+    return sprintf($i === 0 ? '%d %s' : '%.1f %s', $bytes, $units[$i]);
+}
+
+function upgrade_remove_tree($path) {
+    if(!file_exists($path))
+	return true;
+    if(is_dir($path) && !is_link($path)) {
+	foreach(scandir($path) as $entry) {
+	    if($entry === '.' || $entry === '..')
+		continue;
+	    if(!upgrade_remove_tree($path . '/' . $entry))
+		return false;
+	}
+	return @rmdir($path);
+    }
+    return @unlink($path);
+}
+
+/* --- 引数 ---------------------------------------------------------------- */
+
+$up_index_path = null;
+$up_dry_run    = false;
+$up_do_backup   = true;
+$up_full_backup = false;
+$up_assume_yes = false;
+$up_force      = false;
+$up_backup_dir = null;
+
+for($i = 1; $i < count($argv); $i++) {
+    switch($argv[$i]) {
+    case '--dry-run':     $up_dry_run     = true; break;
+    case '--full-backup': $up_full_backup = true; break;
+    case '--no-backup':   $up_do_backup   = false; break;
+    case '--force':      $up_force      = true; break;
+    case '-y':
+    case '--yes':        $up_assume_yes = true; break;
+    case '--backup-dir':
+	if(!isset($argv[$i + 1]))
+	    upgrade_usage();
+	$up_backup_dir = $argv[++$i];
+	break;
+    case '-h':
+    case '--help':
+	upgrade_usage();
+	break;
+    default:
+	if($up_index_path !== null || substr($argv[$i], 0, 1) === '-')
+	    upgrade_usage();
+	$up_index_path = $argv[$i];
+    }
+}
+if($up_index_path === null)
+    upgrade_usage();
+
+/* --- 0. 事前確認 --------------------------------------------------------- */
+
+upgrade_out("NextForm アップグレード");
+upgrade_out("");
+
+$up_new_root = dirname(dirname(dirname(__FILE__)));   /* 展開した配布物のルート */
+
+$up_index_real = realpath($up_index_path);
+if($up_index_real === false || !is_file($up_index_real))
+    upgrade_fatal("index.php が見つかりません: %s", $up_index_path);
+$up_site = dirname($up_index_real);
+
+if($up_site === $up_new_root)
+    upgrade_fatal("配布物そのものを指しています。アップグレードしたいサイトの index.php を指定してください。");
+
+if(!is_file($up_site . '/app/main.inc') || !is_file($up_site . '/app/version.inc'))
+    upgrade_fatal("ToraToraWiki / NextForm のサイトに見えません: %s", $up_site);
+
+/* インストール済みか。未インストールの index.php は install.inc を読み込む。 */
+$up_index_src = file_get_contents($up_index_real);
+if(!preg_match('/<\?(php)?(.*)(require|include).*boot\.inc.*\;.*\?>/s', $up_index_src))
+    upgrade_fatal("まだインストールが済んでいません。\n" .
+		  "       先にブラウザでサイトを開き、インストールを完了させてください。");
+
+$up_old_version  = upgrade_read_define($up_site . '/app/version.inc', 'NEXTFORM_VERSION');
+$up_old_upstream = upgrade_read_define($up_site . '/app/version.inc', 'TORATORAWIKI_VERSION');
+$up_new_version  = upgrade_read_define($up_new_root . '/app/version.inc', 'NEXTFORM_VERSION');
+$up_new_upstream = upgrade_read_define($up_new_root . '/app/version.inc', 'TORATORAWIKI_VERSION');
+if($up_new_version === null)
+    upgrade_fatal("配布物が壊れています (NEXTFORM_VERSION が読めません): %s", $up_new_root);
+
+upgrade_out("  対象サイト    %s", $up_site);
+upgrade_out("  配布物        %s", $up_new_root);
+upgrade_out("  現在の版      %s",
+	    ($up_old_version === null
+	     ? sprintf("ToraToraWiki %s (NextForm 化されていません)", $up_old_upstream)
+	     : sprintf("NextForm %s", $up_old_version)));
+upgrade_out("  更新後の版    NextForm %s", $up_new_version);
+upgrade_out("  実行中の PHP  %s", PHP_VERSION);
+upgrade_out("");
+
+if($up_old_version === null && $up_old_upstream !== $up_new_upstream && !$up_force)
+    upgrade_fatal("NextForm は ToraToraWiki %s の fork ですが、対象は %s です。\n" .
+		  "       意図した操作なら --force を付けてください。",
+		  $up_new_upstream, $up_old_upstream);
+
+if($up_old_version !== null && version_compare($up_old_version, $up_new_version) >= 0 && !$up_force)
+    upgrade_fatal("対象はすでに NextForm %s です (配布物は %s)。することがありません。\n" .
+		  "       やり直したい場合は --force を付けてください。",
+		  $up_old_version, $up_new_version);
+
+if(!$up_dry_run) {
+    foreach(array($up_site, $up_site . '/app') as $up_path) {
+	if(!is_writable($up_path))
+	    upgrade_fatal("書き込めません: %s\n" .
+			  "       sudo など、書き込める権限で実行してください。", $up_path);
+    }
+}
+
+/* --- 1. 見覚えのないファイルの洗い出し ----------------------------------- */
+
+$up_new_files = array();
+$up_old_files = array();
+foreach(explode(',', UPGRADE_TARGET_DIRS) as $up_dir) {
+    foreach(upgrade_list_files($up_new_root . '/' . $up_dir) as $up_rel)
+	$up_new_files[$up_dir . '/' . $up_rel] = true;
+    foreach(upgrade_list_files($up_site . '/' . $up_dir) as $up_rel)
+	$up_old_files[] = $up_dir . '/' . $up_rel;
+}
+
+$up_extras = array();
+foreach($up_old_files as $up_rel) {
+    if(!isset($up_new_files[$up_rel]))
+	$up_extras[] = $up_rel;
+}
+sort($up_extras);
+
+upgrade_out("  置き換えるファイル    %d 件", count($up_new_files));
+if(count($up_extras) === 0) {
+    upgrade_out("  配布物に無いファイル  なし");
+} else {
+    upgrade_out("  配布物に無いファイル  %d 件 (削除せずそのまま残します)", count($up_extras));
+    foreach($up_extras as $up_rel)
+	upgrade_out("      %s", $up_rel);
+}
+upgrade_out("");
+
+/* .htaccess は利用者が書き換えていることがあるので触らない。差があれば知らせる。 */
+if(is_file($up_new_root . '/.htaccess') && is_file($up_site . '/.htaccess')
+   && md5_file($up_new_root . '/.htaccess') !== md5_file($up_site . '/.htaccess')) {
+    upgrade_out("  注意: .htaccess が配布物と異なります。独自に変更したものとみなし、そのまま残します。");
+    upgrade_out("");
+}
+
+/* --- 計画の表示 ---------------------------------------------------------- */
+
+$up_backup_path = null;
+if($up_do_backup) {
+    $up_backup_path = ($up_backup_dir !== null
+		       ? $up_backup_dir
+		       : $up_site . '.backup-' . date('Ymd-His'));
+}
+
+/*
+ * バックアップに入れるものを決める。既定は書き換える範囲 + 設定ファイルだけで、
+ * --full-backup ならサイト全体。$up_backup_items が空配列ならサイト全体を指す。
+ */
+$up_backup_items = array();
+if(!$up_full_backup) {
+    foreach(array_merge(explode(',', UPGRADE_BACKUP_DIRS),
+		        explode(',', UPGRADE_BACKUP_FILES)) as $up_item) {
+	if(file_exists($up_site . '/' . $up_item))
+	    $up_backup_items[] = $up_item;
+    }
+}
+
+/*
+ * 必要な容量を先に見ておく。コピーの途中でディスクが尽きると、作りかけの
+ * バックアップが残り、どこまで進んだのか分からなくなる。始める前に止める。
+ */
+$up_backup_size = 0;
+$up_backup_free = 0;
+if($up_backup_path !== null) {
+    if($up_full_backup) {
+	$up_backup_size = upgrade_tree_size($up_site);
+    } else {
+	foreach($up_backup_items as $up_item)
+	    $up_backup_size += upgrade_tree_size($up_site . '/' . $up_item);
+    }
+    $up_backup_free = (int)@disk_free_space(dirname($up_backup_path));
+}
+
+upgrade_out("  やること:");
+upgrade_out("    1. %s %s",
+	    ($up_full_backup ? "サイト全体をバックアップ" : "バックアップ"),
+	    ($up_backup_path === null ? "… しません (--no-backup)" : "→ " . $up_backup_path));
+if($up_backup_path !== null) {
+    if(!$up_full_backup) {
+	upgrade_out("       対象 %s", implode(' ', $up_backup_items));
+	upgrade_out("       storage/ は書き換えないのでコピーしません (全体を控えるなら --full-backup)");
+    }
+    upgrade_out("       必要 %s / 空き %s",
+		upgrade_format_size($up_backup_size), upgrade_format_size($up_backup_free));
+}
+upgrade_out("    2. %s を新しいものに置き換える (余分なファイルは残す)",
+	    str_replace(',', '/ ', UPGRADE_TARGET_DIRS) . '/ ' . str_replace(',', ' ', UPGRADE_TARGET_FILES));
+upgrade_out("    3. 静的テーマ (theme/) を再生成する");
+upgrade_out("    4. 所有者とパーミッションを元に戻す");
+upgrade_out("");
+upgrade_out("  触らないもの: index.php  install-info.dat  storage/  .htaccess");
+upgrade_out("");
+
+if($up_backup_path !== null && $up_backup_free > 0 && $up_backup_size >= $up_backup_free)
+    upgrade_fatal("バックアップ先の空き容量が足りません (必要 %s / 空き %s)。\n" .
+		  "       --backup-dir で別の場所を指定するか、別にバックアップを取ったうえで\n" .
+		  "       --no-backup を付けてください。",
+		  upgrade_format_size($up_backup_size), upgrade_format_size($up_backup_free));
+
+if($up_dry_run) {
+    upgrade_out("--dry-run のため、ここで終了します。何も書き換えていません。");
+    exit(0);
+}
+
+if(!$up_assume_yes) {
+    printf("続行しますか? [y/N] ");
+    $up_answer = trim((string)fgets(STDIN));
+    if($up_answer !== 'y' && $up_answer !== 'Y') {
+	upgrade_out("中止しました。何も書き換えていません。");
+	exit(1);
+    }
+    upgrade_out("");
+}
+
+/* --- 2. バックアップ ----------------------------------------------------- */
+
+if($up_backup_path !== null) {
+    printf("  1. バックアップ .. ");
+    if(file_exists($up_backup_path)) {
+	printf("\n");
+	upgrade_fatal("バックアップ先がすでにあります: %s", $up_backup_path);
+    }
+    $up_copy_error = null;
+    $up_backup_ok = true;
+    if($up_full_backup) {
+	$up_backup_ok = upgrade_copy_tree($up_site, $up_backup_path, $up_copy_error);
+    } else if(!@mkdir($up_backup_path, 0755, true)) {
+	$up_copy_error = sprintf('ディレクトリを作れません: %s', $up_backup_path);
+	$up_backup_ok = false;
+    } else {
+	upgrade_copy_attrs($up_site, $up_backup_path);
+	foreach($up_backup_items as $up_item) {
+	    if(!upgrade_copy_tree($up_site . '/' . $up_item,
+				  $up_backup_path . '/' . $up_item, $up_copy_error)) {
+		$up_backup_ok = false;
+		break;
+	    }
+	}
+    }
+    if(!$up_backup_ok) {
+	printf("failed\n");
+	upgrade_out("");
+	upgrade_out("  %s", (string)$up_copy_error);
+	upgrade_out("");
+	upgrade_out("  作りかけのバックアップを片付けます。サイトは書き換えていません。");
+	upgrade_remove_tree($up_backup_path);
+	upgrade_fatal("バックアップに失敗しました。");
+    }
+    printf("done  (%s)\n", $up_backup_path);
+} else {
+    upgrade_out("  1. バックアップ .. skip (--no-backup)");
+}
+
+/* --- 3. app/ resource/ の置き換え ---------------------------------------- */
+
+/* 書き換える前に属性を控える */
+$up_attrs = array();
+foreach(explode(',', UPGRADE_TARGET_DIRS) as $up_dir)
+    upgrade_capture_attrs($up_site . '/' . $up_dir, $up_dir, $up_attrs);
+foreach(explode(',', UPGRADE_TARGET_FILES) as $up_file)
+    upgrade_capture_attrs($up_site . '/' . $up_file, $up_file, $up_attrs);
+upgrade_capture_attrs($up_site . '/theme', 'theme', $up_attrs);
+
+$up_site_uid = fileowner($up_index_real);
+$up_site_gid = filegroup($up_index_real);
+
+printf("  2. コード更新 .. ");
+$up_failed = null;
+$up_copy_error = null;
+foreach(explode(',', UPGRADE_TARGET_DIRS) as $up_dir) {
+    if(!upgrade_copy_tree($up_new_root . '/' . $up_dir, $up_site . '/' . $up_dir, $up_copy_error)) {
+	$up_failed = $up_dir . '/';
+	break;
+    }
+}
+if($up_failed === null) {
+    foreach(explode(',', UPGRADE_TARGET_FILES) as $up_file) {
+	if(is_file($up_new_root . '/' . $up_file)
+	   && !@copy($up_new_root . '/' . $up_file, $up_site . '/' . $up_file)) {
+	    $up_failed = $up_file;
+	    break;
+	}
+    }
+}
+if($up_failed !== null) {
+    printf("failed\n");
+    upgrade_out("");
+    upgrade_out("  %s のコピーに失敗しました。", $up_failed);
+    if($up_copy_error !== null)
+	upgrade_out("  %s", $up_copy_error);
+    if($up_backup_path !== null)
+	upgrade_out("  バックアップから戻してください:\n" .
+		    "      rm -rf %s/app %s/resource\n" .
+		    "      cp -a %s/app %s/resource %s/",
+		    $up_site, $up_site, $up_backup_path, $up_backup_path, $up_site);
+    exit(1);
+}
+printf("done\n");
+
+/* --- 4. 静的テーマの再生成 ----------------------------------------------- */
+/*
+ * app/theme/<名前>/style/*.css は PHP テンプレートで、theme_convert() が
+ * theme/<名前>/style/main.css を生成する。ここを飛ばすと、コードだけ新しく
+ * 見た目が古いままという分かりにくい状態になる。
+ *
+ * ブートストラップには **更新後の** app/ を使う。所有者チェックは外す
+ * (app/tool/common のコメントを参照)。
+ */
+printf("  3. テーマ再生成 .. ");
+require_once($up_site . '/app/tool/common');
+eval_index_php($up_index_real, false);          /* ここでサイトのディレクトリへ chdir する */
+define('APP_DIR_PATH', $up_site . '/app');
+require_once(APP_DIR_PATH . '/main.inc');
+
+if(theme_convert(THEME)) {
+    printf("done  (%s)\n", THEME);
+} else {
+    printf("failed\n");
+    upgrade_out("");
+    upgrade_out("  テーマ [%s] の生成に失敗しました。コードの更新は済んでいます。", THEME);
+    upgrade_out("  管理画面の「テーマ設定」を開いて適用し直すか、次を実行してください:");
+    upgrade_out("      php %s/app/tool/update_wiki %s", $up_site, $up_index_real);
+    exit(1);
+}
+
+/* --- 5. 所有者とパーミッションの復元 ------------------------------------- */
+
+printf("  4. 所有者の復元 .. ");
+foreach(explode(',', UPGRADE_TARGET_DIRS) as $up_dir)
+    upgrade_restore_attrs($up_site . '/' . $up_dir, $up_dir, $up_attrs, $up_site_uid, $up_site_gid);
+foreach(explode(',', UPGRADE_TARGET_FILES) as $up_file)
+    upgrade_restore_attrs($up_site . '/' . $up_file, $up_file, $up_attrs, $up_site_uid, $up_site_gid);
+upgrade_restore_attrs($up_site . '/theme', 'theme', $up_attrs, $up_site_uid, $up_site_gid);
+printf("done\n");
+
+/* --- 6. 事後確認 --------------------------------------------------------- */
+
+$up_result = upgrade_read_define($up_site . '/app/version.inc', 'NEXTFORM_VERSION');
+if($up_result !== $up_new_version)
+    upgrade_fatal("更新後の版数が一致しません (期待 %s / 実際 %s)", $up_new_version, (string)$up_result);
+
+upgrade_out("");
+upgrade_out("完了しました。NextForm %s になりました。", $up_new_version);
+upgrade_out("");
+upgrade_out("  確認してください:");
+upgrade_out("    - ブラウザでサイトを開く");
+upgrade_out("    - ?option=admin_info の「バージョン」が NextForm %s になっている", $up_new_version);
+upgrade_out("    - 見た目が崩れていない (崩れていたらブラウザのキャッシュを消す)");
+if($up_backup_path !== null) {
+    upgrade_out("");
+    upgrade_out("  問題があれば戻せます:");
+    if($up_full_backup) {
+	upgrade_out("    rm -rf %s && mv %s %s", $up_site, $up_backup_path, $up_site);
+    } else {
+	/* 新しい版で増えたファイルが残らないよう、消してから戻す */
+	$up_restore_dirs = array();
+	foreach($up_backup_items as $up_item) {
+	    if(is_dir($up_backup_path . '/' . $up_item))
+		$up_restore_dirs[] = $up_site . '/' . $up_item;
+	}
+	if(count($up_restore_dirs) > 0)
+	    upgrade_out("    rm -rf %s", implode(' ', $up_restore_dirs));
+	upgrade_out("    cp -a %s %s/",
+		    implode(' ', array_map(function($i) use ($up_backup_path) {
+			return $up_backup_path . '/' . $i;
+		    }, $up_backup_items)), $up_site);
+    }
+    upgrade_out("");
+    upgrade_out("  問題がなければバックアップは消して構いません:");
+    upgrade_out("    rm -rf %s", $up_backup_path);
+}
+?>

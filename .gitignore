@@ -1,0 +1,23 @@
+# --- wiki の実行時生成データ (インスタンス固有。配布物にも含めない) ---
+NextForm/storage/
+NextForm/theme/
+NextForm/install-info.dat
+
+# --- 開発用 ---
+/vendor/
+/tmp/
+.phpunit.result.cache
+/coverage/
+tests/golden/actual/
+# テストの向け先 (環境ごとに違う。tests/env.local.example を複製して使う)
+tests/env.local
+
+# --- OS / エディタ ---
+.DS_Store
+*.swp
+*.bak
+.idea/
+.vscode/
+
+# 配布物 (make-dist.sh が生成)
+/NextForm.tar.gz

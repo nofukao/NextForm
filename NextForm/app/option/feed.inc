@@ -67,7 +67,7 @@ function feed_show(&$args, $dom) {
 	$url = $site_url . url_make($page['name']);
 	$title = dom_append_child($entry, 'link', '', array('href' => $url));
 
-	//$site_id = 'tag:' . $domain . ',' . strftime('%F', $page['mtime']) . ':' . $path . '/' . urlencode($page['name']);
+	//$site_id = 'tag:' . $domain . ',' . nf_date('%F', $page['mtime']) . ':' . $path . '/' . urlencode($page['name']);
 	$id = dom_append_child($entry, 'id');
 	dom_append_text($id, $url);
 

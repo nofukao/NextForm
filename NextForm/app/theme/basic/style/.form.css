@@ -66,8 +66,20 @@ a.button {
     padding-right: <?php echo(THEME_FORM_BASE_SPACING); ?>px;
     padding-left: <?php echo(THEME_FORM_BASE_SPACING); ?>px;
 }
+/*
+ * 編集画面のカーソルが行頭で見えなくなる問題 (Chrome)。
+ *
+ * 全称セレクタの reset (.base.css) が textarea の既定パディングを消すうえ、
+ * ここで編集用 textarea だけ padding: 0 に上書きしていた。パディングが 0 だと
+ * 行頭のキャレットが内容ボックスの左端ちょうどに描かれ、Chrome では
+ * 描画がクリップされて見えなくなる (Firefox では見える)。
+ * 左に余白を確保して、行頭でもキャレットが内側に入るようにする。
+ *
+ * width: 100% とはみ出さずに両立させるため、.function.css 側で
+ * box-sizing: border-box を指定してある。
+ */
 form.text_edit > textarea {
-    padding: 0;
+    padding: 0 0 0 <?php echo(THEME_FORM_BASE_SPACING * 2); ?>px;
 }
 table.calendar caption {
     padding: <?php echo(THEME_FORM_BASE_SPACING * 3); ?>px;

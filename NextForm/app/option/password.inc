@@ -33,7 +33,7 @@ function password_show(&$args, $dom) {
     if(isset($args['user']) && auth_is_valid_username($args['user']))
 	$target_username = $args['user'];
     else
-	$target_username = $user['name'];
+	$target_username = $user === false ? '' : $user['name'];
 
     $reminder_ticket = password_get_reminder_ticket($args);
     if(!password_has_change_permission($target_username) && !password_check_reminder_ticket($reminder_ticket)) {

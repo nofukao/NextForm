@@ -50,7 +50,7 @@ function admin_analyze_show(&$args, $dom) {
 	$th = dom_append_child($tr, 'th');
 	dom_append_text($th, $day[2]);
 	if($day[0] != ANALYZE_PAGEVIEW_DATE_TOTAL) {
-	    dom_set_attribute($th, 'title', strftime(DATE_FORMAT, $day[0]));
+	    dom_set_attribute($th, 'title', nf_date(DATE_FORMAT, $day[0]));
 	}
     }
     $tr = dom_append_child($thead, 'tr');

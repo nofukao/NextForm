@@ -5,10 +5,14 @@ $TOOLS['page']['history'] = array(
     );
 
 function history_tool(&$page, $dom) {
+    if(empty($page)) {
+	tools_add_link($dom, array('name' => l('History'), 'disable' => true));
+	return;
+    }
     tools_add_link(
 	$dom,
 	array('name' => l('History'),
-	      'disable' => empty($page) || count(page_get_backup_times($page)) < 1,
+	      'disable' => count(page_get_backup_times($page)) < 1,
 	      'uri' => url_make($page['name'], array('option' => 'history'))));
 }
 

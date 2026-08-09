@@ -5,13 +5,14 @@ $TOOLS['page']['summary'] = array(
     );
 
 function summary_tool(&$page, $dom) {
+    $pagename = empty($page) ? '' : $page['name'];
     tools_add_link(
 	$dom,
 	array('name' => l('Summary'),
 	      'class' => 'summary',
 	      'accesskey' => 'i',
 	      'disable' => empty($page),
-	      'uri' => url_make($page['name'], array('option' => 'summary'))));
+	      'uri' => url_make($pagename, array('option' => 'summary'))));
 }
 
 $OPTIONS['summary'] = array(

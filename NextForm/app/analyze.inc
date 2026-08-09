@@ -38,7 +38,7 @@ function analyze_pageview_get_keys($start, $end = 0) {
 	$keys[] = ANALYZE_PAGEVIEW_KEY_TOTAL;
     } else {
 	for($t = $start; $t < $end; $t += 60 * 60 * 24) {
-	    $keys[] = strftime(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $t);
+	    $keys[] = nf_date(ANALYZE_PAGEVIEW_KEY_DATE_FORMAT, $t);
 	}
     }
     return $keys;

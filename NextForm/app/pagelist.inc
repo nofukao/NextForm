@@ -331,7 +331,7 @@ function pagelist_apply_rules(&$pages, &$list_options, $args, &$placeholders) {
     $list_options['hidden_num'] = $hidden_num;
 }
 
-function pagelist_page_compare(&$a_page, &$b_page) {
+function pagelist_page_compare($a_page, $b_page) {
     global $pagelist_sort_rules;
     foreach($pagelist_sort_rules as &$sort) {
 	$order = $sort['order'] == 'asc' ? 1 : -1;
@@ -575,20 +575,20 @@ function pagelist_append_field($dom, &$page, $field, &$list_options) {
 		dom_set_attribute($tdom, 'title', $page['name']);
 	    break;
 	case 'mtime':
-	    dom_append_text($tdom, strftime(TIME_FORMAT, $page['terms']['mtime']['value']));
+	    dom_append_text($tdom, nf_date(TIME_FORMAT, $page['terms']['mtime']['value']));
 	    break;
 	case 'mdate':
-	    dom_append_text($tdom, strftime(DATE_FORMAT, $page['terms']['mtime']['value']));
+	    dom_append_text($tdom, nf_date(DATE_FORMAT, $page['terms']['mtime']['value']));
 	    break;
 	case 'btime':
 	    if(isset($page['terms']['btime']['value']))
-		dom_append_text($tdom, strftime(TIME_FORMAT, $page['terms']['btime']['value']));
+		dom_append_text($tdom, nf_date(TIME_FORMAT, $page['terms']['btime']['value']));
 	    else
 		dom_append_text($tdom, '');
 	    break;
 	case 'bdate':
 	    if(isset($page['terms']['btime']['value']))
-		dom_append_text($tdom, strftime(DATE_FORMAT, $page['terms']['btime']['value']));
+		dom_append_text($tdom, nf_date(DATE_FORMAT, $page['terms']['btime']['value']));
 	    else
 		dom_append_text($tdom, '');
 	    break;

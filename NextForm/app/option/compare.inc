@@ -5,7 +5,11 @@ $TOOLS['page']['compare'] = array(
     );
 
 function compare_tool(&$page, $dom) {
-    $tool = array('name' => l('Modification'), 'disable' => empty($page));
+    if(empty($page)) {
+	tools_add_link($dom, array('name' => l('Modification'), 'disable' => true));
+	return;
+    }
+    $tool = array('name' => l('Modification'), 'disable' => false);
     $backuptimes = page_get_backup_times($page);
     if(page_is_exists($page['name']) && !empty($backuptimes)) {
 	$backuptime = max($backuptimes);

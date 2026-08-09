@@ -86,11 +86,11 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 
     $start_time = $base_time - WIKI_CALENDAR_ONE_DAY * (7 * ($behind + 1) - 1);
     $end_time = $base_time + WIKI_CALENDAR_ONE_DAY * (7 * ($ahead + 1));
-    $base_month = strftime('%m', $base_time);
+    $base_month = nf_date('%m', $base_time);
 
     $weeks = array();
     $week = array();
-    $w = strftime('%w', $start_time);
+    $w = nf_date('%w', $start_time);
     for($t = $start_time; $t <= $end_time; $t += WIKI_CALENDAR_ONE_DAY, $w = ($w + 1) % 7) {
 	if($w == 0) {
 	    if(count($week) == 7) {
@@ -108,9 +108,9 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	}
 	$name = datepage_format($t);
 	$day = array('time' => $t,
-		     'day' => strftime('%d', $t),
-		     'month' => strftime('%m', $t),
-		     'year' => strftime('%Y', $t),
+		     'day' => nf_date('%d', $t),
+		     'month' => nf_date('%m', $t),
+		     'year' => nf_date('%Y', $t),
 		     'name' => $name,
 		     'pagename' => $basepagename . '/' . $name,
 	    );
@@ -216,8 +216,8 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		      'calendar_ahead' => $ahead);
 
     if($calendar_mode == 'weeks') {
-	$caption_text_start = strftime(l('%b %Y'), $weeks[0][0]['time']);
-	$caption_text_end = strftime(l('%b %Y'), $weeks[$weeks_num - 1][6]['time']);
+	$caption_text_start = nf_date(l('%b %Y'), $weeks[0][0]['time']);
+	$caption_text_end = nf_date(l('%b %Y'), $weeks[$weeks_num - 1][6]['time']);
 	if($caption_text_start == $caption_text_end)
 	    $caption_text = $caption_text_start;
 	else
@@ -239,8 +239,8 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	dom_append_class($a, 'button next');
 	dom_set_attribute($a, 'rel', 'nofollow');
     } else {
-	$caption_text = strftime(l('%b %Y'), $base_time);
-	$form_value = strftime('%Y-%m', $base_time);
+	$caption_text = nf_date(l('%b %Y'), $base_time);
+	$form_value = nf_date('%Y-%m', $base_time);
 
 	$blt = localtime($base_time, true);
 	$prev_time = mktime($blt['tm_hour'], $blt['tm_min'], $blt['tm_sec'],
@@ -376,7 +376,7 @@ function wiki_operator_calendar_get_dayinfos(&$dayrules, $year, $month, $day, $d
 
 	if($is_match) { 
 	    $weekofmonth = floor(($day - 1)/ 7) + 1;
-	    $daysofmonth = (int)strftime('%d', mktime(0, 0, 0, $month + 1, 0, $year));
+	    $daysofmonth = (int)nf_date('%d', mktime(0, 0, 0, $month + 1, 0, $year));
 	    $weekofmonth_rev = -(floor(($daysofmonth - $day) / 7) + 1);
 	    $is_match = 
 		(wiki_operator_calendar_pattern_match($pattern['weekofmonth'], $weekofmonth) ||
@@ -523,10 +523,10 @@ function wiki_operator_calendar_get_day_page_info_for_external_tool($basepagenam
     $dom = dom_create_document();
     wiki_convert($page, $dom);
     $time = strtotime($date);
-    $year = strftime('%Y', $time);
-    $month = strftime('%m', $time);
-    $day = strftime('%d', $time);
-    $d = strftime('%w', $time);
+    $year = nf_date('%Y', $time);
+    $month = nf_date('%m', $time);
+    $day = nf_date('%d', $time);
+    $d = nf_date('%w', $time);
 
     $dayinfos = wiki_operator_calendar_get_dayinfos(
 	$WIKI_CALENDAR_EXTERNAL_INFO['dayrules'], $year, $month, $day, $d);

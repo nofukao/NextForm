@@ -5,11 +5,12 @@ $TOOLS['page']['rename'] = array(
     );
 
 function rename_tool(&$page, $dom) {
+    $pagename = empty($page) ? '' : $page['name'];
     tools_add_link(
 	$dom,
 	array('name' => l('Rename'),
 	      'disable' => empty($page),
-	      'uri' => url_make($page['name'], array('option' => 'rename'))));
+	      'uri' => url_make($pagename, array('option' => 'rename'))));
 }
 
 $OPTIONS['rename'] = array(

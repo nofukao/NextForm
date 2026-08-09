@@ -188,6 +188,8 @@ form.text_edit > ul > li {
 
 form.text_edit > textarea {
     width: 100%;
+    /* .form.css で左パディングを入れるため、width: 100% と両立させる */
+    box-sizing: border-box;
     box-shadow: none;
     border: none;
     margin-bottom: 8px;

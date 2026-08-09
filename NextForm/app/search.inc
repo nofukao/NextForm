@@ -43,7 +43,7 @@ function search_builtin(&$query, $search_options = array()) {
     return $search_results;
 }
 
-function search_result_compare_score(&$result_a, &$result_b) {
+function search_result_compare_score($result_a, $result_b) {
     if($result_a['score'] > $result_b['score'])
 	return -1;
     if($result_a['score'] < $result_b['score'])
@@ -51,7 +51,7 @@ function search_result_compare_score(&$result_a, &$result_b) {
     return strcmp($result_a['pagename'], $result_b['pagename']);
 }
 
-function search_result_compare_mtime(&$result_a, &$result_b) {
+function search_result_compare_mtime($result_a, $result_b) {
     if($result_a['mtime'] > $result_b['mtime'])
 	return -1;
     if($result_a['mtime'] < $result_b['mtime'])
