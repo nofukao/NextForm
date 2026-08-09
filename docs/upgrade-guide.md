@@ -69,6 +69,10 @@ NextForm v0.1 は **PHP 8.3** で動作確認しています。
 
 **3. 配布物を展開する**
 
+[Releases](https://github.com/nofukao/NextForm/releases/latest) から
+`NextForm.tar.gz` をダウンロードします。GitHub が自動で付ける
+「Source code」ではなく、**添付されている `NextForm.tar.gz`** のほうです。
+
 ```bash
 tar xzf NextForm.tar.gz
 ```

@@ -23,7 +23,15 @@ NextForm にできます。
 
 ---
 
-## 2. 配置する
+## 2. 入手して配置する
+
+**[Releases](https://github.com/nofukao/NextForm/releases/latest) から
+`NextForm.tar.gz` をダウンロードします。**
+
+> ⚠️ GitHub が自動で付ける「Source code (zip / tar.gz)」ではありません。
+> あちらはリポジトリ全体で、開発用のファイルを含み、`UPGRADE.md` が入らず、
+> 展開先も `NextForm-<版数>/` になります。設置に使うのは、リリースに
+> **添付されている `NextForm.tar.gz`** のほうです。
 
 ```bash
 tar xzf NextForm.tar.gz

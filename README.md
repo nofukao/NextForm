@@ -73,6 +73,18 @@ PHP 8.3 で全画面を巡回すると **4,980 件**の警告・非推奨が出�
 
 ---
 
+## 入手
+
+**[Releases](https://github.com/nofukao/NextForm/releases/latest) から
+`NextForm.tar.gz` をダウンロードしてください。**
+
+> ⚠️ GitHub が自動で付ける「Source code (zip / tar.gz)」は**リポジトリ全体**です。
+> 開発用のファイル (`tests/` `deploy/` `docs/`) を含み、`UPGRADE.md` が入らず、
+> 展開先も `NextForm-0.2.0/` になるため、下の手順のままでは設置できません。
+> 設置に使うのは**リリースに添付されている `NextForm.tar.gz`** のほうです。
+
+---
+
 ## インストール
 
 配布物を展開して web サーバーに置き、ブラウザで開くだけです。
