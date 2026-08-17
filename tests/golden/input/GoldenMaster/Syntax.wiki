@@ -33,3 +33,19 @@ function example($argument) { return "test"; }
 **日本語の見出しとアンカー
 ***小見出し あいうえお
 本文テキスト。
+
+**リンク (&link)
+&link(http://example.com/);
+&link(https://example.com/a?b=c#d);
+&link(ftp://example.com/);
+&link(file://localhost/tmp/x);
+
+***URL の一部だけが一致する値はリンクにしない
+&link(abchttp://example.com/);
+&link(xxxhttps://example.com/);
+
+***本文中の URL は自動でリンクになる
+本文中の http://example.com/ です。
+
+***表示名つき
+[[表示>http://example.com/]]

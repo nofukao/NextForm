@@ -58,9 +58,24 @@ function wiki_operator_link(&$context, $dom, $tree) {
 	$wiki_operator_link_url_encode_replace_need_convert = true;
     }
 
+    /*
+     * 値の**全体**が URL のときだけ URL として扱う。
+     *
+     * WIKI_URI_REGEX はアンカーされていない。この定数は字句解析の
+     * トークン定義 (handler/wiki.inc) と、投稿に URL が含まれるかの検査
+     * (option/insert.inc) でも使われており、どちらも「文中のどこかに
+     * URL があるか」を見るものなので、**定数自体をアンカーしてはいけない**。
+     * ここは「この値は URL か」を判定する場所なので、この 1 箇所で挟む。
+     *
+     * 挟まないと、一致した部分ではなく値全体が href になる。
+     * &link(abchttp://example.com/); が href="abchttp://example.com/" に
+     * なっていた。javascript: は : がパラメータ解析で落ちるため実際には
+     * 注入できなかったが、スキームを組み立てられる形を残す理由が無い。
+     * 挟むことで、通るスキームは定数が並べている http/https/ftp/file だけになる。
+     */
     foreach($values as $value) {
 	$encoded_value = preg_replace_callback('/([\x7f-\xff]+)/', 'wiki_operator_link_url_encode_replace', $value);
-	if(preg_match('/' . WIKI_URI_REGEX . '/', $encoded_value)){
+	if(preg_match('/\A' . WIKI_URI_REGEX . '\z/', $encoded_value)){
 	    $uri = $encoded_value;
 	}
     }

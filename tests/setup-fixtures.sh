@@ -16,6 +16,13 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# 向け先と管理者名は tests/env.local に書く (他のテストと同じ)。
+# ここだけ読んでいなかったため、管理者名が admin 以外のサイトでは
+# 認証に失敗して 1 件も書けなかった。しかも下で既存ページを先に消すので、
+# フィクスチャが消えたままゴールデンマスターが落ちる状態になっていた。
+[[ -f "${REPO_ROOT}/tests/env.local" ]] && . "${REPO_ROOT}/tests/env.local"
+
 INDEX_PATH="${1:-/var/www/html/nextform/index.php}"
 
 if [[ ! -f "$INDEX_PATH" ]]; then
