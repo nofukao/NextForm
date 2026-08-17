@@ -253,6 +253,30 @@ rc=$?
 check_eq "やり直した後も問題なし (終了コード 0)" "0" "$rc"
 echo
 
+# 問い合わせ側だけが language_sanitize() を通っていて、索引側と照合側は
+# 通っていなかった。全角スペースを含むフレーズは索引の ngram と一致せず、
+# 本文に確かに書いてあっても必ず 0 件になる。
+echo "7. 全角スペースを含むフレーズが引けること"
+out=$(helper search-count "SearchIndexTest/Fullwidth" \
+      "* 全角スペース
+本文に 設定　方法 と書いてあります。" '"設定　方法"')
+check_eq "引用符付きのフレーズが 1 語として解釈される" "1" "$(value_of "$out" words)"
+check_eq "全角スペースのフレーズでページが引ける" "1" "$(value_of "$out" hits)"
+helper cleanup > /dev/null
+
+# 全角と半角を揃えた結果、どちらで書いても、どちらで問い合わせても引ける。
+out=$(helper search-count "SearchIndexTest/Halfwidth" \
+      "* 半角スペース
+本文に 設定 方法 と書いてあります。" '"設定 方法"')
+check_eq "半角スペースのフレーズも引ける" "1" "$(value_of "$out" hits)"
+
+out=$(helper search-count "SearchIndexTest/Fullwidth2" \
+      "* 全角スペース
+本文に 設定　方法 と書いてあります。" '"設定 方法"')
+check_eq "半角で問い合わせても全角で書いたページが引ける" "2" "$(value_of "$out" hits)"
+helper cleanup > /dev/null
+echo
+
 if [[ $fail -eq 0 ]]; then
     printf '%d/%d 件すべて通りました。\n' "$total" "$total"
 else

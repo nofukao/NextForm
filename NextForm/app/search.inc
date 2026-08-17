@@ -392,6 +392,32 @@ function search_page_texts(&$page) {
     $tags = tag_get_page_tags($page);
     if(!empty($tags))
 	$texts['tag'] = list_to_string($tags);
+
+    /*
+     * 全角スペースを問い合わせ側と揃える。
+     *
+     * search_parse_query() は language_sanitize() を通すのに、索引を作る側
+     * (search_page_ngram) と照合する側 (search_page_match) は通していなかった。
+     * そのため "設定　方法" のように全角スペースを挟んだフレーズは、本文に
+     * そのとおり書いてあっても ngram が一致せず、必ず 0 件になっていた。
+     *
+     * この関数の出力が索引側と照合側の両方の入力なので、ここで 1 度揃えれば
+     * 3 者が同じ文字列を見ることになる。
+     *
+     * 既にある索引は全角スペースのまま作られているため、この変更の効果が
+     * 出るのは再構築のあと。それまでは search_index_check --deep が
+     * ずれとして報告する。
+     */
+    foreach($texts as $key => &$value) {
+	if(is_array($value)) {
+	    foreach($value as &$text)
+		$text = language_sanitize($text);
+	    unset($text);
+	} else {
+	    $value = language_sanitize($value);
+	}
+    }
+    unset($value);
     return $texts;
 }
 

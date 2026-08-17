@@ -128,6 +128,25 @@ case 'rebuild':
     printf("finalized=%s\n", $limit < 0 ? 'yes' : 'no');
     break;
 
+/*
+ * ページを 1 件書いてから検索し、ヒット件数を出す。
+ *   search-count <ページ名> <本文> <問い合わせ>
+ * 索引ではなく検索の振る舞いを確かめるのに使う。
+ */
+case 'search-count':
+    if(!isset($argv[6])) {
+	fprintf(STDERR, "search-count needs a pagename, a body and a query\n");
+	exit(2);
+    }
+    if(!test_write($argv[4], $argv[5])) {
+	printf("hits=-1\n");
+	exit(1);
+    }
+    $query = search_parse_query($argv[6]);
+    printf("words=%d\n", count($query));
+    printf("hits=%d\n", count(search($query)));
+    break;
+
 /* 作りかけの索引ファイルが何個残っているか */
 case 'count-rebuild-files':
     printf("rebuild_files=%d\n",
