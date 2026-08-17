@@ -113,6 +113,12 @@ $LANGUAGE['ja'] = array(
     'Confliction detected.' => '編集の衝突が起きました．',
     'The search index could not be read. Rebuild it from the admin page.' =>
     '検索インデックスを読めませんでした．管理画面から再構築してください．',
+    'Installation' => '設置',
+    'not found' => '見つかりません',
+    'writable by the web server' => 'Web サーバーから書き込めます',
+    'not writable by the web server' => 'Web サーバーからは書き込めません',
+    'The web server can rewrite the program. See installation.md.' =>
+    'Web サーバーがプログラムを書き換えられる状態です．installation.md の「コードを Web サーバーに書かせない」を参照してください．',
     'Request rejected' => '要求を受け付けませんでした',
     '\'$action$\' must be sent by POST.' =>
     '$action$ は POST でしか受け付けません．',

@@ -124,13 +124,60 @@ sudo tail -50 /var/log/php-fpm/www-error.log
 
 ### `storage/` の公開について
 
-上流から引き継いだ既知の問題として、web サーバーの設定によっては
-`https://example.com/mywiki/storage/` のディレクトリ一覧が外から見えることが
-あります。個別のファイルは `.htaccess` で 403 になりますが、一覧そのものは
-`Options Indexes` が有効だと返ります。気になる場合は web サーバー側で
-`Options -Indexes` を設定してください。
+配布する `.htaccess` の先頭に `Options -Indexes` が入っています (v0.3.1 以降)。
+これが無いと `https://example.com/mywiki/storage/` のディレクトリ一覧が
+外から見えます。個別のファイルは以前から 403 ですが、**一覧が出ると
+どんなページが存在するかは分かってしまいます**。
 
-> この件は v0.4 のセキュリティ監査で、配布する `.htaccess` に対処を入れる予定です。
+設置したら一度確認してください。
+
+```bash
+curl -o /dev/null -w '%{http_code}\n' https://example.com/mywiki/storage/
+# 403 になれば止まっています
+```
+
+> **500 になる場合**、サーバーの `AllowOverride` が `Options` を許していません。
+> `.htaccess` からその行を消して、`httpd.conf` 側の該当 `<Directory>` に
+> `Options -Indexes` を書いてください。
+
+### コードを Web サーバーに書かせない
+
+インストーラは `index.php` を自分で書き換えて完了します。そのため多くの設置で、
+**プログラムのファイルが Web サーバーの利用者 (`apache` など) の持ち物**に
+なっています。この状態だと、ファイルを 1 つ書ける不具合が見つかっただけで
+任意のコードを実行されます。とくに `app/plugin/*.inc` は起動のたびに
+無条件で読み込まれるため、そこへ置かれると毎回走ります。
+
+いまどうなっているかは **`?option=admin_info` の「設置」**で分かります。
+
+```
+設置
+  index.php:    Web サーバーから書き込めます
+  app/:         Web サーバーから書き込めます
+  app/plugin/:  Web サーバーから書き込めます
+```
+
+気になる場合は、インストール完了後に**コードの所有者を Web サーバー以外に
+変えます**。`storage/` と `theme/` は Web サーバーが書けなければならないので、
+そこは残します。
+
+```bash
+cd /var/www/html/mywiki
+
+# コードは別の利用者のものにし、Web サーバーには読ませるだけにする
+sudo chown -R root:root index.php .htaccess license.txt app resource
+sudo chmod -R go-w      index.php .htaccess license.txt app resource
+
+# データと生成物は Web サーバーが書けるままにする
+sudo chown -R apache:apache storage theme install-info.dat
+```
+
+> **この設定にすると、アップグレードは `sudo` で実行することになります。**
+> `app/tool/upgrade` は `app/` `resource/` `theme/` を置き換えるためです。
+> 手順は `docs/upgrade-guide.md` を参照してください。
+>
+> `index.php` にはサイト独自の `define()` を書きます (`?option=admin_user` が
+> 出力する行など)。読み取り専用にすると、その編集にも `sudo` が要ります。
 
 ---
 

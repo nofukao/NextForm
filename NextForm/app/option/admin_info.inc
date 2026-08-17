@@ -18,6 +18,48 @@ function admin_info_dom_append_section($dom, $title, $list = false) {
     return $section;
 }
 
+/*
+ * 設置の点検。
+ *
+ * コードのディレクトリが Web サーバーから書けると、書き込み口が 1 つ
+ * 見つかっただけで任意のコードを実行される。とくに app/plugin/*.inc は
+ * main.inc が無条件に require するので、置かれたら毎回走る。
+ *
+ * ここを塞ぐ手段はコードには無い。アップグレードツールが app/ resource/
+ * theme/ を置き換える都合で、Web サーバーに所有させている設置が多い。
+ * 強制はせず、いまどうなっているかを見せるだけにする。
+ * 直し方は docs/installation.md の「コードを Web サーバーに書かせない」。
+ *
+ * is_writable() は PHP を動かしている利用者 (= Web サーバー) から見た
+ * 判定なので、そのまま知りたいことになる。
+ */
+function admin_info_installation() {
+    $targets = array(
+	'index.php'  => $_SERVER['SCRIPT_FILENAME'],
+	'app/'       => APP_DIR_PATH,
+	'app/plugin/'=> APP_DIR_PATH . '/plugin',
+	);
+
+    $list = array();
+    $is_writable = false;
+    foreach($targets as $label => $path) {
+	if(!file_exists($path)) {
+	    $list[] = $label . ': ' . l('not found');
+	    continue;
+	}
+	if(is_writable($path)) {
+	    $list[] = $label . ': ' . l('writable by the web server');
+	    $is_writable = true;
+	} else {
+	    $list[] = $label . ': ' . l('not writable by the web server');
+	}
+    }
+    if($is_writable)
+	$list[] = l('The web server can rewrite the program. See installation.md.');
+
+    return $list;
+}
+
 function admin_info_show(&$args, $dom) {
     global $HANDLERS;
     global $OPTIONS;
@@ -45,6 +87,8 @@ function admin_info_show(&$args, $dom) {
 				  array('NextForm ' . NEXTFORM_VERSION,
 					'ToraToraWiki ' . TORATORAWIKI_VERSION . ' (Revision: ' . $revision . ')'));
     
+    admin_info_dom_append_section($dom, l('Installation'), admin_info_installation());
+
     admin_info_dom_append_section($dom, l('Page type'), array_keys($HANDLERS));
     
     admin_info_dom_append_section($dom, l('Options'), array_keys($OPTIONS));
