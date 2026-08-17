@@ -77,6 +77,19 @@ set_const('BACKUP_SKIP_TIME_SECONDS', 15 * 60);
  */
 set_const('EXTERNAL_FETCH_TIMEOUT', 5);
 
+/*
+ * CSRF 対策を効かせるか。
+ *
+ * 'true' のとき、状態を変える action は POST かつ同一オリジンからのものだけ
+ * 受け付ける (app/csrf.inc)。判定は Origin、無ければ Referer のホスト部で行う。
+ *
+ * 切れるようにしてあるのは、ブラウザ以外から POST している運用
+ * (自作のスクリプトなど) を止めてしまう可能性があるため。
+ * **切ると罠サイトからページを消せる状態に戻る。** 切る前に、
+ * 呼び出し側に Origin ヘッダを付けられないかを先に検討すること。
+ */
+set_const('CSRF_PROTECTION', 'true');
+
 set_const('PAGE_FIND_CREATE_CACHE_TIME', 0.01);
 
 set_const('PAGE_FILE_IMAGE_RESIZE', 'max 640x640');
@@ -233,6 +246,7 @@ function setup_read($name) {
 |{THEME_URI|theme|THEME_DIR_PATHにアクセスするためのURL|}
 |{BACKUP_SKIP_TIME_SECONDS|15 * 60|この秒数以内の編集はバックアップをしない|}
 |{EXTERNAL_FETCH_TIMEOUT|5|外部のサーバーから取ってくるときの待ち時間の上限(秒)|}
+|{CSRF_PROTECTION|true|状態を変える操作をPOSTかつ同一オリジンからのものに限る(切ると罠サイトからページを消せる)|}
 |{PAGE_FIND_CREATE_CACHE_TIME|0.01|内部で使用するページの一覧取得処理でこの秒数以上かかった結果はキャッシュする|}
 |{PAGE_FILE_IMAGE_RESIZE|max 640x640|種別fileのページで画像を表示する際のサイズ|}
 |{PAGE_FILE_IMAGE_RESIZE_MAX_SIZE|1048576|メモリ保護のためこのバイト数以上の画像ファイルはリサイズ処理を行わない|}

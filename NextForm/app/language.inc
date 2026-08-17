@@ -113,6 +113,13 @@ $LANGUAGE['ja'] = array(
     'Confliction detected.' => '編集の衝突が起きました．',
     'The search index could not be read. Rebuild it from the admin page.' =>
     '検索インデックスを読めませんでした．管理画面から再構築してください．',
+    'Request rejected' => '要求を受け付けませんでした',
+    '\'$action$\' must be sent by POST.' =>
+    '$action$ は POST でしか受け付けません．',
+    'The request did not come from this site.' =>
+    'このサイトから送られた要求ではありません．',
+    'If you reached this page from a bookmark or a link, open the page and use the button on it.' =>
+    'ブックマークやリンクからここに来た場合は，対象のページを開いて，そのページ上のボタンから操作してください．',
 
     '($start$-$end$)' => '($start$〜$end$件目)',
     'Logging in may widen what you can search.' =>

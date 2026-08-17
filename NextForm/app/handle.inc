@@ -62,6 +62,14 @@ function handle(&$page, $dom, $action = '') {
 	$handler = &$HANDLERS[DEFAULT_PAGE_TYPE];
     else
 	$handler = &$HANDLERS[$type];
+    /*
+     * 状態を変える action は POST かつ同一オリジンのときだけ通す。
+     * ハンドラがその action を実装しているときだけ見る。実装が無ければ
+     * 下の default_value() が show に落とすので、状態は変わらない。
+     */
+    if(!empty($handler[$action]))
+	csrf_check($action);
+
     $handle_function = default_value($handler[$action], $handler['show']);
 
     if($action == 'show')

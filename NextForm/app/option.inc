@@ -18,6 +18,8 @@ function option(&$args, $action = '', &$is_continue = true) {
 
     $option = &$OPTIONS[$args['option']];
     if(!empty($option[$action])) {
+	/* 状態を変える action は POST かつ同一オリジンのときだけ通す */
+	csrf_check($action);
 	$dom = dom_create_document();
 	$is_continue = $option[$action]($args, $dom);
 	unset($args['action']);
