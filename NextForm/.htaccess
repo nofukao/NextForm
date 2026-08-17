@@ -1,3 +1,16 @@
+# ディレクトリの一覧を出さない。
+#
+# 下の設定は index.php / index.html 以外のファイルを拒否するが、
+# ディレクトリそのものへのアクセスは <Files "."> で許可されるため、
+# mod_autoindex が有効な環境では storage/page/ の一覧が外から見えてしまう。
+# 個別のファイルは拒否されるので中身は読めないが、どんなページが存在するかは
+# 分かってしまう。
+#
+# この行には AllowOverride に Options (または All) が要る。
+# サーバの設定がそれを許していないと 500 になるので、その場合はこの行を消して、
+# httpd.conf 側で Options -Indexes を設定すること。
+Options -Indexes
+
 <IfVersion >= 2.3>
   Require all denied
   <Files ".">

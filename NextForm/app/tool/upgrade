@@ -610,6 +610,25 @@ upgrade_out("");
 upgrade_out("  検索インデックスを再構築してください (0.3.0 では必須):");
 upgrade_out("    ?option=search_index を開いて「検索インデックスを再構築」を 1 回実行する");
 upgrade_out("    再構築が要るかどうかは同じ画面の「詳しく検査する」で確かめられます");
+
+/*
+ * .htaccess は利用者が独自に手を入れていることがあるので、このツールは
+ * 書き換えない (触らないもの一覧に入れてある)。0.3.1 で配布物に
+ * Options -Indexes を足したため、古い .htaccess のままのサイトでは
+ * storage/ の一覧が外から見えたままになる。検出して知らせるだけにする。
+ * docs/upgrade-guide.md の「ディレクトリ一覧を止める」と 1 対 1。
+ */
+$up_htaccess_path = $up_site . '/.htaccess';
+$up_htaccess = @file_get_contents($up_htaccess_path);
+if($up_htaccess !== false && strpos($up_htaccess, 'Options -Indexes') === false) {
+    upgrade_out("");
+    upgrade_out("  .htaccess に次の 1 行を足してください (0.3.1):");
+    upgrade_out("    Options -Indexes");
+    upgrade_out("    無いと storage/ のディレクトリ一覧が外から見えます (ページ名が分かります)");
+    upgrade_out("    このツールは .htaccess を書き換えません。追加後に 500 になる場合は、");
+    upgrade_out("    サーバの AllowOverride が Options を許していないので、その行を消して");
+    upgrade_out("    httpd.conf 側で Options -Indexes を設定してください");
+}
 if($up_backup_path !== null) {
     upgrade_out("");
     upgrade_out("  問題があれば戻せます:");
