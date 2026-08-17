@@ -48,7 +48,7 @@ function admin_user_client_show(&$args, $dom) {
 
     head_tags_add_javascript('resource/script/md5.js');
     $script = dom_append_child($dom, 'script', '', array('type' => 'text/javascript'));
-    $realm = AUTH_DIGEST_REALM;
+    $realm = auth_digest_realm();
     dom_append_text($script, <<<EOT
 var msg = $('admin_user_msg');
 msg.hide();

@@ -217,6 +217,16 @@ function install_admin($dom, $args) {
     if(auth_exists_admin($AUTH_PERMISSIONS))
 	return true;
 
+    /*
+     * パスワードを 1 つも作る前にサイト固有の realm を決める。
+     *
+     * 保存されるダイジェストは md5(利用者名:realm:パスワード) なので、
+     * あとから realm を変えると全部無効になる (auth.inc の説明を参照)。
+     * 決めてよいのはここだけ。上の早期 return により、管理者が既に
+     * パスワードを持っているサイトでは呼ばれない。
+     */
+    auth_realm_init();
+
     $user = auth_get_user();
     if($user !== false && $user['method'] === 'other') {
 	$INSTALL_INFO['admin_user'] = $user['name'];

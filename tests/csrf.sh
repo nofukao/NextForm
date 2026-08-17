@@ -243,7 +243,31 @@ check_eq "発行していない nonce では認証できない" "1" \
          "$(helper_rc digest-auth "ffffffffffffffffffffffffffffffff" 00000001)"
 echo
 
-echo "5. 拒否したときに PHP の警告を出さないこと"
+echo "5. ダイジェスト認証の realm"
+# 上流は 'User login' 固定で、全 NextForm サイトで同じ事前計算表が通用した。
+# サイトごとに違えばその表は作り直しになる。
+#
+# ただし realm を変えると保存済みのダイジェストは全部無効になる
+# (md5(利用者名:realm:パスワード) で作られており、認証時に平文は届かない
+#  ので作り直せない)。**既存サイトで変えると全利用者が締め出される。**
+# そのため決めるのはインストーラだけ。ここではその境目を固定する。
+check_eq "既定は上流と同じ 'User login'" "User login" \
+         "$(value_of "$(helper realm)" realm)"
+
+realm_new=$(value_of "$(helper realm-init)" realm)
+check_eq "インストーラが決めるとサイト固有になる" "yes" \
+         "$([[ "$realm_new" != "User login" && -n "$realm_new" ]] && echo yes || echo no)"
+check_eq "  決めたあとは同じ値が返る" "$realm_new" "$(value_of "$(helper realm)" realm)"
+check_eq "  2 回目の初期化では変わらない" "$realm_new" \
+         "$(value_of "$(helper realm-init)" realm)"
+
+# realm が変わっても認証そのものは同じように働く
+nonce3=$(value_of "$(helper nonce-issue)" nonce)
+check_eq "新しい realm でも認証できる" "csrftestuser" \
+         "$(value_of "$(helper digest-auth "$nonce3" 00000001)" user)"
+echo
+
+echo "6. 拒否したときに PHP の警告を出さないこと"
 before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 code -X POST -H "Origin: ${EVIL}" -d "option=delete" -d "action=write" \
      "${CSRF_TEST_URL}/?CsrfTest/Nothing" > /dev/null

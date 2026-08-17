@@ -1,6 +1,53 @@
 <?php
-define('AUTH_DIGEST_REALM', 'User login');
 define('AUTH_GUEST_USERNAME', '$default$');
+
+/*
+ * ダイジェスト認証の realm。
+ *
+ * 保存されるのは md5(利用者名:realm:パスワード) なので、realm が全サイト
+ * 共通だと**同じ事前計算表がどのサイトにも通用する**。上流は 'User login'
+ * 固定だった。サイトごとに違えば、その表は作り直しになる。
+ *
+ * ただし realm を変えると保存済みのダイジェストは全部無効になる。
+ * 認証のときに平文は届かないので、サーバー側で作り直す方法は原理的に無い。
+ * **既存サイトで変えると全利用者がログインできなくなり、管理者自身も
+ * 締め出される。** そのため、サイト固有の realm を決めるのは
+ * auth_realm_init() を呼ぶインストーラだけにしてある。
+ * 保存されていなければ上流と同じ 'User login' を使う = 既存サイトは変わらない。
+ */
+define('AUTH_DIGEST_REALM_DEFAULT', 'User login');
+define('AUTH_REALM_SETUP_NAME', 'auth_realm');
+
+$AUTH_DIGEST_REALM_CACHE = null;
+
+function auth_digest_realm() {
+    global $AUTH_DIGEST_REALM_CACHE;
+    if(!is_null($AUTH_DIGEST_REALM_CACHE))
+	return $AUTH_DIGEST_REALM_CACHE;
+    $realm = setup_read(AUTH_REALM_SETUP_NAME);
+    if($realm === false || $realm === '')
+	$realm = AUTH_DIGEST_REALM_DEFAULT;
+    return ($AUTH_DIGEST_REALM_CACHE = $realm);
+}
+
+/*
+ * サイト固有の realm を決める。**インストーラだけが呼ぶこと。**
+ *
+ * パスワードを 1 つも作る前に呼ばれる前提。既に決まっていれば何もしない。
+ * 保存に失敗したときも黙って既定値のまま進む (realm が保存できない状態で
+ * 決め打つと、次の要求で別の realm になりログインできなくなる)。
+ *
+ * realm はブラウザの認証ダイアログに出る。秘密である必要は無く、
+ * サイトごとに違えばよい。
+ */
+function auth_realm_init() {
+    global $AUTH_DIGEST_REALM_CACHE;
+    if(setup_read(AUTH_REALM_SETUP_NAME) !== false)
+	return;
+    $realm = 'NextForm (' . bin2hex(random_bytes(3)) . ')';
+    if(setup_write(AUTH_REALM_SETUP_NAME, $realm))
+	$AUTH_DIGEST_REALM_CACHE = $realm;
+}
 
 $AUTH_PRESET_PERMISSIONS = array(
     'admin'   => array('read' => true,  'insert' => true,  'write' => true,  'lock' => true,  'export' => true,  'admin' => true),
@@ -199,8 +246,8 @@ function auth_digest_get_user() {
 function auth_digest_auth($is_stale = false) {
     setcookie('logout', '');
     header('HTTP/1.1 401 Unauthorized');
-    header('WWW-Authenticate: Digest realm="' . AUTH_DIGEST_REALM .
-	   '",qop="auth",nonce="' . auth_nonce_create() . '",opaque="' . md5(AUTH_DIGEST_REALM) . '"' .
+    header('WWW-Authenticate: Digest realm="' . auth_digest_realm() .
+	   '",qop="auth",nonce="' . auth_nonce_create() . '",opaque="' . md5(auth_digest_realm()) . '"' .
 	   ($is_stale ? ',stale=true' : ''));
 
     /*

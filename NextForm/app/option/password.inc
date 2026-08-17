@@ -75,7 +75,7 @@ function password_show(&$args, $dom) {
     dom_append_text($button, l('Enter'));
 
     head_tags_add_javascript('resource/script/md5.js');
-    dom_append_text(head_tags_add_javascript(), "var AUTH_DIGEST_REALM='" . AUTH_DIGEST_REALM . "';");
+    dom_append_text(head_tags_add_javascript(), "var AUTH_DIGEST_REALM='" . auth_digest_realm() . "';");
     head_tags_add_javascript('resource/script/password.js');
 }
 
