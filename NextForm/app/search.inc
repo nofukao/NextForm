@@ -466,6 +466,16 @@ function search_page_match($pagename, $query) {
 	$texts[] = ' ';
     }
 
+    /*
+     * 本文からのスニペットは一致した回数だけ増える。1 ページに何十回も
+     * 一致すると、その数だけ結果に並ぶ。ページングを入れても 50 件で
+     * 547KB あったのはこれが理由なので、件数に上限を掛ける。
+     *
+     * 打ち切るのは**並べる分だけ**で、ループ自体は最後まで回す。
+     * $count はスコアの材料 (一致回数) で、途中で抜けると検索結果の
+     * 並び順が変わってしまう。
+     */
+    $body_snippet_num = 0;
     $texts_num = count($texts);
     $position = 0; 
     $positions = array();
@@ -488,7 +498,9 @@ function search_page_match($pagename, $query) {
 		    break;
 		$pre_snippet = $snippet;
 	    }
-	    $snippets[] = $snippet;
+	    if(SEARCH_SNIPPET_MAX <= 0 || $body_snippet_num < SEARCH_SNIPPET_MAX)
+		$snippets[] = $snippet;
+	    $body_snippet_num++;
 	    $i = $e;
 	}
     }
