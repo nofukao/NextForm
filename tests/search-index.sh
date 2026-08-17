@@ -221,6 +221,38 @@ rc=$?
 check_eq "修理後は --deep でも問題なし (終了コード 0)" "0" "$rc"
 echo
 
+# 再構築は「別名で作って最後に差し替える」方式。中断されても、それまでの
+# 索引がそのまま使われ続ける。先に全部消す方式だと、中断した時点で索引が
+# 空のまま残り、再構築する前より悪い状態になっていた。
+echo "6. 再構築が中断されても今の索引が生き残ること"
+helper rebuild > /dev/null
+out=$(helper count-rebuild-files)
+index_before=$(value_of "$out" index_files)
+check_eq "再構築後に作りかけのファイルが残らない" "0" "$(value_of "$out" rebuild_files)"
+
+out=$(helper rebuild 3)
+check_eq "3 件だけ処理して中断した" "no" "$(value_of "$out" finalized)"
+out=$(helper count-rebuild-files)
+check_eq "作りかけのファイルができている" "yes" \
+         "$([[ "$(value_of "$out" rebuild_files)" -gt 0 ]] && echo yes || echo no)"
+check_eq "使われている索引は減っていない" "$index_before" "$(value_of "$out" index_files)"
+
+out=$(cd "$SEARCH_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+      app/tool/search_index_check "${SEARCH_TEST_SITE}/index.php" \
+      --deep --user "$WIKI_ADMIN" 2>/dev/null)
+rc=$?
+check_eq "中断された直後でも検索は正常なまま (終了コード 0)" "0" "$rc"
+
+helper rebuild > /dev/null
+out=$(helper count-rebuild-files)
+check_eq "やり直せば作りかけは片付く" "0" "$(value_of "$out" rebuild_files)"
+out=$(cd "$SEARCH_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+      app/tool/search_index_check "${SEARCH_TEST_SITE}/index.php" \
+      --deep --user "$WIKI_ADMIN" 2>/dev/null)
+rc=$?
+check_eq "やり直した後も問題なし (終了コード 0)" "0" "$rc"
+echo
+
 if [[ $fail -eq 0 ]]; then
     printf '%d/%d 件すべて通りました。\n' "$total" "$total"
 else

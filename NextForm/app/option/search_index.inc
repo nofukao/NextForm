@@ -151,10 +151,16 @@ function search_index_write(&$args, $dom) {
 }
 
 function search_index_initializer($args, $dom, &$alltags) {
-    if(SEARCH_ENGINE === 'builtin')
-	cache_delete('', SEARCH_INDEX_KEY_PREFIX);
-    else
+    if(SEARCH_ENGINE === 'builtin') {
+	/*
+	 * 使われている索引には触らない。再構築が中断されても、それまでの
+	 * 索引がそのまま使われ続けるようにするため。片付けるのは、前回の
+	 * 再構築が最後まで行かずに残していった作りかけのファイルだけ。
+	 */
+	cache_delete('', SEARCH_INDEX_REBUILD_KEY_PREFIX);
+    } else {
 	search_engine_index_clear();
+    }
     $alltags = array();
     tag_alltags_set($alltags);
     return true;
@@ -170,12 +176,15 @@ function search_index_processor($args, $dom, &$alltags, &$queue_page) {
 	    $alltags[$tag] = 1;
     }
     if(SEARCH_ENGINE === 'builtin')
-	search_page_index_add($page);
+	search_page_index_add($page, SEARCH_INDEX_REBUILD_KEY_PREFIX);
     else
 	search_engine_index_update($page);
 }
 
 function search_index_finalizer($args, $dom, &$alltags) {
+    /* ここで初めて、作り終えた索引を使われている索引と入れ替える */
+    if(SEARCH_ENGINE === 'builtin')
+	search_index_rebuild_swap();
     $p = dom_append_child($dom, 'p');
     dom_append_text($p, l('Done.'));
     $p = dom_append_child($dom, 'p');

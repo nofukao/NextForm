@@ -5,7 +5,8 @@
  *   php search-index-helper.php <index.php> <管理者ユーザー名> <検査名>
  *
  * 検査名:
- *   rebuild           索引を作り直す (複製元のずれを持ち込まないための下ごしらえ)
+ *   rebuild [件数]    索引を作り直す。件数を渡すとそこで中断する (finalizer を呼ばない)
+ *   count-rebuild-files  作りかけの索引ファイルの数
  *   edit-consistency  編集を繰り返しても索引が本文と一致し続けるか
  *   delete-residue    削除したページが索引から完全に消えるか
  *   corrupt-bucket    索引ファイルを 1 つ壊す (破損時の挙動を見るための準備)
@@ -103,17 +104,36 @@ function bucket_pagenames($cachekey) {
 
 switch($check) {
 
-/* option/search_index.inc の再構築と同じ手順 (全消し → 全ページを入れ直す) */
+/*
+ * 管理画面の再構築を、run_queue を挟まずにそのまま実行する。
+ * 第 4 引数に件数を渡すと、そこまで処理して finalizer を呼ばずに終える。
+ * ブラウザが途中で離脱して再構築が中断された状態を作るのに使う。
+ */
 case 'rebuild':
-    cache_delete('', SEARCH_INDEX_KEY_PREFIX);
+    $rebuild_args = array();
+    $rebuild_dom = dom_create_document();
+    $alltags = array();
+    $limit = isset($argv[4]) ? (int)$argv[4] : -1;
+    search_index_initializer($rebuild_args, $rebuild_dom, $alltags);
     $indexed = 0;
     foreach(page_find('', array('is_pagename_only' => true)) as $found) {
-	/* search_page_index_add() は参照を取るので、変数に受けてから渡す */
-	$page = page_read($found['name']);
-	search_page_index_add($page);
+	if($limit >= 0 && $indexed >= $limit)
+	    break;
+	search_index_processor($rebuild_args, $rebuild_dom, $alltags, $found);
 	$indexed++;
     }
+    if($limit < 0)
+	search_index_finalizer($rebuild_args, $rebuild_dom, $alltags);
     printf("indexed=%d\n", $indexed);
+    printf("finalized=%s\n", $limit < 0 ? 'yes' : 'no');
+    break;
+
+/* 作りかけの索引ファイルが何個残っているか */
+case 'count-rebuild-files':
+    printf("rebuild_files=%d\n",
+	   count(cache_get_keys_prefix('', SEARCH_INDEX_REBUILD_KEY_PREFIX)));
+    printf("index_files=%d\n",
+	   count(cache_get_keys_prefix('', SEARCH_INDEX_KEY_PREFIX)));
     break;
 
 /*

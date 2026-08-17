@@ -135,10 +135,10 @@ function search_page_ngram(&$page) {
     return search_texts_to_ngrams($texts);
 }
 
-function search_page_index_add(&$page) {
+function search_page_index_add(&$page, $key_prefix = SEARCH_INDEX_KEY_PREFIX) {
     //auth_check(false, 'admin');
     $ngrams = search_page_ngram($page);
-    search_index_add($page['name'], $ngrams);
+    search_index_add($page['name'], $ngrams, $key_prefix);
 }
 
 /*
@@ -179,11 +179,11 @@ function search_index_warn_broken($cachekey) {
     message_error(l('The search index could not be read. Rebuild it from the admin page.'));
 }
 
-function search_index_add($pagename, &$ngrams) {
+function search_index_add($pagename, &$ngrams, $key_prefix = SEARCH_INDEX_KEY_PREFIX) {
     $group = array();
     search_ngrams_group_by_key($ngrams, $group);
     foreach($group as $key => &$ngrams) {
-	$cachekey = SEARCH_INDEX_KEY_PREFIX . $key;
+	$cachekey = $key_prefix . $key;
 	if(!search_index_read($cachekey, $index)) {
 	    search_index_warn_broken($cachekey);
 	    continue;
@@ -216,6 +216,35 @@ function search_index_update($pagename, &$old_ngrams, &$new_ngrams) {
     $add_ngrams = array_diff_assoc($new_ngrams, $old_ngrams);
     search_index_add($pagename, $add_ngrams);
     search_index_remove($pagename, $remove_ngrams);
+}
+
+/*
+ * 再構築で作った索引を、使われている索引と入れ替える。
+ *
+ * rename(2) は置き換えなので、入れ替えの途中で索引が空になる瞬間が無い。
+ * 先に全部消してから作り直すやり方だと、再構築が中断された時点で
+ * 索引が空のまま残り、何もしなかった場合より悪い状態になっていた。
+ *
+ * 今回の再構築で 1 件も入らなかった古いファイル (収録していた語がすべて
+ * ページから消えた場合) は、入れ替えの後で消す。ただし 1 つも入れ替えて
+ * いないときは何もしない。再構築が空振りしただけの状況で、生きている
+ * 索引を消してしまわないため。
+ */
+function search_index_rebuild_swap() {
+    $swapped = array();
+    foreach(cache_get_keys_prefix('', SEARCH_INDEX_REBUILD_KEY_PREFIX) as $cachekey) {
+	$to_cachekey = SEARCH_INDEX_KEY_PREFIX .
+	    substr($cachekey, strlen(SEARCH_INDEX_REBUILD_KEY_PREFIX));
+	if(cache_rename('', $cachekey, $to_cachekey))
+	    $swapped[$to_cachekey] = true;
+    }
+    if(empty($swapped))
+	return 0;
+
+    foreach(cache_get_keys_prefix('', SEARCH_INDEX_KEY_PREFIX) as $cachekey)
+	if(!isset($swapped[$cachekey]))
+	    cache_delete('', $cachekey);
+    return count($swapped);
 }
 
 /*
