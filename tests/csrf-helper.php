@@ -12,6 +12,10 @@
  *   is-locked <名前>        ページがロックされているか (locked=1/0)
  *   cleanup                 このヘルパが作ったページを消す
  *
+ *   nonce-issue             nonce を 1 つ発行する (nonce=...)
+ *   nonce-check <nonce> <nc>  nonce の検証結果 (result=ok|stale|invalid)
+ *   digest-auth <nonce> <nc>  組み立てた Authorization で認証できるか (user=名前|false)
+ *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
  * 権限を書き換えるので、必ず複製したサイトに対して実行すること。
@@ -37,6 +41,9 @@ $GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $admin, 'method' => 'digest');
 head_tags_init();
 
 define('TEST_PAGE_PREFIX', 'CsrfTest');
+
+/* このヘルパ用の利用者。パスワードは実行のたびに作る (リポジトリには入らない) */
+define('TEST_DIGEST_USER', 'csrftestuser');
 
 function test_write($pagename, $contents) {
     $page = page_create($pagename);
@@ -90,6 +97,44 @@ case 'cleanup':
             $removed++;
     }
     printf("removed=%d\n", $removed);
+    break;
+
+case 'nonce-issue':
+    printf("nonce=%s\n", auth_nonce_create());
+    break;
+
+case 'nonce-check':
+    printf("result=%s\n", auth_nonce_check($rest[0], $rest[1]));
+    break;
+
+case 'digest-auth':
+    /*
+     * ブラウザが作るのと同じ Authorization ヘッダを組み立てて、
+     * auth_digest_get_user() が通すかどうかを見る。
+     * パスワードはここで作って捨てる。
+     */
+    $password = bin2hex(random_bytes(8));
+    setup_write('auth_digest_' . TEST_DIGEST_USER,
+                md5(TEST_DIGEST_USER . ':' . AUTH_DIGEST_REALM . ':' . $password));
+
+    $nonce  = $rest[0];
+    $nc     = $rest[1];
+    $cnonce = 'abcdef0123456789';
+    $qop    = 'auth';
+    $uri    = '/';
+
+    $a1 = md5(TEST_DIGEST_USER . ':' . AUTH_DIGEST_REALM . ':' . $password);
+    $a2 = md5('GET:' . $uri);
+    $response = md5($a1 . ':' . $nonce . ':' . $nc . ':' . $cnonce . ':' . $qop . ':' . $a2);
+
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    $_SERVER['PHP_AUTH_DIGEST'] = sprintf(
+        'username="%s", realm="%s", nonce="%s", uri="%s", qop=%s, nc=%s, cnonce="%s", response="%s"',
+        TEST_DIGEST_USER, AUTH_DIGEST_REALM, $nonce, $uri, $qop, $nc, $cnonce, $response);
+
+    $GLOBALS['AUTH_GET_USER_CACHE'] = null;
+    $user = auth_digest_get_user();
+    printf("user=%s\n", $user === false ? 'false' : $user['name']);
     break;
 
 default:

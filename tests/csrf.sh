@@ -1,5 +1,5 @@
 #!/bin/bash
-# CSRF 対策のテスト
+# CSRF 対策とダイジェスト認証の nonce 検証のテスト
 #
 #   ./tests/csrf.sh
 #
@@ -17,11 +17,12 @@
 # 開くだけで成立する。<img src="…?ページ名&option=delete&action=write">
 # を貼るだけでページが消える状態だった。
 #
-# ここで固定するのは次の 3 つ:
+# ここで固定するのは次の 4 つ:
 #
 #   1. 読み取りは GET のまま通ること (退行防止。ここが壊れると wiki が使えない)
 #   2. GET では状態が変わらないこと
 #   3. POST は同一オリジンからのものだけ通ること
+#   4. ダイジェスト認証の nonce が使い回せないこと
 #
 # 資格情報をテストに置かずに済ませるため、複製したサイトの
 # 「ログインしていない利用者」に write 権限を与えてから検査する。
@@ -68,6 +69,12 @@ helper() {
     sudo -u "$SITE_OWNER" php -d memory_limit=512M \
         "${CSRF_TEST_SITE}/csrf-helper.php" \
         "${CSRF_TEST_SITE}/index.php" "$WIKI_ADMIN" "$@" 2>/dev/null
+}
+
+# ヘルパの終了コードだけが欲しいとき
+helper_rc() {
+    helper "$@" > /dev/null 2>&1
+    echo $?
 }
 
 value_of() {
@@ -200,7 +207,43 @@ check_eq "正しい Origin なら削除も通る" "0" \
 helper cleanup > /dev/null
 echo
 
-echo "4. 拒否したときに PHP の警告を出さないこと"
+echo "4. ダイジェスト認証の nonce が使い回せないこと"
+nonce=$(value_of "$(helper nonce-issue)" nonce)
+check_eq "nonce が発行される" "yes" \
+         "$([[ -n "$nonce" ]] && echo yes || echo no)"
+check_eq "nonce が推測しにくい長さである" "yes" \
+         "$([[ ${#nonce} -ge 32 ]] && echo yes || echo no)"
+
+# 発行のたびに別のものでなければならない。
+# 時刻だけから作っていたときは、同じ秒に 401 を受けた 2 つのクライアントが
+# 同じ nonce を共有し、片方が使った nc をもう片方が「戻っている」と
+# 判定されて弾かれた。ブラウザは stale を受けて再挑戦するので、
+# 同じ秒に人が 2 人来ただけで永久に認証できなくなる。
+nonce_a=$(value_of "$(helper nonce-issue)" nonce)
+nonce_b=$(value_of "$(helper nonce-issue)" nonce)
+check_eq "続けて発行した nonce が重ならない" "yes" \
+         "$([[ "$nonce_a" != "$nonce_b" ]] && echo yes || echo no)"
+check_eq "一方を使っても他方の nc に響かない" "ok" \
+         "$(helper nonce-check "$nonce_a" 00000001 > /dev/null; \
+            value_of "$(helper nonce-check "$nonce_b" 00000001)" result)"
+
+check_eq "発行した nonce は通る"           "ok"      "$(value_of "$(helper nonce-check "$nonce" 00000001)" result)"
+check_eq "同じ nc の再送は通らない"        "stale"   "$(value_of "$(helper nonce-check "$nonce" 00000001)" result)"
+check_eq "戻った nc も通らない"            "stale"   "$(value_of "$(helper nonce-check "$nonce" 00000000)" result)"
+check_eq "進んだ nc は通る"                "ok"      "$(value_of "$(helper nonce-check "$nonce" 00000002)" result)"
+check_eq "発行していない nonce は通らない" "stale"   \
+         "$(value_of "$(helper nonce-check "ffffffffffffffffffffffffffffffff" 00000001)" result)"
+
+# 応答が正しくても nonce が通らなければ認証は成立しない。
+nonce2=$(value_of "$(helper nonce-issue)" nonce)
+check_eq "正しい応答 + 発行済み nonce は認証できる" "csrftestuser" \
+         "$(value_of "$(helper digest-auth "$nonce2" 00000001)" user)"
+check_eq "同じヘッダの再送は認証できない" "1" "$(helper_rc digest-auth "$nonce2" 00000001)"
+check_eq "発行していない nonce では認証できない" "1" \
+         "$(helper_rc digest-auth "ffffffffffffffffffffffffffffffff" 00000001)"
+echo
+
+echo "5. 拒否したときに PHP の警告を出さないこと"
 before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 code -X POST -H "Origin: ${EVIL}" -d "option=delete" -d "action=write" \
      "${CSRF_TEST_URL}/?CsrfTest/Nothing" > /dev/null
