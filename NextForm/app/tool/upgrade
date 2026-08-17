@@ -601,6 +601,15 @@ upgrade_out("  確認してください:");
 upgrade_out("    - ブラウザでサイトを開く");
 upgrade_out("    - ?option=admin_info の「バージョン」が NextForm %s になっている", $up_new_version);
 upgrade_out("    - 見た目が崩れていない (崩れていたらブラウザのキャッシュを消す)");
+/*
+ * 0.3.0 で本文から検索語を切り出すやり方が変わったため、既存のインデックスは
+ * 古い形式のままになる。放っておくと一部の語が検索に出てこない。
+ * docs/upgrade-guide.md の「検索インデックスを再構築する」と 1 対 1。
+ */
+upgrade_out("");
+upgrade_out("  検索インデックスを再構築してください (0.3.0 では必須):");
+upgrade_out("    ?option=search_index を開いて「検索インデックスを再構築」を 1 回実行する");
+upgrade_out("    再構築が要るかどうかは同じ画面の「詳しく検査する」で確かめられます");
 if($up_backup_path !== null) {
     upgrade_out("");
     upgrade_out("  問題があれば戻せます:");
