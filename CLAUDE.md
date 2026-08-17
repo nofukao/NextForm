@@ -57,6 +57,7 @@
 ./tests/upgrade.sh          # tora2 の複製に対してアップグレードを実走 (要 sudo)
 ./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
 ./tests/csrf.sh             # CSRF 対策 (複製サイトを作る。要 sudo)
+./tests/dispatch.sh         # 不正な action で 500 にならないか (複製サイトを作る。要 sudo)
 ```
 
 - ゴールデンマスター(`tests/golden/`)+ HTTP スモーク(`tests/smoke.sh`)が主軸。
