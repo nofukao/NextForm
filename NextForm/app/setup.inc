@@ -91,6 +91,11 @@ set_const('DEFAULT_PAGE_TYPE', 'wiki');
 set_const('FFMPEG_PATH', 'ffmpeg');
 
 set_const('SEARCH_SNIPPET_LENGTH', 30);
+/*
+ * 検索結果を 1 画面に何件出すか。0 で全件。
+ * 全件出すと、ヒットが多いときに応答が巨大になる (1077 件で 9.6MB)。
+ */
+set_const('SEARCH_RESULTS_PER_PAGE', 50);
 set_const('SEARCH_DEFAULT_ORDER', 'score');
 set_const('SEARCH_ENGINE', 'builtin');
 set_const('SEARCH_ELASTICSEARCH_URL', 'http://localhost:9200/toratorawiki');
@@ -232,6 +237,7 @@ function setup_read($name) {
 |{DEFAULT_PAGE_TYPE|wiki|デフォルトのページ種別|}
 |{FFMPEG_PATH|ffmpeg|ffmpegコマンドの名称|}
 |{SEARCH_SNIPPET_LENGTH|30|検索結果のスニペットの文字数|}
+|{SEARCH_RESULTS_PER_PAGE|50|検索結果を1画面に出す件数(0で全件)|}
 |{SEARCH_DEFAULT_ORDER|score|検索結果の順序 score:単語の出現頻度(スコア)順, mtime:更新日時順|}
 |{SEARCH_ENGINE|builtin|使用する検索エンジン builtin:ToraToraWiki内臓の検索エンジン, elasticsearch: Elasticsearchを使用|}
 |{SEARCH_ELASTICSEARCH_URL|http://localhost:9200/toratorawiki|ElasticsearchのURL|}

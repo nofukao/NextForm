@@ -68,8 +68,29 @@ function search_show(&$args, $dom) {
 	    exit(0);
 	}
 
+	/*
+	 * 全件を一度に出すと、ヒットが多いときに応答が巨大になる。
+	 * 実測で 1077 件のとき 9.6MB あり、ブラウザ側が固まる。
+	 * 照合は全件に対して行う (スコア順に並べるため件数が要る)。
+	 * ここで絞るのは表示だけ。
+	 */
+	$result_num = count($search_results);
+	$each = SEARCH_RESULTS_PER_PAGE;
+	$offset = max(0, (int)default_value($args['pages'], 0));
+	$last_offset = $each > 0 ? max(0, (int)ceil($result_num / $each) - 1) : 0;
+	if($offset > $last_offset)
+	    $offset = $last_offset;
+	if($each > 0)
+	    $search_results = array_slice($search_results, $offset * $each, $each, true);
+
 	$p = dom_append_child($dom, 'p', 'search_summary');
-	dom_append_text($p, lf('$num$ result(s)', array('num' => count($search_results))));
+	dom_append_text($p, lf('$num$ result(s)', array('num' => $result_num)));
+	if($each > 0 && $result_num > $each) {
+	    dom_append_text($p, ' ');
+	    dom_append_text($p, lf('($start$-$end$)',
+				   array('start' => $offset * $each + 1,
+					 'end' => $offset * $each + count($search_results))));
+	}
 
 	$ul = dom_append_child($dom, 'ul', 'search_result');
 	foreach($search_results as $pagename => &$search_result) {
@@ -94,6 +115,34 @@ function search_show(&$args, $dom) {
 		dom_append_hightlighted_text($p, implode("\n", $search_result['snippets']), $query);
 	    }
 	}
+	search_append_pagination($dom, $args, $offset, $last_offset);
+    }
+}
+
+/*
+ * 検索結果の前後移動。pagelist_append() の nav と同じ作法に合わせてある
+ * (class="pages"、`pages` 引数で何ページ目かを渡す)。
+ */
+function search_append_pagination($dom, $args, $offset, $last_offset) {
+    if($last_offset <= 0)
+	return;
+    $nav = dom_append_child($dom, 'nav', 'pages');
+    unset($args['action']);
+    $links = array();
+    if($offset > 0) {
+	$links[] = array(0, '|' . l('First'), 'first');
+	$links[] = array($offset - 1, '<' . l('Prev'), 'prev');
+    }
+    if($offset < $last_offset) {
+	$links[] = array($offset + 1, l('Next') . '>', 'next');
+	$links[] = array($last_offset, l('Last') . '|', 'last');
+    }
+    foreach($links as $link) {
+	if($link[0] == 0)
+	    unset($args['pages']);
+	else
+	    $args['pages'] = $link[0];
+	dom_append_link($nav, url_make('', $args), $link[1], $link[2]);
     }
 }
 ?>

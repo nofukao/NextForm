@@ -114,6 +114,8 @@ $LANGUAGE['ja'] = array(
     'The search index could not be read. Rebuild it from the admin page.' =>
     '検索インデックスを読めませんでした．管理画面から再構築してください．',
 
+    '($start$-$end$)' => '($start$〜$end$件目)',
+
     'Search index' => '検索インデックス',
     'Index files: $num$ ($size$)' => 'インデックスのファイル: $num$ 個 ($size$)',
     'Indexed pages: $num1$ / Actual pages: $num2$' =>
@@ -291,6 +293,8 @@ $LANGUAGE['ja'] = array(
     'score: $score$' => 'スコア: $score$',
     'Sort' => '順序',
     'Frequency' => '出現頻度',
+
+    '($start$-$end$)' => '($start$〜$end$件目)',
 
     'Search index' => '検索インデックス',
     'Rebuild search index' => '検索インデックスを再構築',
