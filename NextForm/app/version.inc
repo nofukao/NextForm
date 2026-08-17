@@ -6,7 +6,7 @@
  * 判定するのに使う。この定数が無いサイトは「まだ NextForm 化されていない
  * ToraToraWiki」とみなされる。書式は メジャー.マイナー.パッチ。
  */
-define('NEXTFORM_VERSION', '0.4.0');
+define('NEXTFORM_VERSION', '0.4.1');
 
 /*
  * fork 元の ToraToraWiki の版数。
