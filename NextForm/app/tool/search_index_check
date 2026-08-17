@@ -6,6 +6,18 @@
  *
  *     --list <件数>  ずれたページ名を最大何件まで表示するか (既定 20、0 で全件)
  *     --quiet        問題が無ければ何も表示しない
+ *     --deep         ページごとに ngram を突き合わせる (下記)
+ *     --user <名前>  --deep で本文を読むときに使う管理者ユーザー名
+ *
+ * 既定の検査は「索引に載っているページ」と「実在するページ」の集合を比べる。
+ * これは速いが、**部分的な破損は見つけられない**。索引は 1 ページ分の ngram が
+ * 複数のファイルに分かれて入るため、1 ファイルが失われてもページ自体は
+ * 他のファイルに残り、集合としては一致してしまう。実際に起きる壊れ方は
+ * この部分的な破損なので、疑わしいときは --deep を使う。
+ *
+ * --deep は全ページの本文を読み直して ngram を作り直し、索引と 1 件ずつ
+ * 突き合わせる。再構築と同じだけ時間がかかる (1000 ページで 30 秒程度)。
+ * 読み取りに権限が要るサイトでは --user に管理者名を渡すこと。
  *
  * **読み取り専用**。storage/ には一切書き込まない。
  *
@@ -25,6 +37,7 @@ $argv = $_SERVER['argv'];
 
 function usage() {
     fprintf(STDERR, "Usage: php search_index_check <path/to/wiki/index.php> [--list <n>] [--quiet]\n");
+    fprintf(STDERR, "                             [--deep] [--user <name>]\n");
     exit(2);
 }
 
@@ -34,6 +47,8 @@ if(count($argv) < 2)
 $index_path = $argv[1];
 $list_max = 20;
 $is_quiet = false;
+$is_deep = false;
+$user = '';
 
 for($i = 2; $i < count($argv); $i++) {
     switch($argv[$i]) {
@@ -45,6 +60,14 @@ for($i = 2; $i < count($argv); $i++) {
     case '--quiet':
 	$is_quiet = true;
 	break;
+    case '--deep':
+	$is_deep = true;
+	break;
+    case '--user':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$user = $argv[++$i];
+	break;
     default:
 	usage();
     }
@@ -54,6 +77,21 @@ require_once(dirname(__FILE__) . '/common');
 eval_index_php($index_path);
 define('APP_DIR_PATH', dirname(dirname(__FILE__)));
 require_once(APP_DIR_PATH . '/main.inc');
+
+if($is_deep) {
+    /*
+     * --deep は本文を読み直す。CLI にはセッションが無く auth_get_user() が
+     * false を返すため、読み取りに権限が要るサイトでは弾かれる。
+     * deploy/scripts/gen-pages.php と同じ方法で管理者を差し込む。
+     */
+    if($user !== '')
+	$GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $user, 'method' => 'digest');
+    /*
+     * 本文の変換は &pre(code) などで head_tags_add_javascript() を呼ぶ。
+     * CLI では $head_tags が未初期化のままだと Fatal error になる。
+     */
+    head_tags_init();
+}
 
 $out = array();
 function report($format) {
@@ -105,6 +143,7 @@ if(defined('SEARCH_ENGINE') && SEARCH_ENGINE !== 'builtin') {
  */
 $cachekeys = cache_get_keys_prefix('', 'search_index_');
 $indexed_pages = array();
+$page_ngrams = array();     /* --deep のときだけ埋める: ページ名 => ngram の集合 */
 $broken_keys = array();
 $ngram_num = 0;
 $posting_num = 0;
@@ -129,7 +168,10 @@ foreach($cachekeys as $cachekey) {
 	$ngram_num++;
 	foreach($pagenames as $pagename => $dummy) {
 	    /* ページ名が数字だけだと PHP の配列キーが整数になるので文字列に戻す */
-	    $indexed_pages[(string)$pagename] = true;
+	    $pagename = (string)$pagename;
+	    $indexed_pages[$pagename] = true;
+	    if($is_deep)
+		$page_ngrams[$pagename][$ngram] = true;
 	    $posting_num++;
 	}
     }
@@ -173,6 +215,64 @@ if(!empty($ghosts)) {
     report('       検索のたびに無駄な読み込みが起き、PHP の警告も出る。');
     report_pagenames($ghosts, $list_max);
     report('');
+}
+
+/*
+ * ここから --deep。ページごとに、本文から作り直した ngram と索引の中身を比べる。
+ * 索引は 1 ページ分の ngram を複数のファイルに分けて持つので、ファイルが
+ * 1 つ失われてもページ自体は他のファイルに残る。上の集合比較では見つからない
+ * この「部分的な欠け」が、実際に起きる壊れ方そのものになる。
+ */
+if($is_deep) {
+    $partial = array();
+    $stale = array();
+    foreach($real_pages as $pagename => $dummy) {
+	$page = page_read($pagename);
+	$should = search_page_ngram($page);
+	$actual = isset($page_ngrams[$pagename]) ? $page_ngrams[$pagename] : array();
+	$lack = count(array_diff_key($should, $actual));
+	$over = count(array_diff_key($actual, $should));
+	if($lack > 0)
+	    $partial[$pagename] = $lack;
+	if($over > 0)
+	    $stale[$pagename] = $over;
+    }
+
+    if(!empty($partial)) {
+	$has_problem = true;
+	report('[異常] 索引の ngram が欠けているページが %d 件ある。', count($partial));
+	report('       これらのページは、本文に含まれる語の一部で検索しても出てこない。');
+	$n = 0;
+	foreach($partial as $pagename => $lack) {
+	    if($list_max !== 0 && $n >= $list_max) {
+		report("\t... 他 %d 件", count($partial) - $n);
+		break;
+	    }
+	    report("\t%s (%d 個不足)", $pagename, $lack);
+	    $n++;
+	}
+	report('');
+    }
+
+    if(!empty($stale)) {
+	$has_problem = true;
+	report('[異常] 本文に無い ngram が残っているページが %d 件ある。', count($stale));
+	report('       検索に余計なページが出るわけではないが (本文で照合し直すため)、');
+	report('       索引が本文とずれている証拠になる。');
+	$n = 0;
+	foreach($stale as $pagename => $over) {
+	    if($list_max !== 0 && $n >= $list_max) {
+		report("\t... 他 %d 件", count($stale) - $n);
+		break;
+	    }
+	    report("\t%s (%d 個余分)", $pagename, $over);
+	    $n++;
+	}
+	report('');
+    }
+
+    if(empty($partial) && empty($stale))
+	report('ページごとの ngram 突き合わせ: %d 件すべて一致。', count($real_pages));
 }
 
 if($has_problem)
