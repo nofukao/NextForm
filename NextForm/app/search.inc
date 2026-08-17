@@ -208,6 +208,106 @@ function search_index_update($pagename, &$old_ngrams, &$new_ngrams) {
     search_index_remove($pagename, $remove_ngrams);
 }
 
+/*
+ * 索引を 1 回なめて集計する。$is_deep が真ならページごとの ngram 集合も作る。
+ * ページ名が数字だけだと PHP の配列キーが整数になるので文字列に戻している。
+ */
+function search_index_collect($is_deep = false) {
+    $collected = array(
+	'file_num' => 0,
+	'bytes' => 0,
+	'ngram_num' => 0,
+	'posting_num' => 0,
+	'indexed_pages' => array(),
+	'broken' => array(),
+	'page_ngrams' => array(),
+	);
+    foreach(cache_get_keys_prefix('', 'search_index_') as $cachekey) {
+	$collected['file_num']++;
+	$filepath = cache_get_as_filepath('', $cachekey);
+	if($filepath !== false)
+	    $collected['bytes'] += filesize($filepath);
+
+	$index = array();
+	if(!search_index_read($cachekey, $index)) {
+	    $collected['broken'][$cachekey] = true;
+	    continue;
+	}
+	foreach($index as $ngram => $pagenames) {
+	    $collected['ngram_num']++;
+	    foreach($pagenames as $pagename => $dummy) {
+		$pagename = (string)$pagename;
+		$collected['indexed_pages'][$pagename] = true;
+		if($is_deep)
+		    $collected['page_ngrams'][$pagename][$ngram] = true;
+		$collected['posting_num']++;
+	    }
+	}
+    }
+    return $collected;
+}
+
+/*
+ * 索引と実際のページを突き合わせる。
+ *
+ * $is_deep が偽のときはページ名の集合だけを比べる。速い (実測 967 ページで
+ * 0.13 秒) が、**部分的な欠けは見つけられない**。1 ページ分の ngram は複数の
+ * ファイルに分かれて入るので、1 ファイルを失ってもページ自体は他のファイルに
+ * 残り、集合としては一致してしまう。実際に起きる壊れ方はこの部分的な欠けなので、
+ * 「壊れている」ことは言えても「壊れていない」ことは言えない。
+ *
+ * $is_deep が真なら全ページの本文から ngram を作り直して 1 件ずつ比べる。
+ * 実測で wiki ページ 1 件あたり約 1.8ms (967 ページで 0.77 秒)。
+ * 再構築と違って索引を書かないぶん、再構築よりずっと安い。
+ */
+function search_index_check($is_deep = false) {
+    $check = search_index_collect($is_deep);
+
+    $real_pages = array();
+    foreach(page_find('', array('is_pagename_only' => true)) as $page)
+	$real_pages[$page['name']] = true;
+
+    $check['is_deep'] = $is_deep;
+    $check['page_num'] = count($real_pages);
+    $check['missing'] = array_diff_key($real_pages, $check['indexed_pages']);
+    $check['ghosts']  = array_diff_key($check['indexed_pages'], $real_pages);
+    $check['partial'] = array();
+    $check['stale']   = array();
+
+    if($is_deep) {
+	foreach($real_pages as $pagename => $dummy) {
+	    $page = page_read($pagename);
+	    $should = search_page_ngram($page);
+	    $actual = isset($check['page_ngrams'][$pagename]) ?
+		$check['page_ngrams'][$pagename] : array();
+	    $lack = count(array_diff_key($should, $actual));
+	    $over = count(array_diff_key($actual, $should));
+	    if($lack > 0)
+		$check['partial'][$pagename] = $lack;
+	    if($over > 0)
+		$check['stale'][$pagename] = $over;
+	}
+    }
+
+    $check['is_ok'] =
+	empty($check['broken']) && empty($check['missing']) &&
+	empty($check['ghosts']) && empty($check['partial']) && empty($check['stale']);
+    return $check;
+}
+
+/*
+ * 1 ページ分の ngram を入れ直す。差分ではなく全部を入れるので、
+ * 更新が失われて欠けたページを、全体の再構築なしに直せる。
+ * 余分な登録は消さない (検索結果は本文で照合し直すので実害が無い)。
+ */
+function search_index_repair($pagename) {
+    $page = page_read($pagename);
+    if(empty($page['is_exists']))
+	return false;
+    search_page_index_add($page);
+    return true;
+}
+
 function search_engine() {
     global $SEARCH_ENGINES;
     if(isset($SEARCH_ENGINES[SEARCH_ENGINE]))
