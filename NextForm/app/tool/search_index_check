@@ -1,0 +1,185 @@
+<?php
+/*
+ * 検索インデックスと実際のページを突き合わせ、ずれを報告する。
+ *
+ *   php NextForm/app/tool/search_index_check /path/to/wiki/index.php [オプション]
+ *
+ *     --list <件数>  ずれたページ名を最大何件まで表示するか (既定 20、0 で全件)
+ *     --quiet        問題が無ければ何も表示しない
+ *
+ * **読み取り専用**。storage/ には一切書き込まない。
+ *
+ * 検索インデックスは storage/cache/ に 2-gram の転置表として持たれていて、
+ * ページの保存・削除のたびに「旧本文と新本文の差分」だけが適用される。
+ * この差分は索引の中身を確認せずに適用されるため、更新が一度でも失われると
+ * 索引と本文がずれたまま固定され、以後どれだけ編集しても直らない。
+ * 症状は「特定の語だけ検索に出てこない」で、画面にもログにも何も出ない。
+ *
+ * このツールはその状態を検出する。直すには管理画面の
+ * 「検索インデックスの再構築」を実行する。
+ *
+ * 終了コード: 0 = 問題なし / 1 = ずれあり / 2 = 使い方の誤り
+ */
+
+$argv = $_SERVER['argv'];
+
+function usage() {
+    fprintf(STDERR, "Usage: php search_index_check <path/to/wiki/index.php> [--list <n>] [--quiet]\n");
+    exit(2);
+}
+
+if(count($argv) < 2)
+    usage();
+
+$index_path = $argv[1];
+$list_max = 20;
+$is_quiet = false;
+
+for($i = 2; $i < count($argv); $i++) {
+    switch($argv[$i]) {
+    case '--list':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$list_max = (int)$argv[++$i];
+	break;
+    case '--quiet':
+	$is_quiet = true;
+	break;
+    default:
+	usage();
+    }
+}
+
+require_once(dirname(__FILE__) . '/common');
+eval_index_php($index_path);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+$out = array();
+function report($format) {
+    global $out;
+    $args = array_slice(func_get_args(), 1);
+    $out[] = vsprintf($format, $args);
+}
+
+function report_flush($is_quiet, $has_problem) {
+    global $out;
+    if($is_quiet && !$has_problem)
+	return;
+    foreach($out as $line)
+	printf("%s\n", $line);
+}
+
+function report_pagenames($pagenames, $list_max) {
+    $n = 0;
+    foreach($pagenames as $pagename => $dummy) {
+	if($list_max !== 0 && $n >= $list_max) {
+	    report("\t... 他 %d 件", count($pagenames) - $n);
+	    break;
+	}
+	report("\t%s", $pagename);
+	$n++;
+    }
+}
+
+report('検索インデックスの検査: %s', $index_path);
+
+/*
+ * SEARCH_ENGINE は 1.3.10 で入った定数。それ以前の ToraToraWiki には無く、
+ * 内蔵の 2-gram インデックスしか選択肢が無い。アップグレード前のサイトを
+ * そのまま検査できるようにしたいので、定数の有無で分岐する。
+ */
+if(defined('SEARCH_ENGINE') && SEARCH_ENGINE !== 'builtin') {
+    report('SEARCH_ENGINE = %s のため、内蔵インデックスは使われていない。検査するものが無い。',
+	   SEARCH_ENGINE);
+    report_flush($is_quiet, false);
+    exit(0);
+}
+
+/*
+ * 索引側。cache_get() は「ファイルが無い」も「開けない」も false を返すので、
+ * まず生データを取り、unserialize に失敗したものだけを「壊れている」として数える。
+ * 壊れたバケットは、次に誰かがページを保存した時点で中身が 1 ページ分に
+ * 置き換わる (search_index_add() が読めなかった索引を空とみなすため) ので、
+ * 検出できたら再構築を促す。
+ */
+$cachekeys = cache_get_keys_prefix('', 'search_index_');
+$indexed_pages = array();
+$broken_keys = array();
+$ngram_num = 0;
+$posting_num = 0;
+$total_bytes = 0;
+
+foreach($cachekeys as $cachekey) {
+    $filepath = cache_get_as_filepath('', $cachekey);
+    if($filepath !== false)
+	$total_bytes += filesize($filepath);
+
+    $data = cache_get('', $cachekey);
+    if($data === false) {
+	$broken_keys[$cachekey] = '読めない';
+	continue;
+    }
+    $index = @unserialize($data);
+    if($index === false) {
+	$broken_keys[$cachekey] = sprintf('壊れている (%d バイト)', strlen($data));
+	continue;
+    }
+    foreach($index as $ngram => $pagenames) {
+	$ngram_num++;
+	foreach($pagenames as $pagename => $dummy) {
+	    /* ページ名が数字だけだと PHP の配列キーが整数になるので文字列に戻す */
+	    $indexed_pages[(string)$pagename] = true;
+	    $posting_num++;
+	}
+    }
+}
+
+/* 実ページ側。索引を作る option/search_index.inc と同じ取り方をする */
+$real_pages = array();
+foreach(page_find('', array('is_pagename_only' => true)) as $page)
+    $real_pages[$page['name']] = true;
+
+$missing = array_diff_key($real_pages, $indexed_pages);
+$ghosts  = array_diff_key($indexed_pages, $real_pages);
+$has_problem = !empty($broken_keys) || !empty($missing) || !empty($ghosts);
+
+report('');
+report('索引ファイル      : %d 個 / %.2f MB', count($cachekeys), $total_bytes / 1048576);
+report('ngram 種類        : %d', $ngram_num);
+report('posting 総数      : %d', $posting_num);
+report('索引上のページ数  : %d', count($indexed_pages));
+report('実際のページ数    : %d', count($real_pages));
+report('');
+
+if(!empty($broken_keys)) {
+    report('[異常] 読めない索引ファイルが %d 個ある。', count($broken_keys));
+    report('       この状態で誰かがページを保存すると、そのファイルの中身が');
+    report('       保存したページ 1 件分だけに置き換わり、他のページが検索に出なくなる。');
+    foreach($broken_keys as $cachekey => $reason)
+	report("\t%s: %s", $cachekey, $reason);
+    report('');
+}
+
+if(!empty($missing)) {
+    report('[異常] 索引に載っていないページが %d 件ある。', count($missing));
+    report('       これらのページは本文に何が書かれていても検索に出てこない。');
+    report_pagenames($missing, $list_max);
+    report('');
+}
+
+if(!empty($ghosts)) {
+    report('[異常] 実在しないページが索引に %d 件残っている。', count($ghosts));
+    report('       検索のたびに無駄な読み込みが起き、PHP の警告も出る。');
+    report_pagenames($ghosts, $list_max);
+    report('');
+}
+
+if($has_problem)
+    report('=> 管理画面の「検索インデックスの再構築」を実行すること。');
+else
+    report('=> 問題なし。索引と実際のページは一致している。');
+
+report_flush($is_quiet, $has_problem);
+exit($has_problem ? 1 : 0);
+?>
