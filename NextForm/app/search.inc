@@ -421,13 +421,58 @@ function search_page_texts(&$page) {
     return $texts;
 }
 
+/*
+ * 検索の照合に使うテキストを、ページごとにキャッシュして返す。
+ *
+ * search_page_match() は候補ページごとに wiki_texts() で本文をフルパース
+ * している (字句解析 → 構文解析 → DOM 構築)。実測 (1372 ページ) で
+ * 検索時間の 92〜95% がここに使われており、索引の引き込みは 0.1〜2.9ms
+ * でしかなかった。**遅いのは索引ではなく、そのあとの本文の再パース。**
+ *
+ * 有効かどうかはページの mtime だけで決める。page_read() が入れた値を
+ * そのまま使うので、判定のための追加の読み込みは無い。
+ * 本文の md5 を指紋にする案は、判定のためだけに全候補の本文を読み直す
+ * ことになり、試作で最悪ケースが 1011ms → 3833ms と**元より遅くなった**。
+ * export.inc も同じく mtime で判定している。
+ *
+ * 無効化は要らない。page_write() と page_delete() は先頭で
+ * cache_delete($page['name']) を呼び、そのページのキャッシュを全部消す。
+ *
+ * **外れても壊れない。** 見つからない・読めない・古い、のどれでも
+ * 作り直すだけで、結果は常に本文と一致する。間違えると検索結果が
+ * 変わる検索インデックスとは性質が違う。
+ */
+define('SEARCH_TEXTS_CACHE_KEY', 'search_texts');
+
+function search_page_texts_cached(&$page) {
+    if(empty($page['is_exists']) || empty($page['mtime']))
+	return search_page_texts($page);
+
+    /* 権限の確認はキャッシュの有無に関わらず行う */
+    auth_check($page['name'], 'read');
+
+    /*
+     * キャッシュがページより新しいときだけ使う。cache_open() は
+     * 「mtime が limit_time 未満なら false」なので、+1 して
+     * 「ページと同じ秒に作られたキャッシュ」を弾く。同じ秒に保存と
+     * 検索が重なったとき、古い本文のキャッシュを掴まないようにする。
+     */
+    $texts = cache_serialized_get($page['name'], SEARCH_TEXTS_CACHE_KEY, $page['mtime'] + 1);
+    if(is_array($texts) && isset($texts['body']))
+	return $texts;
+
+    $texts = search_page_texts($page);
+    cache_serialized_create($page['name'], SEARCH_TEXTS_CACHE_KEY, $texts);
+    return $texts;
+}
+
 function search_page_match($pagename, $query) {
     global $SEARCH_STRLEN;
     if(!auth_has_permission($pagename, 'read'))
 	return false;
 
     $page = page_read($pagename);
-    $page_texts_info = search_page_texts($page);
+    $page_texts_info = search_page_texts_cached($page);
     $page_texts = $page_texts_info['body'];
     $matches = array();
     $score = 0;

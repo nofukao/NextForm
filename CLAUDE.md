@@ -56,6 +56,7 @@
 ./tests/css-rules.sh        # 生成された静的 CSS のルール検査
 ./tests/upgrade.sh          # tora2 の複製に対してアップグレードを実走 (要 sudo)
 ./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
+./tests/search-cache.sh     # 検索のテキストキャッシュ (複製サイトを作る。要 sudo)
 ./tests/csrf.sh             # CSRF 対策 (複製サイトを作る。要 sudo)
 ./tests/dispatch.sh         # 不正な action で 500 にならないか (複製サイトを作る。要 sudo)
 ```
