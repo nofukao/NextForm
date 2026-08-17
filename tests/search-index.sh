@@ -87,10 +87,16 @@ echo
 sudo rm -rf "$SEARCH_TEST_SITE"
 sudo cp -a "$NF_SITE" "$SEARCH_TEST_SITE"
 SITE_OWNER=$(sudo stat -c '%U' "${SEARCH_TEST_SITE}/index.php")
+
+# 複製元に配置済みのコードではなく、リポジトリの作業ツリーを検証する。
+# これをしないと app/ を直しても複製元へ deploy するまでテストに反映されず、
+# 修正が効いていないのか反映されていないのか区別がつかなくなる。
+# 範囲は deploy.sh と同じ (storage/ theme/ index.php install-info.dat は除く)。
+sudo rsync -a --delete "${REPO_ROOT}/NextForm/app/"      "${SEARCH_TEST_SITE}/app/"
+sudo rsync -a --delete "${REPO_ROOT}/NextForm/resource/" "${SEARCH_TEST_SITE}/resource/"
 sudo cp "${REPO_ROOT}/tests/search-index-helper.php" "${SEARCH_TEST_SITE}/"
-sudo cp "${REPO_ROOT}/NextForm/app/tool/search_index_check" "${SEARCH_TEST_SITE}/app/tool/"
-sudo chown "$SITE_OWNER" "${SEARCH_TEST_SITE}/search-index-helper.php" \
-                         "${SEARCH_TEST_SITE}/app/tool/search_index_check"
+sudo chown -R "$SITE_OWNER" "${SEARCH_TEST_SITE}/app" "${SEARCH_TEST_SITE}/resource" \
+                            "${SEARCH_TEST_SITE}/search-index-helper.php"
 
 # 複製元に残っているずれを持ち込まないよう、まっさらな索引から始める。
 # 検査ツールがこの状態を「問題なし」と言えることも同時に確かめている。
@@ -140,19 +146,38 @@ check_eq "検査ツールが破損を検出する (終了コード 1)" "1" "$rc"
 check_eq "破損の理由を報告する" "yes" \
          "$(printf '%s' "$out" | grep -q '読めない索引ファイル' && echo yes || echo no)"
 
-# ここが現状の欠陥。読めない索引を空とみなして全上書きするため、
-# ページを 1 件保存しただけで、そのファイルの他のページが全部消える。
-# 直したら期待値を pages_before と同じ数 (= 巻き添えゼロ) に変えること。
-out=$(helper save-one-page)
-check_eq "破損したまま 1 ページ保存できてしまう" "yes" "$(value_of "$out" saved)"
-out=$(helper count-bucket "$bucket")
-pages_after=$(value_of "$out" pages_after)
-check_eq "【欠陥を記録】1 ページ保存すると残りが 1 件だけになる" "1" "$pages_after"
-check_eq "【欠陥を記録】巻き添えで消えるページ数" \
-         "$((pages_before - 1))" "$((pages_before - pages_after))"
+# 読めない索引ファイルには書き戻さない。書き戻すと、そこに入っていた
+# 全ページ分の登録が保存した 1 ページ分に置き換わって消えてしまう。
+# 壊れたファイルは壊れたまま残し、再構築で回復できる状態を保つ。
+# 利用者の編集自体は成功させる (索引のために保存を止めない)。
+errfile=$(mktemp)
+out=$(sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+      "${SEARCH_TEST_SITE}/search-index-helper.php" \
+      "${SEARCH_TEST_SITE}/index.php" "$WIKI_ADMIN" save-one-page 2>"$errfile")
+err=$(cat "$errfile"); rm -f "$errfile"
+check_eq "破損していてもページの保存自体は成功する" "yes" "$(value_of "$out" saved)"
+check_eq "読めなかったことをログに残す" "yes" \
+         "$(printf '%s' "$err" | grep -q 'search index is unreadable' && echo yes || echo no)"
 
-# 巻き添えになったページは他の索引ファイルには残っているので、集合を比べる
-# だけの既定の検査では見つからない。実際の壊れ方はこれなので --deep が要る。
+out=$(helper count-bucket "$bucket")
+check_eq "読めない索引ファイルを上書きしない" "-1" "$(value_of "$out" pages_after)"
+check_eq "壊れたファイルの中身が変わっていない" "500" "$(value_of "$out" bytes)"
+echo
+
+echo "4. 部分的な欠けは --deep でしか見つからないこと"
+# 上の破損はファイルごと読めないので、ここでは「ファイルとしては正しいが
+# 1 ページ分の ngram だけ抜けている」状態を意図的に作る。
+# 索引更新が 1 回失われたときに実際に残るのはこの形。
+helper rebuild > /dev/null
+out=$(helper corrupt-bucket)   # 一番大きいファイルを選ぶためだけに使う
+bucket=$(value_of "$out" bucket)
+helper rebuild > /dev/null     # 壊した分を戻す
+out=$(helper busiest-page-in-bucket "$bucket")
+victim=$(value_of "$out" pagename)
+out=$(helper drop-page-from-bucket "$bucket" "$victim")
+check_eq "1 ページ分の ngram を抜いた" "yes" \
+         "$([[ "$(value_of "$out" dropped)" -gt 0 ]] && echo yes || echo no)"
+
 out=$(cd "$SEARCH_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
       app/tool/search_index_check "${SEARCH_TEST_SITE}/index.php" 2>/dev/null)
 rc=$?
@@ -163,8 +188,8 @@ out=$(cd "$SEARCH_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
       --deep --user "$WIKI_ADMIN" 2>/dev/null)
 rc=$?
 check_eq "--deep なら部分的な欠けを検出する (終了コード 1)" "1" "$rc"
-check_eq "ngram が欠けているページを報告する" "yes" \
-         "$(printf '%s' "$out" | grep -q 'ngram が欠けているページ' && echo yes || echo no)"
+check_eq "欠けているページ名を報告する" "yes" \
+         "$(printf '%s' "$out" | grep -q "$victim" && echo yes || echo no)"
 echo
 
 if [[ $fail -eq 0 ]]; then

@@ -111,6 +111,8 @@ $LANGUAGE['ja'] = array(
     'Preview' => 'プレビュー',
     'Saved. ($time$)' => '保存しました．($time$)',
     'Confliction detected.' => '編集の衝突が起きました．',
+    'The search index could not be read. Rebuild it from the admin page.' =>
+    '検索インデックスを読めませんでした．管理画面から再構築してください．',
     'Current source' => '最新のソース',
     'Your changes' => 'あなたの行った編集',
 

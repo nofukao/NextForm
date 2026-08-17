@@ -131,14 +131,53 @@ function search_page_index_add(&$page) {
     search_index_add($page['name'], $ngrams);
 }
 
+/*
+ * 索引のファイルを 1 つ読む。
+ *
+ * 戻り値 false は「ファイルはあるのに中身が取れなかった」ことだけを表す。
+ * このとき呼び出し側は絶対に書き戻してはいけない。読めなかったものを空と
+ * みなして書き戻すと、そのファイルに入っていた全ページ分の登録が、
+ * 保存した 1 ページ分に置き換わって消える。
+ *
+ * cache_serialized_get() は「ファイルが無い」も「読めない」も同じ false を
+ * 返してしまうので、ここではファイルの有無を別に見て区別する。
+ * ファイルが無いのは正常 (まだ 1 度も書かれていないだけ)。
+ */
+function search_index_read($cachekey, &$index) {
+    $index = array();
+    $data = cache_get('', $cachekey);
+    if($data === false)
+	return cache_get_as_filepath('', $cachekey) === false;
+    $index = @unserialize($data);
+    if($index === false) {
+	$index = array();
+	return false;
+    }
+    return true;
+}
+
+/*
+ * 読めない索引に出会ったことを知らせる。黙って進むと、検索結果から
+ * ページが減っていることに誰も気付けない。画面には 1 回だけ出す。
+ */
+function search_index_warn_broken($cachekey) {
+    global $SEARCH_INDEX_IS_WARNED;
+    error_log(sprintf('search index is unreadable: cachekey=%s', bin2hex($cachekey)));
+    if(!empty($SEARCH_INDEX_IS_WARNED))
+	return;
+    $SEARCH_INDEX_IS_WARNED = true;
+    message_error(l('The search index could not be read. Rebuild it from the admin page.'));
+}
+
 function search_index_add($pagename, &$ngrams) {
     $group = array();
     search_ngrams_group_by_key($ngrams, $group);
     foreach($group as $key => &$ngrams) {
 	$cachekey = 'search_index_' . $key;
-	$index = cache_serialized_get('', $cachekey);
-	if($index === false)
-	    $index = array();
+	if(!search_index_read($cachekey, $index)) {
+	    search_index_warn_broken($cachekey);
+	    continue;
+	}
 	foreach($ngrams as $ngram) {
 	    $index[$ngram][$pagename] = true;
 	}
@@ -151,9 +190,10 @@ function search_index_remove($pagename, &$ngrams) {
     search_ngrams_group_by_key($ngrams, $group);
     foreach($group as $key => &$ngrams) {
 	$cachekey = 'search_index_' . $key;
-	$index = cache_serialized_get('', $cachekey);
-	if($index === false)
-	    $index = array();
+	if(!search_index_read($cachekey, $index)) {
+	    search_index_warn_broken($cachekey);
+	    continue;
+	}
 	foreach($ngrams as $ngram) {
 	    unset($index[$ngram][$pagename]);
 	}

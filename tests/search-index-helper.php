@@ -206,7 +206,57 @@ case 'count-bucket':
     }
     $cachekey = hex2bin($argv[4]);
     $pagenames = bucket_pagenames($cachekey);
+    /* 読めないままなら -1。上書きされていないことの確認に使う */
     printf("pages_after=%d\n", $pagenames === false ? -1 : count($pagenames));
+    $filepath = cache_get_as_filepath('', $cachekey);
+    printf("bytes=%d\n", $filepath === false ? -1 : filesize($filepath));
+    break;
+
+/*
+ * 索引ファイル 1 つから、あるページの登録だけを消す。
+ * 「ファイルとしては正しいが 1 ページ分の ngram が欠けている」状態を
+ * 意図的に作る。集合を比べるだけでは見つからず、--deep でしか分からない。
+ */
+case 'drop-page-from-bucket':
+    if(!isset($argv[4]) || !isset($argv[5])) {
+	fprintf(STDERR, "drop-page-from-bucket needs the bucket key and a pagename\n");
+	exit(2);
+    }
+    $cachekey = hex2bin($argv[4]);
+    $pagename = $argv[5];
+    $index = @unserialize((string)cache_get('', $cachekey));
+    if($index === false) {
+	printf("dropped=-1\n");
+	exit(1);
+    }
+    $dropped = 0;
+    foreach($index as $ngram => $pagenames)
+	if(isset($pagenames[$pagename])) {
+	    unset($index[$ngram][$pagename]);
+	    $dropped++;
+	}
+    cache_serialized_create('', $cachekey, $index);
+    printf("dropped=%d\n", $dropped);
+    break;
+
+/* 索引ファイルの中で一番多くの ngram を持っているページを選ぶ */
+case 'busiest-page-in-bucket':
+    if(!isset($argv[4])) {
+	fprintf(STDERR, "busiest-page-in-bucket needs the bucket key\n");
+	exit(2);
+    }
+    $index = @unserialize((string)cache_get('', hex2bin($argv[4])));
+    if($index === false) {
+	printf("pagename=\n");
+	exit(1);
+    }
+    $counts = array();
+    foreach($index as $ngram => $pagenames)
+	foreach($pagenames as $pagename => $dummy)
+	    $counts[(string)$pagename] = (isset($counts[(string)$pagename]) ? $counts[(string)$pagename] : 0) + 1;
+    arsort($counts);
+    printf("pagename=%s\n", key($counts));
+    printf("ngrams=%d\n", current($counts));
     break;
 
 case 'cleanup':
