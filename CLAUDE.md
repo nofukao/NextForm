@@ -55,6 +55,7 @@
 ./tests/smoke.sh            # 全 42 option 巡回 + PHP 警告の集計
 ./tests/css-rules.sh        # 生成された静的 CSS のルール検査
 ./tests/upgrade.sh          # tora2 の複製に対してアップグレードを実走 (要 sudo)
+./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
 ```
 
 - ゴールデンマスター(`tests/golden/`)+ HTTP スモーク(`tests/smoke.sh`)が主軸。
@@ -71,6 +72,9 @@
   `docs/development/project-overview.md` の v0.1 の節。
 - PHPUnit は **`require-dev` のみ**。`vendor/` は配布物に含めない。
 - **ランタイム依存を増やさない。** 「tar.gz を展開するだけで動く」配布形式を守る。
+- **`search-index.sh` は複製したサイトを作ってから走る。** 索引をわざと壊す検査を
+  含むので、複製元 (`NF_SITE`) には触らない。リポジトリの作業ツリーを rsync して
+  から検証するので、`deploy.sh` を先に走らせる必要はない。
 - **アップグレード手順書に書いたコマンドは `tests/upgrade.sh` から実走する。**
   `docs/upgrade-guide.md`(正本)と `NextForm/app/tool/upgrade` は 1 対 1。
   片方だけ変えない。手順書を変えたらテストも合わせる。

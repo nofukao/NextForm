@@ -276,7 +276,7 @@ tora2 と nextform に同じ操作をして出力を比較できる。
 1. 該当バージョンの全項目が終わっていることを確認する
 2. `NextForm/app/version.inc` の `NEXTFORM_VERSION` を上げる
 3. `./tests/golden.sh` `./tests/smoke.sh` `./tests/css-rules.sh` `./tests/upgrade.sh`
-   が通ることを確認する
+   `./tests/search-index.sh` が通ることを確認する
 4. 確認用インスタンスで全機能を手動で巡回する
    (GET だけでは踏めない POST 経路 — 編集・添付・ロック・管理画面)
 5. `docs/project-overview.md` のロードマップを更新する
