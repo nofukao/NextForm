@@ -259,6 +259,37 @@ case 'busiest-page-in-bucket':
     printf("ngrams=%d\n", current($counts));
     break;
 
+/*
+ * 管理画面 (?option=search_index) の描画を CLI で実行して中身を出す。
+ * HTTP 経由だと digest 認証が要るので、ここでは option の関数を直接呼ぶ。
+ *   引数: show | check | repair <ページ名>
+ */
+case 'render-screen':
+    if(!isset($argv[4])) {
+	fprintf(STDERR, "render-screen needs an action\n");
+	exit(2);
+    }
+    $action = $argv[4];
+    /* message_add() の書き込み先は message_init() でしか作られない */
+    message_init();
+    $args = array('option' => 'search_index');
+    if(isset($argv[5]))
+	$args['pagename'] = $argv[5];
+    $screen = dom_create_document();
+    switch($action) {
+    case 'show':   search_index_show($args, $screen); break;
+    case 'check':  search_index_check_show($args, $screen); break;
+    case 'repair': search_index_repair_write($args, $screen); break;
+    default:
+	fprintf(STDERR, "unknown action: %s\n", $action);
+	exit(2);
+    }
+    /* メッセージは別の DOM に溜まるので合わせて出す */
+    print(dom_save_html($screen));
+    print(message_html());
+    print("\n");
+    break;
+
 case 'cleanup':
     $deleted = 0;
     foreach(page_find(TEST_PAGE_PREFIX, array('is_pagename_only' => true)) as $found) {

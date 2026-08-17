@@ -192,6 +192,35 @@ check_eq "欠けているページ名を報告する" "yes" \
          "$(printf '%s' "$out" | grep -q "$victim" && echo yes || echo no)"
 echo
 
+# 管理画面 (?option=search_index) は HTTP 経由だと digest 認証が要るので、
+# option の関数を CLI から直接呼んで描画結果を見る。
+# 4. で壊したページがそのまま残っているのでそれを使う。
+echo "5. 管理画面から検査して 1 ページだけ直せること"
+out=$(helper render-screen show)
+check_eq "既定の画面が集合比較の結果を出す" "yes" \
+         "$(printf '%s' "$out" | grep -q 'インデックス上のページ' && echo yes || echo no)"
+check_eq "既定の画面は部分的な欠けを見逃すと断る" "yes" \
+         "$(printf '%s' "$out" | grep -q '詳しく検査する' && echo yes || echo no)"
+
+out=$(helper render-screen check)
+check_eq "詳しい検査が欠けているページを挙げる" "yes" \
+         "$(printf '%s' "$out" | grep -q "$victim" && echo yes || echo no)"
+check_eq "そのページに直すボタンが付く" "yes" \
+         "$(printf '%s' "$out" | grep -q 'search_index_repair' && echo yes || echo no)"
+
+out=$(helper render-screen repair "$victim")
+check_eq "直すと入れ直したと表示する" "yes" \
+         "$(printf '%s' "$out" | grep -q '入れ直しました' && echo yes || echo no)"
+check_eq "直した直後の再検査で一致する" "yes" \
+         "$(printf '%s' "$out" | grep -q '一致しています' && echo yes || echo no)"
+
+out=$(cd "$SEARCH_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+      app/tool/search_index_check "${SEARCH_TEST_SITE}/index.php" \
+      --deep --user "$WIKI_ADMIN" 2>/dev/null)
+rc=$?
+check_eq "修理後は --deep でも問題なし (終了コード 0)" "0" "$rc"
+echo
+
 if [[ $fail -eq 0 ]]; then
     printf '%d/%d 件すべて通りました。\n' "$total" "$total"
 else

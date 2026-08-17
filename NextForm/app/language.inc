@@ -113,6 +113,28 @@ $LANGUAGE['ja'] = array(
     'Confliction detected.' => '編集の衝突が起きました．',
     'The search index could not be read. Rebuild it from the admin page.' =>
     '検索インデックスを読めませんでした．管理画面から再構築してください．',
+
+    'Search index' => '検索インデックス',
+    'Index files: $num$ ($size$)' => 'インデックスのファイル: $num$ 個 ($size$)',
+    'Indexed pages: $num1$ / Actual pages: $num2$' =>
+    'インデックス上のページ: $num1$ / 実際のページ: $num2$',
+    'Unreadable index files: $num$' => '読めないインデックスのファイル: $num$ 個',
+    'Pages not in the index: $num$' =>
+    'インデックスに載っていないページ: $num$ 件 (検索に出てきません)',
+    'Index entries for pages that no longer exist: $num$' =>
+    '実在しないページの登録: $num$ 件',
+    'Pages missing some of their index entries: $num$' =>
+    'インデックスの登録が欠けているページ: $num$ 件 (一部の語で検索に出てきません)',
+    'Pages with index entries no longer in their text: $num$' =>
+    '本文に無い登録が残っているページ: $num$ 件 (検索結果は正しいままです)',
+    'Check in detail' => '詳しく検査する',
+    'Repair' => '直す',
+    'Repaired $pagename$.' => '$pagename$ のインデックスを入れ直しました．',
+    'The index matches the pages.' => 'インデックスとページは一致しています．',
+    'Rebuild the search index to fix this.' =>
+    '検索インデックスを再構築してください．',
+    'This check cannot see entries missing from a page that is otherwise indexed.' =>
+    'この検査では、ページ単位で一部の登録だけが欠けている状態は分かりません．「詳しく検査する」で調べられます．',
     'Current source' => '最新のソース',
     'Your changes' => 'あなたの行った編集',
 
