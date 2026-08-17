@@ -299,6 +299,39 @@ curl -o /dev/null -w '%{http_code}\n' https://example.com/wiki/storage/
 > 許していません。その行を消して、`httpd.conf` 側の該当 `<Directory>` に
 > `Options -Indexes` を設定してください。
 
+### 外から操作しているスクリプトを直す ★0.4.0★
+
+0.4.0 から、**状態を変える操作は POST でしか受け付けません。**さらにその POST が
+同じサイトから来たことを `Origin` (無ければ `Referer`) で確かめます。
+
+**ブラウザからの操作は今までどおりです。**画面のフォームは元から POST なので、
+編集・削除・添付・管理画面のどれも操作は変わりません。手を入れる必要があるのは、
+**wiki を外部のスクリプトから叩いている場合だけ**です。
+
+0.3 まではこう書けました。
+
+```bash
+# 0.4.0 からは 403 になります
+curl 'https://example.com/wiki/?ページ名&action=write&contents=本文'
+```
+
+0.4.0 では POST にして `Origin` を付けます。
+
+```bash
+curl -X POST -H 'Origin: https://example.com' \
+     -d 'action=write' --data-urlencode 'contents=本文' \
+     'https://example.com/wiki/?ページ名'
+```
+
+思い当たるものが無ければ、何もしなくて構いません。確かめるなら、
+アップグレード後に一度サイトを使ってみて、403 の画面
+(「このサイトから送られた要求ではありません．」) が出ないことを見てください。
+
+> **どうしても直せないスクリプトがある場合**、`index.php` に
+> `define('CSRF_PROTECTION', 'false');` を書けば元の動作に戻せます。
+> ただし**罠サイトからページを消せる状態に戻ります。**
+> 先に、呼び出し側に `Origin` ヘッダを足せないかを検討してください。
+
 ---
 
 ## 6. 元に戻す

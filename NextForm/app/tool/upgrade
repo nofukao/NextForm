@@ -629,6 +629,17 @@ if($up_htaccess !== false && strpos($up_htaccess, 'Options -Indexes') === false)
     upgrade_out("    サーバの AllowOverride が Options を許していないので、その行を消して");
     upgrade_out("    httpd.conf 側で Options -Indexes を設定してください");
 }
+/*
+ * 0.4.0 から状態を変える操作は POST + 同一オリジンに限る。ブラウザからの
+ * 操作は変わらないが、外部のスクリプトから叩いていると止まる。
+ * docs/upgrade-guide.md の「外から操作しているスクリプトを直す」と 1 対 1。
+ */
+upgrade_out("");
+upgrade_out("  外からスクリプトで操作している場合は直してください (0.4.0):");
+upgrade_out("    状態を変える操作は POST かつ Origin ヘッダ付きでないと 403 になります");
+upgrade_out("    例: curl -X POST -H 'Origin: https://example.com' -d 'action=write' ...");
+upgrade_out("    ブラウザからの操作は変わりません (画面のフォームは元から POST です)");
+
 if($up_backup_path !== null) {
     upgrade_out("");
     upgrade_out("  問題があれば戻せます:");
