@@ -11,10 +11,12 @@ function elasticsearch_request($path, $method, $body = false) {
     $headers = array(
 	'Content-Type: application/json'
 	);
+    /* 検索も索引更新もリクエストの途中で呼ばれる。待ち時間に上限を掛ける */
     $options = array('http' => array(
 			 'ignore_errors' => true,
 			 'method' => $method,
 			 'header' => implode("\r\n", $headers),
+			 'timeout' => EXTERNAL_FETCH_TIMEOUT,
 			 ));
     if($body !== false)
 	$options['http']['content'] = $body;

@@ -431,7 +431,14 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 
     $data = array();
 
-    $file_context = stream_context_create(array('http' => array('ignore_errors' => true)));
+    /*
+     * ページの描画を止めて取りに行くので、待ち時間に上限を掛ける。
+     * 掛けないと default_socket_timeout (既定 60 秒) 任せになる。
+     * 取れなければ空で返し、その結果もキャッシュされる (呼び出し側を参照)。
+     */
+    $file_context = stream_context_create(
+	array('http' => array('ignore_errors' => true,
+			      'timeout' => EXTERNAL_FETCH_TIMEOUT)));
     $json_text = @file_get_contents($uri, false, $file_context);
     if(!empty($json_text)) {
 	$json = json_decode($json_text, true);

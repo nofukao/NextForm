@@ -69,6 +69,14 @@ set_const('THEME_URI', THEME_DIR_PATH);
 
 set_const('BACKUP_SKIP_TIME_SECONDS', 15 * 60);
 
+/*
+ * 外部のサーバーから取ってくるときの待ち時間の上限 (秒)。
+ * &calendar の Google カレンダー連携と Elasticsearch がここを見る。
+ * どちらもページの描画の途中で同期的に取りに行くので、相手が応答しないと
+ * その時間だけページが出てこない。実測で 21 秒待たされた例がある。
+ */
+set_const('EXTERNAL_FETCH_TIMEOUT', 5);
+
 set_const('PAGE_FIND_CREATE_CACHE_TIME', 0.01);
 
 set_const('PAGE_FILE_IMAGE_RESIZE', 'max 640x640');
@@ -214,6 +222,7 @@ function setup_read($name) {
 |{THEME_DIR_PATH|theme|テーマをキャッシュしておくディレクトリ|}
 |{THEME_URI|theme|THEME_DIR_PATHにアクセスするためのURL|}
 |{BACKUP_SKIP_TIME_SECONDS|15 * 60|この秒数以内の編集はバックアップをしない|}
+|{EXTERNAL_FETCH_TIMEOUT|5|外部のサーバーから取ってくるときの待ち時間の上限(秒)|}
 |{PAGE_FIND_CREATE_CACHE_TIME|0.01|内部で使用するページの一覧取得処理でこの秒数以上かかった結果はキャッシュする|}
 |{PAGE_FILE_IMAGE_RESIZE|max 640x640|種別fileのページで画像を表示する際のサイズ|}
 |{PAGE_FILE_IMAGE_RESIZE_MAX_SIZE|1048576|メモリ保護のためこのバイト数以上の画像ファイルはリサイズ処理を行わない|}
