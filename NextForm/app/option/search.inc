@@ -85,6 +85,20 @@ function search_show(&$args, $dom) {
 
 	$p = dom_append_child($dom, 'p', 'search_summary');
 	dom_append_text($p, lf('$num$ result(s)', array('num' => $result_num)));
+
+	/*
+	 * 検索結果は search_page_match() が読み取り権限で絞っている。
+	 * 読むのに権限が要るサイトで未ログインだと、本文に確かにある語でも
+	 * 「0 件」としか出ず、権限の問題だと分からない。
+	 *
+	 * 隠れている件数や有無は出さない。それを出すと、読めないページが
+	 * 存在することを未ログインの相手に教えることになる。
+	 * 0 件のときだけ、常に真である案内を添える。
+	 */
+	if($result_num == 0 && auth_get_user() === false) {
+	    $notice = dom_append_child($dom, 'p', 'search_notice');
+	    dom_append_text($notice, l('Logging in may widen what you can search.'));
+	}
 	if($each > 0 && $result_num > $each) {
 	    dom_append_text($p, ' ');
 	    dom_append_text($p, lf('($start$-$end$)',

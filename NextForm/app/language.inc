@@ -115,6 +115,8 @@ $LANGUAGE['ja'] = array(
     '検索インデックスを読めませんでした．管理画面から再構築してください．',
 
     '($start$-$end$)' => '($start$〜$end$件目)',
+    'Logging in may widen what you can search.' =>
+    'ログインすると検索できる範囲が広がる場合があります．',
 
     'Search index' => '検索インデックス',
     'Index files: $num$ ($size$)' => 'インデックスのファイル: $num$ 個 ($size$)',
@@ -295,6 +297,8 @@ $LANGUAGE['ja'] = array(
     'Frequency' => '出現頻度',
 
     '($start$-$end$)' => '($start$〜$end$件目)',
+    'Logging in may widen what you can search.' =>
+    'ログインすると検索できる範囲が広がる場合があります．',
 
     'Search index' => '検索インデックス',
     'Rebuild search index' => '検索インデックスを再構築',
