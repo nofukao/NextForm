@@ -37,6 +37,10 @@ function cache_serialized_get($pagename, $cachekey, $limit_time = 0) {
     return unserialize($data);
 }
 
+function cache_rename($pagename, $from_cachekey, $to_cachekey) {
+    return storage_cache_rename($pagename, $from_cachekey, $to_cachekey);
+}
+
 function cache_delete($pagename, $cachekey = '', $is_parent = false) {
     return storage_cache_delete($pagename, $cachekey, $is_parent);
 }

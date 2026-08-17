@@ -152,7 +152,7 @@ function search_index_write(&$args, $dom) {
 
 function search_index_initializer($args, $dom, &$alltags) {
     if(SEARCH_ENGINE === 'builtin')
-	cache_delete('', 'search_index_');
+	cache_delete('', SEARCH_INDEX_KEY_PREFIX);
     else
 	search_engine_index_clear();
     $alltags = array();

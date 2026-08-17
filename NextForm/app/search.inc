@@ -3,6 +3,16 @@ $SEARCH_SUBSTR = function_exists('mb_substr') ? 'mb_substr' : 'substr';
 $SEARCH_STRLEN = function_exists('mb_strlen') ? 'mb_strlen' : 'strlen';
 define('SEARCH_NGRAM_NUMBER', 2);
 
+/*
+ * 索引のファイルは storage/cache/ にこの接頭辞 + 1 バイトの名前で置かれる。
+ * 再構築中は別の接頭辞に書き、最後にまとめて付け替える。こうすると
+ * 再構築が途中で止まっても、それまでの索引がそのまま使われ続ける。
+ * 2 つの接頭辞は、片方がもう片方の前方一致にならないようにすること
+ * (cache_get_keys_prefix() が前方一致で拾うため)。
+ */
+define('SEARCH_INDEX_KEY_PREFIX', 'search_index_');
+define('SEARCH_INDEX_REBUILD_KEY_PREFIX', 'search_rebuild_');
+
 $SEARCH_ENGINES = array();
 require_once(APP_DIR_PATH . '/search/elasticsearch.inc');
 
@@ -73,7 +83,7 @@ function search_word($word, &$candidate_pagenames) {
 	search_ngrams_group_by_key($ngrams, $group);
 	$match_page_count = count($ngrams);
 	foreach($group as $key => &$ngrams) {
-	    $cachekey = 'search_index_' . $key;
+	    $cachekey = SEARCH_INDEX_KEY_PREFIX . $key;
 	    $index = cache_serialized_get('', $cachekey);
 	    if($index !== false) {
 		foreach($ngrams as $ngram) {
@@ -90,7 +100,7 @@ function search_word($word, &$candidate_pagenames) {
 	}
     } else {
 	$key = search_ngram_key($word);
-	$cachekey = 'search_index_' . $key;
+	$cachekey = SEARCH_INDEX_KEY_PREFIX . $key;
 	$match_page_count = 1;
 	$index = cache_serialized_get('', $cachekey);
 	if($index !== false) {
@@ -173,7 +183,7 @@ function search_index_add($pagename, &$ngrams) {
     $group = array();
     search_ngrams_group_by_key($ngrams, $group);
     foreach($group as $key => &$ngrams) {
-	$cachekey = 'search_index_' . $key;
+	$cachekey = SEARCH_INDEX_KEY_PREFIX . $key;
 	if(!search_index_read($cachekey, $index)) {
 	    search_index_warn_broken($cachekey);
 	    continue;
@@ -189,7 +199,7 @@ function search_index_remove($pagename, &$ngrams) {
     $group = array();
     search_ngrams_group_by_key($ngrams, $group);
     foreach($group as $key => &$ngrams) {
-	$cachekey = 'search_index_' . $key;
+	$cachekey = SEARCH_INDEX_KEY_PREFIX . $key;
 	if(!search_index_read($cachekey, $index)) {
 	    search_index_warn_broken($cachekey);
 	    continue;
@@ -222,7 +232,7 @@ function search_index_collect($is_deep = false) {
 	'broken' => array(),
 	'page_ngrams' => array(),
 	);
-    foreach(cache_get_keys_prefix('', 'search_index_') as $cachekey) {
+    foreach(cache_get_keys_prefix('', SEARCH_INDEX_KEY_PREFIX) as $cachekey) {
 	$collected['file_num']++;
 	$filepath = cache_get_as_filepath('', $cachekey);
 	if($filepath !== false)

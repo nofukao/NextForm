@@ -590,6 +590,24 @@ function storage_cache_create_close($cfp, $pagename, $cachekey) {
     rename($tmp_cachepath, $cachepath);
 }
 
+/*
+ * キャッシュを別のキーに付け替える。中身は読まないので、大きなファイルでも一瞬。
+ * 付け替え先が既にあれば置き換わる (rename(2) の挙動)。
+ */
+function storage_cache_rename($pagename, $from_cachekey, $to_cachekey) {
+    $from_cachepath = storage_cache_get_cachepath($pagename, $from_cachekey);
+    if(!@is_file($from_cachepath))
+	return false;
+    $to_cachepath = storage_cache_get_cachepath($pagename, $to_cachekey);
+    $dirpath = dirname($to_cachepath);
+    if(!is_dir($dirpath) && !mkdir($dirpath, 0777, true))
+	return false;
+    if(!rename($from_cachepath, $to_cachepath))
+	return false;
+    storage_file_clean_directory(STORAGE_FILE_DIR_CACHE_PATH, dirname($from_cachepath));
+    return true;
+}
+
 function storage_cache_open($pagename, $cachekey, $limit_time = 0) {
     $cachepath = storage_cache_get_cachepath($pagename, $cachekey);
     if(@is_file($cachepath)) {

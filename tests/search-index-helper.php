@@ -51,7 +51,7 @@ define('TEST_PAGE_PREFIX', 'SearchIndexTest');
 /* 索引を全部なめて、あるページ名が載っている ngram を集める */
 function index_ngrams_of($pagename) {
     $found = array();
-    foreach(cache_get_keys_prefix('', 'search_index_') as $cachekey) {
+    foreach(cache_get_keys_prefix('', SEARCH_INDEX_KEY_PREFIX) as $cachekey) {
 	$index = @unserialize((string)cache_get('', $cachekey));
 	if($index === false)
 	    continue;
@@ -77,7 +77,7 @@ function test_write($pagename, $contents, $extra = array()) {
 function biggest_bucket_key() {
     $biggest = false;
     $biggest_size = -1;
-    foreach(cache_get_keys_prefix('', 'search_index_') as $cachekey) {
+    foreach(cache_get_keys_prefix('', SEARCH_INDEX_KEY_PREFIX) as $cachekey) {
 	$filepath = cache_get_as_filepath('', $cachekey);
 	if($filepath === false)
 	    continue;
@@ -105,7 +105,7 @@ switch($check) {
 
 /* option/search_index.inc の再構築と同じ手順 (全消し → 全ページを入れ直す) */
 case 'rebuild':
-    cache_delete('', 'search_index_');
+    cache_delete('', SEARCH_INDEX_KEY_PREFIX);
     $indexed = 0;
     foreach(page_find('', array('is_pagename_only' => true)) as $found) {
 	/* search_page_index_add() は参照を取るので、変数に受けてから渡す */
