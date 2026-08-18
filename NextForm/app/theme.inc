@@ -1,6 +1,12 @@
 <?php
 define('THEME_HTML_FILE_NAME', 'html.php');
 define('THEME_SETUP_FILE_NAME', 'setup.php');
+/*
+ * 全テーマが共有するファイルの置き場 (色調・共通 CSS・共通 JS)。
+ * html.php を持たないのでテーマ一覧には出ず、theme_convert() の対象にもならない。
+ * 各テーマは style/main.css や setup.php からここを include する。
+ */
+define('THEME_COMMON_DIR_NAME', 'common');
 
 function theme_debug_is_enable() {
     return DEBUG_MODE === 'true' && THEME_DEBUG_MODE === 'true';
@@ -11,9 +17,15 @@ function theme_get_themes() {
     $files = glob_array(APP_DIR_PATH . '/theme/*/' . THEME_HTML_FILE_NAME);
     foreach($files as $file) {
 	$theme_name = basename(dirname($file));
+	if($theme_name === THEME_COMMON_DIR_NAME)
+	    continue;
 	$themes[$theme_name] = $theme_name;
     }
     return $themes;
+}
+
+function theme_get_common_dir_path() {
+    return APP_DIR_PATH . '/theme/' . THEME_COMMON_DIR_NAME;
 }
 
 function theme_get_source_dir_path($theme = '') {
