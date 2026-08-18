@@ -1,7 +1,7 @@
 <?php
 $argv = $_SERVER['argv'];
 if(count($argv) < 3) {
-    printf("Usage: %s path/to/toratorawiki/index.php /absolute/path/to/pukiwiki/install/dir [EUC-JP|UTF-8]\n", $argv[0]);
+    printf("Usage: %s path/to/nextform/index.php /absolute/path/to/pukiwiki/install/dir [EUC-JP|UTF-8]\n", $argv[0]);
     exit(1);
 }
 $pukiwiki_dir = $argv[2];

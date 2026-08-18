@@ -188,7 +188,7 @@ function head_tags_init() {
 			 ));
     dom_append_child($head_tags, 'meta', '', array(
 			 'name' => 'application-name',
-			 'content' => 'ToraToraWiki'
+			 'content' => 'NextForm'
 			 ));
     head_tags_add_javascript('resource/script/prototype.js');
     head_tags_add_javascript('resource/script/toratora.js');

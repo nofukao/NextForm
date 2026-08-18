@@ -116,7 +116,7 @@ set_const('SEARCH_RESULTS_PER_PAGE', 50);
 set_const('SEARCH_SNIPPET_MAX', 5);
 set_const('SEARCH_DEFAULT_ORDER', 'score');
 set_const('SEARCH_ENGINE', 'builtin');
-set_const('SEARCH_ELASTICSEARCH_URL', 'http://localhost:9200/toratorawiki');
+set_const('SEARCH_ELASTICSEARCH_URL', 'http://localhost:9200/nextform');
 
 set_const('FEED_DEFAULT_PAGE_NUM', 20);
 
@@ -184,15 +184,22 @@ if(!isset($AUTH_PERMISSIONS))
 
 set_const('DEBUG_MODE', 'false');
 
-set_const('OFFICIAL_URL', 'http://toratora.wiki/');
+set_const('OFFICIAL_URL', 'https://github.com/nofukao/NextForm');
 
 set_const('OS_IS_WINDOWS', strtoupper(substr(PHP_OS, 0, 3)) == 'WIN' ? 'true' : 'false');
 
 function set_const($constname, $defaultvalue) {
     if(!defined($constname)) {
 	$envval = false;
-	if(function_exists('apache_getenv'))
-	    $envval = apache_getenv('TORATORAWIKI_' . $constname);
+	if(function_exists('apache_getenv')) {
+	    /*
+	     * NEXTFORM_ を先に見て、無ければ上流の TORATORAWIKI_ を見る。
+	     * 既存サイトの SetEnv を書き換えさせないため、古い接頭辞も残す。
+	     */
+	    $envval = apache_getenv('NEXTFORM_' . $constname);
+	    if($envval === false || $envval === NULL)
+		$envval = apache_getenv('TORATORAWIKI_' . $constname);
+	}
 	if($envval !== false && $envval !== NULL)
 	    define($constname, $envval);
 	else
@@ -239,7 +246,7 @@ function setup_read($name) {
 |{MANUAL_PAGENAME|ToraToraWikiManual|マニュアルページのページ名|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
-|{APP_DIR_PATH|./app(自動で設定されます)|ToraToraWikiのappディレクトリ|}
+|{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
 |{STORAGE_FILE_DIR_PATH|./storage|サイトの各種情報の保存ディレクトリ|}
 |{PLUGIN_DIR_PATH|./plugin|プラグインを読み込むディレクトリ|}
 |{THEME_DIR_PATH|theme|テーマをキャッシュしておくディレクトリ|}
@@ -259,8 +266,8 @@ function setup_read($name) {
 |{SEARCH_RESULTS_PER_PAGE|50|検索結果を1画面に出す件数(0で全件)|}
 |{SEARCH_SNIPPET_MAX|5|検索結果1件に出す本文スニペットの上限(0で無制限)|}
 |{SEARCH_DEFAULT_ORDER|score|検索結果の順序 score:単語の出現頻度(スコア)順, mtime:更新日時順|}
-|{SEARCH_ENGINE|builtin|使用する検索エンジン builtin:ToraToraWiki内臓の検索エンジン, elasticsearch: Elasticsearchを使用|}
-|{SEARCH_ELASTICSEARCH_URL|http://localhost:9200/toratorawiki|ElasticsearchのURL|}
+|{SEARCH_ENGINE|builtin|使用する検索エンジン builtin:NextForm内蔵の検索エンジン, elasticsearch: Elasticsearchを使用|}
+|{SEARCH_ELASTICSEARCH_URL|http://localhost:9200/nextform|ElasticsearchのURL|}
 |{FEED_DEFAULT_PAGE_NUM|20|フィードのデフォルトの件数|}
 |{USER_HISTORY_ENABLE|false|ユーザーが閲覧したページを記録する(試験的機能,非推奨)|}
 |{USER_HISTORY_UNREAD|false|未読ページへのリンクにマークをつける(USER_HISTORY_ENABLEをtrueにする必要あり)|}

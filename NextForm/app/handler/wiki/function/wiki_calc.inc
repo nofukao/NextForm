@@ -423,7 +423,7 @@ function wiki_calc_format($value, &$formats) {
 &title 数値計算
 
 *概要
-ToraToraWikiにはWiki記法中に式を書くことでその式の値を計算する数値計算機能があります．
+NextFormにはWiki記法中に式を書くことでその式の値を計算する数値計算機能があります．
 数値計算機能を使うには以下のように行頭に&=を書く方法と&&calcを使う方法があります．
 
  = 式

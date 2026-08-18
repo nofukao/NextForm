@@ -60,7 +60,7 @@ function reminder_write(&$args, $dom) {
 	if(PASSWORD_REMINDER_EMAIL_FROM !== '') {
 	    $from = PASSWORD_REMINDER_EMAIL_FROM;
 	} else  {
-	    $from = 'toratorawiki-reminder-noreply';
+	    $from = 'nextform-reminder-noreply';
 	    if(isset($_SERVER['HTTP_HOST']))
 		$from = $from . '@' . $_SERVER['HTTP_HOST']; 
 	}

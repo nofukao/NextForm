@@ -5,7 +5,7 @@ $INSTALL_INFO = array();
 $main_page_dom = null;
 if(!defined('INSTALL_INFO_FILE_PATH'))
     define('INSTALL_INFO_FILE_PATH', 'install-info.dat');
-define('SITE_NAME', 'ToraToraWiki Initial setup');
+define('SITE_NAME', 'NextForm Initial setup');
 /*
  * ここで SIDE_PAGENAME を '' に上書きしてはいけない。
  *
@@ -76,7 +76,7 @@ function install_app_directory() {
     if(is_file(APP_DIR_PATH . '/boot.inc'))
 	return true;
     header('Content-type: text/plain');
-    echo("Directory '" . APP_DIR_PATH . "' is not ToraToraWiki app directory.\n\n");
+    echo("Directory '" . APP_DIR_PATH . "' is not NextForm app directory.\n\n");
     echo <<<EOT
 Please insert the following text in index.php. 
 ---------------------------
@@ -362,7 +362,7 @@ function install_done($dom, $args) {
 
 define('INSTALL_APACHE_EXAMPLE', <<<'EOT'
 # version 2.2
-<Directory "/path/to/toratorawiki/">
+<Directory "/path/to/nextform/">
     Order Allow,Deny
     <Files ".">
         Allow from all
@@ -372,12 +372,12 @@ define('INSTALL_APACHE_EXAMPLE', <<<'EOT'
     </Files>
     Deny from all
 </Directory>
-<Directory ~ "^/path/to/toratorawiki/(resource|theme)/">
+<Directory ~ "^/path/to/nextform/(resource|theme)/">
     Allow from all
 </Directory>
 
 # version 2.4
-<Directory "/path/to/toratorawiki/">
+<Directory "/path/to/nextform/">
      Require all denied
     <Files ".">
         Require all granted
@@ -386,7 +386,7 @@ define('INSTALL_APACHE_EXAMPLE', <<<'EOT'
         Require all granted
     </Files>
 </Directory>
-<Directory ~ "^/path/to/toratorawiki/(resource|theme)/">
+<Directory ~ "^/path/to/nextform/(resource|theme)/">
     Require all granted
 </Directory>
 

@@ -28,7 +28,7 @@ function eval_index_php($file_path, $check_owner = true) {
     }
 
     if(!preg_match('/<\?(php)?(.*)(require|include).*boot\.inc.*\;.*\?>/s', $contents, $matches)) {
-	printf("%s is not toratorawiki file\n", $file_path);
+	printf("%s is not NextForm file\n", $file_path);
 	exit(1);
     }
     

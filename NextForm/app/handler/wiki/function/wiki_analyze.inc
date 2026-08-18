@@ -124,7 +124,7 @@ function wiki_operator_analyze_parse_parameters(&$context, $tree, &$condition) {
 カウンターの値は，サイトの管理者であれば''管理ツール'' -> ''アクセス解析''からでも確認できます．
 
 *注意
-自分でToraToraWikiを設置した場合，
+自分でNextFormを設置した場合，
 アクセスカウンターを使用するにはWebサーバーの管理者がアクセス解析の設定をしていなければいけません．
 詳細は[[アクセス解析の設定:../../../Administration/Analyzer]]を参照して下さい．
 
@@ -176,7 +176,7 @@ day=0はtodayと，day=1はyesterdayと同じ効果になります．
 アクセス数は，サイトの管理者であれば''管理ツール'' -> ''アクセス解析''からでも確認できます．
 
 *注意
-自分でToraToraWikiを設置した場合，
+自分でNextFormを設置した場合，
 人気のページ一覧を使用するにはWebサーバーの管理者がアクセス解析の設定をしていなければいけません．
 詳細は[[アクセス解析の設定:../../../Administration/Analyzer]]を参照して下さい．
 

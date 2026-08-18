@@ -55,8 +55,8 @@
     <footer class="signature">
       Powered by 
       <a href="<?php trw_official_url(); ?>" target="_blank">
-        <img class="signature" src="resource/image/signature.png"  alt="ToraToraWiki logo"/>
-        ToraToraWiki
+        <img class="signature" src="resource/image/signature.png"  alt="NextForm logo"/>
+        NextForm
       </a>
     </footer>
   </body>

@@ -118,7 +118,7 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 #include<stdio.h>
 
 int main(int argc, char **argv) {
-	printf("Hello ToraTora.\n");
+	printf("Hello NextForm.\n");
 	return 0;
 }
 }
@@ -173,7 +173,7 @@ function wiki_operator_code(&$context, $dom, $tree) {
 &code() {
 #include<stdio.h>
 int main(int argc, char **argv) {
-	printf("Hello ToraTora.\n");
+	printf("Hello NextForm.\n");
 	return 0;
 }
 }
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
 &code(linenum) {{{
 main :: IO ()
 main = do
-  putStrLn "Hello ToraTora."
+  putStrLn "Hello NextForm."
 }}}
 */
 
