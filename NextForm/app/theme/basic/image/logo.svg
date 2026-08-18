@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="NextForm">
+  <g stroke-width="3.5" stroke-linejoin="round" fill="none">
+    <rect x="17" y="6.75" width="24" height="16" rx="3.5" stroke="#d2603a"/>
+    <rect x="11" y="16" width="24" height="16" rx="3.5" stroke="#23282c" fill="#fff" fill-opacity="0.55"/>
+    <rect x="5" y="25.25" width="24" height="16" rx="3.5" stroke="#23282c" fill="#fff" fill-opacity="0.9"/>
+  </g>
+</svg>
