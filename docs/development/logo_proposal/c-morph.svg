@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="NextForm">
+  <g stroke-width="3.5" stroke-linejoin="round">
+    <rect x="4.75" y="17.75" width="12.5" height="12.5" rx="0.5" fill="none" stroke="#23282c"/>
+    <rect x="18.75" y="17.75" width="12.5" height="12.5" rx="4.5" fill="none" stroke="#23282c"/>
+    <circle cx="39" cy="24" r="6.25" fill="#d2603a" stroke="none"/>
+  </g>
+</svg>
