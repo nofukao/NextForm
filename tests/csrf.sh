@@ -23,6 +23,7 @@
 #   2. GET では状態が変わらないこと
 #   3. POST は同一オリジンからのものだけ通ること
 #   4. ダイジェスト認証の nonce が使い回せないこと
+#   5. 画面のフォームが GET で「安全でない action」を送っていないこと (下記)
 #
 # 資格情報をテストに置かずに済ませるため、複製したサイトの
 # 「ログインしていない利用者」に write 権限を与えてから検査する。
@@ -101,6 +102,35 @@ if [[ ! -d "$NF_SITE" ]]; then
     echo "tests/env.local の NF_SITE を設定してください。" >&2
     exit 1
 fi
+
+# --- フォームの送信方法 (ソースの静的検査) -----------------------------------
+# CSRF 対策は action 名の許可リストで判定するので、安全と分かっている action
+# 以外は POST + 同一オリジンでないと弾かれる。画面側が GET のフォームのままだと
+# ボタンを押しても 403 になり、押した人には「何も起きない」ようにしか見えない。
+# 実際 v0.4.0 から v0.4.1 の間、マニュアル生成と他 wiki からのインポートの
+# 2 画面がこれで動かなくなっていた。HTTP では管理者の資格情報が要って
+# 踏みにくいので、ソースを直接見る。
+echo "[0] フォームの送信方法 (ソース)"
+form_bad="$(python3 - "$REPO_ROOT" <<'PYEOF'
+import glob, re, sys
+safe = {'show', 'edit', 'source', 'summary', 'texts', 'raw', 'diff', 'page',
+        'only', 'list', 'autocomplete', 'check'}
+bad = []
+for path in glob.glob(sys.argv[1] + '/NextForm/app/**/*.inc', recursive=True):
+    text = open(path, encoding='utf-8').read()
+    for m in re.finditer(r'dom_append_(?:page_)?form\s*\((.*?)\);', text, re.S):
+        call = m.group(1)
+        if not re.search(r"'GET'\s*$", call.strip()):
+            continue
+        for action in re.findall(r"'action'\s*=>\s*'([a-z_]+)'", call):
+            if action not in safe:
+                bad.append('%s:%d action=%s' % (path[len(sys.argv[1]) + 1:],
+                                                text[:m.start()].count('\n') + 1, action))
+print('\n'.join(bad))
+PYEOF
+)"
+check_eq "GET のフォームが安全でない action を送っていない" "" "$form_bad"
+echo
 
 echo "複製元 = $NF_SITE"
 echo "検証先 = $CSRF_TEST_SITE"

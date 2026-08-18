@@ -15,9 +15,13 @@ function admin_import_otherwiki_show(&$args, $dom) {
 
     message_notice(l('Pages and histories will be overwritten by other wiki pages.'));
 
+    /*
+     * POST で送る。安全と分かっている action 以外は POST かつ同一オリジンで
+     * ないと 0.4.0 の CSRF 対策に弾かれる (この画面は 2 段階とも GET だった)。
+     */
     $form = dom_append_form($dom, 
 			    array('option' => 'admin_import_otherwiki', 
-				  'action' => 'write'), '', 'GET');
+				  'action' => 'write'));
     $label = dom_append_child($form, 'label');
     dom_append_text($label, l('Wiki type'));
     dom_append_selector($label, 'otherwiki_type', $IMPORT_OTHERWIKI_TYPE);
@@ -43,7 +47,7 @@ function admin_import_otherwiki_write(&$args, $dom) {
 
     $new_args = $args;
     $new_args['action'] = 'import';
-    $form = dom_append_form($dom, $new_args, '', 'GET');
+    $form = dom_append_form($dom, $new_args);
     dom_append_input_hidden($form, array('firsttime' => 'true'));
     import_otherwiki_form($form);
     $submit = dom_append_child($form, 'input', '', array('type' => 'submit', 'value' => l('Run')));
