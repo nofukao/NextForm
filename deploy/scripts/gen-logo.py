@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """ロゴの SVG (docs/development/logo_proposal/e-cards.svg) を PNG と ICO に焼く。
 
-    ./deploy/scripts/gen-logo.py <出力ディレクトリ>
+    ./deploy/scripts/gen-logo.py <出力ディレクトリ>      logo.png と favicon.ico
+    ./deploy/scripts/gen-logo.py --png <ファイル> <辺の画素数>
 
 この開発環境には画像変換ツール (ImageMagick / rsvg / cairosvg / Pillow) が
 無いので、必要な図形 (角丸長方形の塗りと線) だけを自前で描いている。
@@ -129,6 +130,12 @@ def preview(canvas, size):
 
 
 if __name__ == '__main__':
+    if sys.argv[1] == '--png':
+        size = int(sys.argv[3])
+        open(sys.argv[2], 'wb').write(to_png(render(size), size))
+        print('%s (%dx%d) を書きました' % (sys.argv[2], size, size))
+        sys.exit(0)
+
     out_dir = sys.argv[1].rstrip('/')
     logo = render(96)
     open(out_dir + '/logo.png', 'wb').write(to_png(logo, 96))
