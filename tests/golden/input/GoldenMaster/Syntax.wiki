@@ -49,3 +49,20 @@ function example($argument) { return "test"; }
 
 ***表示名つき
 [[表示>http://example.com/]]
+
+**折り返しのブロック指定 (""&pre(nowrap)"")
+サイトの設定にかかわらず，このブロックは折り返さない (横スクロール)．
+&pre(nowrap){{
+ssh -R 12345:localhost:22 user@example.com -L 8080:internal.example.local:80 -N -f -o ServerAliveInterval=30
+}}
+
+**折り返しのブロック指定 (""&pre(wrap)"")
+サイトの設定にかかわらず，このブロックは折り返す．
+&pre(wrap){{
+https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+}}
+
+**コード表示と折り返しの併用 (""&pre(code, nowrap)"")
+&pre(code, nowrap){{
+function example($argument) { return "test"; }
+}}

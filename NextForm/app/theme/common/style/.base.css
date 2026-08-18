@@ -29,13 +29,13 @@ h1.pages,
 nav.pages,
 nav.redirect,
 form.templateinput {
-    margin-top: 24px;
-    margin-bottom: 24px;
+    margin-top: <?php echo(theme_density_px(24)); ?>px;
+    margin-bottom: <?php echo(theme_density_px(24)); ?>px;
 }
 section.section > p,
 section.section > section.block {
-    margin-top: 12px;
-    margin-bottom: 12px;
+    margin-top: <?php echo(theme_density_px(12)); ?>px;
+    margin-bottom: <?php echo(theme_density_px(12)); ?>px;
 }
 
 /* small block margin */
@@ -50,8 +50,8 @@ table,
 figure,
 form.search,
 img.math.display {
-    margin-top: 8px;
-    margin-bottom: 8px;
+    margin-top: <?php echo(theme_density_px(8)); ?>px;
+    margin-bottom: <?php echo(theme_density_px(8)); ?>px;
 }
 
 /* figure margin */
@@ -69,8 +69,8 @@ img.math.display {
 
 /* list margin */
 li {
-    padding-top: 3px;
-    padding-bottom: 3px;
+    padding-top: <?php echo(theme_density_px(3)); ?>px;
+    padding-bottom: <?php echo(theme_density_px(3)); ?>px;
 }
 li.has_children {
     padding-bottom: 0;
@@ -89,7 +89,7 @@ article.page > section.section {
 
 /* bounding box padding */
 pre, blockquote {
-    padding: 4px;
+    padding: <?php echo(theme_density_px(4)); ?>px;
 }
 
 /* layout ========================================= */
@@ -167,7 +167,7 @@ table td.numeric {
     text-align: right;
 }
 td, th {
-    padding: 4px;
+    padding: <?php echo(theme_density_px(4)); ?>px;
     border-style: solid;
     border-width: 1px;
 }
@@ -182,17 +182,32 @@ pre.code li {
 }
 pre {
     /*
-     * 1 行がページ幅より長いとき、横スクロールではなく折り返して表示する。
+     * 1 行がページ幅より長いときにどうするか。
+     *
      * pre 要素の既定は white-space: pre で折り返さないため、長いコード行や
      * URL がページからはみ出し、横スクロールバーでの移動が必要になっていた。
-     * overflow-wrap は空白の無い長い連続文字 (長い URL など) を途中で折る。
-     *
-     * TODO: 折り返すか横スクロールかを設定で選べるようにする
-     *       (docs/development/project-overview.md の v0.5 を参照)
+     * 既定は折り返し (overflow-wrap は空白の無い長い連続文字も途中で折る)。
+     * 横スクロールのほうが読みやすい用途もあるので、管理画面の
+     * THEME_PRE_WRAP で選べる。ブロックごとの指定は下の class が優先する。
      */
+<?php if(THEME_PRE_WRAP === 'scroll') { ?>
+    white-space: pre;
+    overflow-wrap: normal;
+<?php } else { ?>
     white-space: pre-wrap;
     overflow-wrap: break-word;
+<?php } ?>
     overflow: auto;
+}
+
+/* ブロックごとの指定 (&pre(wrap) / &pre(nowrap))。サイトの既定より強い */
+pre.wrap {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+pre.nowrap {
+    white-space: pre;
+    overflow-wrap: normal;
 }
 
 /* proportional ascii art */

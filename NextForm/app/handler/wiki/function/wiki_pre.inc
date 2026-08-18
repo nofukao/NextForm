@@ -11,6 +11,12 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
     $langs = array();
     $is_code = !empty($options['is_code']);
     $is_proportional_ascii_art = !empty($options['is_proportional_ascii_art']);
+    /*
+     * 長い行を折り返すかどうか。指定が無ければサイトの設定 (THEME_PRE_WRAP)
+     * に従う。CSS の class で切り替えるので、ここでは指定の有無だけを見る。
+     */
+    $is_wrap = false;
+    $is_nowrap = false;
     $linenum = 0;
     $is_function = false;
     $text = '';
@@ -24,6 +30,8 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 					    'code' => &$is_code,
 					    'linenum' => array(&$linenum, 1),
 					    'paa' => &$is_proportional_ascii_art,
+					    'wrap' => &$is_wrap,
+					    'nowrap' => &$is_nowrap,
 					    ),
 					'equalities' => array(
 					    'linenum' => &$linenum
@@ -61,23 +69,27 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 	sentence_append($pre, $text, $context['page'], array('excludes' => array('pagename')));
     }
     if($is_proportional_ascii_art)
-	dom_append_class($pre, 'paa');
+	dom_append_class($pre, 'paa');	// アスキーアートは折り返すと絵が崩れる
+    else if($is_nowrap)
+	dom_append_class($pre, 'nowrap');
+    else if($is_wrap)
+	dom_append_class($pre, 'wrap');
 }
 
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[整形済みテキスト(ファンクション):../../Function/pre]]|&&pre(code, linenum){対象テキスト}|
+|[[整形済みテキスト(ファンクション):../../Function/pre]]|&&pre(code, linenum, nowrap){対象テキスト}|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|preformatted text (function)|&&pre(code, linenum){text}|
+|preformatted text (function)|&&pre(code, linenum, nowrap){text}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/pre
 &title &&pre
 
 *概要
- &pre(code, paa, linenum, linenum=開始行番号) {対象テキスト}
+ &pre(code, paa, linenum, linenum=開始行番号, wrap, nowrap) {対象テキスト}
 対象テキストを整形済みテキストとしてそのまま表示します．
 行頭に半角スペースを書く記法と機能は同等ですが，
 行頭に半角スペースを入れる代わりに&{と&}で囲むだけで指定ができます。
@@ -87,6 +99,12 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 :paa|プロポーショナルフォントを用いたアスキーアートに適した表示を行います．
 :linenum|codeを指定した際に行番号を表示します．
 :{linenum=行番号|codeを指定した際に行番号を表示します．行番号は指定された番号から開始されます．}
+:wrap|ページ幅より長い行を折り返します．
+:nowrap|ページ幅より長い行を折り返さず，横スクロールで表示します．
+
+wrapもnowrapも指定しない場合は，サイトの設定に従います
+(管理ツール&gt;外観の設定&gt;整形済みテキストの長い行)．
+paaを指定した場合は絵が崩れるため，常に折り返しません．
 
 *対象
 対象テキストには整形済みテキストやプログラム言語を書きます．

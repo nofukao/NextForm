@@ -16,7 +16,7 @@ $card_shadow = $card_is_dark ? '0 1px 4px rgba(0, 0, 0, 0.5)' : '0 1px 4px rgba(
 
 body {
     font-family: "Helvetica Neue", "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-    line-height: 1.75;
+    line-height: <?php echo(theme_density_num(1.75)); ?>;
     background-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $card_ground); ?>;
 }
 pre, code, tt {

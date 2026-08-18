@@ -17,7 +17,7 @@ $docs_surface = $docs_is_dark ? 1.35 : 0.96;  // 面
 
 body {
     font-family: "Helvetica Neue", "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-    line-height: 1.9;
+    line-height: <?php echo(theme_density_num(1.9)); ?>;
 }
 pre, code, tt {
     font-family: "SFMono-Regular", Consolas, "Noto Sans Mono", monospace;

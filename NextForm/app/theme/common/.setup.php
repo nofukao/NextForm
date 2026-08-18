@@ -32,6 +32,29 @@ $SETUP_CONSTANTS['THEME_FONT_SIZE'] = array(
 	'20' => '20px',
 	));
 
+$SETUP_CONSTANTS['THEME_DENSITY'] = array(
+    'category' => 'theme',
+    'description' => 'Density',
+    'default' => 'normal',
+    'type' => 'select',
+    'options' => array(
+	'loose' => 'loose',
+	'normal' => 'normal',
+	'compact' => 'compact',
+	),
+    'note' => 'space between blocks and inside tables');
+
+$SETUP_CONSTANTS['THEME_PRE_WRAP'] = array(
+    'category' => 'theme',
+    'description' => 'Long lines in preformatted text',
+    'default' => 'wrap',
+    'type' => 'select',
+    'options' => array(
+	'wrap' => 'wrap',
+	'scroll' => 'scroll sideways',
+	),
+    'note' => 'a block can override this with &pre(wrap) or &pre(nowrap)');
+
 $SETUP_CONSTANTS['THEME_IMAGE_LOGO'] = array(
     'category' => 'theme',
     'description' => 'Site logo image',
@@ -218,6 +241,15 @@ $LANGUAGE['ja']['Side page position']         	= 'サイドページの位置';
 $LANGUAGE['ja']['left']                       	= '左';
 $LANGUAGE['ja']['right']                      	= '右';
 $LANGUAGE['ja']['Font size']                  	= '文字の大きさ';
+$LANGUAGE['ja']['Density']                    	= '本文の詰まり具合';
+$LANGUAGE['ja']['loose']                      	= 'ゆったり';
+$LANGUAGE['ja']['normal']                     	= '標準';
+$LANGUAGE['ja']['compact']                    	= '詰める';
+$LANGUAGE['ja']['space between blocks and inside tables'] = '段落・表・箇条書きの余白が変わります';
+$LANGUAGE['ja']['Long lines in preformatted text'] = '整形済みテキストの長い行';
+$LANGUAGE['ja']['wrap']                       	= '折り返す';
+$LANGUAGE['ja']['scroll sideways']            	= '横スクロール';
+$LANGUAGE['ja']['a block can override this with &pre(wrap) or &pre(nowrap)'] = 'ブロックごとに &pre(wrap) / &pre(nowrap) で変えられます';
 $LANGUAGE['ja']['Site logo image']    	      	= 'サイトのロゴ画像';
 $LANGUAGE['ja']['Site favorite icon'] 	      	= 'サイトのお気に入りアイコン';
 $LANGUAGE['ja']['Tone']                       	= '色調';

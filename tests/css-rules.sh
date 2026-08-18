@@ -71,6 +71,33 @@ rules_common() {
           "bool(re.search(r'(^|\})\s*pre\s*\{[^}]*overflow-wrap:\s*break-word', css, re.S))"
     check "アスキーアート pre.paa は折り返さない" \
           "bool(re.search(r'pre\.paa\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
+
+    # ブロックごとの &pre(wrap) / &pre(nowrap) は、サイトの既定がどちらでも効く。
+    check "ブロック指定 pre.wrap がある" \
+          "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"
+    check "ブロック指定 pre.nowrap がある" \
+          "bool(re.search(r'pre\.nowrap\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
+}
+
+# 設定を既定から動かしたときだけ見る項目。
+# 生成し直して確かめるので、既定の巡回とは別に呼ぶ。
+rules_pre_scroll() {
+    check "横スクロールを選ぶと pre が折り返さない" \
+          "bool(re.search(r'(^|\})\s*pre\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
+    check "横スクロールでも pre.wrap は折り返す" \
+          "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"
+}
+
+rules_density_compact() {
+    check "詰めると段落の余白が既定より狭い (24px -> 20px)" \
+          "bool(re.search(r'margin-top:\s*20px', css))"
+    check "詰めても余白が消えていない" \
+          "not re.search(r'margin-top:\s*0px;\s*margin-bottom:\s*0px', css)"
+}
+
+rules_density_loose() {
+    check "ゆったりで段落の余白が既定より広い (24px -> 28px)" \
+          "bool(re.search(r'margin-top:\s*28px', css))"
 }
 
 # --- テーマ固有の項目 --------------------------------------------
@@ -145,6 +172,21 @@ for theme in "${themes[@]}"; do
     else
         echo "  --    ${theme} 固有の検査はまだ無い (rules_${theme} を書く)"
     fi
+    echo
+done
+
+# --- 既定から動かした設定 ------------------------------------------
+# 生成し直さないと確かめられないので、代表して basic で見る。
+# (どのテーマも同じ common/style/ を読むため、テーマごとに回す必要はない)
+
+for pattern in pre-scroll density-compact density-loose; do
+    echo "[設定] ${pattern}"
+    if ! theme_lib_generate "$site" basic "$pattern" "$work/$pattern"; then
+        fail=$((fail + 1))
+        continue
+    fi
+    CSS="$work/$pattern/main.css"
+    "rules_${pattern//-/_}"
     echo
 done
 

@@ -15,6 +15,7 @@ THEME_LIB_SITES=()
 
 # 生成に使う設定の組み合わせ。
 # 色調は全部、レイアウトと文字の大きさは端まで、背景画像は分岐が多いので必ず含める。
+# 詰まり具合と整形済みテキストの折り返しは、CSS の数値そのものを動かすので入れる。
 declare -A THEME_PATTERNS=(
   [default]=""
   [tone-yellow-pink]="THEME_TONE=yellow/pink"
@@ -27,6 +28,9 @@ declare -A THEME_PATTERNS=(
   [layout-solid]="THEME_LAYOUT=solid"
   [side-right]="THEME_SIDE_PAGE_POSITION=right"
   [side-none]="SIDE_PAGENAME="
+  [density-loose]="THEME_DENSITY=loose"
+  [density-compact]="THEME_DENSITY=compact"
+  [pre-scroll]="THEME_PRE_WRAP=scroll"
   [font-12]="THEME_FONT_SIZE=12"
   [font-20]="THEME_FONT_SIZE=20"
   [header-parts]="THEME_HEADER_HEIGHT=120 THEME_HEADER_SITE_NAME_ENABLE=false THEME_SEARCH_TOOL_ENABLE=false THEME_SITE_MENU_SIZE=small"
