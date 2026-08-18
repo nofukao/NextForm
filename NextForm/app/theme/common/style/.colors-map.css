@@ -1,0 +1,236 @@
+<?php
+/*
+ * 色を部品に割り当てる。
+ *
+ * THEME_COLOR_* が何色かは common/.colors.php が決め、ここではその色を
+ * どの要素に塗るかを決める。この対応はテーマが変わっても変わらないので
+ * 共通に置く。テーマ側で塗り分けを変えたいときは、main.css でこれを読んだ
+ * あとに上書きする。
+ */
+?>
+/* color ========================================= */
+
+/* theme color */
+header.title,
+footer.signature {
+    background-color: <?php trw_color(THEME_COLOR_MAIN); ?>;
+}
+article.main > h1,
+form.refpage h1,
+h1.pages {
+    border-color: <?php trw_color(THEME_COLOR_MAIN); ?>;
+}
+
+/* theme highlight color */
+.background_emphasis,
+label.checked,
+li.selected,
+h1.anchor {
+    background-color: <?php trw_color(THEME_COLOR_HIGHLIGHT); ?>;
+}
+li.selected_top,
+li.selected_bottom,
+li.selected_top:before,
+li.selected_bottom:before,
+li.selected_top:after,
+li.selected_bottom:after {
+    border-color: <?php trw_color(THEME_COLOR_HIGHLIGHT); ?>;
+}
+
+/* outside color */
+html {
+    background-color: <?php trw_color(THEME_COLOR_OUTSIDE); ?>;
+}
+
+/* background color */
+body,
+.completion_window,
+li.selected > ul,
+li.selected > ol,
+section.summary_window {
+    background-color: <?php trw_color(THEME_COLOR_BACKGROUND); ?>;
+}
+
+/* standard text color */
+body,
+header.title *,
+h1 > a.page_menu {
+    color: <?php trw_color(THEME_COLOR_TEXT); ?>;
+}
+table, td, th {
+    border-color: <?php trw_color(THEME_COLOR_TEXT); ?>;
+}
+
+<?php
+if(THEME_TONE !== 'custom') {
+    $hsv_bg = color_html_to_hsv(THEME_COLOR_MAIN);
+    $hsv_fg = color_html_to_hsv(THEME_COLOR_TEXT);
+    if(abs($hsv_bg['v'] - $hsv_fg['v']) < 0.2)  { ?>
+/* header footer text color */
+header.title > a > h1,
+footer.signature,
+footer.signature > a {
+    color: <?php trw_color_v(THEME_COLOR_TEXT, -1) ?>;
+}
+<?php }} else { ?>
+header.title > a > h1,
+footer.signature,
+footer.signature > a {
+    color: <?php trw_color(THEME_COLOR_HEADER_TEXT) ?>;
+}
+<?php } ?>    
+
+/* highlight text color */
+strong,
+.foreground_emphasis {
+    color: <?php trw_color(THEME_COLOR_HIGHLIGHT_TEXT); ?>;
+}
+
+/* action background color */
+nav.site_menu,
+nav.page_menu,
+a.button,
+form.text_edit ul.attaches,
+span.optional {
+    background-color: <?php trw_color(THEME_COLOR_ACTION_BACKGROUND); ?>;
+}
+span.sort_order {
+    color: <?php trw_color(THEME_COLOR_ACTION_BACKGROUND); ?>;
+}
+
+/* action active color */
+a.button:hover,
+nav.site_menu li a:hover,
+nav.page_menu li a:hover,
+form.text_edit ul.attaches li:hover {
+    background-color: <?php trw_color_v(THEME_COLOR_ACTION_BACKGROUND, 1.6); ?>;
+}
+
+/* action text color */
+a.button,
+nav.site_menu *,
+nav.site_menu a,
+nav.page_menu *,
+nav.page_menu a,
+form.text_edit ul.attaches li button,
+span.optional {
+    color: <?php trw_color(THEME_COLOR_ACTION_TEXT); ?> !important;
+}
+
+/* action disabled text color */
+input:disabled,
+button:disabled,
+nav.page_menu ul li.disabled {
+    color: <?php trw_color_v(THEME_COLOR_ACTION_TEXT, 0.5); ?> !important;
+}
+
+/* header footer color */
+thead, tfoot, th {
+    background-color: <?php trw_color(THEME_COLOR_HEAD); ?>;
+}
+article.main > footer {
+    background-color: <?php trw_color(THEME_COLOR_PAGE_INFO); ?>;
+}
+
+/* pre background color */
+pre,
+ul.compare li.same {
+    background-color: <?php trw_color(THEME_COLOR_PRE); ?>;
+}
+pre.code {
+    color: black;
+    background-color: <?php trw_color(THEME_COLOR_CODE); ?>;
+}
+
+/* error color */
+ul.messages li.error,
+small.error,
+form .error {
+    background-color: <?php trw_color(THEME_COLOR_ERROR); ?>;
+}
+
+/* notice color */
+ul.messages li.notice,
+nav.redirect {
+    background-color: <?php trw_color(THEME_COLOR_NOTICE); ?>;
+}
+
+/* info color */
+ul.messages li.info,
+table tr.skip {
+    background-color: <?php trw_color(THEME_COLOR_INFO); ?>;
+}
+
+/* edit color */
+form.text_edit,
+form.file_edit,
+form.newpage_type,
+.list_edit li.selected > ul,
+.list_edit li.selected > ol,
+section.list_edit {
+    background-color: <?php trw_color(THEME_COLOR_EDIT); ?>;
+}
+
+/* compare color */
+.delete {
+    background-color: <?php trw_color(THEME_COLOR_COMPARE_DELETE); ?>;
+}
+.add {
+    background-color: <?php trw_color(THEME_COLOR_COMPARE_ADD); ?>;
+}
+
+/* link color */
+a,
+a:link {
+    color: <?php trw_color(THEME_COLOR_LINK); ?>;
+}
+a.unread {
+    color: <?php trw_color(THEME_COLOR_LINK); ?>;
+    border-bottom-color: <?php trw_color(THEME_COLOR_LINK); ?>;
+}
+a:visited {
+    color: <?php trw_color(THEME_COLOR_LINK_VISITED); ?>;
+}
+a.not_exists {
+    background-color: <?php trw_color(THEME_COLOR_ERROR); ?>;
+}
+a.external {
+    color: <?php trw_color(THEME_COLOR_EXTERNAL_LINK); ?>;
+}
+a.external:visited {
+    color: <?php trw_color(THEME_COLOR_EXTERNAL_LINK_VISITED); ?>;
+}
+
+/* base color modify */
+<?php
+$hsv_bg = color_html_to_hsv(THEME_COLOR_BACKGROUND);
+if($hsv_bg['v'] < 0.26)  { ?>
+table.calendar td.week_0 {
+    background-color: #591b1b;
+}
+table.calendar td.week_6 {
+    background-color: #1b1b59;
+}
+table.calendar td.holiday {
+    background-color: #591b1b;
+}
+table.calendar td.month_border.border_top {
+    border-top: solid 2px #ffffff;
+}
+table.calendar td.month_border.border_bottom {
+    border-bottom: solid 2px #ffffff;
+}
+table.calendar td.month_border.border_left {
+    border-left: solid 2px #ffffff;
+}
+table.calendar td.month_border.border_right {
+    border-right: solid 2px #ffffff;
+}
+
+img.math {
+    background-color: <?php trw_color_invert_rgb(THEME_COLOR_BACKGROUND); ?>;
+    filter: invert(100%);
+    -webkit-filter: invert(100%);
+}
+<?php } ?>
+

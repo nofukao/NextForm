@@ -1,0 +1,68 @@
+<?php
+/*
+ * 管理画面で指定された背景画像 (ヘッダー・本文・外側) を貼る。
+ * 「外観の設定」の項目と 1 対 1 なので共通に置く。
+ *
+ * trw_theme_basic_backround_image() の綴りは上流のまま (関数名は互換のため変えない)。
+ */
+?>
+/* background image ========================================= */
+<?php
+function trw_theme_basic_backround_image($const_name, $position_fix = false) {
+    $file_path = constant($const_name);
+    if($file_path === '')
+	return;
+    $theme_path = $file_path;
+    if(!theme_debug_is_enable()) {
+	$call_filepath = theme_get_call_file(2);
+	$theme_path = relative_path($call_filepath, APP_DIR_PATH . '/' . $file_path);
+    }
+    $position = constant($const_name . '_POSITION');
+    if($position_fix !== false) {
+	$position = str_replace('top', $position_fix . 'px', $position);
+	$position = str_replace('bottom', 'bottom ' . THEME_FOOTER_HIGHT . 'px', $position);
+    }
+    $repeat = constant($const_name . '_REPEAT');
+
+    echo('background-image: url("' . $theme_path . "\");\n");
+    echo('background-position: ' . $position . ";\n");
+    if(defined($const_name . '_ATTACHMENT'))
+	echo('background-attachment: ' . constant($const_name . '_ATTACHMENT') . ";\n");
+    if($repeat === 'contain-repeat') {
+	echo("background-repeat: repeat;\n");
+	echo("background-size: contain;\n");
+    } else if($repeat === 'cover' || $repeat === 'contain') {
+	echo("background-repeat: no-repeat;\n");
+	echo('background-size: ' . $repeat . ";\n");
+    } else {
+	echo('background-repeat: ' . $repeat . ";\n");
+    }
+}
+?>
+header.title {
+<?php trw_theme_basic_backround_image('THEME_IMAGE_BACKGROUND_HEADER'); ?>
+}
+<?php if(THEME_IMAGE_BACKGROUND_HEADER_REPEAT === 'no-repeat' &&
+	$THEME_IMAGE_BACKGROUND_HEADER_HEIGHT !== false &&
+	THEME_HEADER_HEIGHT_MIN < $THEME_IMAGE_BACKGROUND_HEADER_HEIGHT &&
+	$THEME_IMAGE_BACKGROUND_HEADER_HEIGHT <= THEME_HEADER_HEIGHT) { ?>
+@media screen and <?php echo(THEME_IS_DEVICE_SMALL); ?> {
+    header.title {
+	background-size: contain;
+    }
+}
+<?php } ?>
+body {
+<?php trw_theme_basic_backround_image('THEME_IMAGE_BACKGROUND_BODY', THEME_HEADER_HEIGHT); ?>
+}
+@media screen and <?php echo(THEME_IS_DEVICE_SMALL); ?> {
+    body {
+	<?php trw_theme_basic_backround_image('THEME_IMAGE_BACKGROUND_BODY', THEME_HEADER_HEIGHT_MIN); ?>
+    }
+}
+<?php if(THEME_LAYOUT === 'solid') {?>
+html {
+<?php trw_theme_basic_backround_image('THEME_IMAGE_BACKGROUND_OUTSIDE'); ?>
+}
+<?php } ?>
+
