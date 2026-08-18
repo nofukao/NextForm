@@ -1,17 +1,19 @@
 @charset "utf-8";
 <?php
-define('THEME_IS_DEVICE_SMALL', '(max-width: 767px)');
-define('THEME_IS_NOT_DEVICE_SMALL', '(min-width: 768px)');
-define('THEME_FONT_SIZE_NORMAL', floor(round(THEME_FONT_SIZE) / 2 * 2));
-define('THEME_FONT_SIZE_LARGE', floor(round(THEME_FONT_SIZE * (16 / 14) / 2) * 2));
-define('THEME_FONT_SIZE_HUGE', floor(round((THEME_FONT_SIZE + 6 + floor(THEME_FONT_SIZE / 13) * 2) / 2) * 2));
+/*
+ * テーマ共通の定数と、共通スタイルの読み込み順を決めるファイル。
+ * .theme.css だけが basic 固有で、それ以外は app/theme/common/ にある。
+ * .form.css は .theme.css が定義する定数を使うので、最後に読む。
+ */
+include(theme_get_common_dir_path() . '/.constants.php');
+include(theme_get_common_dir_path() . '/.colors.php');
 ?>
 /* base.css ================================== */
-<?php include('.base.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.base.css'); ?>
 /* function.css ============================== */
-<?php include('.function.css'); ?>
-<?php include('.prettify.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.function.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.prettify.css'); ?>
 /* theme.css ================================= */
 <?php include('.theme.css'); ?>
 /* form.css ================================= */
-<?php include('.form.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.form.css'); ?>

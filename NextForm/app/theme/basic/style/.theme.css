@@ -1,31 +1,9 @@
 <?php
-if(THEME_TONE !== 'custom') {
-    include(dirname(dirname(__FILE__)) . '/.tones.php');
-    foreach($THEME_TONES[THEME_TONE] as  $name => $value) {
-	define($name, $value);
-    }
-    if(THEME_COLOR_MAIN_CUSTOM !== '')
-	define('THEME_COLOR_MAIN', THEME_COLOR_MAIN_CUSTOM);
-    else
-	define('THEME_COLOR_MAIN', THEME_COLOR_MAIN_DEFAULT);
-} else {
-    global $THEME_CUSTOM_COLORS;
-    foreach($THEME_CUSTOM_COLORS as $custom_color_name => $custom_color_value) {
-	define(str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $custom_color_name), constant($custom_color_name));
-    }
-    define('THEME_COLOR_MAIN', THEME_COLOR_MAIN_DEFAULT);
-}
-
-$THEME_IMAGE_BACKGROUND_HEADER_WIDTH = false;
-$THEME_IMAGE_BACKGROUND_HEADER_HEIGHT = false;
-if(THEME_IMAGE_BACKGROUND_HEADER !== '' && function_exists('getimagesize')) {
-    $size = getimagesize(THEME_IMAGE_BACKGROUND_HEADER);
-    if(isset($size[0]) && isset($size[1])) {
-	$THEME_IMAGE_BACKGROUND_HEADER_WIDTH = $size[0];
-	$THEME_IMAGE_BACKGROUND_HEADER_HEIGHT = $size[1];
-    }
-}
-
+/*
+ * basic の見た目。色の割り当て・レイアウト・メディアクエリ。
+ * 色調 (THEME_COLOR_*) の解決と共通の寸法は app/theme/common/ 側で済んでいる。
+ * ここで定義する定数は basic 固有の寸法。
+ */
 define('THEME_SOLID_WIDTH', 980);
 define('THEME_ASIDE_WIDTH', 0);
 define('THEME_HEADER_HEIGHT_MIN', 52);
