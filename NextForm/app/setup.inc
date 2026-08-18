@@ -55,7 +55,7 @@ set_const('BASE_URI', '');
 
 set_const('PASSWORD_REMINDER_EMAIL_FROM', '');
 
-set_const('MANUAL_PAGENAME', 'ToraToraWikiManual');
+set_const('MANUAL_PAGENAME', 'NextFormManual');
 
 set_const('TIME_FORMAT', '%Y-%m-%d %H:%M:%S');
 set_const('DATE_FORMAT', '%Y-%m-%d');
@@ -243,7 +243,7 @@ function setup_read($name) {
 |定数名|初期値|説明|h
 |{BASE_URI||サイトのURL(通常は変更の必要なし)|}
 |{PASSWORD_REMINDER_EMAIL_FROM|(自動)|パスワード再設定メールの送信者メールアドレス|}
-|{MANUAL_PAGENAME|ToraToraWikiManual|マニュアルページのページ名|}
+|{MANUAL_PAGENAME|NextFormManual|マニュアルページのページ名|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}

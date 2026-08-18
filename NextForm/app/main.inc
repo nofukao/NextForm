@@ -191,7 +191,7 @@ function head_tags_init() {
 			 'content' => 'NextForm'
 			 ));
     head_tags_add_javascript('resource/script/prototype.js');
-    head_tags_add_javascript('resource/script/toratora.js');
+    head_tags_add_javascript('resource/script/nextform.js');
 }
 
 function head_tags_add_javascript($src = '') {

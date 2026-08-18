@@ -1,4 +1,4 @@
-var COOKIE_NAME_PREFIX = 'toratorawiki';
+var COOKIE_NAME_PREFIX = 'nextform';
 var LANG = 'en';
 
 var viewport;

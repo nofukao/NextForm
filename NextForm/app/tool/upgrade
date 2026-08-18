@@ -630,6 +630,21 @@ if($up_htaccess !== false && strpos($up_htaccess, 'Options -Indexes') === false)
     upgrade_out("    httpd.conf 側で Options -Indexes を設定してください");
 }
 /*
+ * 0.5.0 でマニュアルのページ名を ToraToraWikiManual から NextFormManual に
+ * 変えた。生成済みのマニュアルは古い名前のまま残り、サイトメニューの
+ * 「マニュアル」からは見えなくなる。古い名前のページがあるときだけ知らせる。
+ * docs/upgrade-guide.md の「マニュアルを作り直す」と 1 対 1。
+ */
+$up_old_manual = glob($up_site . '/storage/page/' . bin2hex('ToraToraWikiManual') . '*');
+if($up_old_manual !== false && count($up_old_manual) > 0) {
+    upgrade_out("");
+    upgrade_out("  マニュアルを作り直してください (0.5.0):");
+    upgrade_out("    ?option=admin_manual を開いて「実行」する");
+    upgrade_out("    ページ名が ToraToraWikiManual から NextFormManual に変わりました");
+    upgrade_out("    古いページ (%d 件) はそのまま残ります。不要なら削除してください", count($up_old_manual));
+}
+
+/*
  * 0.4.0 から状態を変える操作は POST + 同一オリジンに限る。ブラウザからの
  * 操作は変わらないが、外部のスクリプトから叩いていると止まる。
  * docs/upgrade-guide.md の「外から操作しているスクリプトを直す」と 1 対 1。

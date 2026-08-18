@@ -21,7 +21,12 @@ function manual_tool(&$page, $dom) {
 		  'target' => '_blank',
 		  'seo_follow' => true,
 		  'rel' => 'help',
-		  'uri' => OFFICIAL_URL . '?' . url_path_encode($manual_page_name)));
+		  /*
+		   * マニュアルのページがまだ生成されていないときの行き先。
+		   * 以前は公式サイトの同じページ名を指していたが、NextForm の
+		   * 公式はリポジトリで wiki ではないので、素の URL を指す。
+		   */
+		  'uri' => OFFICIAL_URL));
     }
 }
 
