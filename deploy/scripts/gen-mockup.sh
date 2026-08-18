@@ -16,7 +16,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 OUT="${1:-/var/www/html/moc}"
 
-THEMES=(basic plain docs dense card)
+THEMES=(basic plain docs card)
 TONES=("beige/green" "white/blue" "black/blue")
 
 # 見本にするページ: ファイル名|取得するクエリ|見出し

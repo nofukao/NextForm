@@ -104,12 +104,6 @@ rules_docs() {
           "bool(re.search(r'article\.side\s*\{[^}]*position:\s*sticky', css, re.S))"
 }
 
-rules_dense() {
-    rules_standard_layout
-    check "表のセルが詰まっている (縦の padding が 4px 以下)" \
-          "bool(re.search(r'(^|\})\s*td,\s*th\s*\{[^}]*padding:\s*[0-4]px', css, re.S))"
-}
-
 rules_card() {
     rules_standard_layout
     check "本文がカードになっている (角丸 + 影)" \
