@@ -53,7 +53,8 @@
 ./tests/setup-fixtures.sh   # 入力ページを投入 (冪等。壊したときの復旧にも使う)
 ./tests/golden.sh           # ゴールデンマスター。--update で expected/ を更新
 ./tests/smoke.sh            # 全 42 option 巡回 + PHP 警告の集計
-./tests/css-rules.sh        # 生成された静的 CSS のルール検査
+./tests/css-rules.sh        # 生成された静的 CSS のルール検査 (全テーマ + 配信中)
+./tests/theme-diff.sh       # テーマの生成物を git の ref と比べる (既定は main)
 ./tests/upgrade.sh          # tora2 の複製に対してアップグレードを実走 (要 sudo)
 ./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
 ./tests/search-cache.sh     # 検索のテキストキャッシュ (複製サイトを作る。要 sudo)
@@ -69,7 +70,9 @@
   複製してから** `sudo -u apache` で実行する(`docs/development/setup.md` §6)。
 - **テーマのソース (`app/theme/`) を変えたら静的 CSS の再生成が必要。**
   再生成しないとブラウザに反映されない。ゴールデンマスターは HTML しか見ないので
-  CSS の崩れは `css-rules.sh` で守る。
+  CSS の崩れは `css-rules.sh` で守る。テーマ共通の部分は
+  `app/theme/common/` にあり、全テーマが読む。振る舞いを変えないはずの整理は
+  `theme-diff.sh` で「生成物が 1 バイトも変わらない」ことを確かめる。
 - **`date()` は `strftime()` の素直な置き換えにならない**。実測で `%j` は
   `z` と 1 ずれ、`%W` は `W`(ISO-8601)と定義が違う。詳細は
   `docs/development/project-overview.md` の v0.1 の節。
