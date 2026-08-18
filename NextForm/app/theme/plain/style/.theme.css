@@ -1,0 +1,147 @@
+<?php
+/*
+ * plain — 線と余白。
+ *
+ * 標準からの差分だけを書く。狙いは 3 つ。
+ *   ・面で塗るのをやめ、細い線と余白で区切る
+ *   ・本文の行間を広げて長い文章を読めるようにする
+ *   ・角丸と影を使わない
+ *
+ * 色は THEME_COLOR_* から派生させる。暗い色調では「薄い線」を明るい側に
+ * 振る必要があるので、背景の明度を見て向きを変える。
+ */
+$plain_hsv_bg = color_html_to_hsv(THEME_COLOR_BACKGROUND);
+$plain_is_dark = $plain_hsv_bg !== false && $plain_hsv_bg['v'] < 0.4;
+// 罫線: 背景から少しだけ離す
+$plain_rule = $plain_is_dark ? 1.7 : 0.86;
+// 面: 背景からごくわずかに離す (pre やヘッダ行)
+$plain_surface = $plain_is_dark ? 1.35 : 0.96;
+?>
+/* text ========================================= */
+
+body {
+    font-family: "Helvetica Neue", "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    line-height: 1.8;
+}
+pre, code, tt {
+    font-family: "SFMono-Regular", Consolas, "Noto Sans Mono", monospace;
+}
+
+/* spacing ========================================= */
+
+article.main {
+    padding: 0 28px;
+}
+section.section > h1 {
+    margin-top: 32px;
+}
+article.main > footer {
+    margin-top: 40px;
+}
+
+/* element special ========================================= */
+
+/* ページ題名: 太い色帯をやめ、細い線 1 本にする */
+article.main > h1,
+form.refpage h1 {
+    border-bottom-width: 1px;
+    border-bottom-color: <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+    padding-bottom: 12px;
+    margin-top: 24px;
+    font-weight: normal;
+    letter-spacing: 0.02em;
+}
+
+/* 見出し: 下線をやめ、太字と余白で段差を出す */
+h1 {
+    border-bottom: none;
+    padding: 0;
+    font-weight: bold;
+    line-height: 1.5;
+}
+h1.pages {
+    border-bottom-width: 1px;
+    border-bottom-color: <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+}
+
+/* ヘッダー: 塗りをやめ、下の線で本文と分ける。
+ *
+ * 共通側は「見出しの色 (THEME_COLOR_MAIN) と文字色の明度が近いとき」に
+ * ヘッダーの文字色を反転させる。塗りを本文と同じ色にしたこのテーマでは
+ * その反転が裏目に出る (black/blue で暗い背景に暗い文字になる) ので、
+ * 文字色を本文と同じに戻す。 */
+header.title {
+    background-color: <?php trw_color(THEME_COLOR_BACKGROUND); ?>;
+    border-bottom: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+}
+header.title > a > h1 {
+    font-weight: normal;
+    letter-spacing: 0.04em;
+}
+header.title *,
+header.title > a > h1,
+footer.signature,
+footer.signature > a {
+    color: <?php trw_color(THEME_COLOR_TEXT); ?>;
+}
+footer.signature {
+    background-color: <?php trw_color(THEME_COLOR_BACKGROUND); ?>;
+    border-top: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+}
+
+/* ページ情報: 塗りをやめ、上の線と小さい文字にする */
+article.main > footer {
+    background-color: transparent;
+    border-top: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+    font-size: 85%;
+    padding: 8px 0 0 0;
+}
+
+/* 引用: 左の縦線で示す */
+blockquote {
+    border: none;
+    border-left: solid 3px <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+    padding-left: 16px;
+    margin-left: 4px;
+}
+
+/* 区切り線 */
+hr {
+    border-style: solid;
+    border-color: <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+}
+
+/* 整形済みテキスト: 面ではなく左の線で示す */
+pre {
+    background-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $plain_surface); ?>;
+    border-left: solid 3px <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+    padding: 12px 16px;
+    line-height: 1.6;
+}
+
+/* 表: 外枠を消して横線だけにする */
+table, td, th {
+    border-color: <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+}
+table {
+    border-width: 0;
+}
+td, th {
+    border-width: 0 0 1px 0;
+    padding: 8px 10px;
+}
+thead, tfoot, th {
+    background-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $plain_surface); ?>;
+}
+
+/* 箇条書き */
+ul {
+    list-style-type: disc;
+}
+
+/* リンクは下線で示す (色に頼らない) */
+section.page a:link,
+section.page a:visited {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}

@@ -1,0 +1,122 @@
+<?php
+/*
+ * card — カードに載せて見せる。
+ *
+ * 本文とサイドを紙のように浮かせ、そのまわりを地の色にする。
+ * 段組みそのものは標準のままで、カードにするのは中身 (section.page) の側。
+ * article.main / article.side の幅に手を入れると段組みが崩れるため。
+ */
+$card_hsv_bg = color_html_to_hsv(THEME_COLOR_BACKGROUND);
+$card_is_dark = $card_hsv_bg !== false && $card_hsv_bg['v'] < 0.4;
+// 地の色: 明るい色調では少し沈め、暗い色調では少し持ち上げる
+$card_ground = $card_is_dark ? 0.6 : 0.94;
+$card_shadow = $card_is_dark ? '0 1px 4px rgba(0, 0, 0, 0.5)' : '0 1px 4px rgba(0, 0, 0, 0.14)';
+?>
+/* text ========================================= */
+
+body {
+    font-family: "Helvetica Neue", "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    line-height: 1.75;
+    background-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $card_ground); ?>;
+}
+pre, code, tt {
+    font-family: "SFMono-Regular", Consolas, "Noto Sans Mono", monospace;
+}
+
+/* element special ========================================= */
+
+/* 中身をカードにする */
+article.main > section.page,
+article.main > form.refpage,
+article.main > footer,
+article.side > section.page {
+    background-color: <?php trw_color(THEME_COLOR_BACKGROUND); ?>;
+    border-radius: 10px;
+    box-shadow: <?php echo($card_shadow); ?>;
+    padding: 20px 24px;
+    margin-top: 16px;
+}
+article.side > section.page {
+    padding: 16px 18px;
+    font-size: 94%;
+}
+article.main > footer {
+    background-color: <?php trw_color(THEME_COLOR_BACKGROUND); ?>;
+    padding: 12px 24px;
+    font-size: 86%;
+}
+
+/* ページ題名はカードの外に置いて、見出しらしくする */
+article.main > h1,
+form.refpage h1 {
+    border-bottom: none;
+    padding: 0 8px;
+    margin-top: 24px;
+    font-size: <?php echo(THEME_FONT_SIZE_HUGE + 2); ?>px;
+    line-height: 1.4;
+}
+
+/* 見出しは下線をやめ、左の色帯で示す */
+h1 {
+    border-bottom: none;
+    padding: 2px 0 2px 12px;
+    border-left: solid 4px <?php trw_color(THEME_COLOR_MAIN); ?>;
+    line-height: 1.5;
+    margin-top: 28px;
+}
+header.title h1,
+article.main > h1,
+article.side h1,
+table.calendar caption h1,
+nav.site_menu h1 {
+    border-left: none;
+    padding-left: 0;
+}
+article.side h1 {
+    padding: 2px 0 2px 10px;
+    border-left: solid 3px <?php trw_color(THEME_COLOR_MAIN); ?>;
+}
+
+/* ヘッダーとフッターも浮かせる */
+header.title {
+    box-shadow: <?php echo($card_shadow); ?>;
+    position: relative;
+    z-index: 10;
+}
+
+/* 角を丸める */
+pre,
+table,
+img.attach,
+figure img {
+    border-radius: 8px;
+}
+pre {
+    padding: 14px 16px;
+    line-height: 1.6;
+}
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+}
+td, th {
+    padding: 8px 10px;
+}
+a.button {
+    border-radius: 6px;
+}
+
+/* 引用 */
+blockquote {
+    border: none;
+    border-left: solid 4px <?php trw_color(THEME_COLOR_MAIN); ?>;
+    border-radius: 0 8px 8px 0;
+    background-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $card_ground); ?>;
+    padding: 8px 14px;
+}
+
+hr {
+    border-style: solid;
+    border-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $card_ground); ?>;
+}

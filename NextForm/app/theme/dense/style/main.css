@@ -1,0 +1,33 @@
+@charset "utf-8";
+<?php
+/*
+ * dense の組み立て順。情報を詰めて一覧させる。
+ *
+ * 共通のファイルを読んだあとに自分の .theme.css を読み、変えたいところだけを
+ * 上書きする。読み込む順がそのまま CSS の適用順になる。
+ */
+
+/*
+ * dense の寸法。共通部分もこれを見るので、読み込みより先に宣言する。
+ */
+define('THEME_SOLID_WIDTH', 1200);
+define('THEME_ASIDE_WIDTH', 0);
+define('THEME_HEADER_HEIGHT_MIN', 40);
+define('THEME_FOOTER_HIGHT', 20);
+
+include(theme_get_common_dir_path() . '/.constants.php');
+include(theme_get_common_dir_path() . '/.colors.php');
+?>
+/* base.css ================================== */
+<?php include(theme_get_common_dir_path() . '/style/.base.css'); ?>
+/* function.css ============================== */
+<?php include(theme_get_common_dir_path() . '/style/.function.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.prettify.css'); ?>
+/* standard.css ============================== */
+<?php include(theme_get_common_dir_path() . '/style/.colors-map.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.background-image.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.standard.css'); ?>
+/* theme.css ================================= */
+<?php include('.theme.css'); ?>
+/* form.css ================================= */
+<?php include(theme_get_common_dir_path() . '/style/.form.css'); ?>

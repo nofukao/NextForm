@@ -1,0 +1,145 @@
+<?php
+/*
+ * docs — 文書として読ませる。
+ *
+ * 狙いは 3 つ。
+ *   ・1 行が長くなりすぎないよう本文の幅を止める
+ *   ・見出しの深さが一目で分かるようにする (wiki の見出しは入れ子の
+ *     section.section で表され、どの深さでも h1 なので、深さで差を付ける)
+ *   ・サイドを画面に留めて目次として使えるようにする
+ */
+$docs_hsv_bg = color_html_to_hsv(THEME_COLOR_BACKGROUND);
+$docs_is_dark = $docs_hsv_bg !== false && $docs_hsv_bg['v'] < 0.4;
+$docs_rule    = $docs_is_dark ? 1.7 : 0.86;   // 罫線
+$docs_surface = $docs_is_dark ? 1.35 : 0.96;  // 面
+?>
+/* text ========================================= */
+
+body {
+    font-family: "Helvetica Neue", "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    line-height: 1.9;
+}
+pre, code, tt {
+    font-family: "SFMono-Regular", Consolas, "Noto Sans Mono", monospace;
+}
+
+/* spacing ========================================= */
+
+/* 本文の幅を止める。長い行は読みにくい */
+article.main > h1,
+article.main > section.page,
+article.main > footer {
+    max-width: 46em;
+}
+article.main {
+    padding: 0 32px;
+}
+
+/* element special ========================================= */
+
+/* ページ題名 */
+article.main > h1,
+form.refpage h1 {
+    border-bottom-width: 1px;
+    border-bottom-color: <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+    padding-bottom: 14px;
+    margin-top: 28px;
+}
+
+/* 見出しの階層。浅いほど大きく、深いほど本文に近づける */
+h1 {
+    border-bottom: none;
+    font-weight: bold;
+    line-height: 1.45;
+}
+section.page > section.section > h1 {
+    font-size: <?php echo(THEME_FONT_SIZE_HUGE - 2); ?>px;
+    border-bottom: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+    padding-bottom: 6px;
+    margin-top: 40px;
+}
+section.section section.section > h1 {
+    font-size: <?php echo(THEME_FONT_SIZE_LARGE + 2); ?>px;
+    border-bottom: none;
+    margin-top: 32px;
+}
+section.section section.section section.section > h1 {
+    font-size: <?php echo(THEME_FONT_SIZE_LARGE); ?>px;
+    margin-top: 24px;
+}
+section.section section.section section.section section.section > h1 {
+    font-size: <?php echo(THEME_FONT_SIZE_NORMAL); ?>px;
+    margin-top: 20px;
+    letter-spacing: 0.04em;
+}
+
+/* サイドを目次として使う。画面に留める */
+article.side {
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    font-size: 92%;
+    padding-top: 24px;
+}
+article.side h1 {
+    font-size: <?php echo(THEME_FONT_SIZE_NORMAL); ?>px;
+    letter-spacing: 0.06em;
+    opacity: 0.75;
+}
+
+/* 整形済みテキストとコード: 枠で囲んで本文と区別する */
+pre {
+    border: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+    border-radius: 3px;
+    padding: 12px 14px;
+    line-height: 1.6;
+}
+p code,
+p tt {
+    background-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $docs_surface); ?>;
+    border: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+    border-radius: 3px;
+    padding: 0 4px;
+}
+
+/* 表: 罫線は細く、見出し行だけはっきりさせる */
+table, td, th {
+    border-color: <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+    border-width: 1px;
+}
+td, th {
+    padding: 7px 10px;
+}
+th {
+    border-bottom-width: 2px;
+}
+
+/* 引用 */
+blockquote {
+    border: none;
+    border-left: solid 4px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+    padding: 4px 0 4px 16px;
+    opacity: 0.9;
+}
+
+hr {
+    border-style: solid;
+    border-color: <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+}
+
+/* ページ情報は控えめに */
+article.main > footer {
+    background-color: transparent;
+    border-top: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
+    font-size: 85%;
+    padding-top: 8px;
+    margin-top: 48px;
+}
+
+/* リンクは下線で示す */
+section.page a:link,
+section.page a:visited {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
