@@ -75,13 +75,45 @@ rules_common() {
 
 # --- テーマ固有の項目 --------------------------------------------
 # テーマを足したら rules_<テーマ名> を書く。無ければ共通項目だけを見る。
+# そのテーマを「そのテーマたらしめている点」を 1〜2 件書けばよい。
 
-# サイドバーが本文の横に並ぶこと (basic は float の段組み)。
-rules_basic() {
+# common/style/.standard.css の段組みを使うテーマ向け。
+# サイドバーが本文の横に並ぶこと。
+rules_standard_layout() {
     check "article.main が段組みになっている (float + 100% 未満)" \
           "bool(re.search(r'(^|\})\s*article\.main\s*\{[^}]*float:\s*right[^}]*width:\s*[0-9]+%', css, re.S))"
     check "article.side が左に回り込む" \
           "bool(re.search(r'article\.side\s*\{[^}]*float:\s*left', css, re.S))"
+}
+
+rules_basic() {
+    rules_standard_layout
+}
+
+rules_plain() {
+    rules_standard_layout
+    check "見出しの下線が消えている (線と余白で段差を出す)" \
+          "bool(re.search(r'(^|\})\s*h1\s*\{[^}]*border-bottom:\s*none', css, re.S))"
+}
+
+rules_docs() {
+    rules_standard_layout
+    check "本文の幅が止めてある (max-width)" \
+          "bool(re.search(r'article\.main\s*>\s*section\.page[^{]*\{[^}]*max-width', css, re.S))"
+    check "サイドが画面に留まる (position: sticky)" \
+          "bool(re.search(r'article\.side\s*\{[^}]*position:\s*sticky', css, re.S))"
+}
+
+rules_dense() {
+    rules_standard_layout
+    check "表のセルが詰まっている (縦の padding が 4px 以下)" \
+          "bool(re.search(r'(^|\})\s*td,\s*th\s*\{[^}]*padding:\s*[0-4]px', css, re.S))"
+}
+
+rules_card() {
+    rules_standard_layout
+    check "本文がカードになっている (角丸 + 影)" \
+          "bool(re.search(r'article\.main\s*>\s*section\.page[^{]*\{[^}]*border-radius[^}]*box-shadow', css, re.S))"
 }
 
 # --- 配信中のサイトでしか見られない項目 --------------------------
