@@ -76,15 +76,25 @@ function gen_find_wiki_files($dir) {
         $path = $dir . '/' . $entry;
         if(is_dir($path))
             $files = array_merge($files, gen_find_wiki_files($path));
-        else if(substr($entry, -5) === '.wiki')
+        else if(substr($entry, -5) === '.wiki' || substr($entry, -3) === '.md')
             $files[] = $path;
     }
     return $files;
 }
 
-function gen_write_page($pagename, $contents) {
+/*
+ * 拡張子でページ種別を決める。.wiki は wiki、.md は markdown。
+ * page_setup() は空のときだけ既定を入れるので、その前に指定しておけばよい。
+ */
+function gen_page_type($path) {
+    return substr($path, -3) === '.md' ? 'markdown' : 'wiki';
+}
+
+function gen_write_page($pagename, $contents, $type = 'wiki') {
     $page = page_create($pagename);
     storage_page_read($page);
+    if(empty($page['meta']['type']))
+	$page['meta']['type'] = $type;
     page_setup($page);
     $ticket = isset($page['meta']['ticket']) ? $page['meta']['ticket'] : '';
     $error = PAGE_WRITE_ERROR_NONE;
@@ -103,15 +113,17 @@ if($mode === 'dir') {
     // input/GoldenMaster/Top.wiki -> ページ名 'GoldenMaster/Top'
     $files = gen_find_wiki_files($dir);
     if(count($files) === 0) {
-        fprintf(STDERR, "No *.wiki files under %s\n", $dir);
+        fprintf(STDERR, "No *.wiki or *.md files under %s\n", $dir);
         exit(1);
     }
     sort($files);
     foreach($files as $file) {
-        $pagename = substr($file, strlen($dir) + 1, -strlen('.wiki'));
+        $type = gen_page_type($file);
+        $extension = $type === 'markdown' ? '.md' : '.wiki';
+        $pagename = substr($file, strlen($dir) + 1, -strlen($extension));
         $contents = file_get_contents($file);
-        printf("write %s (%d bytes) .. ", $pagename, strlen($contents));
-        if(gen_write_page($pagename, $contents)) { printf("ok\n"); $written++; }
+        printf("write %s [%s] (%d bytes) .. ", $pagename, $type, strlen($contents));
+        if(gen_write_page($pagename, $contents, $type)) { printf("ok\n"); $written++; }
     }
 } else {
     for($i = 1; $i <= $count; $i++) {
