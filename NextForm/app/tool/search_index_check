@@ -171,7 +171,7 @@ if(!empty($check['missing']))
 if(!empty($check['ghosts']))
     report_pages(
 	sprintf('実在しないページが索引に %d 件残っている。', count($check['ghosts'])),
-	array('検索のたびに無駄な読み込みが起き、PHP の警告も出る。'),
+	array('検索のたびに、消えたページを読みに行く無駄が起きる。'),
 	$check['ghosts'], '', $list_max);
 
 if(!empty($check['partial']))

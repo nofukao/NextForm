@@ -12,6 +12,7 @@
  *   corrupt-bucket    索引ファイルを 1 つ壊す (破損時の挙動を見るための準備)
  *   save-one-page     ページを 1 件保存する
  *   count-bucket      壊した索引ファイルに何ページ分入っているか数える
+ *   ghost-page-search 索引に残った実在しないページを検索する
  *   cleanup           このヘルパが作ったページを消す
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -327,6 +328,45 @@ case 'render-screen':
     print(dom_save_html($screen));
     print(message_html());
     print("\n");
+    break;
+
+/*
+ * 索引に載っているのに実在しないページ (page_delete を通さずに消された場合や、
+ * 再構築前) を検索したときに、PHP の警告が出ないこと。
+ *
+ * 上流の search_page_match() は 'title' を無条件に読んでいて、実在しない
+ * ページでは search_page_texts() がそのキーを持たない配列を返していたため、
+ * **検索するたびに警告がログに積まれていた**。検索は誰でも叩ける経路なので、
+ * 索引が古いだけでログが埋まる。
+ */
+case 'ghost-page-search':
+    $ghost_pagename = TEST_PAGE_PREFIX . '/Ghost';
+    $ghost_word = 'ghostpumpkin';
+    if(!test_write($ghost_pagename, "* 幽霊\n本文に " . $ghost_word . " を置く。\n")) {
+	printf("written=no\n");
+	exit(1);
+    }
+    printf("written=yes\n");
+
+    /* storage から直接消す。page_delete() だと索引まで片付いてしまう */
+    $ghost_dir = STORAGE_FILE_DIR_PATH . '/page/' . bin2hex($ghost_pagename);
+    foreach(glob($ghost_dir . '/*') as $ghost_file)
+	@unlink($ghost_file);
+    @rmdir($ghost_dir);
+    printf("removed=%s\n", is_dir($ghost_dir) ? 'no' : 'yes');
+    printf("in_index=%s\n", count(index_ngrams_of($ghost_pagename)) > 0 ? 'yes' : 'no');
+
+    $ghost_warnings = 0;
+    set_error_handler(function($errno, $errstr) use (&$ghost_warnings) {
+	$ghost_warnings++;
+	return true;	/* ログには出さない。数えるだけ */
+    });
+    $ghost_query = search_parse_query($ghost_word);
+    $ghost_results = search($ghost_query);
+    restore_error_handler();
+
+    printf("warnings=%d\n", $ghost_warnings);
+    printf("hits=%d\n", count($ghost_results));
     break;
 
 case 'cleanup':

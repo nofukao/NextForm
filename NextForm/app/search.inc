@@ -371,6 +371,15 @@ function search_engine_index_clear() {
 
 function search_page_texts(&$page) {
     auth_check($page['name'], 'read');
+    /*
+     * 実在しないページでは 'title' も入れない。
+     *
+     * ここに 'title' => ページ名 を足したくなるが、**足すと索引が壊れる**。
+     * 索引の更新は「保存前の ngram」と「保存後の ngram」の差分で行う
+     * (search_index_update)。新規ページの「保存前」はこの経路を通るので、
+     * 名前の ngram が両側に現れて相殺され、索引に入らなくなる。
+     * 読む側が 'title' の無い配列に備えること (search_page_match を参照)。
+     */
     if(empty($page['is_exists']))
 	return array('body' => array());
 
@@ -480,7 +489,12 @@ function search_page_match($pagename, $query) {
     $match_title = false;
     $match_description_num = 0;
     $match_tag_num = 0;
-    $title = $page_texts_info['title'];
+    /*
+     * 実在しないページ (索引に残っているだけ) では search_page_texts() が
+     * 'title' を返さない。無条件に読むと、索引が古いあいだ検索のたびに
+     * 警告がログに積まれる。検索は誰でも叩ける経路なので放置できない。
+     */
+    $title = default_value($page_texts_info['title'], $pagename);
     
     $snippets = array();
     $texts = array();

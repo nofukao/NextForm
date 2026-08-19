@@ -129,6 +129,10 @@ check_eq "索引に余分な ngram が無い"                "0" "$(value_of "$o
 out=$(helper delete-residue)
 check_eq "削除 4 パターンを実行した"                "4" "$(value_of "$out" cases)"
 check_eq "削除したページの ngram が残らない"        "0" "$(value_of "$out" residue)"
+out=$(helper ghost-page-search)
+check_eq "幽霊ページを索引に残せた (準備)"          "yes" "$(value_of "$out" in_index)"
+check_eq "実在しないページを検索しても警告が出ない" "0"   "$(value_of "$out" warnings)"
+check_eq "実在しないページは検索結果に出ない"       "0"   "$(value_of "$out" hits)"
 helper cleanup > /dev/null
 echo
 
