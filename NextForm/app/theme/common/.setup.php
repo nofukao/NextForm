@@ -74,25 +74,20 @@ $SETUP_CONSTANTS['THEME_IMAGE_ICON'] = array(
     'path' => 'favicon.',
     'note' => '.ico format recommended');
 
+/*
+ * 選択肢は app/tone/ と storage/tone/ の JSON から作る。一覧が要るのは
+ * この設定画面だけなので、type => 'theme' と同じく描画するときに読む。
+ */
 $SETUP_CONSTANTS['THEME_TONE'] = array(
     'category' => 'theme',
     'description' => 'Tone',
-    'default' => 'beige/green',
-    'type' => 'select',
-    'options' => array(
-	'beige/green' => 'beige/green',
-	'yellow/pink' => 'yellow/pink',
-	'white/blue' => 'white/blue',
-	'black/blue' => 'black/blue',
-	'navy/yellow' => 'navy/yellow',
-	'gray/orange' => 'gray/orange',
-	'custom' => 'custom color',
-	));
+    'default' => TONE_DEFAULT_ID,
+    'type' => 'tone');
 
 $SETUP_CONSTANTS['THEME_COLOR_MAIN_CUSTOM'] = array(
     'category' => 'theme',
     'need_name' => 'THEME_TONE',
-    'need_value' => 'custom',
+    'need_value' => TONE_CUSTOM_ID,
     'need_option' => 'not',
     'description' => 'Head color',
     'default' => '',
@@ -133,7 +128,7 @@ foreach($THEME_CUSTOM_COLORS as $custom_color_name => $custom_color_value) {
 	'category' => 'theme',
 	'group' => 'custom color',
 	'need_name' => 'THEME_TONE',
-	'need_value' => 'custom',
+	'need_value' => TONE_CUSTOM_ID,
 	'description' => strtolower(strtr(substr($custom_color_name, 19), '_', ' ')) . ' color',
 	'default' => $custom_color_value,
 	'type' => 'color');
@@ -253,12 +248,7 @@ $LANGUAGE['ja']['a block can override this with &pre(wrap) or &pre(nowrap)'] = '
 $LANGUAGE['ja']['Site logo image']    	      	= 'サイトのロゴ画像';
 $LANGUAGE['ja']['Site favorite icon'] 	      	= 'サイトのお気に入りアイコン';
 $LANGUAGE['ja']['Tone']                       	= '色調';
-$LANGUAGE['ja']['beige/green']         	      	= 'ベージュ/グリーン';
-$LANGUAGE['ja']['yellow/pink']         	      	= 'イエロー/ピンク';
-$LANGUAGE['ja']['white/blue']         	      	= 'ホワイト/ブルー';
-$LANGUAGE['ja']['black/blue']                 	= 'ブラック/ブルー';
-$LANGUAGE['ja']['navy/yellow']                	= 'ネイビー/イエロー';
-$LANGUAGE['ja']['gray/orange']                	= 'グレー/オレンジ';
+/* 色調の名前は app/tone/<識別子>.json の "names" にある */
 $LANGUAGE['ja']['custom color']               	= '個別に色を設定';
 $LANGUAGE['ja']['Head color']         	      	= '見出しの色';
 $LANGUAGE['ja']['.ico format recommended']    	= '.ico形式推奨';

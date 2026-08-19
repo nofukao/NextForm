@@ -23,6 +23,7 @@ require_once(APP_DIR_PATH . '/search.inc');
 require_once(APP_DIR_PATH . '/export.inc');
 require_once(APP_DIR_PATH . '/manual.inc');
 require_once(APP_DIR_PATH . '/theme.inc');
+require_once(APP_DIR_PATH . '/tone.inc');
 require_once(APP_DIR_PATH . '/csrf.inc');
 require_once(APP_DIR_PATH . '/analyze.inc');
 

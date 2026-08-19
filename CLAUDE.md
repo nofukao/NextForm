@@ -19,7 +19,7 @@
 | パス | 内容 |
 |---|---|
 | `NextForm/` | wiki ソース本体(= 配布単位)。`index.php` `.htaccess` `license.txt` `app/` `resource/` |
-| `NextForm/app/` | ロジック全部。`handler/` `option/` `theme/`(テーマの**ソース**)`tool/` `test/` `vendor/`(同梱ライブラリ。手で編集しない) |
+| `NextForm/app/` | ロジック全部。`handler/` `option/` `theme/`(テーマの**ソース**)`tone/`(組み込みの色調 JSON)`tool/` `test/` `vendor/`(同梱ライブラリ。手で編集しない) |
 | `NextForm/storage/` `NextForm/theme/` | **生成物。追跡しない。編集もしない** |
 | `docs/` | **利用者向け** (`installation.md` `upgrade-guide.md`)。`upgrade-guide.md` はリリース時に配布物へ `UPGRADE.md` として同梱される |
 | `docs/development/` | **開発者向け** (`project-overview.md` `workflow.md` `setup.md`) |

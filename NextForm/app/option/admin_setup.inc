@@ -239,6 +239,11 @@ function admin_setup(&$args, $dom, $target_categories, $note = '') {
 		if(!isset($options[$args[$name]]))
 		    $setup_constant['error'] = true;
 		break;
+	    case 'tone':
+		$options = tone_get_options();
+		if(!isset($options[$args[$name]]))
+		    $setup_constant['error'] = true;
+		break;
 	    case 'integer':
 		if(!preg_match('/^[0-9]*$/', $args[$name]))
 		    $setup_constant['error'] = true;
@@ -345,6 +350,14 @@ function admin_setup(&$args, $dom, $target_categories, $note = '') {
 	    $options = theme_get_themes();
 	    ksort($options);
 	    $append_element = dom_append_selector($dd, $name, $options, $value);
+	    break;
+	case 'tone':
+	    /*
+	     * 保存されている値は上流の古い名前 ('beige/green') かもしれない。
+	     * 読み替えないと、選択肢のどれにも一致せず先頭が選ばれてしまう。
+	     */
+	    $append_element = dom_append_selector($dd, $name, tone_get_options(),
+						  tone_normalize_id($value));
 	    break;
 	case 'color':
 	    $attributes = array('name' => $name,

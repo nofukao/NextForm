@@ -7,9 +7,9 @@
  * ここを共有している限り、テーマを切り替えても色の設定はそのまま引き継がれる。
  * テーマ側は THEME_COLOR_* をどの部品に割り当てるかだけを決める。
  */
-if(THEME_TONE !== 'custom') {
-    include(dirname(__FILE__) . '/.tones.php');
-    foreach($THEME_TONES[THEME_TONE] as  $name => $value) {
+if(THEME_TONE !== TONE_CUSTOM_ID) {
+    /* 色調そのものは app/tone.inc が持つ。テーマの下には置かない */
+    foreach(tone_get_colors(THEME_TONE) as $name => $value) {
 	define($name, $value);
     }
     if(THEME_COLOR_MAIN_CUSTOM !== '')

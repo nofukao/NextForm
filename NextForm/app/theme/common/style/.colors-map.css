@@ -62,7 +62,7 @@ table, td, th {
 }
 
 <?php
-if(THEME_TONE !== 'custom') {
+if(THEME_TONE !== TONE_CUSTOM_ID) {
     $hsv_bg = color_html_to_hsv(THEME_COLOR_MAIN);
     $hsv_fg = color_html_to_hsv(THEME_COLOR_TEXT);
     if(abs($hsv_bg['v'] - $hsv_fg['v']) < 0.2)  { ?>

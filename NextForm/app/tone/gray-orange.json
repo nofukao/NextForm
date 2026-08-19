@@ -1,0 +1,34 @@
+{
+    "order": 60,
+    "names": {
+        "en": "gray/orange",
+        "ja": "グレー/オレンジ"
+    },
+    "colors": {
+        "THEME_COLOR_MAIN_DEFAULT": "#ff8e50",
+        "THEME_COLOR_BACKGROUND": "#f2f2f2",
+        "THEME_COLOR_OUTSIDE": "#2a2f32",
+        "THEME_COLOR_HEADER_TEXT": "#3d1c10",
+        "THEME_COLOR_TEXT": "#3d1c10",
+        "THEME_COLOR_LINK": "#f05c26",
+        "THEME_COLOR_LINK_VISITED": "#c83e0e",
+        "THEME_COLOR_EXTERNAL_LINK": "#f05c26",
+        "THEME_COLOR_EXTERNAL_LINK_VISITED": "#c83e0e",
+        "THEME_COLOR_EDIT": "#cfcfcf",
+        "THEME_COLOR_PAGE_INFO": "#ff8e50",
+        "THEME_COLOR_HIGHLIGHT": "#ff8e50",
+        "THEME_COLOR_HIGHLIGHT_TEXT": "#ff426e",
+        "THEME_COLOR_HEAD": "#dbdbdb",
+        "THEME_COLOR_PRE": "#ebebeb",
+        "THEME_COLOR_CODE": "#ebebeb",
+        "THEME_COLOR_ERROR": "#f0b6c4",
+        "THEME_COLOR_NOTICE": "#cef0b6",
+        "THEME_COLOR_INFO": "#b6f0e4",
+        "THEME_COLOR_COMPARE_DELETE": "#fad7df",
+        "THEME_COLOR_COMPARE_ADD": "#e5fad7",
+        "THEME_COLOR_TEXTINPUT": "#3d1c10",
+        "THEME_COLOR_TEXTINPUT_BACKGROUND": "#ffffff",
+        "THEME_COLOR_ACTION_BACKGROUND": "#2a2f32",
+        "THEME_COLOR_ACTION_TEXT": "#ffffff"
+    }
+}

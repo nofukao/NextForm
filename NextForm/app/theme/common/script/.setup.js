@@ -1,9 +1,8 @@
 (function() {
 <?php
-include(dirname(dirname(__FILE__)) . '/.tones.php');
 $localized_tones = array();
-foreach($THEME_TONES as $name => $colors) {
-    $localized_tones[l($name)] = $colors;
+foreach(tone_get_all() as $tone) {
+    $localized_tones[tone_get_name($tone)] = $tone['colors'];
 }
 echo('var tones = ' . json_encode($localized_tones) . ';');
 ?>
