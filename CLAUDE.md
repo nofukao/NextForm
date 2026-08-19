@@ -55,6 +55,7 @@
 ./tests/smoke.sh            # 全 42 option 巡回 + PHP 警告の集計
 ./tests/css-rules.sh        # 生成された静的 CSS のルール検査 (全テーマ + 配信中)
 ./tests/theme-diff.sh       # テーマの生成物を git の ref と比べる (既定は main)
+./tests/theme-switch.sh     # テーマを切り替えると生成物ができるか (複製サイトを作る。要 sudo)
 ./tests/upgrade.sh          # tora2 の複製に対してアップグレードを実走 (要 sudo)
 ./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
 ./tests/search-cache.sh     # 検索のテキストキャッシュ (複製サイトを作る。要 sudo)

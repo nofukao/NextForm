@@ -12,6 +12,21 @@ function admin_setup_site(&$args, $dom) {
 	page_stop_processing();
 	message_info(l('You can reconfigure these items on Admin tools > Site preferences.'));
 	$is_first = true;
+    } else if(isset($args['apply']) && $args['apply'] === 'theme') {
+	/*
+	 * テーマを変えた直後のリダイレクト先。
+	 *
+	 * 定数 THEME は起動時に define() 済みで、保存したリクエストの中では
+	 * まだ古いテーマを指している。新しいテーマの生成はここで行う。
+	 */
+	if(!theme_convert(THEME)) {
+	    message_error(l('Could not apply theme preferences.'));
+	} else {
+	    header('Location: ' . url_make('', array('option' => 'admin_setup_site')));
+	    exit(0);
+	}
+    } else {
+	admin_setup_theme_repair();
     }
 
     $target_categories = array('site' => true);
@@ -23,7 +38,17 @@ function admin_setup_site(&$args, $dom) {
 	    exit(0);
 	} else {
 	    cache_delete('', 'calendar-');
-	    header('Location: ' . url_make('', array('option' => 'admin_setup_site')));
+	    $new_args = array('option' => 'admin_setup_site');
+	    /*
+	     * テーマを変えたなら、そのテーマの静的ファイルをまだ誰も作っていない。
+	     * ブラウザが読むのは生成物 (theme/<名前>/) なので、作らずに戻ると
+	     * CSS が 404 になり、画面が素の HTML になる。
+	     * このリクエストでは THEME を切り替えられないので、生成は上の
+	     * apply=theme に任せる。
+	     */
+	    if(admin_setup_saved_theme() !== THEME)
+		$new_args['apply'] = 'theme';
+	    header('Location: ' . url_make('', $new_args));
 	    exit(0);
 	}
     }
@@ -45,6 +70,9 @@ function admin_setup_theme(&$args, $dom) {
     }
 
     $is_first = isset($args['first']) && $args['first'] === 'true';
+
+    if(!$is_first)
+	admin_setup_theme_repair();
 
     if(isset($args['apply']) && $args['apply'] === 'theme') {
 	if(!theme_convert(THEME)) {
@@ -76,6 +104,34 @@ function admin_setup_theme(&$args, $dom) {
     }
 
     return false;
+}
+
+/*
+ * 保存されているテーマ名を返す。定数 THEME は起動時の値なので、
+ * 設定を保存した直後のリクエストでは両者が食い違う。
+ */
+function admin_setup_saved_theme() {
+    $contents = setup_read('site');
+    if($contents === false)
+	return THEME;
+    $values = unserialize($contents);
+    if($values === false)
+	return THEME;
+    return default_value($values['THEME'], THEME);
+}
+
+/*
+ * 静的ファイルを失ったテーマを作り直す。
+ *
+ * 生成物 (theme/<名前>/) はデータではなくキャッシュで、追跡もされない。
+ * 消えても設定は正しいまま画面だけが崩れるので、気付いた人が設定画面を
+ * 開けば戻るようにしておく。既にあるときは何もしない。
+ */
+function admin_setup_theme_repair() {
+    if(is_dir(THEME_DIR_PATH . '/' . THEME))
+	return;
+    if(!theme_convert(THEME))
+	message_error(l('Could not apply theme preferences.'));
 }
 
 function admin_setup(&$args, $dom, $target_categories, $note = '') {
