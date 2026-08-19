@@ -74,6 +74,16 @@ function admin_setup_theme(&$args, $dom) {
     if(!$is_first)
 	admin_setup_theme_repair();
 
+    /*
+     * 選んでいる色調のファイルが無い (消した / 別のサイトから持ってくるのを
+     * 忘れた)。生成済みの CSS はそのまま使われ続けるので画面は壊れないが、
+     * 作り直した時点で既定の色調に変わる。黙って変わると分からないので知らせる。
+     */
+    if(THEME_TONE !== TONE_CUSTOM_ID && tone_read(THEME_TONE) === false) {
+	message_error(lf('The tone \'$tone$\' is gone. $default$ is used instead.',
+			 array('tone' => THEME_TONE, 'default' => TONE_DEFAULT_ID)));
+    }
+
     if(isset($args['apply']) && $args['apply'] === 'theme') {
 	if(!theme_convert(THEME)) {
 	    message_error(l('Could not apply theme preferences.'));

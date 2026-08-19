@@ -253,7 +253,26 @@ check_eq "生成された CSS にも出る"    "1" \
             "${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css" && echo 1 || echo 0)"
 echo
 
-echo "8. PHP の警告を出さない"
+echo "8. 保存した色調を選んで使う"
+apply_theme_setup "const_THEME_TONE=custom-tone" > /dev/null
+check_eq "選べる"                   "手で作った色" "$(tone_option_name custom-tone)"
+check_eq "生成された CSS がその色"  "1" \
+         "$(sudo grep -q '#123456' \
+            "${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css" && echo 1 || echo 0)"
+
+# ファイルを失っても色が 1 つも決まらない状態にはしない。
+# 設定画面は「無くなった」と知らせ、作り直すと組み込みの既定に落ちる。
+sudo rm -f "$(tone_file custom-tone)"
+check_eq "無くなったと知らせる"     "1" \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" \
+            | grep -c "custom-tone" | head -1)"
+code "${THEME_TEST_URL}/?option=admin_setup_site&apply=theme" > /dev/null
+check_eq "作り直すと既定に落ちる"   "1" \
+         "$(sudo grep -q '#fbf6ea' \
+            "${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css" && echo 1 || echo 0)"
+echo
+
+echo "9. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

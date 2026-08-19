@@ -383,6 +383,8 @@ $LANGUAGE['ja'] = array(
     'Use half-width alphanumerics, dot, underscore and hyphen for the identifier.' =>
     '識別子は半角の英数字と . _ - で、32 文字までです．',
     'Could not save the tone.' => '色調の保存に失敗しました．',
+    'The tone \'$tone$\' is gone. $default$ is used instead.' =>
+    '色調 \'$tone$\' が見つかりません．$default$ が使われます．',
     'Saved tones' => '保存した色調',
     'Could not delete the tone.' => '色調の削除に失敗しました．',
     'Deleted the tone.' => '色調を削除しました．',
