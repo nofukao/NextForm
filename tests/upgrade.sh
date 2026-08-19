@@ -193,6 +193,15 @@ echo
 echo "[7] 新しいコード"
 check_cmd "app/version.inc に NEXTFORM_VERSION がある" \
           "sudo grep -q \"NEXTFORM_VERSION\" '${TEST_SITE}/app/version.inc'"
+# Markdown ページは app/vendor/ の同梱ライブラリで描画する。
+# アップグレードの対象ディレクトリ (UPGRADE_TARGET_DIRS) から app が外れたり、
+# 除外規則が増えたりすると、コードだけ新しくなって Markdown ページが
+# 500 になる。届いていることを名指しで確かめる。
+check_cmd "同梱ライブラリ app/vendor/ が届く" \
+          "sudo test -f ${TEST_SITE}/app/vendor/autoload.php && \
+           sudo test -f ${TEST_SITE}/app/vendor/league/commonmark/src/MarkdownConverter.php"
+check_cmd "同梱ライブラリのライセンス表記も届く" \
+          "sudo test -f ${TEST_SITE}/app/vendor/league/commonmark/LICENSE"
 check_cmd "app/tool/upgrade 自体も配置される (次回のアップグレード用)" \
           "sudo test -f '${TEST_SITE}/app/tool/upgrade'"
 check_cmd "PHP 8 で消えた関数が残っていない (get_magic_quotes_gpc)" \
