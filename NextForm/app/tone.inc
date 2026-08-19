@@ -54,8 +54,77 @@ function tone_is_valid_id($id) {
 	strpos($id, '..') === false;
 }
 
+/*
+ * 色調を探すディレクトリ。後ろが前を隠す。
+ * storage を後ろに置くことで、組み込みと同じ識別子で保存すると上書きになり、
+ * storage 側のファイルを消せば組み込みに戻る。
+ */
 function tone_get_dir_paths() {
-    return array(TONE_DIR_PATH);
+    return array(TONE_DIR_PATH, STORAGE_FILE_DIR_TONE_PATH);
+}
+
+function tone_get_file_path($id) {
+    return STORAGE_FILE_DIR_TONE_PATH . '/' . $id . TONE_FILE_EXTENSION;
+}
+
+function tone_is_saved($id) {
+    return tone_is_valid_id($id) && is_file(tone_get_file_path($id));
+}
+
+function tone_is_builtin($id) {
+    return tone_is_valid_id($id) &&
+	is_file(TONE_DIR_PATH . '/' . $id . TONE_FILE_EXTENSION);
+}
+
+/*
+ * 色調を保存する。既にあれば上書きする。
+ * $names は言語 => 表示名。$colors は THEME_COLOR_* => #rrggbb。
+ */
+function tone_write($id, $names, $colors, $order = TONE_ORDER_DEFAULT) {
+    if(!tone_is_valid_id($id))
+	return false;
+
+    $tone = array(
+	'order' => $order,
+	'names' => $names,
+	'colors' => $colors);
+    if(tone_parse(json_encode($tone)) === false)
+	return false;
+
+    if(!is_dir(STORAGE_FILE_DIR_TONE_PATH) &&
+       !@mkdir(STORAGE_FILE_DIR_TONE_PATH, 0777, true)) {
+	message_error(lf('mkdir failed. Check $dir$ permission.',
+			 array('dir' => STORAGE_FILE_DIR_TONE_PATH)));
+	return false;
+    }
+
+    /*
+     * 人が読み書きする前提のファイルなので整形して書く。
+     * 管理者が別のサイトへ持って行ったり、手で作ったりできる。
+     */
+    $contents = json_encode($tone, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE |
+			    JSON_UNESCAPED_SLASHES) . "\n";
+    if(@file_put_contents(tone_get_file_path($id), $contents) === false)
+	return false;
+
+    tone_cache_clear();
+    return true;
+}
+
+/*
+ * 保存した色調を消す。組み込みと同じ識別子なら、組み込みが再び見えるようになる。
+ */
+function tone_delete($id) {
+    if(!tone_is_saved($id))
+	return false;
+    if(!@unlink(tone_get_file_path($id)))
+	return false;
+    tone_cache_clear();
+    return true;
+}
+
+function tone_cache_clear() {
+    tone_read('', true);
 }
 
 function tone_parse($contents) {
@@ -77,8 +146,12 @@ function tone_parse($contents) {
  * 色調を 1 つ読む。無ければ false。
  * ページの表示では呼ばれない (テーマを生成するときと設定画面だけ)。
  */
-function tone_read($id) {
+function tone_read($id, $clear_cache = false) {
     static $cache = array();
+    if($clear_cache) {
+	$cache = array();
+	return false;
+    }
     $id = tone_normalize_id($id);
     if(isset($cache[$id]))
 	return $cache[$id];

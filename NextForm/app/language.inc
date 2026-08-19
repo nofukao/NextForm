@@ -376,6 +376,19 @@ $LANGUAGE['ja'] = array(
     'Could not apply theme preferences.' => 'テーマの反映に失敗しました．',
     'Need to refresh browser applying changes' => '適用後ブラウザを再読み込みして下さい',
 
+    'Save this tone' => 'この色調に名前を付けて保存',
+    'Identifier' => '識別子',
+    'Display name' => '表示名',
+    'the identifier becomes the file name' => '識別子はファイル名になります',
+    'Use half-width alphanumerics, dot, underscore and hyphen for the identifier.' =>
+    '識別子は半角の英数字と . _ - で、32 文字までです．',
+    'Could not save the tone.' => '色調の保存に失敗しました．',
+    'Saved tones' => '保存した色調',
+    'Could not delete the tone.' => '色調の削除に失敗しました．',
+    'Deleted the tone.' => '色調を削除しました．',
+    'deleting a tone that came with NextForm brings the original back' =>
+    'はじめから入っている色調を上書きした場合、消すと元に戻ります',
+
     'User Manager' => 'ユーザーの管理',
     'New user' => '新しいユーザー',
     'User name' => 'ユーザー名',

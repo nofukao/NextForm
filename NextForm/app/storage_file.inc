@@ -2,6 +2,7 @@
 define('STORAGE_FILE_DIR_PAGE_NAME', 'page');
 define('STORAGE_FILE_DIR_CACHE_NAME', 'cache');
 define('STORAGE_FILE_DIR_SETUP_NAME', 'setup');
+define('STORAGE_FILE_DIR_TONE_NAME', 'tone');
 define('STORAGE_FILE_PAGE_HEAD_NAME', 'head');
 define('STORAGE_FILE_WRITE_STOP_FILE_PATH', STORAGE_FILE_DIR_PATH . '/stop');
 define('STORAGE_FILE_NAME_CHUNK_SIZE', 254); // <filesytem max file name length> - 1
@@ -10,12 +11,14 @@ define('STORAGE_FILE_PATH_LENGTH_MAX', 3841); // <os max filepath length> - STOR
 define('STORAGE_FILE_DIR_PAGE_PATH', STORAGE_FILE_DIR_PATH . '/' . STORAGE_FILE_DIR_PAGE_NAME);
 define('STORAGE_FILE_DIR_CACHE_PATH', STORAGE_FILE_DIR_PATH . '/' . STORAGE_FILE_DIR_CACHE_NAME);
 define('STORAGE_FILE_DIR_SETUP_PATH', STORAGE_FILE_DIR_PATH . '/' . STORAGE_FILE_DIR_SETUP_NAME);
+define('STORAGE_FILE_DIR_TONE_PATH', STORAGE_FILE_DIR_PATH . '/' . STORAGE_FILE_DIR_TONE_NAME);
 
 function storage_install() {
     $directories = array(
 	STORAGE_FILE_DIR_PAGE_PATH,
 	STORAGE_FILE_DIR_CACHE_PATH,
-	STORAGE_FILE_DIR_SETUP_PATH);
+	STORAGE_FILE_DIR_SETUP_PATH,
+	STORAGE_FILE_DIR_TONE_PATH);
     $result = true;
     foreach($directories as $directory) {
 	if(!is_dir($directory) && !@mkdir($directory, 0777, true)) {

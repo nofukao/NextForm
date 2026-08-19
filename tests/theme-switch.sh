@@ -62,7 +62,7 @@ check_eq() {
 
 helper() {
     sudo -u "$SITE_OWNER" php \
-        "${THEME_TEST_SITE}/theme-switch-helper.php" \
+        "${THEME_TEST_SITE}/theme-helper.php" \
         "${THEME_TEST_SITE}/index.php" "$@" 2>/dev/null
 }
 
@@ -83,7 +83,7 @@ apply_theme() {
         value="$(printf '%s' "${line#*=}" | base64 -d)"
         [[ "$key" == "THEME" ]] && continue
         args+=(--data-urlencode "const_${key}=${value}")
-    done < <(helper site-values)
+    done < <(helper values site)
     curl -sk -o /dev/null -L -X POST -H "Origin: ${ORIGIN}" \
          --data-urlencode "option=admin_setup_site" \
          --data-urlencode "apply=true" \
@@ -121,9 +121,9 @@ SITE_OWNER=$(sudo stat -c '%U' "${THEME_TEST_SITE}/index.php")
 # (csrf.sh と同じ理由)。
 sudo rsync -a --delete "${REPO_ROOT}/NextForm/app/"      "${THEME_TEST_SITE}/app/"
 sudo rsync -a --delete "${REPO_ROOT}/NextForm/resource/" "${THEME_TEST_SITE}/resource/"
-sudo cp "${REPO_ROOT}/tests/theme-switch-helper.php" "${THEME_TEST_SITE}/"
+sudo cp "${REPO_ROOT}/tests/theme-helper.php" "${THEME_TEST_SITE}/"
 sudo chown -R "$SITE_OWNER" "${THEME_TEST_SITE}/app" "${THEME_TEST_SITE}/resource" \
-                            "${THEME_TEST_SITE}/theme-switch-helper.php"
+                            "${THEME_TEST_SITE}/theme-helper.php"
 
 out=$(helper guest-admin)
 if [[ "$(value_of "$out" saved)" != "1" ]]; then

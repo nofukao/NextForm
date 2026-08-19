@@ -93,8 +93,22 @@ function admin_setup_theme(&$args, $dom) {
 	$is_first = true;
     }
 
+    /*
+     * 色調の保存と削除。設定と同じフォームから送られてくるので、
+     * 「保存」を押すと保存と適用が同時に起きる。「削除」は削除だけを行う
+     * (編集途中の色をうっかり適用しないよう、apply を落とす)。
+     */
+    if(!empty($args['tone_delete'])) {
+	admin_setup_tone_delete($args);
+	unset($args['apply']);
+    } else if(!empty($args['tone_save'])) {
+	if(!admin_setup_tone_save($args))
+	    unset($args['apply']);
+    }
+
     $target_categories = array('theme' => true);
-    if(admin_setup($args, $dom, $target_categories, l('Need to refresh browser applying changes'))) {
+    if(admin_setup($args, $dom, $target_categories, l('Need to refresh browser applying changes'),
+		   'admin_setup_tone_form')) {
 	cache_delete('', 'wiki-helper-info');
 	header('Location: ' . 
 	       url_make('',
@@ -104,6 +118,95 @@ function admin_setup_theme(&$args, $dom) {
     }
 
     return false;
+}
+
+/*
+ * いま画面で選んでいる色調の 25 色。
+ * 「個別に色を設定」なら入力欄の色、そうでなければその色調の色。
+ */
+function admin_setup_tone_colors(&$args) {
+    global $THEME_CUSTOM_COLORS;
+
+    $tone_id = default_value($args['const_THEME_TONE'], THEME_TONE);
+    if($tone_id !== TONE_CUSTOM_ID)
+	return tone_get_colors($tone_id);
+
+    $colors = array();
+    foreach($THEME_CUSTOM_COLORS as $custom_name => $default_color) {
+	$value = default_value($args['const_' . $custom_name], $default_color);
+	if(!color_is_valid($value))
+	    $value = $default_color;
+	$colors[str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $custom_name)] = $value;
+    }
+    return $colors;
+}
+
+function admin_setup_tone_save(&$args) {
+    $id = trim(default_value($args['tone_id'], ''));
+    if(!tone_is_valid_id($id)) {
+	message_error(l('Use half-width alphanumerics, dot, underscore and hyphen for the identifier.'));
+	return false;
+    }
+
+    $name = trim(default_value($args['tone_name'], ''));
+    if($name === '')
+	$name = $id;
+
+    if(!tone_write($id, array(LANG => $name), admin_setup_tone_colors($args))) {
+	message_error(l('Could not save the tone.'));
+	return false;
+    }
+    return true;
+}
+
+function admin_setup_tone_delete(&$args) {
+    $id = default_value($args['tone_delete_id'], '');
+    if(!tone_delete($id)) {
+	message_error(l('Could not delete the tone.'));
+	return false;
+    }
+    message_info(l('Deleted the tone.'));
+    return true;
+}
+
+/*
+ * 「外観の設定」のフォームの末尾に付ける色調の保存欄。
+ */
+function admin_setup_tone_form($form) {
+    $dl = dom_append_child($form, 'dl', 'tone');
+
+    $dt = dom_append_child($dl, 'dt');
+    dom_append_text($dt, l('Save this tone'));
+    $dd = dom_append_child($dl, 'dd');
+    dom_append_text($dd, l('Identifier') . ' ');
+    dom_append_child($dd, 'input', 'tone_id',
+		     array('type' => 'text', 'name' => 'tone_id', 'value' => ''));
+    dom_append_text($dd, ' ' . l('Display name') . ' ');
+    dom_append_child($dd, 'input', 'tone_name',
+		     array('type' => 'text', 'name' => 'tone_name', 'value' => ''));
+    dom_append_text($dd, ' ');
+    dom_append_child($dd, 'input', '',
+		     array('type' => 'submit', 'name' => 'tone_save', 'value' => l('Save')));
+    $small = dom_append_child($dd, 'small');
+    dom_append_text($small, l('the identifier becomes the file name'));
+
+    $saved = array();
+    foreach(tone_get_all() as $id => $tone) {
+	if(tone_is_saved($id))
+	    $saved[$id] = tone_get_name($tone) . ' (' . $id . ')';
+    }
+    if(count($saved) <= 0)
+	return;
+
+    $dt = dom_append_child($dl, 'dt');
+    dom_append_text($dt, l('Saved tones'));
+    $dd = dom_append_child($dl, 'dd');
+    dom_append_selector($dd, 'tone_delete_id', $saved);
+    dom_append_text($dd, ' ');
+    dom_append_child($dd, 'input', '',
+		     array('type' => 'submit', 'name' => 'tone_delete', 'value' => l('Delete')));
+    $small = dom_append_child($dd, 'small');
+    dom_append_text($small, l('deleting a tone that came with NextForm brings the original back'));
 }
 
 /*
@@ -134,7 +237,12 @@ function admin_setup_theme_repair() {
 	message_error(l('Could not apply theme preferences.'));
 }
 
-function admin_setup(&$args, $dom, $target_categories, $note = '') {
+/*
+ * $append_form には関数名を渡す。フォームの末尾 (適用ボタンの後ろ) に
+ * 要素を足せる。色調の保存欄がこれを使う。設定の入力欄と同じフォームに
+ * 入れることで、まだ適用していない色をそのまま保存できる。
+ */
+function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form = '') {
     global $SETUP_CONSTANTS;
     auth_check(false, 'admin');
 
@@ -434,6 +542,9 @@ function admin_setup(&$args, $dom, $target_categories, $note = '') {
 	$small = dom_append_child($p, 'small');
 	dom_append_text($small, '(' . $note . ')');
     }
+
+    if($append_form !== '')
+	call_user_func($append_form, $form);
 
     return false;
 }
