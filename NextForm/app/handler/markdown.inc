@@ -41,6 +41,7 @@ function markdown_converter() {
 	return false;
     // 同梱ライブラリのインターフェイスを実装するので、autoload のあとに読む
     require_once(APP_DIR_PATH . '/handler/markdown/front_matter.inc');
+    require_once(APP_DIR_PATH . '/handler/markdown/wikilink.inc');
 
     $config = array(
 	/*
@@ -60,6 +61,13 @@ function markdown_converter() {
     $environment->addExtension(new League\CommonMark\Extension\Footnote\FootnoteExtension());
     $environment->addExtension(
 	new League\CommonMark\Extension\FrontMatter\FrontMatterExtension(new MarkdownFrontMatterParser()));
+
+    /*
+     * [[ページ名]]。標準のリンク記法 ([...](...)) より先に見せたいので
+     * 優先度を上げて登録する。
+     */
+    $environment->addInlineParser(new MarkdownWikiLinkParser(), 100);
+    $environment->addRenderer('MarkdownWikiLink', new MarkdownWikiLinkRenderer());
 
     $converter = new League\CommonMark\MarkdownConverter($environment);
     return $converter;
@@ -104,19 +112,43 @@ function markdown_append_html($dom, $html) {
  * ライブラリが無い (app/vendor/ が欠けている) ときは、原文をそのまま見せる。
  * 読めなくなるより、変換されないほうがましなため。
  */
+/*
+ * 変換して HTML の文字列を返す。false は「ライブラリが無い」。
+ *
+ * [[ページ名]] の相対指定を解決するために、変換中はどのページを描いているかを
+ * 大域に置く。変換器はリクエストごとに 1 つを使い回し、1 回のリクエストで
+ * 本文とサイドページの両方を描くことがあるので、前の値に必ず戻す。
+ */
+function markdown_render_html(&$page, $contents) {
+    global $MARKDOWN_CURRENT_PAGENAME;
+
+    $converter = markdown_converter();
+    if($converter === false)
+	return false;
+
+    $previous = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
+    $MARKDOWN_CURRENT_PAGENAME = $page['name'];
+    try {
+	$html = (string)$converter->convert($contents);
+    } finally {
+	$MARKDOWN_CURRENT_PAGENAME = $previous;
+    }
+    return $html;
+}
+
 function markdown_convert(&$page, $dom, $contents = null) {
     if(is_null($contents))
 	$contents = page_get_contents($page);
 
-    $converter = markdown_converter();
-    if($converter === false) {
+    $html = markdown_render_html($page, $contents);
+    if($html === false) {
 	message_error(l('Markdown library is missing. Showing the source instead.'));
 	markdown_source_append($page, $dom, $contents);
 	return false;
     }
 
     $section = dom_append_child($dom, 'section', 'markdown');
-    return markdown_append_html($section, (string)$converter->convert($contents));
+    return markdown_append_html($section, $html);
 }
 
 function markdown_show(&$page, $dom) {
@@ -156,12 +188,12 @@ function markdown_write(&$page, $dom) {
  * 表や脚注の中身まで漏れなく拾うため。wiki 側の wiki_texts() と同じ流儀。
  */
 function markdown_texts(&$page) {
-    $converter = markdown_converter();
-    if($converter === false)
+    $html = markdown_render_html($page, page_get_contents($page));
+    if($html === false)
 	return array('body' => explode("\n", page_get_contents($page)));
 
     $search_dom = dom_create_document();
-    markdown_append_html($search_dom, (string)$converter->convert(page_get_contents($page)));
+    markdown_append_html($search_dom, $html);
     $texts_info = array('body' => array());
     dom_texts($search_dom, $texts_info['body']);
     return $texts_info;

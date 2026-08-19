@@ -40,7 +40,10 @@ function example($argument) { return "test"; }
 ## リンク
 
 [通常のリンク](https://example.com/)、自動リンク https://example.com/auto 、
-それから [[GoldenMaster/Top]] と [[表示名|GoldenMaster/Syntax]]。
+それから [[GoldenMaster/Top]] と [[GoldenMaster/Syntax|表示名つき]]、
+相対指定の [[../Markdown]]、存在しない [[GoldenMaster/NoSuchPage]]、
+見出しを指す [[GoldenMaster/Syntax#その他の記法]]。
+コードの中の `[[GoldenMaster/Top]]` はリンクにならない。
 
 長い URL が折り返されること: https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
