@@ -396,6 +396,12 @@ function page_append_page_dom(&$page, $dom) {
 class PageContentStream {
     var $pagename;
     var $fp;
+    /*
+     * PHP がストリームを開くときにこのオブジェクトへ代入する。
+     * 宣言しておかないと PHP 8.2 以降で「動的プロパティ」の非推奨が出る。
+     * 画像を縮小して返すたびにログが 1 行増えていた。
+     */
+    var $context;
 
     function stream_open($path, $mode, $options, &$opened_path) {
         $url = parse_url($path);

@@ -1,8 +1,8 @@
 #!/bin/bash
 # HTTP スモークテスト
 #
-# 全 option 画面を巡回し、期待どおりの HTTP ステータスが返り、
-# かつ PHP の警告が出ないことを確認する。
+# 全 option 画面とページの主な経路を巡回し、期待どおりの HTTP ステータスが
+# 返り、かつ PHP の警告が出ないことを確認する。
 #
 #   ./tests/smoke.sh
 #
@@ -35,24 +35,52 @@ echo
 
 fail=0
 total=0
-for path in "${REPO_ROOT}"/NextForm/app/option/*.inc; do
-    opt=$(basename "$path" .inc)
-    total=$((total + 1))
-    want=200
-    [[ -n "${EXPECT_401[$opt]:-}" ]] && want=401
 
-    got=$(curl -sk -o /dev/null -w '%{http_code}' "${BASE_URL}/?option=${opt}")
-    if [[ "$got" == "$want" ]]; then
-        printf '%-24s %s\n' "$opt" "$got"
+# $1 表示名  $2 URL の後ろ  $3 期待する HTTP ステータス
+hit() {
+    local got
+    total=$((total + 1))
+    got=$(curl -sk -o /dev/null -w '%{http_code}' "${BASE_URL}/$2")
+    if [[ "$got" == "$3" ]]; then
+        printf '%-24s %s\n' "$1" "$got"
     else
-        printf '%-24s %s  FAIL (期待 %s)\n' "$opt" "$got" "$want"
+        printf '%-24s %s  FAIL (期待 %s)\n' "$1" "$got" "$3"
         fail=$((fail + 1))
     fi
+}
+
+for path in "${REPO_ROOT}"/NextForm/app/option/*.inc; do
+    opt=$(basename "$path" .inc)
+    want=200
+    [[ -n "${EXPECT_401[$opt]:-}" ]] && want=401
+    hit "$opt" "?option=${opt}" "$want"
 done
+
+# option の画面だけを回っていると、ページそのものの経路に入らない。
+# 画像の縮小は twpage:// ストリームを通るので、ここでしか出ない警告があった
+# (PageContentStream の動的プロパティ。v0.6.1 で修正)。
+#
+# 縮小した画像はキャッシュに残る。毎回同じ寸法を頼むと 2 回目からは
+# キャッシュを返すだけになり、縮小の経路を通らない。寸法を変えて必ず通す。
+echo
+IMAGE_PAGE="GoldenMaster/Markdown/portforward01.png"
+RESIZE=$(( RANDOM % 24 + 8 ))
+hit "画像ページ"     "?${IMAGE_PAGE}" 200
+hit "画像の原本"     "?${IMAGE_PAGE}&action=raw" 200
+hit "画像の縮小"     "?${IMAGE_PAGE}&action=raw&width=${RESIZE}&height=${RESIZE}" 200
+hit "Wiki ページ"    "?GoldenMaster/Syntax" 200
+hit "Markdown ページ" "?GoldenMaster/Markdown" 200
+hit "ページの目次"   "?GoldenMaster/Syntax&option=summary" 200
+hit "ページの原本"   "?GoldenMaster/Syntax&action=source" 200
 
 echo
 echo "=== この巡回で出た PHP の警告 ==="
+# エラーログは同じサーバの全サイトが共有している。巡回した先の分だけを見る。
+# (BASE_URL が php -S を指しているときは、警告はログではなく標準エラーに出るので
+#  ここでは何も拾えない。判定は Apache 配下のインスタンスに対して行うこと。)
+SITE_DIR=$(basename "$BASE_URL")
 warnings=$(sudo cat "$PHP_ERROR_LOG" | tail -n +$((baseline + 1)) \
+    | grep -F "/var/www/html/${SITE_DIR}/" \
     | sed -E 's/^\[[^]]*\] //; s| in /var/www/html/[^/]+/| @ |')
 
 if [[ -z "$warnings" ]]; then
@@ -65,4 +93,4 @@ fi
 
 echo
 echo "=== HTTP ステータス: $((total - fail)) / ${total} 件 一致 ==="
-[[ $fail -eq 0 ]] || exit 1
+[[ $fail -eq 0 && -z "$warnings" ]] || exit 1

@@ -57,6 +57,7 @@ class CacheContentStream {
     var $pagename;
     var $key;
     var $fp;
+    var $context;	/* PageContentStream と同じ理由。page.inc を参照 */
 
     function stream_open($path, $mode, $options, &$opened_path) {
 	if(substr($path, 0, 11) === 'twcache:///') {

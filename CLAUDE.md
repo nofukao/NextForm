@@ -52,7 +52,7 @@
 ```bash
 ./tests/setup-fixtures.sh   # 入力ページを投入 (冪等。壊したときの復旧にも使う)
 ./tests/golden.sh           # ゴールデンマスター。--update で expected/ を更新
-./tests/smoke.sh            # 全 42 option 巡回 + PHP 警告の集計
+./tests/smoke.sh            # 全 option 巡回 + ページの経路 + PHP 警告 (警告が出たら失敗)
 ./tests/css-rules.sh        # 生成された静的 CSS のルール検査 (全テーマ + 配信中)
 ./tests/theme-diff.sh       # テーマの生成物を git の ref と比べる (既定は main)
 ./tests/theme-switch.sh     # テーマを切り替えると生成物ができるか (複製サイトを作る。要 sudo)
