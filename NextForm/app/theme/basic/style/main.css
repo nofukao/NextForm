@@ -29,5 +29,6 @@ include(theme_get_common_dir_path() . '/.colors.php');
 <?php include(theme_get_common_dir_path() . '/style/.colors-map.css'); ?>
 <?php include(theme_get_common_dir_path() . '/style/.background-image.css'); ?>
 <?php include(theme_get_common_dir_path() . '/style/.standard.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.markdown.css'); ?>
 /* form.css ================================= */
 <?php include(theme_get_common_dir_path() . '/style/.form.css'); ?>

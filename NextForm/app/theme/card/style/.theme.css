@@ -120,3 +120,17 @@ hr {
     border-style: solid;
     border-color: <?php trw_color_v(THEME_COLOR_BACKGROUND, $card_ground); ?>;
 }
+
+/* Markdown の見出しも、下線ではなく左の色帯で示す */
+section.markdown h1,
+section.markdown h2,
+section.markdown h3 {
+    border-bottom: none;
+    border-left: solid 4px <?php trw_color(THEME_COLOR_MAIN); ?>;
+    padding: 2px 0 2px 12px;
+    margin-top: <?php echo(theme_density_px(28)); ?>px;
+}
+section.markdown blockquote {
+    border-left: solid 4px <?php trw_color(THEME_COLOR_MAIN); ?>;
+    border-radius: 0 8px 8px 0;
+}

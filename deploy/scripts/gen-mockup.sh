@@ -24,6 +24,7 @@ TONES=("beige/green" "white/blue" "black/blue")
 PAGES=(
     "index|?Top|トップページ"
     "syntax|?GoldenMaster/Syntax|記法いろいろ"
+    "markdown|?GoldenMaster/Markdown|Markdownのページ"
     "calendar|?GoldenMaster/Calendar|カレンダー"
     "parts|?option=cssexample|画面部品の見本"
 )

@@ -1,0 +1,129 @@
+<?php
+/*
+ * 種別 markdown のページ (section.markdown の中身)。
+ *
+ * wiki 記法の出力は section.section の入れ子で、余白も見出しもその構造に
+ * 合わせた規則が当たる。Markdown が出すのは素の h1〜h6 / p / ul / table で、
+ * そのままでは 2 つの穴が空く。
+ *
+ *   ・**h2 以降に当たる規則が 1 つも無い** (wiki は深さを section の入れ子で
+ *     表すので、見出しは常に h1。h2〜h6 はブラウザ既定のままだった)
+ *   ・section.section > * の余白が当たらない
+ *
+ * ここで同じリズムに揃える。テーマ固有の味付けは各テーマの .theme.css が
+ * このあとに上書きする。
+ */
+?>
+/* markdown ================================== */
+
+/* ブロックの間隔。base.css の section.section > * と同じ考えで揃える */
+section.markdown > h1,
+section.markdown > h2,
+section.markdown > h3,
+section.markdown > h4,
+section.markdown > h5,
+section.markdown > h6,
+section.markdown > pre,
+section.markdown > blockquote,
+section.markdown > table,
+section.markdown > hr,
+section.markdown > div.footnotes {
+    margin-top: <?php echo(theme_density_px(24)); ?>px;
+    margin-bottom: <?php echo(theme_density_px(24)); ?>px;
+}
+section.markdown > p,
+section.markdown > ul,
+section.markdown > ol,
+section.markdown > dl {
+    margin-top: <?php echo(theme_density_px(12)); ?>px;
+    margin-bottom: <?php echo(theme_density_px(12)); ?>px;
+}
+section.markdown > *:first-child {
+    margin-top: 0;
+}
+
+/* 見出し。Markdown は深さを数字で表すので、大きさで段差を出す */
+section.markdown h1 {
+    font-size: <?php echo(THEME_FONT_SIZE_HUGE); ?>px;
+}
+section.markdown h2 {
+    font-size: <?php echo(THEME_FONT_SIZE_LARGE + 2); ?>px;
+}
+section.markdown h3 {
+    font-size: <?php echo(THEME_FONT_SIZE_LARGE); ?>px;
+}
+section.markdown h4,
+section.markdown h5,
+section.markdown h6 {
+    font-size: <?php echo(THEME_FONT_SIZE_NORMAL); ?>px;
+}
+section.markdown h1,
+section.markdown h2,
+section.markdown h3,
+section.markdown h4,
+section.markdown h5,
+section.markdown h6 {
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    padding: <?php echo(theme_density_px(2)); ?>px 0;
+    line-height: 1.4;
+}
+section.markdown h4,
+section.markdown h5,
+section.markdown h6 {
+    border-bottom: none;
+}
+
+/* 引用。base.css の blockquote は wiki 用に white-space: pre になっている。
+   Markdown では中身が <p> なので、そのままだと余分な空行が出る */
+section.markdown blockquote {
+    white-space: normal;
+    overflow: visible;
+}
+section.markdown blockquote > *:first-child {
+    margin-top: 0;
+}
+section.markdown blockquote > *:last-child {
+    margin-bottom: 0;
+}
+
+/* 箇条書き。入れ子の間隔を詰める */
+section.markdown li > ul,
+section.markdown li > ol {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* タスクリスト。印を消せないブラウザでは丸が残るだけで、読めなくはならない */
+section.markdown li:has(> input[type="checkbox"]) {
+    list-style-type: none;
+    margin-left: -1em;
+}
+section.markdown li > input[type="checkbox"] {
+    margin-right: <?php echo(theme_density_px(6)); ?>px;
+}
+
+/* 表。Markdown の表は罫線を閉じて出す */
+section.markdown table {
+    border-collapse: collapse;
+}
+
+/* 脚注。本文より控えめにして、上に区切りを置く */
+section.markdown div.footnotes {
+    font-size: 88%;
+}
+section.markdown div.footnotes p {
+    margin: <?php echo(theme_density_px(4)); ?>px 0;
+}
+section.markdown a.footnote-ref,
+section.markdown a.footnote-backref {
+    text-decoration: none;
+}
+
+/* 段落の中のコード。前後を少し空ける */
+section.markdown p > code,
+section.markdown li > code,
+section.markdown td > code,
+section.markdown th > code {
+    padding: 0 <?php echo(theme_density_px(3)); ?>px;
+}

@@ -145,3 +145,19 @@ section.page a:visited {
     text-decoration: underline;
     text-underline-offset: 2px;
 }
+
+/* Markdown の見出しも、線をやめて太字と余白で段差を出す */
+section.markdown h1,
+section.markdown h2,
+section.markdown h3,
+section.markdown h4,
+section.markdown h5,
+section.markdown h6 {
+    border-bottom: none;
+    padding: 0;
+    margin-top: <?php echo(theme_density_px(32)); ?>px;
+}
+section.markdown blockquote {
+    border: none;
+    border-left: solid 3px <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
+}

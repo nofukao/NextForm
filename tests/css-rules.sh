@@ -72,6 +72,13 @@ rules_common() {
     check "アスキーアート pre.paa は折り返さない" \
           "bool(re.search(r'pre\.paa\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
 
+    # 種別 markdown のページ。wiki の出力とは構造が違うので、当たる規則が
+    # あることを名指しで見る (h2 以降はどのテーマでも規則が無かった)。
+    check "Markdown の h2 に大きさが指定されている" \
+          "bool(re.search(r'section\.markdown h2\s*\{[^}]*font-size', css, re.S))"
+    check "Markdown の引用が pre 扱いのままになっていない" \
+          "bool(re.search(r'section\.markdown blockquote\s*\{[^}]*white-space:\s*normal', css, re.S))"
+
     # ブロックごとの &pre(wrap) / &pre(nowrap) は、サイトの既定がどちらでも効く。
     check "ブロック指定 pre.wrap がある" \
           "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"
