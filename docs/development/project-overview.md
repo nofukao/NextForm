@@ -608,8 +608,49 @@ drwxr-xr-x apache apache  app/plugin/    ← *.inc が main.inc:34 で無条件�
   上流の猫は ToraToraWiki のマーク。候補と選定の記録は
   [logo_proposal/](logo_proposal/README.md)。
 
-### v0.6 — Markdown 文法対応
-- `app/handler/` に既存の `wiki.inc` / `text.inc` と並列でハンドラを追加する形が有力
+### v0.6 — Markdown 文法対応 (2026-08-19 に方針決定)
+
+**ページ種別に `markdown` を追加する。** 種別の選択肢は `$HANDLERS` のキーから
+自動生成される (`handle.inc`) ので、ハンドラを 1 つ登録すれば新規作成の
+セレクタにも `?option=newpage` にも出る。`app/handler/text.inc` (138 行) が
+完結したハンドラの見本になる。種別は `meta['type']` に保存され、
+**既存ページの種別は変えられない** (現状の仕様を維持)。
+
+| 決めたこと | 内容 |
+|---|---|
+| 種別名 | `markdown` (略さない。`meta['type']` に焼き付いて後から変えられないため) |
+| 変換 | **league/commonmark 2.10 を同梱** (`app/vendor/`)。利用者に composer は要求しない |
+| 生 HTML | **既定はエスケープ** (`html_input: escape`)。`MARKDOWN_ALLOW_HTML` で解禁できる |
+| 拡張 | GFM 一式 (表・打ち消し・タスクリスト・自動リンク・脚注) + `[[リンク]]` + 見出しアンカー + 画像/子ページ解決 + フロントマター |
+| フロントマター | **自前の最小パーサを注入する。`symfony/yaml` は同梱しない** |
+| CSS | `common/style/.markdown.css` を新設し、4 テーマで共有 |
+| 数式 `$...$` | **見送り**。commonmark の機能ではなく、既存の `WIKI_MATH_*` は platex を外部起動する古い作り。TeX 対応の作り直しごと将来の課題 |
+
+実装の手順:
+
+1. `chore/vendor-commonmark` — 同梱と憲法の注記 (**済**)
+2. `feat/markdown-handler` — 最小のハンドラ (`show` / `source` / `edit` / `write` / `texts` / `summary` / `normalize`)
+3. `feat/markdown-wikilink` — `[[ページ名]]` を Inline Parser 拡張で。**出す HTML を wiki ハンドラと揃える** (`data-link-pagename` / `a.not_exists` / 未読)
+4. `feat/markdown-anchor` — 見出し id と `?option=summary` (目次)
+5. `feat/markdown-style` — `.markdown.css`
+6. `docs/markdown` — 組み込みマニュアル、CHANGELOG
+
+決めた小さなこと:
+
+- **`normalize` は本文をそのまま返す**。持たないと `insert` / `replace` /
+  `listedit` / `templateedit` の 4 画面が Markdown ページで動かない
+- **チートシート (`?option=helper`) は Markdown ページでは出さない**。
+  中身が wiki 記法の早見表なので、出すと誤解を招く。Markdown 版は後続で
+- `EXPORT_DEFAULT_TEMPLATE_MARKDOWN` を `WIKI` と同じ内容で追加する
+
+将来の課題 (v0.6 ではやらない):
+
+- **インストーラの導入**。`composer install` で最新のライブラリを取る方式は、
+  シェルも外向き通信も無い設置先を切り捨てるうえ、サイトごとに版がばらつく。
+  同梱を既定に保ったまま、`app/tool/update_vendor` や slim 版配布を足す形にする
+- 簡易エディタなどの編集支援、既存の wiki ページ → Markdown 変換
+  (変換には「種別変更」の口が要る)
+- TeX / 数式表示の作り直し
 
 ### v0.7 — 検索機能の高度化
 - 正規表現、AND/OR/NOT、タイトル/本文限定、更新日範囲
@@ -662,6 +703,7 @@ drwxr-xr-x apache apache  app/plugin/    ← *.inc が main.inc:34 で無条件�
 | テーマを変えても色調を引き継ぐ方法 (追記 2026-08-18) | **設定項目の定義 (`common/.setup.php`) を全テーマで共有し、定数名を揃える** | 設定値は `storage/setup/site` に定数名で入り、`admin_setup()` は該当カテゴリのキーだけを上書きするので、名前が同じなら切り替えても値が残る。テーマごとに独自の定数名を作ると、そこで引き継ぎが切れる |
 | テーマとトーンの役割分担 (追記 2026-08-18) | **テーマは構造・余白・タイポグラフィ。色は `THEME_TONE` の軸に任せる** | 色の軸は既に 6 トーン + カスタム 25 色として完成している。テーマを色違いにすると軸が二重になり、管理画面で「どちらで色を決めるのか」が分からなくなる |
 | テーマの書き方 (追記 2026-08-18) | **標準の見た目 (`common/style/.standard.css`) を読んでから、差分だけを自分の `.theme.css` に書く** | html.php と theme.js が前提にしている配置 (サイトメニューの開閉、段組み) を各テーマが書き直すのは無駄で、書き漏らすと壊れる。差分方式なら 1 テーマ 120〜160 行で済み、「このテーマは標準と何が違うか」がそのままファイルになる。構造ごと変えたいテーマは `.standard.css` を読まなければよい |
+| ライブラリの持ち方 (追記 2026-08-19) | **同梱する。`composer install` は要求しない** | この wiki の設置先はシェルも外向き通信も無いことが多く、composer を要求すると「展開すれば動く」で救われていた層が落ちる。`composer install` 方式はサイトごとに版がばらつき、同じ Markdown が違う HTML になる (出力を固定するテスト方針と相性が悪い)。同梱ならライブラリの修正が通常のアップグレードに乗る。代償は追随義務で、`update-vendor.sh` と `composer.lock` で再現可能にした |
 | 密度の効かせ方 (追記 2026-08-18) | **絶対値で上書きせず、1 つの倍率で掛ける** | テーマは自分の余白と行間を持っている (plain 1.8 / docs 1.9)。密度が絶対値を書き込むとテーマの個性が消える。倍率なら「docs のゆったりさを保ったまま詰める」ができる。標準を 1.0 にしたので、入れたこと自体では生成物が変わらず、`theme-diff.sh` で確かめられる |
 | ブロック単位の折り返し指定 (追記 2026-08-18) | **既定に関係なく両方の class を出し、`&pre(wrap)` / `&pre(nowrap)` で選ぶ** | 「サイトの既定と違うときだけ class を出す」作りにすると、既定の違うサイトへページを写したときに見え方が変わる。ページの側に書いてあることは、どのサイトでもそのとおりに出るべき |
 | 管理画面の実行フォーム (追記 2026-08-18) | **GET フォームで action を送らない。ソースを静的に検査する** | CSRF 対策は action 名の許可リストで判定するので、GET のフォームは押しても 403 になり、利用者には「何も起きない」ようにしか見えない。実際 v0.4.0〜v0.4.1 でマニュアル生成と他 wiki インポートが動かなかった。HTTP で踏むには管理者の資格情報が要るため、`tests/csrf.sh` がソースを見て退行を止める |
