@@ -44,6 +44,12 @@ $SETUP_CONSTANTS['THEME_DEBUG_MODE'] = array(
     'type' => 'select',
     'options' => array('true' => 'Enable', 'false' => 'Disable'),
     'note' => 'it enables no cache theme file');
+$SETUP_CONSTANTS['MARKDOWN_ALLOW_HTML'] = array(
+    'description' => 'Raw HTML in Markdown pages',
+    'default' => 'false',
+    'type' => 'select',
+    'options' => array('false' => 'Escape', 'true' => 'Allow'),
+    'note' => 'allowing it lets anyone who can edit run scripts');
 $SETUP_CONSTANTS['GOOGLE_API_KEY'] = array(
     'description' => 'Google API key',
     'type' => 'string',
@@ -244,6 +250,7 @@ function setup_read($name) {
 |{BASE_URI||サイトのURL(通常は変更の必要なし)|}
 |{PASSWORD_REMINDER_EMAIL_FROM|(自動)|パスワード再設定メールの送信者メールアドレス|}
 |{MANUAL_PAGENAME|NextFormManual|マニュアルページのページ名|}
+|{MARKDOWN_ALLOW_HTML|false|種別markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}

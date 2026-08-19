@@ -2,6 +2,7 @@
 $HANDLERS = array();
 require_once(APP_DIR_PATH . '/handler/wiki.inc');
 require_once(APP_DIR_PATH . '/handler/text.inc');
+require_once(APP_DIR_PATH . '/handler/markdown.inc');
 require_once(APP_DIR_PATH . '/handler/file.inc');
 
 /*
