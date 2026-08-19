@@ -9,6 +9,26 @@ Based on:
 ToraToraWiki
 Copyright (C) 2013 terus, www.toratorawiki.net
 
+Bundled components (under app/vendor/, redistributed unmodified):
+
+  dflydev/dot-access-data          MIT            app/vendor/dflydev/dot-access-data/LICENSE
+  league/commonmark                BSD-3-Clause   app/vendor/league/commonmark/LICENSE
+  league/config                    BSD-3-Clause   app/vendor/league/config/LICENSE.md
+  nette/schema                     BSD-3-Clause   app/vendor/nette/schema/license.md
+  nette/utils                      BSD-3-Clause   app/vendor/nette/utils/license.md
+  psr/event-dispatcher             MIT            app/vendor/psr/event-dispatcher/LICENSE
+  symfony/deprecation-contracts    MIT            app/vendor/symfony/deprecation-contracts/LICENSE
+  symfony/polyfill-php80           MIT            app/vendor/symfony/polyfill-php80/LICENSE
+
+  The two nette packages are offered under BSD-3-Clause or GPL-2.0/3.0 at
+  the recipient's choice; BSD-3-Clause is taken here. Every license above
+  is compatible with GPLv3.
+
+  These are distributed under their own licenses, whose full texts are the
+  files named above. They are bundled so that NextForm keeps working after
+  simply extracting the archive, with no package manager involved. They are
+  not modified. Their copyright notices are kept in place.
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or

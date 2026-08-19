@@ -19,7 +19,7 @@
 | パス | 内容 |
 |---|---|
 | `NextForm/` | wiki ソース本体(= 配布単位)。`index.php` `.htaccess` `license.txt` `app/` `resource/` |
-| `NextForm/app/` | ロジック全部。`handler/` `option/` `theme/`(テーマの**ソース**)`tool/` `test/` |
+| `NextForm/app/` | ロジック全部。`handler/` `option/` `theme/`(テーマの**ソース**)`tool/` `test/` `vendor/`(同梱ライブラリ。手で編集しない) |
 | `NextForm/storage/` `NextForm/theme/` | **生成物。追跡しない。編集もしない** |
 | `docs/` | **利用者向け** (`installation.md` `upgrade-guide.md`)。`upgrade-guide.md` はリリース時に配布物へ `UPGRADE.md` として同梱される |
 | `docs/development/` | **開発者向け** (`project-overview.md` `workflow.md` `setup.md`) |
@@ -78,6 +78,12 @@
   `docs/development/project-overview.md` の v0.1 の節。
 - PHPUnit は **`require-dev` のみ**。`vendor/` は配布物に含めない。
 - **ランタイム依存を増やさない。** 「tar.gz を展開するだけで動く」配布形式を守る。
+  **例外は同梱 (`NextForm/app/vendor/`) のみ**。条件は 3 つ:
+  ① 利用者に `composer install` を要求しない ② 取り込みが再現可能
+  (`deploy/scripts/update-vendor.sh` + `composer.lock`) ③ 上流の脆弱性に追随し、
+  NextForm のリリースに乗せて配る。`composer.json` / `composer.lock` /
+  リポジトリ直下の `vendor/` は**開発用で、配布物には入らない**。
+  同梱物のライセンスは `LICENSE` に列挙する (GPLv3 と両立するものだけ)。
 - **`search-index.sh` は複製したサイトを作ってから走る。** 索引をわざと壊す検査を
   含むので、複製元 (`NF_SITE`) には触らない。リポジトリの作業ツリーを rsync して
   から検証するので、`deploy.sh` を先に走らせる必要はない。

@@ -1,0 +1,14 @@
+{
+    "name": "nofukao/nextform",
+    "description": "NextForm が同梱するライブラリの取得に使う。配布物には含めない (deploy/scripts/update-vendor.sh 参照)。",
+    "type": "project",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": ">=8.3",
+        "league/commonmark": "^2.10"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}
