@@ -4,10 +4,10 @@
       <nav class="page_menu">
         <ul class="page_tools"><li><a href="?GoldenMaster/Markdown&amp;action=edit" accesskey="e" rel="nofollow">編集(E)</a></li><li><a href="?GoldenMaster/Markdown&amp;option=tag" rel="nofollow">タグ</a></li><li class="summary"><a href="?GoldenMaster/Markdown&amp;option=summary" accesskey="i" rel="nofollow">目次(I)</a></li><li class="disabled">変更点</li><li class="disabled">履歴</li><li class="disabled">ロック</li><li><a href="?GoldenMaster/Markdown&amp;option=delete" rel="nofollow">削除</a></li><li><a href="?GoldenMaster/Markdown&amp;option=rename" rel="nofollow">リネーム</a></li><li><a href="?GoldenMaster/Markdown&amp;option=subpage">子ページ</a></li><li><a href="?GoldenMaster/Markdown&amp;option=attach" rel="nofollow">添付</a></li><li><a href="?GoldenMaster/Markdown&amp;option=meta" rel="nofollow">メタ情報</a></li></ul>      </nav>
       <ul class="messages"></ul>
-      <section data-pagename="GoldenMaster/Markdown" class="page section" data-ticket="TICKET"><section class="markdown"><h1>Markdown のゴールデンマスター</h1>
+      <section data-pagename="GoldenMaster/Markdown" class="page section" data-ticket="TICKET"><section class="markdown"><h1 id="hf1b905e">Markdown のゴールデンマスター</h1>
 <p>CommonMark の基本と、採用した拡張がすべて出るようにしてある。
 <strong>強調</strong>と<em>斜体</em>と<code>インラインコード</code>、それに<del>打ち消し</del>。</p>
-<h2>箇条書き</h2>
+<h2 id="c6f6932a">箇条書き</h2>
 <ul>
 <li>ひとつめ</li>
 <li>ふたつめ
@@ -22,7 +22,7 @@
 <li>番号つき</li>
 <li>ふたつめ</li>
 </ol>
-<h2>引用とコード</h2>
+<h2 id="ea2f040f">引用とコード</h2>
 <blockquote>
 <p>引用文。
 2 行目。</p>
@@ -31,7 +31,7 @@
 </code></pre>
 <pre><code>インデントによるコードブロック
 </code></pre>
-<h2>表</h2>
+<h2 id="i640ca17">表</h2>
 <table>
 <thead>
 <tr>
@@ -50,20 +50,26 @@
 </tr>
 </tbody>
 </table>
-<h2>リンク</h2>
+<h2 id="be2b9fe5">リンク</h2>
 <p><a href="https://example.com/">通常のリンク</a>、自動リンク <a href="https://example.com/auto">https://example.com/auto</a> 、
 それから <a class="page" data-link-pagename="GoldenMaster/Top" href="?GoldenMaster/Top">GoldenMaster/Top</a> と <a class="page" data-link-pagename="GoldenMaster/Syntax" href="?GoldenMaster/Syntax">表示名つき</a>、
 相対指定の <a class="page self" data-link-pagename="GoldenMaster/Markdown" href="?GoldenMaster/Markdown">../Markdown</a>、存在しない <a class="page not_exists" data-link-pagename="GoldenMaster/NoSuchPage" rel="nofollow" href="?GoldenMaster/NoSuchPage">GoldenMaster/NoSuchPage</a>、
 見出しを指す <a class="page" data-link-pagename="GoldenMaster/Syntax" data-link-section="nfc319a0" href="?GoldenMaster/Syntax#nfc319a0">GoldenMaster/Syntax#その他の記法</a>。
 コードの中の <code>[[GoldenMaster/Top]]</code> はリンクにならない。</p>
 <p>長い URL が折り返されること: <a href="https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</a></p>
-<h2>脚注</h2>
+<h2 id="hf0bb4ac">脚注</h2>
 <p>脚注つきの文<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" role="doc-noteref">1</a></sup>。</p>
-<h2>生 HTML</h2>
+<h2 id="g2944515">生 HTML</h2>
 &lt;script&gt;alert(1)&lt;/script&gt;
 <p>&lt;b&gt;太字のつもりの HTML&lt;/b&gt;</p>
-<h2>水平線</h2>
+<h2 id="e136887f">水平線</h2>
 <hr/>
+<h2 id="eaae513c">同じ文字の見出し</h2>
+<p>見出しの文字が重なったとき、id は先に出たほうにだけ振られる (wiki 記法と同じ)。</p>
+<h4 id="b3937fce">深さが飛んだ見出し</h4>
+<p>h2 の次が h4 でも、目次では 1 段だけ深くなる。</p>
+<h2>同じ文字の見出し</h2>
+<p>2 つめ。目次には出るが、id は振られない。</p>
 <div class="footnotes" role="doc-endnotes"><hr/><ol><li class="footnote" id="fn:1" role="doc-endnote"><p>これが脚注の中身。 <a class="footnote-backref" rev="footnote" href="#fnref:1" role="doc-backlink">↩</a></p></li></ol></div>
 </section></section>
       <footer>

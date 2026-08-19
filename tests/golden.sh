@@ -39,6 +39,7 @@ TARGETS=(
     "Calendar=?GoldenMaster/Calendar"
     "Syntax=?GoldenMaster/Syntax"
     "Markdown=?GoldenMaster/Markdown"
+    "MarkdownSummary=?GoldenMaster/Markdown&option=summary"
 )
 
 # 比較対象を <article class="main"> の中だけに絞り、実行のたびに変わる値を潰す。

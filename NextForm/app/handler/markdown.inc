@@ -148,11 +148,56 @@ function markdown_convert(&$page, $dom, $contents = null) {
     }
 
     $section = dom_append_child($dom, 'section', 'markdown');
-    return markdown_append_html($section, $html);
+    if(!markdown_append_html($section, $html))
+	return false;
+    markdown_set_heading_ids($page, $section);
+    return true;
 }
 
 function markdown_show(&$page, $dom) {
     markdown_convert($page, $dom);
+}
+
+/*
+ * 変換後の DOM から見出しを拾う。返すのは [レベル, 文字, 要素] の並び。
+ * Markdown の見出しは h1〜h6 で、入れ子ではなく深さが数字で表される。
+ */
+function markdown_headings($dom, &$headings) {
+    foreach($dom->childNodes as $child) {
+	if(!($child instanceof DOMElement))
+	    continue;
+	if(preg_match('/^h([1-6])$/', $child->nodeName, $matches)) {
+	    $text = trim($child->textContent);
+	    if($text !== '')
+		$headings[] = array('level' => (int)$matches[1],
+				    'text' => $text,
+				    'element' => $child);
+	}
+	markdown_headings($child, $headings);
+    }
+}
+
+/*
+ * 見出しに id を振る。
+ *
+ * id の作り方は wiki 記法と同じ page_get_section_id()。同じにしておくと、
+ * [[ページ名#見出し]] が種別をまたいで同じアンカーを指す。
+ * 同じ文字の見出しが 2 つあるときは先に出たほうだけに振る (wiki と同じ)。
+ * サイドページに振らないのも wiki と同じで、本文と id がぶつかるため。
+ */
+function markdown_set_heading_ids(&$page, $dom) {
+    if(empty($page['is_main']))
+	return;
+    $headings = array();
+    markdown_headings($dom, $headings);
+    $ids = array();
+    foreach($headings as $heading) {
+	$id = page_get_section_id($page['name'], $heading['text']);
+	if(isset($ids[$id]))
+	    continue;
+	$ids[$id] = true;
+	dom_set_attribute($heading['element'], 'id', $id);
+    }
 }
 
 function markdown_source_append(&$page, $dom, $contents) {
@@ -200,13 +245,70 @@ function markdown_texts(&$page) {
 }
 
 /*
- * 一覧などに出す要約。最初の段落の書き出しを使う。
+ * 目次 (?option=summary)。見出しを拾って入れ子の一覧にする。
+ *
+ * 出す形は wiki 記法の目次と同じ section.summary + ul で、
+ * 項目は dom_append_page_link() が作る。見出しの id も同じ規則なので、
+ * 目次から飛べるし、他のページから [[ページ名#見出し]] でも同じ場所に届く。
  */
 function markdown_summary(&$page, $dom) {
-    $texts = markdown_texts($page);
-    if(empty($texts['body']))
+    $html = markdown_render_html($page, page_get_contents($page));
+    if($html === false)
 	return;
-    dom_append_text($dom, $texts['body'][0]);
+
+    $converted = dom_create_document();
+    if(!markdown_append_html($converted, $html))
+	return;
+
+    $headings = array();
+    markdown_headings($converted, $headings);
+
+    $summary = dom_append_child($dom, 'section', 'summary',
+				array('data-pagename' => $page['name']));
+    if(empty($headings)) {
+	/* 見出しが 1 つも無いページでは、書き出しを見せる (wiki と同じ考え) */
+	$texts = array();
+	dom_texts($converted, $texts);
+	if(!empty($texts))
+	    dom_append_text($summary, $texts[0]);
+	return;
+    }
+
+    /*
+     * 見出しの深さで ul を入れ子にする。
+     *
+     * Markdown の見出しは深さが数字なので、h1 の次に h3 が来ることもある。
+     * 飛んでいても 1 段だけ深くし、浅くなったらその深さまで戻る。
+     * 「同じ深さの見出しが入れ子にならない」ことが肝心で、そこを間違えると
+     * 目次が本文と違う形に見える。
+     */
+    $stack = array();	/* 各段の ul と、その段で最後に足した li */
+    $root = dom_append_child($summary, 'ul');
+    foreach($headings as $heading) {
+	$id = page_get_section_id($page['name'], $heading['text']);
+	if(isset($ids[$id]))
+	    $id = '';		/* 同じ文字の見出しには id が振られていない */
+	else
+	    $ids[$id] = true;
+
+	while(!empty($stack) && $stack[count($stack) - 1]['level'] > $heading['level'])
+	    array_pop($stack);
+
+	if(empty($stack)) {
+	    $stack[] = array('level' => $heading['level'], 'ul' => $root, 'last_li' => null);
+	} else if($stack[count($stack) - 1]['level'] < $heading['level']) {
+	    $parent = &$stack[count($stack) - 1];
+	    /* 親の項目がまだ無い深さ (h2 から始まる文書など) では同じ ul に置く */
+	    $ul = is_null($parent['last_li']) ? $parent['ul'] : dom_append_child($parent['last_li'], 'ul');
+	    unset($parent);
+	    $stack[] = array('level' => $heading['level'], 'ul' => $ul, 'last_li' => null);
+	}
+
+	$top = count($stack) - 1;
+	$li = dom_append_child($stack[$top]['ul'], 'li');
+	$stack[$top]['last_li'] = $li;
+	dom_append_page_link($li, $heading['text'], $page['name'], $id);
+    }
 }
 
 /*
