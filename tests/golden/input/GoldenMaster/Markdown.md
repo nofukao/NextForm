@@ -47,6 +47,14 @@ function example($argument) { return "test"; }
 
 長い URL が折り返されること: https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
+## 画像と添付
+
+子ページの画像を埋め込む: ![添付の図](portforward01.png)
+
+外部の画像はそのまま: ![外部](https://example.com/nosuch.png)
+
+まだ無い添付はリンクになる: ![未作成の図](nosuchattachment.png)
+
 ## 脚注
 
 脚注つきの文[^1]。

@@ -310,6 +310,8 @@ function export_convert($pagename, $argsstring) {
 	} else {
 	    if($type == 'wiki')
 		$template_contents = EXPORT_DEFAULT_TEMPLATE_WIKI;
+	    else if($type == 'markdown')
+		$template_contents = EXPORT_DEFAULT_TEMPLATE_MARKDOWN;
 	}
 	
 	$tmp_filepath = $output_filepath . '.' . uniqid();

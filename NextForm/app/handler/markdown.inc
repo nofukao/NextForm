@@ -42,6 +42,7 @@ function markdown_converter() {
     // 同梱ライブラリのインターフェイスを実装するので、autoload のあとに読む
     require_once(APP_DIR_PATH . '/handler/markdown/front_matter.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/wikilink.inc');
+    require_once(APP_DIR_PATH . '/handler/markdown/image.inc');
 
     $config = array(
 	/*
@@ -68,6 +69,10 @@ function markdown_converter() {
      */
     $environment->addInlineParser(new MarkdownWikiLinkParser(), 100);
     $environment->addRenderer('MarkdownWikiLink', new MarkdownWikiLinkRenderer());
+
+    /* ![説明](子ページ) を添付の埋め込みにする。標準の描画より先に見せる */
+    $environment->addRenderer(League\CommonMark\Extension\CommonMark\Node\Inline\Image::class,
+			      new MarkdownImageRenderer(), 10);
 
     $converter = new League\CommonMark\MarkdownConverter($environment);
     return $converter;

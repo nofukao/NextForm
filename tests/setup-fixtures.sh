@@ -4,7 +4,7 @@
 #   ./tests/setup-fixtures.sh [index.php のパス]
 #
 # 既定の対象は /var/www/html/nextform/index.php。
-# 拡張子がページ種別になる (.wiki -> wiki、.md -> markdown)。
+# 拡張子がページ種別になる (.wiki -> wiki、.md -> markdown、それ以外 -> file)。
 # 何度実行してもよい (同じページを上書きするだけ)。
 # 手動テストでフィクスチャを壊してしまったときの復旧にも使う。
 #
@@ -60,7 +60,7 @@ while IFS= read -r wiki; do
         sudo rm -rf "$target"
         echo "reset $pagename"
     fi
-done < <(find "$INPUT_DIR" -type f \( -name '*.wiki' -o -name '*.md' \))
+done < <(find "$INPUT_DIR" -type f)
 
 sudo -u "$OWNER" php "$WORK/gen-pages.php" "$INDEX_PATH" --dir "$WORK/input" \
      --user "${WIKI_ADMIN:-admin}"

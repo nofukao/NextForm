@@ -166,6 +166,8 @@ set_const('EXPORT_DEFAULT_TEMPLATE_WIKI',  <<<'EOF'
 </html>
 EOF
 );
+/* 種別 markdown も同じ枠で書き出す。中身は変換後の HTML */
+set_const('EXPORT_DEFAULT_TEMPLATE_MARKDOWN', EXPORT_DEFAULT_TEMPLATE_WIKI);
 
 set_const('IMPORT_PUKIWIKI_ENABLE', 'false');
 set_const('IMPORT_ATWIKIBACKUP_ENABLE', 'true');
@@ -292,6 +294,7 @@ function setup_read($name) {
 |{EXPORT_DIR_PATH|./export|エクスポートのディレクトリ|}
 |{EXPORT_POST_COMMAND||エクスポート後に実行されるコマンド(エクスポート先ディレクトリがコマンド引数として渡される)|}
 |{EXPORT_DEFAULT_TEMPLATE_WIKI|省略|種別wikiのページをエクスポートする際のデフォルトのテンプレート|}
+|{EXPORT_DEFAULT_TEMPLATE_MARKDOWN|EXPORT_DEFAULT_TEMPLATE_WIKIと同じ|種別markdownのページをエクスポートする際のデフォルトのテンプレート|}
 |{IMPORT_PUKIWIKI_ENABLE|false|Pukiwikiからページをインポートする機能を有効にするか|}
 |{IMPORT_ATWIKIBACKUP_ENABLE|true|@Wikiのデータバックアップからページをインポートする機能を有効にするか|}
 |{ANALYZE_STORAGE_LIFE_DAYS|7|アクセスカウンタの記録保存日数|}

@@ -76,26 +76,53 @@ function gen_find_wiki_files($dir) {
         $path = $dir . '/' . $entry;
         if(is_dir($path))
             $files = array_merge($files, gen_find_wiki_files($path));
-        else if(substr($entry, -5) === '.wiki' || substr($entry, -3) === '.md')
+        else
             $files[] = $path;
     }
     return $files;
 }
 
 /*
- * 拡張子でページ種別を決める。.wiki は wiki、.md は markdown。
+ * 拡張子でページ種別を決める。.wiki は wiki、.md は markdown、
+ * それ以外は file (添付ファイルのページ)。
  * page_setup() は空のときだけ既定を入れるので、その前に指定しておけばよい。
  */
 function gen_page_type($path) {
-    return substr($path, -3) === '.md' ? 'markdown' : 'wiki';
+    if(substr($path, -5) === '.wiki')
+	return 'wiki';
+    if(substr($path, -3) === '.md')
+	return 'markdown';
+    return 'file';
 }
 
-function gen_write_page($pagename, $contents, $type = 'wiki') {
+/* 種別 file のページに要る Content-type。添付の画面が入れるものと同じ */
+function gen_content_type($path) {
+    $types = array('png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
+		   'gif' => 'image/gif', 'svg' => 'image/svg+xml', 'txt' => 'text/plain',
+		   'pdf' => 'application/pdf');
+    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    return isset($types[$extension]) ? $types[$extension] : 'application/octet-stream';
+}
+
+function gen_write_page($pagename, $contents, $type = 'wiki', $file_path = '') {
     $page = page_create($pagename);
     storage_page_read($page);
     if(empty($page['meta']['type']))
 	$page['meta']['type'] = $type;
     page_setup($page);
+    if($type === 'file') {
+	/*
+	 * 添付は本文ではなくファイルとして書く。attach.inc と同じ手順で、
+	 * Content-type を入れてから種別ごとの write を通す
+	 * (画像なら大きさが meta に入る)。
+	 */
+	$page['meta']['Content-type'] = gen_content_type($file_path);
+	$page['meta']['original_filename'] = basename($file_path);
+	$contents = array('upload_file' => $file_path);
+	$content_type_handler = &file_get_content_type_handler($page);
+	if(!empty($content_type_handler['write']) && function_exists($content_type_handler['write']))
+	    $content_type_handler['write']($page, $contents);
+    }
     $ticket = isset($page['meta']['ticket']) ? $page['meta']['ticket'] : '';
     $error = PAGE_WRITE_ERROR_NONE;
     if(!page_write($page, $contents, $ticket, $error)) {
@@ -119,11 +146,14 @@ if($mode === 'dir') {
     sort($files);
     foreach($files as $file) {
         $type = gen_page_type($file);
-        $extension = $type === 'markdown' ? '.md' : '.wiki';
-        $pagename = substr($file, strlen($dir) + 1, -strlen($extension));
-        $contents = file_get_contents($file);
-        printf("write %s [%s] (%d bytes) .. ", $pagename, $type, strlen($contents));
-        if(gen_write_page($pagename, $contents, $type)) { printf("ok\n"); $written++; }
+        $pagename = substr($file, strlen($dir) + 1);
+        if($type === 'markdown')
+            $pagename = substr($pagename, 0, -strlen('.md'));
+        else if($type === 'wiki')
+            $pagename = substr($pagename, 0, -strlen('.wiki'));
+        $contents = ($type === 'file') ? '' : file_get_contents($file);
+        printf("write %s [%s] (%d bytes) .. ", $pagename, $type, filesize($file));
+        if(gen_write_page($pagename, $contents, $type, $file)) { printf("ok\n"); $written++; }
     }
 } else {
     for($i = 1; $i <= $count; $i++) {
