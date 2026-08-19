@@ -629,11 +629,26 @@ drwxr-xr-x apache apache  app/plugin/    ← *.inc が main.inc:34 で無条件�
 実装の手順:
 
 1. `chore/vendor-commonmark` — 同梱と憲法の注記 (**済**)
-2. `feat/markdown-handler` — 最小のハンドラ (`show` / `source` / `edit` / `write` / `texts` / `summary` / `normalize`)
-3. `feat/markdown-wikilink` — `[[ページ名]]` を Inline Parser 拡張で。**出す HTML を wiki ハンドラと揃える** (`data-link-pagename` / `a.not_exists` / 未読)
-4. `feat/markdown-anchor` — 見出し id と `?option=summary` (目次)
-5. `feat/markdown-style` — `.markdown.css`
-6. `docs/markdown` — 組み込みマニュアル、CHANGELOG
+2. `feat/markdown-handler` — 最小のハンドラ (**済**)
+3. `feat/markdown-wikilink` — `[[ページ名]]` (**済**)
+4. `feat/markdown-anchor` — 見出し id と目次 (**済**)
+5. `feat/markdown-style` — `.markdown.css` (**済**)
+6. `docs/markdown` — 組み込みマニュアル (**済**)
+
+実装して分かったこと:
+
+- **`$HANDLERS` に登録するだけで種別の選択肢に出る。** 画面側の追加は不要だった
+- **`texts` は「変換してから文字を取り出す」。** 記法を正規表現で落とす方式にしなかったので、
+  表のセルや脚注の中身まで検索に載り、フロントマターは載らない
+- **`[[...]]` のリンクは `dom_append_page_link()` に作らせる。** 未読・自分自身・
+  存在しないページの印・`data-link-pagename` を二重に実装すると必ず取りこぼす
+- **見出しの id は `page_get_section_id()`。** wiki と同じ規則なので、
+  `[[ページ名#見出し]]` が種別をまたいで同じ場所に届く
+- **CSS には穴が 2 つあった。** `h2` 以降に当たる規則が 1 つも無い (wiki の見出しは
+  常に `h1`)、`blockquote` が wiki 用に `white-space: pre`。`.markdown.css` で埋めた
+- **組み込みマニュアルの記法に注意。** 本文中のバッククォートは `manual_parse()` が
+  PHP として `eval` する (`$bq$` と書く)。記号をそのまま出すのは `&` 1 つの前置で、
+  `&&` は「`&` そのもの」。表のセルの中の `|` は `""` で囲んでも守れず `&|` が要る
 
 決めた小さなこと:
 
