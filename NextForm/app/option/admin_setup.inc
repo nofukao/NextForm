@@ -443,6 +443,12 @@ function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form 
 	    $value = $values[$key];
 	else
 	    $value = $setup_constant['default'];
+	/*
+	 * 保存されている値が「いまの見た目」と食い違う項目のための差し替え。
+	 * 個別色 (色調がプリセットのときは使われない) がこれを使う。
+	 */
+	if(isset($setup_constant['value_function']))
+	    $value = call_user_func($setup_constant['value_function'], $key, $value);
 	$name = 'const_' . $key;
 	switch($type) {
 	case 'select':

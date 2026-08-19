@@ -87,6 +87,37 @@ apply_theme_setup() {
          "${args[@]}" "${THEME_TEST_URL}/"
 }
 
+# 画面に出ているフォームの値を、ブラウザと同じようにそのまま送り返す。
+#   $1 以降  追加・上書きする値 (name=value)
+apply_rendered_setup() {
+    local args=() line key value
+    while IFS= read -r line; do
+        key="${line%%=*}"
+        value="$(printf '%s' "${line#*=}" | base64 -d)"
+        args+=(--data-urlencode "${key}=${value}")
+    done < <(curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" | scrape_form)
+    local extra
+    for extra in "$@"; do
+        args+=(--data-urlencode "$extra")
+    done
+    curl -sk -o /dev/null -L -X POST -H "Origin: ${ORIGIN}" \
+         --data-urlencode "option=admin_setup_theme" \
+         --data-urlencode "apply=true" \
+         "${args[@]}" "${THEME_TEST_URL}/"
+}
+
+# フォームの入力欄を `名前=base64(値)` で出す
+scrape_form() {
+    python3 "${REPO_ROOT}/tests/form-scrape.py"
+}
+
+# 画面に出ている入力欄の値
+rendered_value() {
+    curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" \
+        | grep -o "<input[^>]*name=\"$1\"[^>]*>" \
+        | sed -E 's/.*value="([^"]*)".*/\1/' | head -1
+}
+
 # 保存された色調のファイル
 tone_file() {
     echo "${THEME_TEST_SITE}/storage/tone/$1.json"
@@ -207,7 +238,22 @@ check_eq "storage の外に書かない" "0" \
          "$(sudo find "${THEME_TEST_SITE}" -name 'evil*' | wc -l)"
 echo
 
-echo "7. PHP の警告を出さない"
+echo "7. 「個別に色を設定」は今の色調から始まる"
+apply_theme_setup "const_THEME_TONE=navy-yellow" > /dev/null
+check_eq "入力欄が今の色調の色になる" "#000d40" \
+         "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
+# 画面に出ている値をそのまま送り返す = ブラウザで「個別に色を設定」にして適用する
+apply_rendered_setup "const_THEME_TONE=custom" > /dev/null
+check_eq "切り替えても色が変わらない" "#000d40" \
+         "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
+# 生成物は「いま使っているテーマ」の下にできる (複製元のテーマに従う)
+current_theme="$(value_of "$(helper theme)" theme)"
+check_eq "生成された CSS にも出る"    "1" \
+         "$(sudo grep -q '#000d40' \
+            "${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css" && echo 1 || echo 0)"
+echo
+
+echo "8. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

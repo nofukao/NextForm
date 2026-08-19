@@ -223,6 +223,22 @@ function tone_get_colors($id) {
     return $tone['colors'];
 }
 
+/*
+ * 「個別に色を設定」の入力欄に出す色。
+ *
+ * 色調がプリセットのとき、保存されている個別色はどこにも使われない置き土産で、
+ * 画面のいまの見た目とは無関係な色になっている。選んでいる色調の色を出せば、
+ * 「個別に色を設定」に切り替えて適用しても見た目が変わらないところから
+ * 調整を始められる。
+ */
+function tone_custom_color_value($name, $value) {
+    if(THEME_TONE === TONE_CUSTOM_ID)
+	return $value;
+    $colors = tone_get_colors(THEME_TONE);
+    $color_name = str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $name);
+    return default_value($colors[$color_name], $value);
+}
+
 /* 「色調」の選択肢 (識別子 => 表示名) */
 function tone_get_options() {
     $options = array();

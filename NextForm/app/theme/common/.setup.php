@@ -131,6 +131,8 @@ foreach($THEME_CUSTOM_COLORS as $custom_color_name => $custom_color_value) {
 	'need_value' => TONE_CUSTOM_ID,
 	'description' => strtolower(strtr(substr($custom_color_name, 19), '_', ' ')) . ' color',
 	'default' => $custom_color_value,
+	/* 色調がプリセットのときは、保存値ではなくその色調の色を出す */
+	'value_function' => 'tone_custom_color_value',
 	'type' => 'color');
 }
 
