@@ -59,6 +59,7 @@
 ./tests/theme-tone.sh       # 色調の保存・上書き・削除 (複製サイトを作る。要 sudo)
 ./tests/theme-image.sh      # ロゴ / favicon の差し替えと復帰 (複製サイトを作る。要 sudo)
 ./tests/nav.sh              # 画面の道筋 (管理ツール / 個人設定。複製サイトを作る。要 sudo)
+./tests/manual.sh           # 組み込みマニュアル (複製サイトを作る。要 sudo)
 ./tests/upgrade.sh          # tora2 の複製に対してアップグレードを実走 (要 sudo)
 ./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
 ./tests/search-cache.sh     # 検索のテキストキャッシュ (複製サイトを作る。要 sudo)
