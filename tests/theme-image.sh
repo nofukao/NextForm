@@ -9,7 +9,7 @@
 #   THEME_TEST_URL    その URL           (既定: http://localhost/nf-theme-test)
 #   KEEP=1            終了後に検証サイトを消さない
 #
-# ロゴとアイコンは 3 つの状態を持つ。
+# ロゴと favicon は 3 つの状態を持つ。
 #
 #   設定値が無い   テーマ同梱の画像 (theme/<テーマ>/image/logo.svg)
 #   設定値がパス   上げた画像 (theme/logo.<拡張子>。全テーマ共通)
@@ -18,6 +18,7 @@
 # 上流には「削除」しか無く、それは空文字を保存する = 出さない だった。
 # 空文字も「設定された値」なので、一度差し替えると**同梱の画像に戻せなかった**。
 # 「標準に戻す」(設定値そのものを消す) と「表示しない」を分けてある。
+# 見出しや本文の背景画像には既定の画像が無いので、「標準に戻す」は出さない。
 #
 # 設定と権限を書き換えるので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。root で実行する必要がある。
@@ -215,11 +216,28 @@ select_values() {
 }
 check_eq "ロゴ"     "default none" "$(select_values const_THEME_IMAGE_LOGO_action)"
 check_eq "アイコン" "default none" "$(select_values const_THEME_IMAGE_ICON_action)"
+# 既定の画像が無い項目では「標準に戻す」と「表示しない」が同じことになる
+check_eq "見出しの画像"     "none" "$(select_values const_THEME_IMAGE_BACKGROUND_HEADER_action)"
+check_eq "本文の背景画像"   "none" "$(select_values const_THEME_IMAGE_BACKGROUND_BODY_action)"
+# 隣で画像を選んだのに「そのまま」と書いてあると、どちらが効くのか分からない
+check_eq "先頭の選択肢に文字が無い" "1" \
+         "$(printf '%s' "$form_html" \
+            | grep -c '<select name="const_THEME_IMAGE_LOGO_action"><option value=""[^>]*></option>')"
 check_eq "favicon と書いてある" "1" \
          "$(printf '%s' "$form_html" | grep -c 'お気に入りアイコン (favicon)')"
 echo
 
-echo "9. PHP の警告を出さない"
+echo "9. 背景画像も上げて消せる"
+apply_theme_form "const_THEME_IMAGE_BACKGROUND_HEADER=@${IMAGE}" > /dev/null
+check_eq "設定値が入る"   "theme/background-header.png" \
+         "$(saved_value THEME_IMAGE_BACKGROUND_HEADER)"
+check_eq "ファイルができる" "1" "$(uploaded_exists background-header.png)"
+apply_theme_form "const_THEME_IMAGE_BACKGROUND_HEADER_action=none" > /dev/null
+check_eq "設定値が空になる" ""  "$(saved_value THEME_IMAGE_BACKGROUND_HEADER)"
+check_eq "ファイルが消える" "0" "$(uploaded_exists background-header.png)"
+echo
+
+echo "10. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

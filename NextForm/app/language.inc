@@ -365,7 +365,6 @@ $LANGUAGE['ja'] = array(
     'Theme debug mode' => 'テーマ開発モード',
     'it enables no cache theme file' => '有効にするとテーマのファイルがキャッシュされなくなります',
     'Current image' => '現在の画像',
-    'Keep the current image' => 'そのまま',
     'Restore the default image' => '標準に戻す',
     'Do not show' => '表示しない',
     'used by &calender' => '&calenderで予定の取得に使用します',

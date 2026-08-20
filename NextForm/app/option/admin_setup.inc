@@ -610,15 +610,19 @@ function admin_setup(&$args, $dom, $target_categories, $note = '',
 		/*
 		 * 画像を上げ直す以外にできること。「標準に戻す」が無いと、
 		 * 一度差し替えた画像から元に戻す手段が無くなる。
+		 *
+		 * 先頭は空にしておく。隣で画像を選んだのに「そのまま」と
+		 * 書いてあると、どちらが効くのか分からない。
+		 *
+		 * 既定の画像を持たない項目 (見出しや本文の背景画像) では
+		 * 「標準に戻す」と「表示しない」が同じことになるので出さない。
 		 */
+		$actions = array('' => '');
+		if(default_value($setup_constant['default'], '') !== '')
+		    $actions[ADMIN_SETUP_IMAGE_DEFAULT] = l('Restore the default image');
+		$actions[ADMIN_SETUP_IMAGE_NONE] = l('Do not show');
 		dom_append_text($dd, ' ');
-		dom_append_selector(
-		    $dd, $name . '_action',
-		    array(
-			'' => l('Keep the current image'),
-			ADMIN_SETUP_IMAGE_DEFAULT => l('Restore the default image'),
-			ADMIN_SETUP_IMAGE_NONE => l('Do not show'),
-			));
+		dom_append_selector($dd, $name . '_action', $actions);
 	    }
 
 	    if($value !== '') {
