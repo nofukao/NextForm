@@ -148,7 +148,8 @@ case 'rebuild':
     $alltags = array();
     search_index_initializer($rebuild_args, $rebuild_dom, $alltags);
     $indexed = 0;
-    foreach(page_find('', array('is_pagename_only' => true)) as $found) {
+    /* 本物の再構築 (option/search_index.inc) と同じ一覧を見る */
+    foreach(search_index_target_pages() as $found) {
         search_index_processor($rebuild_args, $rebuild_dom, $alltags, $found);
         $indexed++;
     }

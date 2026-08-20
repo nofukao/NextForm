@@ -1,35 +1,28 @@
 <?php
+/*
+ * マニュアルの生成画面の跡地。
+ *
+ * 0.7.0 でマニュアルは組み込みになり、生成の操作が要らなくなった
+ * (app/manual.inc を参照)。管理ツールの一覧 (option/admin.inc) からも外した。
+ *
+ * **それでもこのファイルを配布物から消してはいけない。**
+ * app/tool/upgrade は「配布物に無いファイルは削除せず残す」方針なので
+ * (利用者が置いたプラグインを巻き添えにしないため)、消すと 0.6.0 以前の
+ * admin_manual.inc がアップグレード後もそのまま残り、$OPTIONS に
+ * 登録されたまま、もう存在しない manual_build() を呼んで Fatal error になる。
+ * 上書きして無害にするのが確実。
+ *
+ * ここへ来るのは、以前の URL をブックマークしていた人だけ。
+ * 0.6.0 以前からのアップグレードを支えなくなったら、このファイルは消せる。
+ */
 $OPTIONS['admin_manual'] = array(
     'show' => 'admin_manual_show',
-    'write' => 'admin_manual_write',
     );
 
 function admin_manual_show(&$args, $dom) {
     auth_check(false, 'admin');
-    title_set_l('Generate manual pages');
-    /*
-     * POST で送る。0.4.0 から、安全と分かっている action 以外は POST かつ
-     * 同一オリジンでないと弾かれる。GET のままだと「実行」を押しても 403 で
-     * 何も起きない (v0.4.0 から v0.4.1 の間、この画面は動かなかった)。
-     */
-    $form = dom_append_form($dom, 
-			    array('option' => 'admin_manual', 
-				  'action' => 'write'));
-    ld($form, 'Generate manual in under $pagename$ pages.', array('pagename' => dom_pagename(MANUAL_PAGENAME)));
-    
-    $submit = dom_append_child($form, 'input', 'run', array('type' => 'submit', 'value' => l('Run')));
-}
-
-function admin_manual_write(&$args, $dom) {
-    auth_check(false, 'admin');
-    title_set_l('Generate manual pages');
-    set_time_limit(120);
-    manual_build();
-
-    //dom_append_link(message_notice(), url_make(), l());
-    ld(message_notice(), 'Manual pages under $pagename$ was generated.',
-       array('pagename' => dom_pagename(MANUAL_PAGENAME)));
-    
-    return false;
+    title_set_l('Manual');
+    ld($dom, 'The manual is built in now. Generating is no longer needed. See $pagename$.',
+       array('pagename' => dom_pagename(MANUAL_PAGENAME . '/' . LANG)));
 }
 ?>

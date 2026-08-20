@@ -149,15 +149,13 @@ fi
 
 log_before=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 
-echo "1. 管理ツール直下の 9 画面に道筋が出る"
+echo "1. 管理ツール直下の 8 画面に道筋が出る"
 check_eq "サイト設定"       "管理ツール/サイト設定"       "$(path_names '?option=admin_setup_site')"
 check_eq "外観の設定"       "管理ツール/外観の設定"       "$(path_names '?option=admin_setup_theme')"
 check_eq "色調の設定"       "管理ツール/色調の設定"       "$(path_names '?option=admin_setup_tone')"
 check_eq "ユーザーの管理"   "管理ツール/ユーザーの管理"   "$(path_names '?option=admin_user')"
 check_eq "システム情報"     "管理ツール/システム情報"     "$(path_names '?option=admin_info')"
 check_eq "検索インデックス" "管理ツール/検索インデックス" "$(path_names '?option=search_index')"
-check_eq "マニュアル生成"   "管理ツール/マニュアルページの生成" \
-                            "$(path_names '?option=admin_manual')"
 check_eq "インポート"       "管理ツール/他のwikiからページをインポート" \
                             "$(path_names '?option=admin_import_otherwiki')"
 check_eq "アクセス解析"     "管理ツール/アクセス解析"     "$(path_names '?option=admin_analyze')"

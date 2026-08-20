@@ -28,6 +28,8 @@ function page_get_simplename($pagename) {
 }
 
 function page_is_exists($pagename) {
+    if(page_is_manual($pagename))
+	return true;
     return storage_page_is_exists($pagename);
 }
 
@@ -38,6 +40,34 @@ function page_is_deleted($pagename) {
 function page_is_system_page($pagename) {
     return $pagename === MANUAL_PAGENAME ||
 	strpos($pagename, MANUAL_PAGENAME . '/') === 0;
+}
+
+/*
+ * 組み込みマニュアルのページか。
+ *
+ * マニュアルは storage に実体を持たない読み取り専用の仮想ページで、
+ * 本文は app/ のソースから組み立てられる (manual.inc を参照)。
+ *
+ * 先に page_is_system_page() の前方一致で門番をする。ふつうのページは
+ * この比較 1 回で抜けるので、マニュアルの一覧を引く費用はかからない。
+ * page_is_exists() はリンク 1 本ごとに呼ばれるので、ここは効いてくる。
+ *
+ * 名前空間の中でも、マニュアルとして実在する名前だけが真になる。
+ * 利用者が MANUAL_PAGENAME の下に作った普通のページは今までどおり扱う。
+ */
+function page_is_manual($pagename) {
+    return page_is_system_page($pagename) && manual_page_is_exists($pagename);
+}
+
+/*
+ * マニュアルを書き換えようとしたときの断り。
+ * 書き込み・削除・改名・施錠のすべてがここを通る。
+ */
+function page_reject_manual($pagename) {
+    if(!page_is_manual($pagename))
+	return false;
+    message_error(l('This page is a built-in manual and cannot be changed.'));
+    return true;
 }
 
 function page_create($pagename) {
@@ -57,7 +87,10 @@ function page_setup(&$page) {
 function &page_read($pagename) {
     auth_check($pagename, 'read');
     $page = page_create($pagename);
-    storage_page_read($page);
+    if(page_is_manual($pagename))
+	manual_page_read($page);
+    else
+	storage_page_read($page);
     page_setup($page);
     return $page;
 }
@@ -72,6 +105,8 @@ function page_read_backup($pagename, $backuptime) {
 }
 
 function page_open_contents(&$page) {
+    if(page_is_manual($page['name']))
+	return manual_page_open_contents($page);
     return storage_page_open_contents($page);
 }
 
@@ -95,6 +130,10 @@ function page_output_contents(&$page) {
 
 
 function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERROR_NONE) {
+    if(page_reject_manual($page['name'])) {
+	$error = PAGE_WRITE_ERROR_FAIL;
+	return false;
+    }
     if(!lock_has_permission($page) && !empty($page['meta']['lock']) && empty($page['lock_now'])) {
 	message_error(l('This page was locked.'));
 	return false;
@@ -162,6 +201,8 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 }
 
 function page_delete(&$page) {
+    if(page_reject_manual($page['name']))
+	return false;
     if(!lock_has_permission($page) && !empty($page['meta']['lock'])) {
 	message_error(l('This page was locked.'));
 	return false;
@@ -185,12 +226,16 @@ function page_delete(&$page) {
 }
 
 function page_truncate(&$page) {
+    if(page_reject_manual($page['name']))
+	return false;
     auth_check($page['name'], 'admin');
     page_delete($page);
     return storage_page_truncate($page);
 }
 
 function page_lock(&$page, $username = '') {
+    if(page_reject_manual($page['name']))
+	return false;
     auth_check($page['name'], 'lock');
 
     if(isset($page['meta']['lock_user']) && $page['meta']['lock_user'] != $username) {
@@ -209,6 +254,13 @@ function page_lock(&$page, $username = '') {
 }
 
 function page_unlock(&$page, $username = false) {
+    /*
+     * マニュアルは施錠されているものとして見せているので、管理者には
+     * 「解錠」が出る。押されたときに page_write() まで行かせず、
+     * ここで理由の分かる断りを出す。
+     */
+    if(page_reject_manual($page['name']))
+	return false;
     if(empty($page['meta']['lock']))
 	return true;
     auth_check($page['name'], 'lock');
@@ -227,6 +279,8 @@ function page_unlock(&$page, $username = false) {
 }
 
 function page_rename($oldpagename, $newpagename, $is_rename_subpage = true) {
+    if(page_reject_manual($oldpagename))
+	return false;
     auth_check($oldpagename, 'write');
     auth_check($newpagename, 'write');
     return storage_page_rename($oldpagename, page_path_to_pagename($newpagename), $is_rename_subpage);
@@ -240,6 +294,8 @@ function page_get_type(&$page) {
 }
 
 function page_get_mtime($pagename) {
+    if(page_is_manual($pagename))
+	return manual_page_get_mtime($pagename);
     return storage_page_get_mtime($pagename);
 }
 
@@ -257,6 +313,9 @@ function page_find_deleted($base_pagename = '', $condition = array()) {
 }
 
 function page_get_backup_times(&$page) {
+    /* マニュアルは実体を持たないので版も持たない */
+    if(page_is_manual($page['name']))
+	return array();
     return storage_page_get_backup_times($page);
 }
 

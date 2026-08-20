@@ -33,9 +33,12 @@ function helper_make_info_completion() {
     $function_names = array_merge($function_names, array_keys($WIKI_OPERATORS_FUNCTION));
     $function_names = array_merge($function_names, array_keys($WIKI_ALIASES));
 
-    $manual_pages = manual_parse();
+    /*
+     * マニュアルは組み込みなので、生成されているかを気にする必要がなくなった。
+     * manual_get_pages() はキャッシュを引くので manual_parse() より安い。
+     */
+    $manual_pages = manual_get_pages();
 
-    $manual_pages_exists = true;
     $cheat_sheet_page_names = array(
 	MANUAL_PAGENAME . '/' . LANG . '/Wiki/CheatSheet/Standard',
 	MANUAL_PAGENAME . '/' . LANG . '/Wiki/CheatSheet/Function',
@@ -45,10 +48,6 @@ function helper_make_info_completion() {
 	if(!isset($manual_pages[$cheat_sheet_page_name]))
 	    continue;
 	$dom = dom_create_document();
-	if(!page_is_exists($cheat_sheet_page_name)) {
-	    $manual_pages_exists = false;
-	}
-	
 	$page = page_read($cheat_sheet_page_name);
 	wiki_convert($page, $dom, $manual_pages[$cheat_sheet_page_name]['body']);
 
@@ -141,11 +140,8 @@ function helper_make_info_completion() {
 	    //'maxlength' => max(array_map('strlen', array_keys($completion_candidates))),
 	    ),
 	);
-    if($manual_pages_exists) {
-	$helper_info['manual_url_base'] = '';
-    } else {
-	$helper_info['manual_url_base'] = OFFICIAL_URL;
-    }
+    /* マニュアルは常にこのサイトの中にあるので、相対のままでよい */
+    $helper_info['manual_url_base'] = '';
     return $helper_info;
 }
 

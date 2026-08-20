@@ -299,11 +299,24 @@ function search_index_collect($is_deep = false) {
  * 実測で wiki ページ 1 件あたり約 1.8ms (967 ページで 0.77 秒)。
  * 再構築と違って索引を書かないぶん、再構築よりずっと安い。
  */
+/*
+ * 索引に載せるページの一覧。
+ *
+ * storage のページに、組み込みマニュアル (実体を持たないので page_find() には
+ * 出ない) を足したもの。**再構築と整合検査は必ず同じ一覧を見ること。**
+ * 別々に組み立てると、片方がマニュアルを忘れた瞬間に、もう片方が
+ * 「索引にあるのに実在しない」あるいは「実在するのに索引に無い」と報告する。
+ */
+function search_index_target_pages() {
+    return array_merge(page_find('', array('is_pagename_only' => true)),
+		       manual_page_find());
+}
+
 function search_index_check($is_deep = false) {
     $check = search_index_collect($is_deep);
 
     $real_pages = array();
-    foreach(page_find('', array('is_pagename_only' => true)) as $page)
+    foreach(search_index_target_pages() as $page)
 	$real_pages[$page['name']] = true;
 
     $check['is_deep'] = $is_deep;

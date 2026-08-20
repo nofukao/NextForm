@@ -134,7 +134,7 @@ function search_index_repair_write(&$args, $dom) {
 function search_index_write(&$args, $dom) {
     auth_check(false, 'admin');
     title_set_l('Rebuilding search index..');
-    $allpages = page_find('', array('is_pagename_only' => true));
+    $allpages = search_index_target_pages();
 
     $show_options = array(
 	'progress' => '$num$ / $totalnum$ pages ($percent$%)',

@@ -79,11 +79,8 @@ function text_edit(&$page, $dom, $type = 'text', $contents = null, $ticket = nul
     if($type == 'wiki') {
 	$li = dom_append_child($ul, 'li');
 	$manual_page_name = MANUAL_PAGENAME . '/' . LANG . '/Wiki/CheatSheet';
-	if(page_is_exists($manual_page_name))
-	    $url = url_make($manual_page_name);
-	else
-	    $url = OFFICIAL_URL . '?' . url_path_encode($manual_page_name);
-	$a = dom_append_link($li, $url, l('Wiki Cheat Sheet'));
+	/* マニュアルは組み込みになったので、公式サイトへ逃げる経路は要らない */
+	$a = dom_append_link($li, url_make($manual_page_name), l('Wiki Cheat Sheet'));
 	dom_set_attribute($a, 'target', '_blank');
     }
 }

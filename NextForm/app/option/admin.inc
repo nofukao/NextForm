@@ -36,8 +36,6 @@ $OPTION_PATHS['admin_info']              = array('title' => 'System information'
 						 'parent' => 'admin');
 $OPTION_PATHS['search_index']            = array('title' => 'Search index',
 						 'parent' => 'admin');
-$OPTION_PATHS['admin_manual']            = array('title' => 'Generate manual pages',
-						 'parent' => 'admin');
 $OPTION_PATHS['admin_import_otherwiki']  = array('title' => 'Import pages from other wiki data',
 						 'parent' => 'admin');
 $OPTION_PATHS['admin_analyze']           = array('title' => 'Access analyzer',
@@ -64,8 +62,6 @@ function admin_show(&$args, $dom) {
 	      'uri' => url_make('', array('option' => 'admin_info'))),
 	array('name' => l('Rebuild search index'),
 	      'uri' => url_make('', array('option' => 'search_index'))),
-	array('name' => l('Generate manual pages'),
-	      'uri' => url_make('', array('option' => 'admin_manual'))),
 	//array('name' => l('Make user setting'),
 	//    'uri' => url_make('', array('option' => 'admin_user_client')))
 	array('name' => l('Import pages from other wiki data'),
