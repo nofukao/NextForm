@@ -378,8 +378,6 @@ $LANGUAGE['ja'] = array(
 
     'Tone preferences' => '色調の設定',
     'Load a tone' => '色調の読み込み',
-    'Cancel' => '取り消し',
-    'Discarded the changes.' => '編集を取り消しました．',
     'Load' => '読み込む',
     'Could not load the tone.' => '色調の読み込みに失敗しました．',
     'Loaded the tone \'$tone$\'. Press apply to use it.' =>

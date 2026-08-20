@@ -267,14 +267,14 @@ check_eq "生成された CSS に出る" "1"       "$(css_has '#000d40')"
 check_eq "入力欄にも残る"        "#000d40" "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
 echo
 
-echo "5. 編集を取り消す"
-# パレットで選び直した色は元に戻せない。取り消しは保存されている色をもう一度出す。
-apply_tone_setup "const_THEME_CUSTOM_COLOR_BACKGROUND=#abcdef" "tone_cancel=1" > /dev/null
-check_eq "入力欄が元に戻る"   "#000d40" "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
-check_eq "適用もされない"     "0"       "$(css_has '#abcdef')"
-check_eq "適用ボタンが上にもある" "2"   \
+echo "5. 適用は上にもある"
+# 25 色は縦に長い。上の方を直したときに一番下まで送らずに済むようにする。
+check_eq "適用ボタンが 2 つある" "2" \
          "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
             | grep -o 'value="適用"' | wc -l)"
+check_eq "どちらにも注意書きが付く" "2" \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+            | grep -o '(適用後ブラウザを再読み込みして下さい)' | wc -l)"
 echo
 
 echo "6. いまの色を名前を付けて保存する"

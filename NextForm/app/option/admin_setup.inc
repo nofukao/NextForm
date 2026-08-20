@@ -131,14 +131,7 @@ function admin_setup_tone(&$args, $dom) {
      * 読み込み・保存・削除。設定と同じフォームから送られてくる。
      * 「読み込む」と「削除」は適用しない (編集途中の色をうっかり焼き付けない)。
      */
-    if(!empty($args['tone_cancel'])) {
-	/*
-	 * 色を選び直したが気に入らなかったとき、パレットには元に戻す手が無い。
-	 * 保存されている色をもう一度出すだけ (何も書き込まない)。
-	 */
-	unset($args['apply']);
-	message_info(l('Discarded the changes.'));
-    } else if(!empty($args['tone_load'])) {
+    if(!empty($args['tone_load'])) {
 	admin_setup_tone_load($args);
 	unset($args['apply']);
     } else if(!empty($args['tone_delete'])) {
@@ -153,8 +146,7 @@ function admin_setup_tone(&$args, $dom) {
     $args['const_THEME_TONE'] = TONE_CUSTOM_ID;
 
     if(admin_setup($args, $dom, array('tone' => true), l('Need to refresh browser applying changes'),
-		   'admin_setup_tone_form_head', 'admin_setup_tone_form_foot',
-		   'admin_setup_tone_apply_buttons')) {
+		   'admin_setup_tone_form_head', 'admin_setup_tone_form_foot')) {
 	cache_delete('', 'wiki-helper-info');
 	header('Location: ' . url_make('', array('option' => 'admin_setup_tone', 'apply' => 'theme')));
 	exit(0);
@@ -231,18 +223,15 @@ function admin_setup_tone_delete(&$args) {
  * 「外観の設定」のフォームの末尾に付ける色調の保存欄。
  */
 /*
- * 適用の隣に置く取り消し。25 色は縦に長いので、上下どちらでも押せるようにする。
+ * 入力欄の前: 適用と、色調の読み込み。
+ * 25 色は縦に長いので、上の方を直したときに一番下まで送らずに済むよう
+ * 適用を上にも置く (下の適用と同じもの)。
  */
-function admin_setup_tone_apply_buttons($p) {
-    dom_append_child($p, 'input', '',
-		     array('type' => 'submit', 'name' => 'tone_cancel', 'value' => l('Cancel')));
-}
-
-/* 入力欄の前: 適用と取り消し、色調の読み込み */
 function admin_setup_tone_form_head($form) {
     $p = dom_append_child($form, 'p', 'apply');
     dom_append_child($p, 'input', '', array('type' => 'submit', 'value' => l('Apply')));
-    admin_setup_tone_apply_buttons($p);
+    $small = dom_append_child($p, 'small');
+    dom_append_text($small, '(' . l('Need to refresh browser applying changes') . ')');
 
     $dl = dom_append_child($form, 'dl', 'tone');
 
@@ -334,7 +323,7 @@ function admin_setup_theme_repair() {
  * 保存できる。
  */
 function admin_setup(&$args, $dom, $target_categories, $note = '',
-		     $form_head = '', $form_foot = '', $apply_extra = '') {
+		     $form_head = '', $form_foot = '') {
     global $SETUP_CONSTANTS;
     auth_check(false, 'admin');
 
@@ -651,9 +640,6 @@ function admin_setup(&$args, $dom, $target_categories, $note = '',
 
     $p = dom_append_child($form, 'p', 'apply');
     $submit = dom_append_child($p, 'input', '', array('type' => 'submit', 'value' => l('Apply')));
-
-    if($apply_extra !== '')
-	call_user_func($apply_extra, $p);
 
     if($note !== '') {
 	$small = dom_append_child($p, 'small');
