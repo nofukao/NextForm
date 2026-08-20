@@ -630,18 +630,28 @@ if($up_htaccess !== false && strpos($up_htaccess, 'Options -Indexes') === false)
     upgrade_out("    httpd.conf 側で Options -Indexes を設定してください");
 }
 /*
- * 0.5.0 でマニュアルのページ名を ToraToraWikiManual から NextFormManual に
- * 変えた。生成済みのマニュアルは古い名前のまま残り、サイトメニューの
- * 「マニュアル」からは見えなくなる。古い名前のページがあるときだけ知らせる。
- * docs/upgrade-guide.md の「マニュアルを作り直す」と 1 対 1。
+ * 0.7.0 でマニュアルを組み込みにした。以前は ?option=admin_manual で
+ * 一般ページとして生成する仕組みで、生成先が storage なのでアップグレードの
+ * 対象外だった。いまはページを作らず app/ の中身をそのまま表示するので、
+ * 生成済みのページは表示に使われない (組み込みの方が優先される)。
+ *
+ * 消すかどうかは利用者が決める。ここでは残っている件数を知らせるだけで、
+ * ページには触らない。0.5.0 でページ名を ToraToraWikiManual から
+ * NextFormManual に変えているので、古いサイトでは両方残っていることがある。
+ * docs/upgrade-guide.md の「古いマニュアルのページを片付ける」と 1 対 1。
  */
-$up_old_manual = glob($up_site . '/storage/page/' . bin2hex('ToraToraWikiManual') . '*');
-if($up_old_manual !== false && count($up_old_manual) > 0) {
+$up_old_manual = array();
+foreach(array('NextFormManual', 'ToraToraWikiManual') as $up_manual_pagename) {
+    $up_found = glob($up_site . '/storage/page/' . bin2hex($up_manual_pagename) . '*');
+    if($up_found !== false)
+        $up_old_manual = array_merge($up_old_manual, $up_found);
+}
+if(count($up_old_manual) > 0) {
     upgrade_out("");
-    upgrade_out("  マニュアルを作り直してください (0.5.0):");
-    upgrade_out("    ?option=admin_manual を開いて「実行」する");
-    upgrade_out("    ページ名が ToraToraWikiManual から NextFormManual に変わりました");
-    upgrade_out("    古いページ (%d 件) はそのまま残ります。不要なら削除してください", count($up_old_manual));
+    upgrade_out("  古いマニュアルのページが残っています (0.7.0):");
+    upgrade_out("    マニュアルは組み込みになりました。生成の操作は要りません");
+    upgrade_out("    生成済みのページ (%d 件) は表示に使われません。不要なら削除してください", count($up_old_manual));
+    upgrade_out("    このツールはページを消しません");
 }
 
 /*

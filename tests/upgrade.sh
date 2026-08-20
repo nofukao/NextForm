@@ -127,6 +127,22 @@ sudo tee "${TEST_SITE}/app/upgrade_test_note.txt" > /dev/null <<'EOF'
 利用者が app/ 直下に置いた覚えのないファイル。消えてはいけない。
 EOF
 
+# 焼き付け済みのマニュアル。0.7.0 で組み込みになったので、もう表示には
+# 使われない。ツールは件数を知らせるだけで**消さない**。
+# 0.5.0 でページ名を変えているので、古いサイトには両方の名前が残っている。
+# ディレクトリ名は bin2hex(ページ名)。
+# meta の行は bin2hex(名前)=bin2hex(値) で保存される (storage_page_encode_meta)。
+# 生の 'type=wiki' を書くと ascii_decode() の pack('H*') が警告を出す。
+# 74797065=type / 77696b69=wiki
+for MANUAL_PAGEID in 4e657874466f726d4d616e75616c 546f7261546f726157696b694d616e75616c; do
+    sudo mkdir -p "${TEST_SITE}/storage/page/${MANUAL_PAGEID}"
+    sudo tee "${TEST_SITE}/storage/page/${MANUAL_PAGEID}/head" > /dev/null <<'EOF'
+74797065=77696b69
+
+焼き付け済みのマニュアル。アップグレードで消えてはいけない。
+EOF
+done
+
 # シンボリックリンク。移行してきたサイトには実際に紛れている。
 # copy() はリンク先を読むため、リンク切れがあるとバックアップがそこで止まる
 # (2026-08-09 に業務 wiki の移行で発生)。リンクは辿らず複製すること。
@@ -169,6 +185,9 @@ check_eq "index.php が変わらない (認証設定が消えない)" \
          "$BEFORE_INDEX" "$(sudo md5sum "${TEST_SITE}/index.php" | cut -d' ' -f1)"
 check_eq "install-info.dat が変わらない" \
          "$BEFORE_INFO" "$(sudo md5sum "${TEST_SITE}/install-info.dat" | cut -d' ' -f1)"
+check_cmd "焼き付け済みのマニュアルを消さない" \
+          "sudo test -f '${TEST_SITE}/storage/page/4e657874466f726d4d616e75616c/head' && \
+           sudo test -f '${TEST_SITE}/storage/page/546f7261546f726157696b694d616e75616c/head'"
 check_eq "storage/ が変わらない" \
          "$BEFORE_STORAGE" \
          "$(sudo find "${TEST_SITE}/storage" -type f -exec md5sum {} + | sed "s|${TEST_SITE}/||" | sort | md5sum)"
@@ -185,6 +204,14 @@ check_cmd "独自テーマ app/theme/upgradetest/ が残る" \
           "sudo test -f '${TEST_SITE}/app/theme/upgradetest/html.php'"
 check_cmd "見覚えのないファイル app/upgrade_test_note.txt が残る" \
           "sudo test -f '${TEST_SITE}/app/upgrade_test_note.txt'"
+# docs/upgrade-guide.md の「古いマニュアルのページを片付ける」と 1 対 1。
+# この案内は書き換えを終えた後に出るので、--dry-run のログには載らない。
+check_cmd "焼き付け済みのマニュアルを知らせる" \
+          "grep -q '古いマニュアルのページが残っています' '${DIST}/upgrade.log'"
+check_cmd "  件数を出す (植えた 2 件)" \
+          "grep -q '生成済みのページ (2 件)' '${DIST}/upgrade.log'"
+check_cmd "  消さないと明言する" \
+          "grep -q 'このツールはページを消しません' '${DIST}/upgrade.log'"
 check_cmd "見覚えのないファイルが実行ログで報告される" \
           "grep -q 'upgrade_test_note.txt' '${DIST}/upgrade.log'"
 echo
