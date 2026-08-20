@@ -4,6 +4,25 @@ $OPTIONS['password'] = array(
     'write' => 'password_write',
     );
 
+$OPTION_PATHS['password'] = array('title' => 'Password settings',
+				  'parent_function' => 'password_title_parent');
+
+/*
+ * 見出しの後ろに出す道筋の親。この画面には入口が 3 つある。
+ *
+ *   個人設定           自分のパスワード
+ *   ユーザーの管理     他人のパスワード (admin のみ)
+ *   再発行のリンク     ログインしていない。戻る先が無いので道筋を出さない
+ */
+function password_title_parent($args) {
+    $user = auth_get_user();
+    if($user === false)
+	return false;
+    if(!isset($args['user']) || $args['user'] === $user['name'])
+	return 'config';
+    return auth_has_permission(false, 'admin') ? 'admin_user' : false;
+}
+
 function password_has_change_permission($target_username) {
     global $AUTH_DIGESTS;
     return ($user = auth_get_user()) !== false &&

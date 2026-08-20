@@ -16,6 +16,9 @@ $OPTIONS['config'] = array(
     'write' => 'config_write',
     );
 
+/* 個人設定の下にある画面は、それぞれのファイルが自分で名乗る (option.inc) */
+$OPTION_PATHS['config'] = array('title' => 'Preferences');
+
 function config_show(&$args, $dom) {
     title_set_l('Preferences');
     $section = dom_append_child($dom, 'section', 'config');

@@ -4,6 +4,14 @@ $OPTIONS['email'] = array(
     'write' => 'email_write',
     );
 
+$OPTION_PATHS['email'] = array('title' => 'Email address settings',
+			       'parent_function' => 'email_title_parent');
+
+/* 自分の分しか扱わない画面なので、ログインしていれば親は個人設定 */
+function email_title_parent($args) {
+    return auth_get_user() === false ? false : 'config';
+}
+
 function email_show(&$args, $dom) {
     title_set_l('Email address settings');
     $user = auth_get_user();

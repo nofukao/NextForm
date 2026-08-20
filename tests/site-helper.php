@@ -1,9 +1,9 @@
 <?php
 /*
- * tests/theme-switch.sh と tests/theme-tone.sh からサイトの中で実行される
- * 検証ヘルパ。
+ * 複製した検証サイトの中で実行するヘルパ。
+ * tests/theme-*.sh と tests/nav.sh が使う。
  *
- *   php theme-helper.php <index.php> <検査名> [引数..]
+ *   php site-helper.php <index.php> <検査名> [引数..]
  *
  * 検査名:
  *   guest-admin        ログインしていない利用者に admin 権限を与える
@@ -11,6 +11,8 @@
  *   theme              保存されているテーマ名 (theme=...)
  *   saved <定数名>      保存されている値 (saved=... 未設定なら saved=(unset))
  *   set-tone <識別子>   保存されている色調を差し替える (theme=... と同じ保存先)
+ *   set-password <利用者> <パスワード> [権限]
+ *                      検証用の利用者を作る (既定の権限は admin)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
@@ -18,7 +20,7 @@
  */
 $argv = $_SERVER['argv'];
 if(count($argv) < 3) {
-    fprintf(STDERR, "Usage: php theme-helper.php <index.php> <check> [args..]\n");
+    fprintf(STDERR, "Usage: php site-helper.php <index.php> <check> [args..]\n");
     exit(2);
 }
 $index_path = $argv[1];
@@ -40,6 +42,23 @@ case 'guest-admin':
     global $AUTH_PERMISSIONS;
     $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = 'admin';
     printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
+    break;
+
+case 'set-password':
+    /*
+     * HTTP Digest でログインできる利用者を 1 人作る。パスワードはテストが
+     * 毎回作る使い捨てで、リポジトリには置かない。
+     * 保存するのは上流の password 画面と同じ HA1
+     * (md5(利用者:realm:パスワード))。realm はサイトごとに違う。
+     */
+    global $AUTH_PERMISSIONS;
+    $username = $rest[0];
+    $password = $rest[1];
+    $digest = md5($username . ':' . auth_digest_realm() . ':' . $password);
+    $AUTH_PERMISSIONS[$username] = default_value($rest[2], 'admin');
+    printf("saved=%d\n",
+	   setup_write('auth_digest_' . $username, $digest) &&
+	   auth_save_permissions() ? 1 : 0);
     break;
 
 case 'values':
