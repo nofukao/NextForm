@@ -61,13 +61,34 @@ function page_is_manual($pagename) {
 
 /*
  * マニュアルを書き換えようとしたときの断り。
- * 書き込み・削除・改名・施錠のすべてがここを通る。
+ * 書き込み・改名・施錠がここを通る。
  */
 function page_reject_manual($pagename) {
     if(!page_is_manual($pagename))
 	return false;
     message_error(l('This page is a built-in manual and cannot be changed.'));
     return true;
+}
+
+/*
+ * 削除だけは断らない場合がある。
+ *
+ * 0.6.0 以前に ?option=admin_manual で焼き付けたページが storage に残って
+ * いることがある。表示には組み込みの方が使われるので中身は見えないが、
+ * 一覧には名前が出る。**これを消せなければ後片付けができない。**
+ * (docs/upgrade-guide.md の「古いマニュアルのページを片付ける」)
+ *
+ * 消えるのは storage の古い写しだけで、組み込みのマニュアルは残る。
+ * 写しが無いページ (= 純粋な組み込み) は今までどおり断る。
+ *
+ * 論理削除の済んだ写しも通す。page_delete() は head を消すだけで、版を残した
+ * ディレクトリは storage に残る。ここを通さないと、一度消した写しを
+ * 完全削除 (page_truncate) できず、「削除されたページ」に残り続ける。
+ */
+function page_reject_manual_delete($pagename) {
+    if(storage_page_is_exists($pagename) || storage_page_is_deleted($pagename))
+	return false;
+    return page_reject_manual($pagename);
 }
 
 function page_create($pagename) {
@@ -201,7 +222,7 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 }
 
 function page_delete(&$page) {
-    if(page_reject_manual($page['name']))
+    if(page_reject_manual_delete($page['name']))
 	return false;
     if(!lock_has_permission($page) && !empty($page['meta']['lock'])) {
 	message_error(l('This page was locked.'));
@@ -226,7 +247,7 @@ function page_delete(&$page) {
 }
 
 function page_truncate(&$page) {
-    if(page_reject_manual($page['name']))
+    if(page_reject_manual_delete($page['name']))
 	return false;
     auth_check($page['name'], 'admin');
     page_delete($page);

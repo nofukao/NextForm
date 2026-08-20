@@ -226,7 +226,33 @@ check_eq "?option=allpage に出ない" "no" \
                      "data-link-pagename=\"${M}\"")"
 echo
 
-echo "6. ソースを変えると追随すること"
+echo "6. 焼き付け済みの古いページを片付けられること"
+# 0.6.0 以前に生成したページが storage に残っているサイトを作る。
+# 中身は組み込みに隠されて見えないが、一覧には名前が出るので消せなければ困る。
+# (docs/upgrade-guide.md の「古いマニュアルのページを片付ける」と 1 対 1)
+sudo mkdir -p "${MANUAL_TEST_SITE}/storage/page/${MANUAL_PAGEID}"
+sudo tee "${MANUAL_TEST_SITE}/storage/page/${MANUAL_PAGEID}/head" > /dev/null <<'EOF'
+74797065=77696b69
+
+古い焼き付け。組み込みに隠されるが、消せなければならない。
+EOF
+sudo chown -R "$SITE_OWNER" "${MANUAL_TEST_SITE}/storage/page/${MANUAL_PAGEID}"
+check_eq "焼き付け済みの写しがある" "1" "$(storage_manual_dirs)"
+check_eq "  開くと組み込みの方が出る" "no" \
+         "$(contains "$(curl -sk "${MANUAL_TEST_URL}/?${M}")" '古い焼き付け')"
+check_eq "  写しは削除できる" "1" "$(value_of "$(helper delete-try "$M")" deleted)"
+check_eq "  消した後も組み込みは読める" "1" \
+         "$(value_of "$(helper page-exists "$M")" exists)"
+# 削除は論理削除で、版を残したディレクトリが storage に残る。
+# 完全削除まで通ることを見て、storage を元の状態に戻す。
+check_eq "  完全削除もできる" "1" "$(value_of "$(helper truncate-try "$M")" truncated)"
+check_eq "  storage から消える" "0" "$(storage_manual_dirs)"
+# 写しの無いページ (純粋な組み込み) は今までどおり断る
+check_eq "  写しの無いページは削除できない" "0" \
+         "$(value_of "$(helper delete-try "$MJA")" deleted)"
+echo
+
+echo "7. ソースを変えると追随すること"
 before_mtime=$(value_of "$(helper page-mtime "$MJA")" mtime)
 sudo touch "${MANUAL_TEST_SITE}/app/manual/manual-before.txt"
 after_mtime=$(value_of "$(helper page-mtime "$MJA")" mtime)
@@ -236,7 +262,7 @@ check_eq "  作り直した後も索引に載っている" "1" "$(value_of "$(he
 check_eq "  作り直しても実体はできない" "0" "$(storage_manual_dirs)"
 echo
 
-echo "7. 廃止した画面が 500 にならないこと"
+echo "8. 廃止した画面が 500 にならないこと"
 # 跡地の画面が残っている (配布物から消すと、古いファイルがアップグレード後も
 # 残って manual_build() を呼び Fatal error になる)。admin を求めるので 401。
 check_eq "?option=admin_manual"  "401" "$(code "${MANUAL_TEST_URL}/?option=admin_manual")"
@@ -244,7 +270,7 @@ check_eq "管理ツールに項目が無い" "no" \
          "$(contains "$(curl -sk "${MANUAL_TEST_URL}/?option=admin")" 'admin_manual')"
 echo
 
-echo "8. PHP の警告を出さないこと"
+echo "9. PHP の警告を出さないこと"
 before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 code "${MANUAL_TEST_URL}/?${MJA}" > /dev/null
 code "${MANUAL_TEST_URL}/?${M}" > /dev/null

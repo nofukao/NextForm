@@ -13,6 +13,7 @@
  *   find-count                page_find() が返すマニュアルの件数 (count=...)
  *   write-try <名前> <本文>   書き込みを試す (written=1/0)
  *   delete-try <名前>         削除を試す (deleted=1/0)
+ *   truncate-try <名前>       完全削除を試す (truncated=1/0)
  *   lock-try <名前>           施錠を試す (locked=1/0)
  *   rename-try <旧> <新>      改名を試す (renamed=1/0)
  *   backup-count <名前>       版の数 (count=...)
@@ -101,6 +102,12 @@ case 'write-try':
 case 'delete-try':
     $page = page_read($rest[0]);
     printf("deleted=%d\n", page_delete($page) ? 1 : 0);
+    break;
+
+case 'truncate-try':
+    /* 削除は論理削除で、版を残したディレクトリが storage に残る */
+    $page = page_read($rest[0]);
+    printf("truncated=%d\n", page_truncate($page) ? 1 : 0);
     break;
 
 case 'lock-try':
