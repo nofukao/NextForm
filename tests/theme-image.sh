@@ -86,7 +86,7 @@ apply_theme_form() {
     for extra in "$@"; do
         args+=(-F "$extra")
     done
-    curl -sk -o /dev/null -L -X POST -H "Origin: ${ORIGIN}" \
+    curl -sk -L -X POST -H "Origin: ${ORIGIN}" \
          -F "option=admin_setup_theme" -F "apply=true" \
          "${args[@]}" "${THEME_TEST_URL}/"
 }
@@ -237,7 +237,19 @@ check_eq "設定値が空になる" ""  "$(saved_value THEME_IMAGE_BACKGROUND_HE
 check_eq "ファイルが消える" "0" "$(uploaded_exists background-header.png)"
 echo
 
-echo "10. PHP の警告を出さない"
+echo "10. 画像の指定と選択は同時にできない"
+# どちらが後の操作かはサーバには分からない。片方を黙って捨てない。
+apply_theme_form "const_THEME_IMAGE_LOGO_action=default" > /dev/null
+both="$(apply_theme_form "const_THEME_IMAGE_LOGO=@${IMAGE}" \
+                         "const_THEME_IMAGE_LOGO_action=none")"
+check_eq "断られたと分かる" "1" \
+         "$(printf '%s' "$both" | grep -c '同時にできません')"
+check_eq "画像は上がらない" "0"       "$(uploaded_exists logo.png)"
+check_eq "設定値も変わらない" "(unset)" "$(saved_value THEME_IMAGE_LOGO)"
+check_eq "画面は壊れない"   "$(logo_src)" "theme/${theme}/image/logo.svg"
+echo
+
+echo "11. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

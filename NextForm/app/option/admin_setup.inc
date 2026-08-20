@@ -367,6 +367,17 @@ function admin_setup(&$args, $dom, $target_categories, $note = '',
 	    if($type === 'theme_file_image') {
 		$is_uploaded = isset($_FILES[$name]['name']) && $_FILES[$name]['name'] !== '';
 		$action = default_value($args[$name . '_action'], '');
+		if($is_uploaded && $action !== '') {
+		    /*
+		     * どちらが後の操作なのかはサーバには分からない。片方を黙って
+		     * 捨てると、選んだはずの指定が効かなかったように見える。
+		     */
+		    message_error(lf('$term$: cannot choose an image and an action at the same time.',
+				     array('term' => l($setup_constant['description']))));
+		    $is_success = false;
+		    $setup_constant['error'] = true;
+		    continue;
+		}
 		if(!$is_uploaded &&
 		   ($action === ADMIN_SETUP_IMAGE_DEFAULT || $action === ADMIN_SETUP_IMAGE_NONE)) {
 		    /*

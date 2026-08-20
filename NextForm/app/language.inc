@@ -366,6 +366,8 @@ $LANGUAGE['ja'] = array(
     'it enables no cache theme file' => '有効にするとテーマのファイルがキャッシュされなくなります',
     'Current image' => '現在の画像',
     'Restore the default image' => '標準に戻す',
+    '$term$: cannot choose an image and an action at the same time.' =>
+    '$term$ : 画像を選ぶ操作と「標準に戻す」「表示しない」は同時にできません．',
     'Do not show' => '表示しない',
     'used by &calender' => '&calenderで予定の取得に使用します',
 
