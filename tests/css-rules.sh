@@ -63,6 +63,11 @@ rules_common() {
     check "編集用 textarea が border-box (幅がはみ出さない)" \
           "bool(re.search(r'form\.text_edit\s*>\s*textarea\s*\{[^}]*box-sizing:\s*border-box', css, re.S))"
 
+    # 入力欄の枠。背景色と入力欄の背景色が近い色調では、枠が無いと入力欄が
+    # どこにあるのか分からなくなる (色調の設定の識別子・表示名で実際に起きた)。
+    check "テキスト入力欄に枠がある" \
+          "bool(re.search(r'input\[type=.text.\][^{]*\{[^}]*border:\s*1px\s+solid\s+#[0-9a-f]{6}', css, re.S))"
+
     # &pre の長い行は横スクロールではなく折り返す。
     # ただしアスキーアート (pre.paa) は折り返すと絵が崩れるので除外する。
     check "pre が折り返す (white-space: pre-wrap)" \

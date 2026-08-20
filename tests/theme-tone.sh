@@ -267,7 +267,17 @@ check_eq "生成された CSS に出る" "1"       "$(css_has '#000d40')"
 check_eq "入力欄にも残る"        "#000d40" "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
 echo
 
-echo "5. いまの色を名前を付けて保存する"
+echo "5. 編集を取り消す"
+# パレットで選び直した色は元に戻せない。取り消しは保存されている色をもう一度出す。
+apply_tone_setup "const_THEME_CUSTOM_COLOR_BACKGROUND=#abcdef" "tone_cancel=1" > /dev/null
+check_eq "入力欄が元に戻る"   "#000d40" "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
+check_eq "適用もされない"     "0"       "$(css_has '#abcdef')"
+check_eq "適用ボタンが上にもある" "2"   \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+            | grep -o 'value="適用"' | wc -l)"
+echo
+
+echo "6. いまの色を名前を付けて保存する"
 apply_tone_setup "tone_save=1" "tone_id=testtone" "tone_name=テスト色調" > /dev/null
 check_eq "ファイルができる"   "1"          "$(tone_exists testtone)"
 check_eq "表示名が入る"       "テスト色調" "$(tone_value testtone names ja)"
@@ -279,20 +289,20 @@ check_eq "Web からは読めない" "403"        \
          "$(code "${THEME_TEST_URL}/storage/tone/testtone.json")"
 echo
 
-echo "6. 手で決めた色を保存する"
+echo "7. 手で決めた色を保存する"
 apply_tone_setup "const_THEME_CUSTOM_COLOR_BACKGROUND=#123456" \
                  "tone_save=1" "tone_id=custom-tone" "tone_name=手で作った色" > /dev/null
 check_eq "入力した色が入る"      "#123456" "$(tone_value custom-tone colors THEME_COLOR_BACKGROUND)"
 check_eq "適用もされる"          "1"       "$(css_has '#123456')"
 echo
 
-echo "7. 後に保存したものほど上に出る"
+echo "8. 後に保存したものほど上に出る"
 check_eq "保存した色調が先頭"     "custom-tone" "$(tone_load_option 1)"
 check_eq "その次が 1 つ前のもの"  "testtone"    "$(tone_load_option 2)"
 check_eq "組み込みはその後ろ"     "beige-green" "$(tone_load_option 3)"
 echo
 
-echo "8. 組み込みと同じ識別子で保存すると隠す"
+echo "9. 組み込みと同じ識別子で保存すると隠す"
 apply_tone_setup "tone_save=1" "tone_id=beige-green" "tone_name=上書きベージュ" > /dev/null
 check_eq "storage にできる"   "1"                "$(tone_exists beige-green)"
 check_eq "読み込みが変わる"   "上書きベージュ"   "$(tone_option_name beige-green)"
@@ -305,7 +315,7 @@ check_eq "消すと組み込みに戻る" "ベージュ/グリーン" "$(tone_op
 check_eq "ファイルが消える"     "0"                 "$(tone_exists beige-green)"
 echo
 
-echo "9. 使えない識別子は保存しない"
+echo "10. 使えない識別子は保存しない"
 for bad in "../evil" "日本語" "" "a/b"; do
     apply_tone_setup "tone_save=1" "tone_id=${bad}" "tone_name=x" > /dev/null
 done
@@ -315,7 +325,7 @@ check_eq "storage の外に書かない" "0" \
          "$(sudo find "${THEME_TEST_SITE}" -name 'evil*' | wc -l)"
 echo
 
-echo "10. 色調のファイルを失っても色は決まる"
+echo "11. 色調のファイルを失っても色は決まる"
 # 上流から引き継いだサイトは THEME_TONE に色調の名前を持っている。
 # その色調が無くなっても、色が 1 つも決まらない状態にはしない。
 helper set-tone custom-tone > /dev/null
@@ -327,7 +337,7 @@ code "${THEME_TEST_URL}/?option=admin_setup_tone&apply=theme" > /dev/null
 check_eq "作り直すと既定に落ちる" "1" "$(css_has '#fbf6ea')"
 echo
 
-echo "11. PHP の警告を出さない"
+echo "12. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

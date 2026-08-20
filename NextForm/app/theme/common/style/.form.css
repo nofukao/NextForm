@@ -188,6 +188,13 @@ input[type="password"],
 textarea {
     color: <?php trw_color(THEME_COLOR_TEXTINPUT); ?>;
     background-color: <?php trw_color(THEME_COLOR_TEXTINPUT_BACKGROUND); ?>;
+    /*
+     * 入力欄の枠。背景色と入力欄の背景色が近い色調では、枠が無いと
+     * 入力欄がどこにあるのか分からなくなる。文字色と入力欄の背景色の
+     * 中間の色にしておくと、どちらの側からも見える。
+     */
+    border: 1px solid <?php trw_color_blend(THEME_COLOR_TEXTINPUT, THEME_COLOR_TEXTINPUT_BACKGROUND); ?>;
+    box-sizing: border-box;
 }
 label.checkbox.checked:after {
     border-color: <?php trw_color(THEME_COLOR_ACTION_TEXT); ?>;
