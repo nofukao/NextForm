@@ -733,10 +733,24 @@ function run_queue($args, $dom, $show_options, &$queue,
 	    $p = dom_append_child($dom, 'p');
 	    dom_append_link($p, url_make('', $new_args), l('Next'));
 	} else {
-	    head_tags_add_meta(
-		array('http-equiv' => 'refresh',
-		      'content' => '0; url=' . url_make('', $new_args))
-		);
+	    /*
+	     * 続きは POST で送る。
+	     *
+	     * 上流はここで <meta http-equiv="refresh"> を出していたが、
+	     * それは GET なので 0.4.0 の CSRF 対策に弾かれる (app/csrf.inc)。
+	     * 1 回目のリクエストは準備しかしないため、実際には 1 ページも
+	     * 処理されずに 403 で終わっていた (検索インデックスの再構築と
+	     * 他 wiki からのインポート)。
+	     *
+	     * フォームを出して JavaScript で送る。JavaScript が無いときは
+	     * 「続ける」を押してもらう (押さなければ途中で止まるだけで、
+	     * 作りかけのものが使われることはない)。
+	     */
+	    $form = dom_append_form($dom, $new_args, 'run_queue');
+	    $noscript = dom_append_child($form, 'noscript');
+	    dom_append_child($noscript, 'input', '',
+			     array('type' => 'submit', 'value' => l('Continue')));
+	    head_tags_add_javascript('resource/script/run_queue.js');
 	}
     }
 }

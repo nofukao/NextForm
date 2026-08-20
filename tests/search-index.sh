@@ -6,6 +6,7 @@
 # 環境変数:
 #   NF_SITE            複製元にする NextForm インスタンス (既定: /var/www/html/nextform)
 #   SEARCH_TEST_SITE   検証用に作るサイト (既定: /var/www/html/nf-search-test)
+#   SEARCH_TEST_URL    その URL           (既定: http://localhost/nf-search-test)
 #   WIKI_ADMIN         管理者ユーザー名   (既定: admin)
 #   KEEP=1             終了後に検証サイトを消さない (中身を見たいとき)
 #
@@ -36,7 +37,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 [[ -f "${REPO_ROOT}/tests/env.local" ]] && . "${REPO_ROOT}/tests/env.local"
 NF_SITE="${NF_SITE:-/var/www/html/nextform}"
 SEARCH_TEST_SITE="${SEARCH_TEST_SITE:-/var/www/html/nf-search-test}"
+SEARCH_TEST_URL="${SEARCH_TEST_URL:-http://localhost/nf-search-test}"
 WIKI_ADMIN="${WIKI_ADMIN:-admin}"
+ORIGIN=$(printf '%s' "$SEARCH_TEST_URL" | sed -E 's#^(https?://[^/]+).*#\1#')
 
 fail=0
 total=0
@@ -69,6 +72,41 @@ helper() {
         "${SEARCH_TEST_SITE}/index.php" "$WIKI_ADMIN" "$@" 2>/dev/null
 }
 
+# 権限を書き換える汎用ヘルパ (再構築を HTTP で走らせる節だけが使う)
+site_helper() {
+    sudo -u "$SITE_OWNER" php \
+        "${SEARCH_TEST_SITE}/site-helper.php" \
+        "${SEARCH_TEST_SITE}/index.php" "$@" 2>/dev/null
+}
+
+# 時間のかかる処理を、ブラウザと同じように最後まで進める。
+#   $1  最初の応答の HTML
+# 結果は RQ_HTML (最後の画面) / RQ_CODES (各ステップのステータス) / RQ_STEPS。
+run_queue_follow() {
+    local body="$1" fields args line
+    RQ_CODES=""
+    RQ_STEPS=0
+    while :; do
+        fields="$(printf '%s' "$body" | python3 "${REPO_ROOT}/tests/form-scrape.py" \
+                  --form run_queue)"
+        [[ -z "$fields" ]] && break
+        RQ_STEPS=$((RQ_STEPS + 1))
+        if [[ $RQ_STEPS -gt 50 ]]; then
+            RQ_CODES="${RQ_CODES} 終わらない"
+            break
+        fi
+        args=()
+        while IFS= read -r line; do
+            args+=(--data-urlencode "${line%%=*}=$(printf '%s' "${line#*=}" | base64 -d)")
+        done <<< "$fields"
+        body="$(curl -sk -X POST -H "Origin: ${ORIGIN}" -w '\n%{http_code}' \
+                "${args[@]}" "${SEARCH_TEST_URL}/")"
+        RQ_CODES="${RQ_CODES} ${body##*$'\n'}"
+        body="${body%$'\n'*}"
+    done
+    RQ_HTML="$body"
+}
+
 # key=value の出力から値を取り出す
 value_of() {
     printf '%s\n' "$1" | sed -n "s/^$2=//p" | head -1
@@ -95,8 +133,10 @@ SITE_OWNER=$(sudo stat -c '%U' "${SEARCH_TEST_SITE}/index.php")
 sudo rsync -a --delete "${REPO_ROOT}/NextForm/app/"      "${SEARCH_TEST_SITE}/app/"
 sudo rsync -a --delete "${REPO_ROOT}/NextForm/resource/" "${SEARCH_TEST_SITE}/resource/"
 sudo cp "${REPO_ROOT}/tests/search-index-helper.php" "${SEARCH_TEST_SITE}/"
+sudo cp "${REPO_ROOT}/tests/site-helper.php" "${SEARCH_TEST_SITE}/"
 sudo chown -R "$SITE_OWNER" "${SEARCH_TEST_SITE}/app" "${SEARCH_TEST_SITE}/resource" \
-                            "${SEARCH_TEST_SITE}/search-index-helper.php"
+                            "${SEARCH_TEST_SITE}/search-index-helper.php" \
+                            "${SEARCH_TEST_SITE}/site-helper.php"
 
 # 複製元に残っているずれを持ち込まないよう、まっさらな索引から始める。
 # 検査ツールがこの状態を「問題なし」と言えることも同時に確かめている。
@@ -279,6 +319,54 @@ out=$(helper search-count "SearchIndexTest/Fullwidth2" \
 本文に 設定　方法 と書いてあります。" '"設定 方法"')
 check_eq "半角で問い合わせても全角で書いたページが引ける" "2" "$(value_of "$out" hits)"
 helper cleanup > /dev/null
+echo
+
+echo "8. ブラウザと同じ経路で再構築が最後まで走ること"
+# 再構築は 1 リクエストでは終わらない。上流は続きを
+# <meta http-equiv="refresh"> で呼んでいたが、それは GET なので
+# 0.4.0 の CSRF 対策に弾かれ、**1 ページも処理されずに 403 で終わっていた**。
+# 1 回目のリクエストは準備しかしないため、症状は「実行を押すと即エラー」。
+# ここまでの検査はどれも run_queue を通らない CLI 経由なので、
+# この節だけがブラウザの経路 (POST -> 続きも POST) を通る。
+#
+# 資格情報をテストに置かずに済ませるため、ログインしていない利用者に
+# admin 権限を与えてから叩く。
+check_eq "ログインしていない利用者に admin を与えた" "1" \
+         "$(value_of "$(site_helper guest-admin)" saved)"
+check_eq "検証サイトが HTTP で見える" "200" \
+         "$(curl -sk -o /dev/null -w '%{http_code}' "${SEARCH_TEST_URL}/")"
+
+# 直す相手を作る。1 ページ分の ngram を抜いた状態から始める。
+helper rebuild > /dev/null
+out=$(helper corrupt-bucket)
+bucket=$(value_of "$out" bucket)
+helper rebuild > /dev/null
+victim=$(value_of "$(helper busiest-page-in-bucket "$bucket")" pagename)
+helper drop-page-from-bucket "$bucket" "$victim" > /dev/null
+(cd "$SEARCH_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+ app/tool/search_index_check "${SEARCH_TEST_SITE}/index.php" \
+ --deep --user "$WIKI_ADMIN" > /dev/null 2>&1)
+check_eq "始める前は索引がずれている (終了コード 1)" "1" "$?"
+
+first=$(curl -sk -X POST -H "Origin: ${ORIGIN}" -w '\n%{http_code}' \
+        --data-urlencode "option=search_index" --data-urlencode "action=write" \
+        "${SEARCH_TEST_URL}/")
+check_eq "実行の POST が通る" "200" "${first##*$'\n'}"
+first="${first%$'\n'*}"
+check_eq "続きはフォームで返る (GET ではない)" "1" \
+         "$(printf '%s' "$first" | grep -c 'class="run_queue"')"
+check_eq "JavaScript を切っていても押せる" "1" \
+         "$(printf '%s' "$first" | grep -c '<noscript><input type="submit"')"
+
+run_queue_follow "$first"
+check_eq "途中で拒否されない"   ""     "$(printf '%s' "$RQ_CODES" | tr ' ' '\n' | grep -v '^200$' | tr '\n' ' ' | sed 's/ *$//')"
+check_eq "2 回以上に分けて走る" "yes"  "$([[ "$RQ_STEPS" -ge 1 ]] && echo yes || echo no)"
+check_eq "最後まで走る"         "1"    "$(printf '%s' "$RQ_HTML" | grep -c '完了')"
+
+(cd "$SEARCH_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+ app/tool/search_index_check "${SEARCH_TEST_SITE}/index.php" \
+ --deep --user "$WIKI_ADMIN" > /dev/null 2>&1)
+check_eq "索引が本文と一致する (終了コード 0)" "0" "$?"
 echo
 
 if [[ $fail -eq 0 ]]; then

@@ -5,11 +5,24 @@
 # ファイル選択・チェックボックス・送信ボタンは送らない。
 #
 # 引数に select の名前を渡すと、代わりにその選択肢の値を上から順に出す。
+# --form <クラス名> を渡すと、そのフォームの hidden だけを出す
+# (時間のかかる処理の続きを送るフォーム。tests/search-index.sh が使う)。
 import base64
+import html as html_module
 import re
 import sys
 
 html = sys.stdin.read()
+
+if len(sys.argv) > 2 and sys.argv[1] == '--form':
+    form = re.search(r'<form[^>]*class="%s"[^>]*>(.*?)</form>' % re.escape(sys.argv[2]),
+                     html, re.S)
+    if form:
+        for name, value in re.findall(
+                r'<input type="hidden" name="([^"]*)" value="([^"]*)"', form.group(1)):
+            print('%s=%s' % (html_module.unescape(name),
+                             base64.b64encode(html_module.unescape(value).encode()).decode()))
+    sys.exit(0)
 
 if len(sys.argv) > 1:
     select = re.search(r'<select name="%s">(.*?)</select>' % re.escape(sys.argv[1]),

@@ -324,6 +324,7 @@ $LANGUAGE['ja'] = array(
     'Rebuilding search index..' => '検索インデックスを再構築中..',
     'Elapsed time $time$' => '経過時間 $time$',
     'Done.' => '完了',
+    'Continue' => '続ける',
 
     'Make user setting' => 'ユーザー情報の生成',
     'User name' => 'ユーザー名',

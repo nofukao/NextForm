@@ -110,6 +110,10 @@ fi
 # 実際 v0.4.0 から v0.4.1 の間、マニュアル生成と他 wiki からのインポートの
 # 2 画面がこれで動かなくなっていた。HTTP では管理者の資格情報が要って
 # 踏みにくいので、ソースを直接見る。
+#
+# 同じことは <meta http-equiv="refresh"> でも起きる。あれも GET なので、
+# 続きを呼ぶのに使うと弾かれる。検索インデックスの再構築が実際にこれで
+# 止まっていた (run_queue。いまはフォームを POST する)。
 echo "[0] フォームの送信方法 (ソース)"
 form_bad="$(python3 - "$REPO_ROOT" <<'PYEOF'
 import glob, re, sys
@@ -130,6 +134,25 @@ print('\n'.join(bad))
 PYEOF
 )"
 check_eq "GET のフォームが安全でない action を送っていない" "" "$form_bad"
+
+# 時間のかかる処理の続きも同じ。<meta http-equiv="refresh"> は GET なので、
+# 続きを呼ぶのに使うと弾かれる。ページの &redirect のように action を
+# 伴わない meta refresh は問題ないので、run_queue の中だけを見る。
+queue_bad="$(python3 - "$REPO_ROOT" <<'PYEOF'
+import re, sys
+text = open(sys.argv[1] + '/NextForm/app/util.inc', encoding='utf-8').read()
+body = re.search(r'function run_queue\(.*?\n\}', text, re.S)
+if not body:
+    print('run_queue が見つからない')
+    sys.exit(0)
+body = body.group(0)
+if 'head_tags_add_meta' in body:      # <meta http-equiv="refresh">
+    print('run_queue が meta refresh (GET) で続きを呼んでいる')
+if 'dom_append_form' not in body:
+    print('run_queue が続きをフォームで送っていない')
+PYEOF
+)"
+check_eq "長い処理の続きが POST で送られる" "" "$queue_bad"
 echo
 
 echo "複製元 = $NF_SITE"
