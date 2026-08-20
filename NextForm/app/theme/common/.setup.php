@@ -66,7 +66,7 @@ $SETUP_CONSTANTS['THEME_IMAGE_LOGO'] = array(
 
 $SETUP_CONSTANTS['THEME_IMAGE_ICON'] = array(
     'category' => 'theme',
-    'description' => 'Site favorite icon',
+    'description' => 'Site favorite icon (favicon)',
     'type' => 'theme_file_image',
     'default' => THEME_URI . '/' . THEME . '/image/favicon.ico',
     'allowempty' => true,
@@ -250,7 +250,7 @@ $LANGUAGE['ja']['wrap']                       	= '折り返す';
 $LANGUAGE['ja']['scroll sideways']            	= '横スクロール';
 $LANGUAGE['ja']['a block can override this with &pre(wrap) or &pre(nowrap)'] = 'ブロックごとに &pre(wrap) / &pre(nowrap) で変えられます';
 $LANGUAGE['ja']['Site logo image']    	      	= 'サイトのロゴ画像';
-$LANGUAGE['ja']['Site favorite icon'] 	      	= 'サイトのお気に入りアイコン';
+$LANGUAGE['ja']['Site favorite icon (favicon)'] = 'サイトのお気に入りアイコン (favicon)';
 $LANGUAGE['ja']['Tone']                       	= '色調';
 /* 色調の名前は app/tone/<識別子>.json の "names" にある */
 $LANGUAGE['ja']['Individual tone colors']      	= '色調の個別設定';
