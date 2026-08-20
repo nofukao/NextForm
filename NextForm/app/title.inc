@@ -98,6 +98,30 @@ function title_append_actual($dom, $pagename_dom) {
     dom_append_text($small, ')');
 }
 
+/*
+ * 見出しの後ろに「(管理ツール/サイト設定)」と道筋を出す。
+ * 一般のページが &title を付けたときと同じ形 (title_append_actual)。
+ * $links は array(array('name' => 表示名, 'uri' => URL), ..) で、末尾が自分。
+ */
+function title_append_path($links) {
+    global $title_dom, $title_set_enable;
+    if(!$title_set_enable || is_null($title_dom) || count($links) <= 0)
+	return;
+
+    $doms = array();
+    foreach($links as $link) {
+	if(count($doms) > 0)
+	    $doms[] = dom_create_text('/');
+	$a = dom_create('a');
+	dom_set_attribute($a, 'href', $link['uri']);
+	dom_set_attribute($a, 'rel', 'nofollow');
+	dom_append_text($a, $link['name']);
+	$doms[] = $a;
+    }
+    dom_append_text($title_dom, ' ');
+    title_append_actual($title_dom, $doms);
+}
+
 function title_remove_actual($dom) {
     $xpath = new DOMXPath(dom_owner($dom));
     $smalls = $xpath->query("//*[@class='actual_title']");

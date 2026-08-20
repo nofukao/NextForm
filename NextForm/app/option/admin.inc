@@ -17,6 +17,35 @@ $OPTIONS['admin'] = array(
     'show' => 'admin_show',
     );
 
+/*
+ * 管理ツールの下にある画面。見出しの後ろに出す道筋 (option.inc) に使う。
+ * 下の一覧とは別に持つ。表示名が違う画面 (検索インデックス) があり、
+ * 一覧は「押す操作の名前」、道筋は「場所の名前」を出すため。
+ * 画面を足したら両方に足す。
+ */
+$OPTION_PATHS['admin']                   = array('title' => 'Admin tools');
+$OPTION_PATHS['admin_setup_site']        = array('title' => 'Site preferences',
+						 'parent' => 'admin');
+$OPTION_PATHS['admin_setup_theme']       = array('title' => 'Appearance theme preferences',
+						 'parent' => 'admin');
+$OPTION_PATHS['admin_setup_tone']        = array('title' => 'Tone preferences',
+						 'parent' => 'admin');
+$OPTION_PATHS['admin_user']              = array('title' => 'User Manager',
+						 'parent' => 'admin');
+$OPTION_PATHS['admin_info']              = array('title' => 'System information',
+						 'parent' => 'admin');
+$OPTION_PATHS['search_index']            = array('title' => 'Search index',
+						 'parent' => 'admin');
+$OPTION_PATHS['admin_manual']            = array('title' => 'Generate manual pages',
+						 'parent' => 'admin');
+$OPTION_PATHS['admin_import_otherwiki']  = array('title' => 'Import pages from other wiki data',
+						 'parent' => 'admin');
+$OPTION_PATHS['admin_analyze']           = array('title' => 'Access analyzer',
+						 'parent' => 'admin');
+/* 権限設定はユーザーの管理から入る */
+$OPTION_PATHS['admin_permissions']       = array('title' => 'Permission settings',
+						 'parent' => 'admin_user');
+
 function admin_show(&$args, $dom) {
     title_set_l('Admin tools');
 
