@@ -376,7 +376,14 @@ $LANGUAGE['ja'] = array(
     'Could not apply theme preferences.' => 'テーマの反映に失敗しました．',
     'Need to refresh browser applying changes' => '適用後ブラウザを再読み込みして下さい',
 
-    'Save this tone' => 'この色調に名前を付けて保存',
+    'Tone preferences' => '色調の設定',
+    'Load a tone' => '色調の読み込み',
+    'Load' => '読み込む',
+    'Could not load the tone.' => '色調の読み込みに失敗しました．',
+    'Loaded the tone \'$tone$\'. Press apply to use it.' =>
+    '色調 \'$tone$\' を読み込みました．使うには適用を押して下さい．',
+    'Save this tone' => 'この色調の保存',
+    'Delete a saved tone' => '保存した色調の削除',
     'Identifier' => '識別子',
     'Display name' => '表示名',
     'the identifier becomes the file name' => '識別子はファイル名になります',
@@ -385,7 +392,6 @@ $LANGUAGE['ja'] = array(
     'Could not save the tone.' => '色調の保存に失敗しました．',
     'The tone \'$tone$\' is gone. $default$ is used instead.' =>
     '色調 \'$tone$\' が見つかりません．$default$ が使われます．',
-    'Saved tones' => '保存した色調',
     'Could not delete the tone.' => '色調の削除に失敗しました．',
     'Deleted the tone.' => '色調を削除しました．',
     'deleting a tone that came with NextForm brings the original back' =>

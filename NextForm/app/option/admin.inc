@@ -27,6 +27,8 @@ function admin_show(&$args, $dom) {
 	      'uri' => url_make('', array('option' => 'admin_setup_site'))),
 	array('name' => l('Appearance theme preferences'),
 	      'uri' => url_make('', array('option' => 'admin_setup_theme'))),
+	array('name' => l('Tone preferences'),
+	      'uri' => url_make('', array('option' => 'admin_setup_tone'))),
 	array('name' => l('User Manager'),
 	      'uri' => url_make('', array('option' => 'admin_user'))),
 	array('name' => l('System information'),

@@ -9,6 +9,7 @@
  *   guest-admin        ログインしていない利用者に admin 権限を与える
  *   values <カテゴリ>   設定の項目を `名前=base64(値)` で並べる (site / theme)
  *   theme              保存されているテーマ名 (theme=...)
+ *   set-tone <識別子>   保存されている色調を差し替える (theme=... と同じ保存先)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
@@ -56,6 +57,18 @@ case 'values':
 	    continue;
 	printf("%s=%s\n", $key, base64_encode(defined($key) ? constant($key) : ''));
     }
+    break;
+
+case 'set-tone':
+    /*
+     * 色調の設定は常に 'custom' を書き込む。上流から引き継いだサイトのように
+     * 色調の名前が入っている状態を作るために、直接書き換える。
+     */
+    $contents = setup_read('site');
+    $values = ($contents === false) ? array() : unserialize($contents);
+    $values['THEME_TONE'] = $rest[0];
+    $contents = serialize($values);
+    printf("saved=%d\n", setup_write('site', $contents) ? 1 : 0);
     break;
 
 case 'theme':

@@ -17,6 +17,9 @@
 # 同じ識別子なら storage が app を隠す。組み込みを上書きでき、storage 側を
 # 消せば戻る。この「隠す」関係と、ファイルの形式が守られることを固定する。
 #
+# 画面は「色調の設定」(?option=admin_setup_tone) 1 枚で、25 色を直接扱う。
+# 組み込みや保存した色調は「読み込む」で入力欄に流し込んでから調整する。
+#
 # 設定と権限を書き換えるので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。root で実行する必要がある。
 
@@ -68,21 +71,21 @@ code() {
     curl -sk -o /dev/null -w '%{http_code}' "$@"
 }
 
-# 「外観の設定」をブラウザと同じように送る。
-#   $1 以降  追加で送る値 (name=value)。const_THEME_TONE などを上書きできる
-apply_theme_setup() {
+# 「色調の設定」をブラウザと同じように送る。
+#   $1 以降  追加で送る値 (tone_save=1 など)
+apply_tone_setup() {
     local args=() line key value
     while IFS= read -r line; do
         key="${line%%=*}"
         value="$(printf '%s' "${line#*=}" | base64 -d)"
         args+=(--data-urlencode "const_${key}=${value}")
-    done < <(helper values theme)
+    done < <(helper values tone)
     local extra
     for extra in "$@"; do
         args+=(--data-urlencode "$extra")
     done
-    curl -sk -o /dev/null -L -X POST -H "Origin: ${ORIGIN}" \
-         --data-urlencode "option=admin_setup_theme" \
+    curl -sk -L -X POST -H "Origin: ${ORIGIN}" \
+         --data-urlencode "option=admin_setup_tone" \
          --data-urlencode "apply=true" \
          "${args[@]}" "${THEME_TEST_URL}/"
 }
@@ -95,13 +98,13 @@ apply_rendered_setup() {
         key="${line%%=*}"
         value="$(printf '%s' "${line#*=}" | base64 -d)"
         args+=(--data-urlencode "${key}=${value}")
-    done < <(curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" | scrape_form)
+    done < <(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" | scrape_form)
     local extra
     for extra in "$@"; do
         args+=(--data-urlencode "$extra")
     done
     curl -sk -o /dev/null -L -X POST -H "Origin: ${ORIGIN}" \
-         --data-urlencode "option=admin_setup_theme" \
+         --data-urlencode "option=admin_setup_tone" \
          --data-urlencode "apply=true" \
          "${args[@]}" "${THEME_TEST_URL}/"
 }
@@ -111,9 +114,41 @@ scrape_form() {
     python3 "${REPO_ROOT}/tests/form-scrape.py"
 }
 
+# $1 の HTML に出ている値をそのまま送り返す ($2 以降で上書きできる)
+apply_html_setup() {
+    local html="$1"; shift
+    local args=() line key value
+    while IFS= read -r line; do
+        key="${line%%=*}"
+        value="$(printf '%s' "${line#*=}" | base64 -d)"
+        args+=(--data-urlencode "${key}=${value}")
+    done < <(printf '%s' "$html" | scrape_form)
+    local extra
+    for extra in "$@"; do
+        args+=(--data-urlencode "$extra")
+    done
+    curl -sk -o /dev/null -L -X POST -H "Origin: ${ORIGIN}" \
+         --data-urlencode "option=admin_setup_tone" \
+         --data-urlencode "apply=true" \
+         "${args[@]}" "${THEME_TEST_URL}/"
+}
+
+# $1 の HTML に出ている入力欄の値
+html_value() {
+    printf '%s' "$1" | grep -o "<input[^>]*name=\"$2\"[^>]*>" \
+        | sed -E 's/.*value="([^"]*)".*/\1/' | head -1
+}
+
+# 「色調の読み込み」の選択肢の識別子 ($1 番目)
+tone_load_option() {
+    curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+        | python3 "${REPO_ROOT}/tests/form-scrape.py" tone_load_id \
+        | sed -n "$1p"
+}
+
 # 画面に出ている入力欄の値
 rendered_value() {
-    curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" \
+    curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
         | grep -o "<input[^>]*name=\"$1\"[^>]*>" \
         | sed -E 's/.*value="([^"]*)".*/\1/' | head -1
 }
@@ -145,9 +180,9 @@ print(tone if not isinstance(tone, dict) else len(tone))
 
 # 設定画面の「色調」の選択肢に出ている表示名
 tone_option_name() {
-    curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" \
+    curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
         | grep -o "<option value=\"$1\"[^>]*>[^<]*</option>" \
-        | sed -E 's/.*>([^<]*)<.*/\1/' | head -1
+        | sed -E 's/.*>([^<]*) \([^)]*\)<.*/\1/' | head -1
 }
 
 if [[ ! -d "$NF_SITE" ]]; then
@@ -170,6 +205,9 @@ sudo cp "${REPO_ROOT}/tests/theme-helper.php" "${THEME_TEST_SITE}/"
 sudo chown -R "$SITE_OWNER" "${THEME_TEST_SITE}/app" "${THEME_TEST_SITE}/resource" \
                             "${THEME_TEST_SITE}/theme-helper.php"
 
+# 複製元が保存した色調を引き継ぐと並び順や件数が読めなくなる。空から始める。
+sudo rm -rf "${THEME_TEST_SITE}/storage/tone"
+
 out=$(helper guest-admin)
 if [[ "$(value_of "$out" saved)" != "1" ]]; then
     echo "ログインしていない利用者に admin 権限を与えられませんでした。" >&2
@@ -183,54 +221,93 @@ fi
 
 ORIGIN=$(printf '%s' "$THEME_TEST_URL" | sed -E 's#^(https?://[^/]+).*#\1#')
 
+# 色調は組み込みのものから始める (複製元が何を使っていても同じ結果にする)
+helper set-tone beige-green > /dev/null
+
 log_before=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 
+# 生成物は「いま使っているテーマ」の下にできる (複製元のテーマに従う)
+current_theme="$(value_of "$(helper theme)" theme)"
+theme_css="${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css"
+
+css_has() {
+    sudo grep -q "$1" "$theme_css" && echo 1 || echo 0
+}
+
 echo "1. 組み込みの色調"
-check_eq "6 つある" "6" "$(ls "${REPO_ROOT}/NextForm/app/tone/"*.json | wc -l)"
-check_eq "選択肢に出る" "ベージュ/グリーン" "$(tone_option_name beige-green)"
-check_eq "storage には無い" "0" "$(tone_exists beige-green)"
+check_eq "6 つある"       "6"                 "$(ls "${REPO_ROOT}/NextForm/app/tone/"*.json | wc -l)"
+check_eq "読み込みに出る" "ベージュ/グリーン" "$(tone_option_name beige-green)"
+check_eq "storage には無い" "0"               "$(tone_exists beige-green)"
 echo
 
-echo "2. いまの色を名前を付けて保存する"
-apply_theme_setup "const_THEME_TONE=navy-yellow" \
-                  "tone_save=1" "tone_id=testtone" "tone_name=テスト色調"
-check_eq "ファイルができる"       "1"          "$(tone_exists testtone)"
-check_eq "表示名が入る"           "テスト色調" "$(tone_value testtone names ja)"
-check_eq "25 色が入る"            "25"         "$(tone_value testtone colors)"
-check_eq "選んだ色調の色になる"   "#000d40"    "$(tone_value testtone colors THEME_COLOR_BACKGROUND)"
-check_eq "選択肢に出る"           "テスト色調" "$(tone_option_name testtone)"
+echo "2. 色調の設定は最初から 25 色を出す"
+check_eq "色調を選ぶ欄が無い"     "0"  \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+            | grep -c 'name="const_THEME_TONE"')"
+check_eq "25 色ある"              "25" \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+            | grep -o 'name="const_THEME_CUSTOM_COLOR_[A-Z_]*"' | sort -u | wc -l)"
+check_eq "外観の設定に色が無い"   "0"  \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" \
+            | grep -c 'name="const_THEME_CUSTOM_COLOR_')"
+echo
+
+echo "3. 色調を読み込む"
+loaded=$(apply_tone_setup "tone_load=1" "tone_load_id=navy-yellow")
+check_eq "入力欄がその色になる" "#000d40" \
+         "$(html_value "$loaded" const_THEME_CUSTOM_COLOR_BACKGROUND)"
+check_eq "まだ適用はされない"   "0"       "$(css_has '#000d40')"
+check_eq "保存もされない"       "0"       "$(tone_exists navy-yellow)"
+echo
+
+echo "4. 読み込んだ色を適用する"
+# 読み込んだ画面の値をそのまま送り返す = ブラウザで「適用」を押すのと同じ
+apply_html_setup "$loaded"
+check_eq "生成された CSS に出る" "1"       "$(css_has '#000d40')"
+check_eq "入力欄にも残る"        "#000d40" "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
+echo
+
+echo "5. いまの色を名前を付けて保存する"
+apply_tone_setup "tone_save=1" "tone_id=testtone" "tone_name=テスト色調" > /dev/null
+check_eq "ファイルができる"   "1"          "$(tone_exists testtone)"
+check_eq "表示名が入る"       "テスト色調" "$(tone_value testtone names ja)"
+check_eq "25 色が入る"        "25"         "$(tone_value testtone colors)"
+check_eq "入力欄の色が入る"   "#000d40"    "$(tone_value testtone colors THEME_COLOR_BACKGROUND)"
+check_eq "読み込みに出る"     "テスト色調" "$(tone_option_name testtone)"
 # storage は Web から見えてはいけない。色調も storage の下なので同じ扱いになる
-check_eq "Web からは読めない"     "403"        \
+check_eq "Web からは読めない" "403"        \
          "$(code "${THEME_TEST_URL}/storage/tone/testtone.json")"
 echo
 
-echo "3. 個別に設定した色を保存する"
-apply_theme_setup "const_THEME_TONE=custom" \
-                  "const_THEME_CUSTOM_COLOR_BACKGROUND=#123456" \
-                  "tone_save=1" "tone_id=custom-tone" "tone_name=手で作った色"
-check_eq "入力した色が入る" "#123456" "$(tone_value custom-tone colors THEME_COLOR_BACKGROUND)"
+echo "6. 手で決めた色を保存する"
+apply_tone_setup "const_THEME_CUSTOM_COLOR_BACKGROUND=#123456" \
+                 "tone_save=1" "tone_id=custom-tone" "tone_name=手で作った色" > /dev/null
+check_eq "入力した色が入る"      "#123456" "$(tone_value custom-tone colors THEME_COLOR_BACKGROUND)"
+check_eq "適用もされる"          "1"       "$(css_has '#123456')"
 echo
 
-echo "4. 組み込みと同じ識別子で保存すると隠す"
-apply_theme_setup "const_THEME_TONE=custom" \
-                  "const_THEME_CUSTOM_COLOR_BACKGROUND=#abcdef" \
-                  "tone_save=1" "tone_id=beige-green" "tone_name=上書きベージュ"
+echo "7. 後に保存したものほど上に出る"
+check_eq "保存した色調が先頭"     "custom-tone" "$(tone_load_option 1)"
+check_eq "その次が 1 つ前のもの"  "testtone"    "$(tone_load_option 2)"
+check_eq "組み込みはその後ろ"     "beige-green" "$(tone_load_option 3)"
+echo
+
+echo "8. 組み込みと同じ識別子で保存すると隠す"
+apply_tone_setup "tone_save=1" "tone_id=beige-green" "tone_name=上書きベージュ" > /dev/null
 check_eq "storage にできる"   "1"                "$(tone_exists beige-green)"
-check_eq "選択肢が入れ替わる" "上書きベージュ"   "$(tone_option_name beige-green)"
+check_eq "読み込みが変わる"   "上書きベージュ"   "$(tone_option_name beige-green)"
 check_eq "組み込みは残る"     "beige/green"      \
          "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["names"]["en"])' \
             "${REPO_ROOT}/NextForm/app/tone/beige-green.json")"
+
+apply_tone_setup "tone_delete=1" "tone_delete_id=beige-green" > /dev/null
+check_eq "消すと組み込みに戻る" "ベージュ/グリーン" "$(tone_option_name beige-green)"
+check_eq "ファイルが消える"     "0"                 "$(tone_exists beige-green)"
 echo
 
-echo "5. 保存した色調を消すと組み込みに戻る"
-apply_theme_setup "tone_delete=1" "tone_delete_id=beige-green"
-check_eq "ファイルが消える" "0"                 "$(tone_exists beige-green)"
-check_eq "表示名が戻る"     "ベージュ/グリーン" "$(tone_option_name beige-green)"
-echo
-
-echo "6. 使えない識別子は保存しない"
+echo "9. 使えない識別子は保存しない"
 for bad in "../evil" "日本語" "" "a/b"; do
-    apply_theme_setup "tone_save=1" "tone_id=${bad}" "tone_name=x" > /dev/null
+    apply_tone_setup "tone_save=1" "tone_id=${bad}" "tone_name=x" > /dev/null
 done
 check_eq "storage に増えない" "2" \
          "$(sudo ls "${THEME_TEST_SITE}/storage/tone/" | wc -l)"
@@ -238,41 +315,19 @@ check_eq "storage の外に書かない" "0" \
          "$(sudo find "${THEME_TEST_SITE}" -name 'evil*' | wc -l)"
 echo
 
-echo "7. 「個別に色を設定」は今の色調から始まる"
-apply_theme_setup "const_THEME_TONE=navy-yellow" > /dev/null
-check_eq "入力欄が今の色調の色になる" "#000d40" \
-         "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
-# 画面に出ている値をそのまま送り返す = ブラウザで「個別に色を設定」にして適用する
-apply_rendered_setup "const_THEME_TONE=custom" > /dev/null
-check_eq "切り替えても色が変わらない" "#000d40" \
-         "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
-# 生成物は「いま使っているテーマ」の下にできる (複製元のテーマに従う)
-current_theme="$(value_of "$(helper theme)" theme)"
-check_eq "生成された CSS にも出る"    "1" \
-         "$(sudo grep -q '#000d40' \
-            "${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css" && echo 1 || echo 0)"
-echo
-
-echo "8. 保存した色調を選んで使う"
-apply_theme_setup "const_THEME_TONE=custom-tone" > /dev/null
-check_eq "選べる"                   "手で作った色" "$(tone_option_name custom-tone)"
-check_eq "生成された CSS がその色"  "1" \
-         "$(sudo grep -q '#123456' \
-            "${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css" && echo 1 || echo 0)"
-
-# ファイルを失っても色が 1 つも決まらない状態にはしない。
-# 設定画面は「無くなった」と知らせ、作り直すと組み込みの既定に落ちる。
+echo "10. 色調のファイルを失っても色は決まる"
+# 上流から引き継いだサイトは THEME_TONE に色調の名前を持っている。
+# その色調が無くなっても、色が 1 つも決まらない状態にはしない。
+helper set-tone custom-tone > /dev/null
 sudo rm -f "$(tone_file custom-tone)"
-check_eq "無くなったと知らせる"     "1" \
-         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" \
+check_eq "無くなったと知らせる" "1" \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
             | grep -c "custom-tone" | head -1)"
-code "${THEME_TEST_URL}/?option=admin_setup_site&apply=theme" > /dev/null
-check_eq "作り直すと既定に落ちる"   "1" \
-         "$(sudo grep -q '#fbf6ea' \
-            "${THEME_TEST_SITE}/theme/${current_theme:-basic}/style/main.css" && echo 1 || echo 0)"
+code "${THEME_TEST_URL}/?option=admin_setup_tone&apply=theme" > /dev/null
+check_eq "作り直すと既定に落ちる" "1" "$(css_has '#fbf6ea')"
 echo
 
-echo "9. PHP の警告を出さない"
+echo "11. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

@@ -169,6 +169,8 @@ function tone_read($id, $clear_cache = false) {
 	$parsed = tone_parse($contents);
 	if($parsed !== false) {
 	    $parsed['id'] = $id;
+	    $parsed['saved'] = ($dir_path === STORAGE_FILE_DIR_TONE_PATH);
+	    $parsed['mtime'] = (int)@filemtime($file_path);
 	    $tone = $parsed;	/* 後ろのディレクトリが前を隠す */
 	}
     }
@@ -195,7 +197,16 @@ function tone_get_all() {
     return $tones;
 }
 
+/*
+ * 並び順。このサイトで保存した色調が上で、後から保存したものほど先に出る
+ * (作りながら何度も保存するので、直近のものが手近にある方が使いやすい)。
+ * その下に組み込みが order 順で並ぶ。
+ */
 function tone_compare($a, $b) {
+    if($a['saved'] !== $b['saved'])
+	return $a['saved'] ? -1 : 1;
+    if($a['saved'] && $a['mtime'] !== $b['mtime'])
+	return $a['mtime'] > $b['mtime'] ? -1 : 1;
     if($a['order'] !== $b['order'])
 	return $a['order'] < $b['order'] ? -1 : 1;
     return strcmp($a['id'], $b['id']);
@@ -224,28 +235,37 @@ function tone_get_colors($id) {
 }
 
 /*
- * 「個別に色を設定」の入力欄に出す色。
+ * 色調の設定の入力欄に出す色。
  *
- * 色調がプリセットのとき、保存されている個別色はどこにも使われない置き土産で、
- * 画面のいまの見た目とは無関係な色になっている。選んでいる色調の色を出せば、
- * 「個別に色を設定」に切り替えて適用しても見た目が変わらないところから
- * 調整を始められる。
+ * 「読み込む」を押した直後はその色調の色を出す (まだ保存していない)。
+ * それ以外は保存されている個別色だが、色調がプリセットのサイトでは
+ * 個別色はどこにも使われていない置き土産で、画面のいまの見た目とは
+ * 無関係な色になっている。その場合はいまの色調の色を出す。
+ * こうしておくと、見た目が変わらないところから調整を始められる。
  */
 function tone_custom_color_value($name, $value) {
+    global $TONE_LOADED_COLORS;
+
+    $color_name = str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $name);
+    if(isset($TONE_LOADED_COLORS[$color_name]))
+	return $TONE_LOADED_COLORS[$color_name];
     if(THEME_TONE === TONE_CUSTOM_ID)
 	return $value;
     $colors = tone_get_colors(THEME_TONE);
-    $color_name = str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $name);
     return default_value($colors[$color_name], $value);
 }
 
-/* 「色調」の選択肢 (識別子 => 表示名) */
+/*
+ * THEME_TONE として使える値。画面には出さないが、保存するときの検査に使う。
+ * 色調の設定は常に custom を書き込む。それ以外の値は、色調を選ぶ画面が
+ * あった頃のサイトから引き継いだもの。
+ */
 function tone_get_options() {
     $options = array();
     foreach(tone_get_all() as $id => $tone) {
 	$options[$id] = tone_get_name($tone);
     }
-    $options[TONE_CUSTOM_ID] = l('custom color');
+    $options[TONE_CUSTOM_ID] = TONE_CUSTOM_ID;
     return $options;
 }
 ?>

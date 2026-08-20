@@ -3,11 +3,23 @@
 #
 # ブラウザが送るものと同じ内容を組み立てるためのもので、
 # ファイル選択・チェックボックス・送信ボタンは送らない。
+#
+# 引数に select の名前を渡すと、代わりにその選択肢の値を上から順に出す。
 import base64
 import re
 import sys
 
 html = sys.stdin.read()
+
+if len(sys.argv) > 1:
+    select = re.search(r'<select name="%s">(.*?)</select>' % re.escape(sys.argv[1]),
+                       html, re.S)
+    if select:
+        for value in re.findall(r'<option value="([^"]*)"', select.group(1)):
+            if value != '':
+                print(value)
+    sys.exit(0)
+
 values = []
 
 for match in re.finditer(r'<input\b[^>]*>', html):

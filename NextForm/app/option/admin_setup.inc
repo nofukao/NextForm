@@ -1,6 +1,7 @@
 <?php
 $OPTIONS['admin_setup_site'] = array('show' => 'admin_setup_site');
 $OPTIONS['admin_setup_theme'] = array('show' => 'admin_setup_theme');
+$OPTIONS['admin_setup_tone'] = array('show' => 'admin_setup_tone');
 
 function admin_setup_site(&$args, $dom) {
     auth_check(false, 'admin');
@@ -60,29 +61,10 @@ function admin_setup_theme(&$args, $dom) {
     auth_check(false, 'admin');
     title_set_l('Appearance theme preferences');
 
-    $theme_setup_script_path = APP_DIR_PATH . '/theme/' . THEME . '/script/setup.js';
-    if(file_exists($theme_setup_script_path)) {
-	if(theme_debug_is_enable())
-	    $theme_setup_script_url = url_make('', array('option' => 'theme', 'path' => 'script/setup.js'));
-	else
-	    $theme_setup_script_url = THEME_URI . '/' . THEME . '/script/setup.js';
-	head_tags_add_javascript($theme_setup_script_url);
-    }
-
     $is_first = isset($args['first']) && $args['first'] === 'true';
 
     if(!$is_first)
 	admin_setup_theme_repair();
-
-    /*
-     * 選んでいる色調のファイルが無い (消した / 別のサイトから持ってくるのを
-     * 忘れた)。生成済みの CSS はそのまま使われ続けるので画面は壊れないが、
-     * 作り直した時点で既定の色調に変わる。黙って変わると分からないので知らせる。
-     */
-    if(THEME_TONE !== TONE_CUSTOM_ID && tone_read(THEME_TONE) === false) {
-	message_error(lf('The tone \'$tone$\' is gone. $default$ is used instead.',
-			 array('tone' => THEME_TONE, 'default' => TONE_DEFAULT_ID)));
-    }
 
     if(isset($args['apply']) && $args['apply'] === 'theme') {
 	if(!theme_convert(THEME)) {
@@ -103,22 +85,8 @@ function admin_setup_theme(&$args, $dom) {
 	$is_first = true;
     }
 
-    /*
-     * 色調の保存と削除。設定と同じフォームから送られてくるので、
-     * 「保存」を押すと保存と適用が同時に起きる。「削除」は削除だけを行う
-     * (編集途中の色をうっかり適用しないよう、apply を落とす)。
-     */
-    if(!empty($args['tone_delete'])) {
-	admin_setup_tone_delete($args);
-	unset($args['apply']);
-    } else if(!empty($args['tone_save'])) {
-	if(!admin_setup_tone_save($args))
-	    unset($args['apply']);
-    }
-
     $target_categories = array('theme' => true);
-    if(admin_setup($args, $dom, $target_categories, l('Need to refresh browser applying changes'),
-		   'admin_setup_tone_form')) {
+    if(admin_setup($args, $dom, $target_categories, l('Need to refresh browser applying changes'))) {
 	cache_delete('', 'wiki-helper-info');
 	header('Location: ' . 
 	       url_make('',
@@ -131,22 +99,94 @@ function admin_setup_theme(&$args, $dom) {
 }
 
 /*
- * いま画面で選んでいる色調の 25 色。
- * 「個別に色を設定」なら入力欄の色、そうでなければその色調の色。
+ * 色調の設定。
+ *
+ * 画面で扱うのは 25 色そのもので、「色調を 1 つ選ぶ」段は無い。組み込みや
+ * 保存した色調は「読み込む」で入力欄に流し込んでから調整する。
  */
+function admin_setup_tone(&$args, $dom) {
+    auth_check(false, 'admin');
+    title_set_l('Tone preferences');
+
+    if(isset($args['apply']) && $args['apply'] === 'theme') {
+	if(!theme_convert(THEME)) {
+	    message_error(l('Could not apply theme preferences.'));
+	} else {
+	    header('Location: ' . url_make('', array('option' => 'admin_setup_tone')));
+	    exit(0);
+	}
+    } else {
+	admin_setup_theme_repair();
+	/*
+	 * 選んでいる色調のファイルが無い (消した / 別のサイトから持ってくるのを
+	 * 忘れた)。生成済みの CSS は使われ続けるので画面は壊れないが、作り直した
+	 * 時点で既定の色調に変わる。黙って変わると分からないので知らせる。
+	 */
+	if(THEME_TONE !== TONE_CUSTOM_ID && tone_read(THEME_TONE) === false)
+	    message_error(lf('The tone \'$tone$\' is gone. $default$ is used instead.',
+			     array('tone' => THEME_TONE, 'default' => TONE_DEFAULT_ID)));
+    }
+
+    /*
+     * 読み込み・保存・削除。設定と同じフォームから送られてくる。
+     * 「読み込む」と「削除」は適用しない (編集途中の色をうっかり焼き付けない)。
+     */
+    if(!empty($args['tone_load'])) {
+	admin_setup_tone_load($args);
+	unset($args['apply']);
+    } else if(!empty($args['tone_delete'])) {
+	admin_setup_tone_delete($args);
+	unset($args['apply']);
+    } else if(!empty($args['tone_save'])) {
+	if(!admin_setup_tone_save($args))
+	    unset($args['apply']);
+    }
+
+    /* この画面で決めた 25 色をそのまま使う */
+    $args['const_THEME_TONE'] = TONE_CUSTOM_ID;
+
+    if(admin_setup($args, $dom, array('tone' => true), l('Need to refresh browser applying changes'),
+		   'admin_setup_tone_form_head', 'admin_setup_tone_form_foot')) {
+	cache_delete('', 'wiki-helper-info');
+	header('Location: ' . url_make('', array('option' => 'admin_setup_tone', 'apply' => 'theme')));
+	exit(0);
+    }
+
+    return false;
+}
+
+/* 選んだ色調の色を入力欄に出す。保存はしない (適用は利用者が押す) */
+function admin_setup_tone_load(&$args) {
+    global $TONE_LOADED_COLORS;
+
+    $id = default_value($args['tone_load_id'], '');
+    $tone = tone_read($id);
+    if($tone === false) {
+	message_error(l('Could not load the tone.'));
+	return false;
+    }
+    $TONE_LOADED_COLORS = $tone['colors'];
+    message_info(lf('Loaded the tone \'$tone$\'. Press apply to use it.',
+		    array('tone' => tone_get_name($tone))));
+    return true;
+}
+
+/* いま入力欄にある 25 色 */
 function admin_setup_tone_colors(&$args) {
     global $THEME_CUSTOM_COLORS;
-
-    $tone_id = default_value($args['const_THEME_TONE'], THEME_TONE);
-    if($tone_id !== TONE_CUSTOM_ID)
-	return tone_get_colors($tone_id);
+    global $TONE_LOADED_COLORS;
 
     $colors = array();
     foreach($THEME_CUSTOM_COLORS as $custom_name => $default_color) {
+	$name = str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $custom_name);
+	if(isset($TONE_LOADED_COLORS[$name])) {
+	    $colors[$name] = $TONE_LOADED_COLORS[$name];
+	    continue;
+	}
 	$value = default_value($args['const_' . $custom_name], $default_color);
 	if(!color_is_valid($value))
 	    $value = $default_color;
-	$colors[str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $custom_name)] = $value;
+	$colors[$name] = $value;
     }
     return $colors;
 }
@@ -182,7 +222,27 @@ function admin_setup_tone_delete(&$args) {
 /*
  * 「外観の設定」のフォームの末尾に付ける色調の保存欄。
  */
-function admin_setup_tone_form($form) {
+/* 入力欄の前: 色調の読み込み */
+function admin_setup_tone_form_head($form) {
+    $dl = dom_append_child($form, 'dl', 'tone');
+
+    $dt = dom_append_child($dl, 'dt');
+    dom_append_text($dt, l('Load a tone'));
+    $dd = dom_append_child($dl, 'dd');
+
+    /* 先頭は空。押し間違いで色を流し込んでしまわないように */
+    $options = array('' => '');
+    foreach(tone_get_all() as $id => $tone) {
+	$options[$id] = tone_get_name($tone) . ' (' . $id . ')';
+    }
+    dom_append_selector($dd, 'tone_load_id', $options);
+    dom_append_text($dd, ' ');
+    dom_append_child($dd, 'input', '',
+		     array('type' => 'submit', 'name' => 'tone_load', 'value' => l('Load')));
+}
+
+/* 入力欄の後ろ: 保存と削除 */
+function admin_setup_tone_form_foot($form) {
     $dl = dom_append_child($form, 'dl', 'tone');
 
     $dt = dom_append_child($dl, 'dt');
@@ -209,7 +269,7 @@ function admin_setup_tone_form($form) {
 	return;
 
     $dt = dom_append_child($dl, 'dt');
-    dom_append_text($dt, l('Saved tones'));
+    dom_append_text($dt, l('Delete a saved tone'));
     $dd = dom_append_child($dl, 'dd');
     dom_append_selector($dd, 'tone_delete_id', $saved);
     dom_append_text($dd, ' ');
@@ -248,11 +308,13 @@ function admin_setup_theme_repair() {
 }
 
 /*
- * $append_form には関数名を渡す。フォームの末尾 (適用ボタンの後ろ) に
- * 要素を足せる。色調の保存欄がこれを使う。設定の入力欄と同じフォームに
- * 入れることで、まだ適用していない色をそのまま保存できる。
+ * $form_head / $form_foot には関数名を渡す。設定の入力欄の前と後ろ (適用ボタンの
+ * 手前) に要素を足せる。色調の設定の「読み込み」「保存」「削除」がこれを使う。
+ * 設定の入力欄と同じフォームに入れることで、まだ適用していない色をそのまま
+ * 保存できる。
  */
-function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form = '') {
+function admin_setup(&$args, $dom, $target_categories, $note = '',
+		     $form_head = '', $form_foot = '') {
     global $SETUP_CONSTANTS;
     auth_check(false, 'admin');
 
@@ -342,6 +404,13 @@ function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form 
 		$values[$key] = $setup_constant['emptyvalue'];
 	    }
 
+	    /*
+	     * 画面に出していない項目 (hidden) はフォームから送られてこない。
+	     * 送られてこなかった項目は保存されている値のままにする。
+	     */
+	    if(!isset($args[$name]))
+		continue;
+
 	    switch($type) {
 	    case 'select':
 		if(!isset($setup_constant['options'][$args[$name]]))
@@ -398,6 +467,9 @@ function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form 
 				'first' => default_value($args['first'], '')), 'setup', 'POST');
     dom_set_attribute($form, 'enctype', 'multipart/form-data');
 
+    if($form_head !== '')
+	call_user_func($form_head, $form);
+
     $dl = dom_append_child($form, 'dl');
 
     $groups = array();
@@ -406,6 +478,9 @@ function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form 
     foreach($SETUP_CONSTANTS as $key => &$setup_constant) {
 	$category = default_value($setup_constant['category'], 'site');
 	if(empty($target_categories[$category]))
+	    continue;
+	/* 保存はするが画面には出さない項目 (色調の設定が使う) */
+	if(!empty($setup_constant['hidden']))
 	    continue;
 
 	if(isset($setup_constant['childof']) && isset($parents[$setup_constant['childof']])) {
@@ -551,6 +626,9 @@ function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form 
 	}
     }
 
+    if($form_foot !== '')
+	call_user_func($form_foot, $form);
+
     $p = dom_append_child($form, 'p', 'apply');
     $submit = dom_append_child($p, 'input', '', array('type' => 'submit', 'value' => l('Apply')));
 
@@ -558,9 +636,6 @@ function admin_setup(&$args, $dom, $target_categories, $note = '', $append_form 
 	$small = dom_append_child($p, 'small');
 	dom_append_text($small, '(' . $note . ')');
     }
-
-    if($append_form !== '')
-	call_user_func($append_form, $form);
 
     return false;
 }

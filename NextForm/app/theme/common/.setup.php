@@ -75,25 +75,29 @@ $SETUP_CONSTANTS['THEME_IMAGE_ICON'] = array(
     'note' => '.ico format recommended');
 
 /*
- * 選択肢は app/tone/ と storage/tone/ の JSON から作る。一覧が要るのは
- * この設定画面だけなので、type => 'theme' と同じく描画するときに読む。
+ * 色調は「色調の設定」(admin_setup_tone) で決める。あの画面は 25 色を
+ * 直接扱うので、色調を 1 つ選ぶ段はもう無い。定数は残す ('custom' 以外の値は
+ * 上流から引き継いだサイトが持っている) が、画面には出さない。
  */
 $SETUP_CONSTANTS['THEME_TONE'] = array(
-    'category' => 'theme',
+    'category' => 'tone',
+    'hidden' => true,
     'description' => 'Tone',
     'default' => TONE_DEFAULT_ID,
     'type' => 'tone');
 
+/*
+ * 色調がプリセットのときだけ効く「見出しの色」の上書き。色調の設定では
+ * 見出しの色そのものを持っているので、こちらは画面に出さない。上流から
+ * 引き継いだサイトが値を持っているので、定数としては残す。
+ */
 $SETUP_CONSTANTS['THEME_COLOR_MAIN_CUSTOM'] = array(
-    'category' => 'theme',
-    'need_name' => 'THEME_TONE',
-    'need_value' => TONE_CUSTOM_ID,
-    'need_option' => 'not',
+    'category' => 'tone',
+    'hidden' => true,
     'description' => 'Head color',
     'default' => '',
     'allowempty' => true,
-    'type' => 'color',
-    'note' => 'blank means tone default');
+    'type' => 'color');
 
 global $THEME_CUSTOM_COLORS;
 $THEME_CUSTOM_COLORS = array(
@@ -125,13 +129,11 @@ $THEME_CUSTOM_COLORS = array(
     );
 foreach($THEME_CUSTOM_COLORS as $custom_color_name => $custom_color_value) {
     $SETUP_CONSTANTS[$custom_color_name] = array(
-	'category' => 'theme',
-	'group' => 'custom color',
-	'need_name' => 'THEME_TONE',
-	'need_value' => TONE_CUSTOM_ID,
+	'category' => 'tone',
+	'group' => 'Individual tone colors',
 	'description' => strtolower(strtr(substr($custom_color_name, 19), '_', ' ')) . ' color',
 	'default' => $custom_color_value,
-	/* 色調がプリセットのときは、保存値ではなくその色調の色を出す */
+	/* 画面に出す色は tone.inc が決める (読み込んだ色調・いまの色調) */
 	'value_function' => 'tone_custom_color_value',
 	'type' => 'color');
 }
@@ -251,7 +253,7 @@ $LANGUAGE['ja']['Site logo image']    	      	= 'サイトのロゴ画像';
 $LANGUAGE['ja']['Site favorite icon'] 	      	= 'サイトのお気に入りアイコン';
 $LANGUAGE['ja']['Tone']                       	= '色調';
 /* 色調の名前は app/tone/<識別子>.json の "names" にある */
-$LANGUAGE['ja']['custom color']               	= '個別に色を設定';
+$LANGUAGE['ja']['Individual tone colors']      	= '色調の個別設定';
 $LANGUAGE['ja']['Head color']         	      	= '見出しの色';
 $LANGUAGE['ja']['.ico format recommended']    	= '.ico形式推奨';
 $LANGUAGE['ja']['Header parts']               	= '見出しの構成';
@@ -260,7 +262,6 @@ $LANGUAGE['ja']['Site menu size']             	= 'サイトメニューの大き
 $LANGUAGE['ja']['Normal']                     	= '通常';
 $LANGUAGE['ja']['Small']                      	= '小さい';
 $LANGUAGE['ja']['Hide']                       	= '非表示';
-$LANGUAGE['ja']['blank means tone default']   	= '空欄は標準の色になります';
 $LANGUAGE['ja']['main default color']         	= '見出しの色';
 $LANGUAGE['ja']['header text color']          	= '見出しの文字の色';
 $LANGUAGE['ja']['background color']           	= '背景色';

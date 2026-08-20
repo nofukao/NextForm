@@ -72,7 +72,7 @@ theme_lib_pattern_names() {
 }
 
 # theme_lib_generate <サイト> <テーマ> <パターン名> <出力先ディレクトリ>
-# 生成した main.css / noscript.css / theme.js / setup.js を出力先へ置く。
+# 生成した main.css / noscript.css / theme.js (あれば setup.js) を出力先へ置く。
 # 生成に失敗したか、PHP が何か出力していたら 1 を返す。
 theme_lib_generate() {
     local site="$1" theme="$2" pattern="$3" dst="$4"
@@ -101,7 +101,10 @@ theme_lib_generate() {
     cp "${site}/theme/${theme}/style/main.css"     "$dst/main.css"
     cp "${site}/theme/${theme}/style/noscript.css" "$dst/noscript.css"
     cp "${site}/theme/${theme}/script/theme.js"    "$dst/theme.js"
-    cp "${site}/theme/${theme}/script/setup.js"    "$dst/setup.js"
+    # setup.js は必ずあるとは限らない (テーマが持っていれば生成される)
+    if [[ -f "${site}/theme/${theme}/script/setup.js" ]]; then
+        cp "${site}/theme/${theme}/script/setup.js" "$dst/setup.js"
+    fi
 
     # 生成物に PHP のエラー出力が混ざっていないか (display_errors が On の環境)
     if grep -qE '^(PHP )?(Warning|Notice|Deprecated|Fatal error|Parse error): ' "$dst/main.css"; then
