@@ -127,21 +127,32 @@ sudo tee "${TEST_SITE}/app/upgrade_test_note.txt" > /dev/null <<'EOF'
 利用者が app/ 直下に置いた覚えのないファイル。消えてはいけない。
 EOF
 
-# 焼き付け済みのマニュアル。0.7.0 で組み込みになったので、もう表示には
-# 使われない。ツールは件数を知らせるだけで**消さない**。
-# 0.5.0 でページ名を変えているので、古いサイトには両方の名前が残っている。
+# 焼き付け済みのマニュアル。0.7.0 で組み込みになったので表示には使われない。
+# NextFormManual 以下は自動で片付ける。ToraToraWikiManual 以下は
+# MANUAL_PAGENAME の外で普通のページなので、消さずに残す。
 # ディレクトリ名は bin2hex(ページ名)。
+#
 # meta の行は bin2hex(名前)=bin2hex(値) で保存される (storage_page_encode_meta)。
 # 生の 'type=wiki' を書くと ascii_decode() の pack('H*') が警告を出す。
-# 74797065=type / 77696b69=wiki
-for MANUAL_PAGEID in 4e657874466f726d4d616e75616c 546f7261546f726157696b694d616e75616c; do
-    sudo mkdir -p "${TEST_SITE}/storage/page/${MANUAL_PAGEID}"
-    sudo tee "${TEST_SITE}/storage/page/${MANUAL_PAGEID}/head" > /dev/null <<'EOF'
+# 74797065=type 77696b69=wiki 6c6f636b=lock 6c6f636b5f75736572=lock_user
+# 61646d696e=admin 31=1
+#
+# 片付ける相手は「生成されたときの印 (lock と lock_user=admin) が
+# 残っているもの」だけ。
+sudo mkdir -p "${TEST_SITE}/storage/page/4e657874466f726d4d616e75616c"
+sudo tee "${TEST_SITE}/storage/page/4e657874466f726d4d616e75616c/head" > /dev/null <<'EOF'
+74797065=77696b69
+6c6f636b=31
+6c6f636b5f75736572=61646d696e
+
+焼き付け済みのマニュアル。アップグレードで片付く。
+EOF
+sudo mkdir -p "${TEST_SITE}/storage/page/546f7261546f726157696b694d616e75616c"
+sudo tee "${TEST_SITE}/storage/page/546f7261546f726157696b694d616e75616c/head" > /dev/null <<'EOF'
 74797065=77696b69
 
-焼き付け済みのマニュアル。アップグレードで消えてはいけない。
+上流の名前のマニュアル。アップグレードで消えてはいけない。
 EOF
-done
 
 # シンボリックリンク。移行してきたサイトには実際に紛れている。
 # copy() はリンク先を読むため、リンク切れがあるとバックアップがそこで止まる
@@ -157,7 +168,24 @@ echo
 
 BEFORE_INDEX=$(sudo md5sum "${TEST_SITE}/index.php" | cut -d' ' -f1)
 BEFORE_INFO=$(sudo md5sum "${TEST_SITE}/install-info.dat" | cut -d' ' -f1)
-BEFORE_STORAGE=$(sudo find "${TEST_SITE}/storage" -type f -exec md5sum {} + | sed "s|${TEST_SITE}/||" | sort | md5sum)
+# ここで見たいのは「利用者のものに触っていないこと」。0.7.0 から 2 つだけ
+# 意図して動くので、指紋から除く。
+#
+#   storage/page/<NextFormManual> … 焼き付け済みのマニュアルの片付け。
+#                                   専用の検査を上に置いてある
+#   storage/cache/                … マニュアルのキャッシュと検索索引。
+#                                   捨てても作り直される派生物
+#
+# storage/page/ の他のページと storage/setup/ storage/tone/ は今までどおり
+# 1 バイトも変わってはいけない。
+storage_fingerprint() {
+    sudo find "${TEST_SITE}/storage" -type f -exec md5sum {} + \
+        | sed "s|${TEST_SITE}/||" \
+        | grep -v 'storage/page/4e657874466f726d4d616e75616c' \
+        | grep -v 'storage/cache/' \
+        | sort | md5sum
+}
+BEFORE_STORAGE=$(storage_fingerprint)
 BEFORE_ALL=$(fingerprint "$TEST_SITE")
 SITE_OWNER=$(sudo stat -c '%U:%G' "${TEST_SITE}/index.php")
 
@@ -185,12 +213,14 @@ check_eq "index.php が変わらない (認証設定が消えない)" \
          "$BEFORE_INDEX" "$(sudo md5sum "${TEST_SITE}/index.php" | cut -d' ' -f1)"
 check_eq "install-info.dat が変わらない" \
          "$BEFORE_INFO" "$(sudo md5sum "${TEST_SITE}/install-info.dat" | cut -d' ' -f1)"
-check_cmd "焼き付け済みのマニュアルを消さない" \
-          "sudo test -f '${TEST_SITE}/storage/page/4e657874466f726d4d616e75616c/head' && \
-           sudo test -f '${TEST_SITE}/storage/page/546f7261546f726157696b694d616e75616c/head'"
-check_eq "storage/ が変わらない" \
-         "$BEFORE_STORAGE" \
-         "$(sudo find "${TEST_SITE}/storage" -type f -exec md5sum {} + | sed "s|${TEST_SITE}/||" | sort | md5sum)"
+check_cmd "焼き付け済みの NextFormManual を片付ける" \
+          "! sudo test -f '${TEST_SITE}/storage/page/4e657874466f726d4d616e75616c/head'"
+check_cmd "  版は残る (「削除されたページ」から戻せる)" \
+          "sudo test -d '${TEST_SITE}/storage/page/4e657874466f726d4d616e75616c'"
+check_cmd "ToraToraWikiManual には触らない" \
+          "sudo test -f '${TEST_SITE}/storage/page/546f7261546f726157696b694d616e75616c/head'"
+check_eq "storage/ が変わらない (片付けとキャッシュを除く)" \
+         "$BEFORE_STORAGE" "$(storage_fingerprint)"
 check_eq "サイト側のシンボリックリンクが変わらない" \
          "$(echo "$BEFORE_ALL" | grep ' l ')" \
          "$(fingerprint "$TEST_SITE" | grep ' l ')"
@@ -206,12 +236,12 @@ check_cmd "見覚えのないファイル app/upgrade_test_note.txt が残る" \
           "sudo test -f '${TEST_SITE}/app/upgrade_test_note.txt'"
 # docs/upgrade-guide.md の「古いマニュアルのページを片付ける」と 1 対 1。
 # この案内は書き換えを終えた後に出るので、--dry-run のログには載らない。
-check_cmd "焼き付け済みのマニュアルを知らせる" \
-          "grep -q '古いマニュアルのページが残っています' '${DIST}/upgrade.log'"
-check_cmd "  件数を出す (植えた 2 件)" \
-          "grep -q '生成済みのページ (2 件)' '${DIST}/upgrade.log'"
-check_cmd "  消さないと明言する" \
-          "grep -q 'このツールはページを消しません' '${DIST}/upgrade.log'"
+check_cmd "マニュアルが組み込みになったと知らせる" \
+          "grep -q 'マニュアルが組み込みになりました' '${DIST}/upgrade.log'"
+check_cmd "  片付けた件数を出す" \
+          "grep -q '焼き付けてあった 1 件は削除しました' '${DIST}/upgrade.log'"
+check_cmd "  ToraToraWikiManual は残すと言う" \
+          "grep -q 'ToraToraWikiManual 以下 1 件は普通のページとして残っています' '${DIST}/upgrade.log'"
 check_cmd "見覚えのないファイルが実行ログで報告される" \
           "grep -q 'upgrade_test_note.txt' '${DIST}/upgrade.log'"
 echo

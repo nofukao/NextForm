@@ -240,6 +240,19 @@ function page_delete(&$page) {
 		search_index_remove($page['name'], $old_ngrams);
 	    else
 		search_engine_index_delete($page);
+	    /*
+	     * 焼き付け済みの写しを消した場合、そのページ名は組み込みの
+	     * マニュアルとして生き続ける。索引はページ名で引くので、いま
+	     * 抜いた ngram は組み込みの分でもある。入れ直さないと、写しを
+	     * 消しただけでマニュアルが検索に出なくなる。
+	     */
+	    if(page_is_manual($page['name'])) {
+		$manual_page = page_read($page['name']);
+		if(SEARCH_ENGINE === 'builtin')
+		    search_page_index_add($manual_page);
+		else
+		    search_engine_index_update($manual_page);
+	    }
 	}
 	return $result;
     }

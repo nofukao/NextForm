@@ -9,6 +9,7 @@
  *   page-exists <名前>        page_is_exists() の答え (exists=1/0)
  *   page-head <名前>          本文の先頭 200 バイト (head=...)
  *   page-mtime <名前>         page_get_mtime() の答え (mtime=...)
+ *   stored-exists <名前>      storage に写しがあるか (stored=1/0)
  *   manual-count              マニュアルのページ数 (count=...)
  *   find-count                page_find() が返すマニュアルの件数 (count=...)
  *   write-try <名前> <本文>   書き込みを試す (written=1/0)
@@ -78,6 +79,11 @@ case 'page-head':
 
 case 'page-mtime':
     printf("mtime=%s\n", (string)page_get_mtime($rest[0]));
+    break;
+
+case 'stored-exists':
+    /* 組み込みではなく storage の実体だけを見る */
+    printf("stored=%d\n", storage_page_is_exists($rest[0]) ? 1 : 0);
     break;
 
 case 'manual-count':

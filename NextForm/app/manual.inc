@@ -218,6 +218,53 @@ function manual_index_update(&$pages) {
 }
 
 /*
+ * 0.6.0 以前に焼き付けたマニュアルのページを片付ける。
+ *
+ * 焼き付けた写しは storage に残るが、表示には組み込みの方が使われる。
+ * 中身が出ないのに全ページ一覧には名前が出るので、アップグレードのときに
+ * 消す。消えるのは storage の写しだけで、組み込みのマニュアルは残る。
+ *
+ * 消すのは**生成されたときの印が残っているものだけ**。manual_build() は
+ * lock と lock_user=admin を書いていた。ロックを外して手を入れたページは
+ * 利用者のものなので残し、名前を $kept に入れて返す。
+ * 利用者が MANUAL_PAGENAME の下に自分で作ったページ (組み込みに同名が
+ * 無いもの) は、この一覧に出てこないので初めから触らない。
+ *
+ * page_delete() は通せない。CLI には利用者がおらず、その先の auth_check()
+ * がその場で終了させてしまう。ロックの確認も要らない (ロックされている
+ * ことが、まさに焼き付けた印なので)。storage の論理削除を直接呼ぶ。
+ * 版は残るので「削除されたページ」から戻せる。
+ *
+ * 索引はページ名で引く。写しと組み込みは同じページ名なので、写しの分だけを
+ * 索引から抜くことはできない。組み込みの分は manual_index_update() が
+ * 入れ直すので、残るのは「昔のマニュアルにあって今は無い語」だけ。
+ * 気になるなら ?option=search_index で作り直す。
+ */
+function manual_cleanup_generated(&$kept = array()) {
+    $kept = array();
+    $removed = 0;
+    foreach(array_keys(manual_get_pages()) as $pagename) {
+	if(!storage_page_is_exists($pagename))
+	    continue;
+	$page = page_create($pagename);
+	storage_page_read($page);
+	if(empty($page['meta']['lock']) ||
+	   default_value($page['meta']['lock_user'], '') !== 'admin') {
+	    $kept[] = $pagename;
+	    continue;
+	}
+	if(storage_page_delete($page)) {
+	    cache_delete($pagename);
+	    cache_delete($pagename, 'page_find_', true);
+	    $removed++;
+	}
+    }
+    if($removed > 0)
+	cache_delete('', 'page_find_');
+    return $removed;
+}
+
+/*
  * マニュアルのページを 1 件、$page の形に組み立てる。
  * 形は storage_page_read_meta() が作るものに合わせる。
  */

@@ -102,6 +102,25 @@ post_same_origin() {
     curl -sk -o /dev/null -w '%{http_code}' -X POST -H "Origin: ${ORIGIN}" "$@"
 }
 
+# 焼き付け済みのページを 1 件植える。$1 ページ名  $2 生成の印を残すか (yes/no)
+#
+# meta の行は bin2hex(名前)=bin2hex(値) (storage_page_encode_meta)。
+# 生成の印は manual_build() が書いていた lock と lock_user=admin。
+plant_page() {
+    local pageid meta
+    pageid=$(printf '%s' "$1" | od -An -tx1 | tr -d ' \n')
+    meta="$(printf 'type' | od -An -tx1 | tr -d ' \n')=$(printf 'wiki' | od -An -tx1 | tr -d ' \n')"
+    if [[ "$2" == "yes" ]]; then
+        meta="${meta}
+$(printf 'lock' | od -An -tx1 | tr -d ' \n')=$(printf '1' | od -An -tx1 | tr -d ' \n')
+$(printf 'lock_user' | od -An -tx1 | tr -d ' \n')=$(printf 'admin' | od -An -tx1 | tr -d ' \n')"
+    fi
+    sudo mkdir -p "${MANUAL_TEST_SITE}/storage/page/${pageid}"
+    printf '%s\n\n古い焼き付け。\n' "$meta" \
+        | sudo tee "${MANUAL_TEST_SITE}/storage/page/${pageid}/head" > /dev/null
+    sudo chown -R "$SITE_OWNER" "${MANUAL_TEST_SITE}/storage/page/${pageid}"
+}
+
 # storage に焼き付けられたマニュアルのディレクトリ数
 storage_manual_dirs() {
     sudo find "${MANUAL_TEST_SITE}/storage/page" -maxdepth 1 -name "${MANUAL_PAGEID}*" \
@@ -226,17 +245,11 @@ check_eq "?option=allpage に出ない" "no" \
                      "data-link-pagename=\"${M}\"")"
 echo
 
-echo "6. 焼き付け済みの古いページを片付けられること"
+echo "6. 焼き付け済みの古いページを手で片付けられること"
 # 0.6.0 以前に生成したページが storage に残っているサイトを作る。
 # 中身は組み込みに隠されて見えないが、一覧には名前が出るので消せなければ困る。
 # (docs/upgrade-guide.md の「古いマニュアルのページを片付ける」と 1 対 1)
-sudo mkdir -p "${MANUAL_TEST_SITE}/storage/page/${MANUAL_PAGEID}"
-sudo tee "${MANUAL_TEST_SITE}/storage/page/${MANUAL_PAGEID}/head" > /dev/null <<'EOF'
-74797065=77696b69
-
-古い焼き付け。組み込みに隠されるが、消せなければならない。
-EOF
-sudo chown -R "$SITE_OWNER" "${MANUAL_TEST_SITE}/storage/page/${MANUAL_PAGEID}"
+plant_page "$M" yes
 check_eq "焼き付け済みの写しがある" "1" "$(storage_manual_dirs)"
 check_eq "  開くと組み込みの方が出る" "no" \
          "$(contains "$(curl -sk "${MANUAL_TEST_URL}/?${M}")" '古い焼き付け')"
@@ -250,9 +263,39 @@ check_eq "  storage から消える" "0" "$(storage_manual_dirs)"
 # 写しの無いページ (純粋な組み込み) は今までどおり断る
 check_eq "  写しの無いページは削除できない" "0" \
          "$(value_of "$(helper delete-try "$MJA")" deleted)"
+# 索引はページ名で引く。写しと組み込みは同じ名前なので、写しを消した
+# ついでに組み込みの分まで抜けてはいけない。
+check_eq "  消した後も検索に残る" "1" "$(value_of "$(helper index-has "$M")" indexed)"
 echo
 
-echo "7. ソースを変えると追随すること"
+echo "7. アップグレードで自動的に片付くこと"
+# アップグレードの手順 5 は app/tool/update_wiki を走らせる。ここで
+# 焼き付け済みのページを消す。手を入れた形跡のあるものは残す。
+plant_page "$M"        yes   # 生成の印が残っている → 消える
+plant_page "${MJA}"    no    # ロックが外れている (手を入れた) → 残る
+check_eq "植えた写しが 2 件ある" "2" "$(storage_manual_dirs)"
+out=$(sudo -u "$SITE_OWNER" php "${MANUAL_TEST_SITE}/app/tool/update_wiki" \
+      "${MANUAL_TEST_SITE}/index.php" 2>&1)
+check_eq "update_wiki が 1 件消したと言う" "yes" \
+         "$(contains "$out" '1 removed')"
+check_eq "  手を入れた 1 件は残したと言う" "yes" \
+         "$(contains "$out" "1 kept (edited): ${MJA}")"
+check_eq "  消した方は storage から見えなくなる" "0" \
+         "$(value_of "$(helper stored-exists "$M")" stored)"
+check_eq "  残した方は storage にある" "1" \
+         "$(value_of "$(helper stored-exists "$MJA")" stored)"
+check_eq "  組み込みは両方とも読める" "1:1" \
+         "$(value_of "$(helper page-exists "$M")" exists):$(value_of "$(helper page-exists "$MJA")" exists)"
+check_eq "  2 回目は何も消さない (冪等)" "yes" \
+         "$(contains "$(sudo -u "$SITE_OWNER" php "${MANUAL_TEST_SITE}/app/tool/update_wiki" \
+            "${MANUAL_TEST_SITE}/index.php" 2>&1)" '0 removed')"
+# 後始末。残した方と、消した方の版を storage から落とす
+helper truncate-try "$MJA" > /dev/null
+helper truncate-try "$M"   > /dev/null
+check_eq "  片付け後は storage が空" "0" "$(storage_manual_dirs)"
+echo
+
+echo "8. ソースを変えると追随すること"
 before_mtime=$(value_of "$(helper page-mtime "$MJA")" mtime)
 sudo touch "${MANUAL_TEST_SITE}/app/manual/manual-before.txt"
 after_mtime=$(value_of "$(helper page-mtime "$MJA")" mtime)
@@ -262,7 +305,7 @@ check_eq "  作り直した後も索引に載っている" "1" "$(value_of "$(he
 check_eq "  作り直しても実体はできない" "0" "$(storage_manual_dirs)"
 echo
 
-echo "8. 廃止した画面が 500 にならないこと"
+echo "9. 廃止した画面が 500 にならないこと"
 # 跡地の画面が残っている (配布物から消すと、古いファイルがアップグレード後も
 # 残って manual_build() を呼び Fatal error になる)。admin を求めるので 401。
 check_eq "?option=admin_manual"  "401" "$(code "${MANUAL_TEST_URL}/?option=admin_manual")"
@@ -270,7 +313,7 @@ check_eq "管理ツールに項目が無い" "no" \
          "$(contains "$(curl -sk "${MANUAL_TEST_URL}/?option=admin")" 'admin_manual')"
 echo
 
-echo "9. PHP の警告を出さないこと"
+echo "10. PHP の警告を出さないこと"
 before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 code "${MANUAL_TEST_URL}/?${MJA}" > /dev/null
 code "${MANUAL_TEST_URL}/?${M}" > /dev/null

@@ -16,6 +16,25 @@ printf("\tdelete helper cache .. ");
 cache_delete('', 'wiki-helper-info');
 printf("done.\n");
 
+/*
+ * 0.6.0 以前に焼き付けたマニュアルのページを片付ける (manual.inc を参照)。
+ * アップグレードの手作業手順ではこのツールが唯一の後始末の機会になる。
+ */
+/*
+ * 本文の変換は &pre(code) などで head_tags_add_javascript() を呼ぶ。
+ * CLI では $head_tags が未初期化のままだと Fatal error になる
+ * (app/tool/search_index_check と同じ理由)。
+ */
+head_tags_init();
+
+printf("\tclean up generated manual pages .. ");
+$manual_kept = array();
+$manual_removed = manual_cleanup_generated($manual_kept);
+printf("%d removed", $manual_removed);
+if(count($manual_kept) > 0)
+    printf(", %d kept (edited): %s", count($manual_kept), implode(' ', $manual_kept));
+printf(".\n");
+
 if(isset($argv[2]) && $argv[2] == '--delete-find-cache') {
     printf("\tdelete find cache .. ");
     cache_delete('', 'page_find_');

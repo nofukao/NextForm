@@ -567,6 +567,20 @@ eval_index_php($up_index_real, false);          /* ここでサイトのディ�
 define('APP_DIR_PATH', $up_site . '/app');
 require_once(APP_DIR_PATH . '/main.inc');
 
+/*
+ * 0.6.0 以前に焼き付けたマニュアルのページを片付ける。ここで行うのは
+ * main.inc を読み込んだ後だから。消えるのは storage に残った古い写しだけで、
+ * 組み込みのマニュアルは残る (manual.inc の manual_cleanup_generated)。
+ */
+/*
+ * 本文の変換は &pre(code) などで head_tags_add_javascript() を呼ぶ。
+ * CLI では $head_tags が未初期化のままだと Fatal error になる
+ * (app/tool/search_index_check と同じ理由)。
+ */
+head_tags_init();
+$up_manual_kept = array();
+$up_manual_removed = manual_cleanup_generated($up_manual_kept);
+
 if(theme_convert(THEME)) {
     printf("done  (%s)\n", THEME);
 } else {
@@ -640,21 +654,29 @@ if($up_htaccess !== false && strpos($up_htaccess, 'Options -Indexes') === false)
  * NextFormManual に変えているので、古いサイトでは両方残っていることがある。
  * docs/upgrade-guide.md の「古いマニュアルのページを片付ける」と 1 対 1。
  */
-$up_old_manual = array();
-foreach(array('NextFormManual', 'ToraToraWikiManual') as $up_manual_pagename) {
-    $up_found = glob($up_site . '/storage/page/' . bin2hex($up_manual_pagename) . '*');
-    if($up_found !== false)
-        $up_old_manual = array_merge($up_old_manual, $up_found);
-}
-if(count($up_old_manual) > 0) {
+$up_old_toratora = glob($up_site . '/storage/page/' . bin2hex('ToraToraWikiManual') . '*');
+if($up_old_toratora === false)
+    $up_old_toratora = array();
+
+if($up_manual_removed > 0 || count($up_manual_kept) > 0 || count($up_old_toratora) > 0) {
     upgrade_out("");
-    upgrade_out("  古いマニュアルのページが残っています (0.7.0):");
-    upgrade_out("    マニュアルは組み込みになりました。生成の操作は要りません");
-    upgrade_out("    生成済みのページ (%d 件) が storage に残っています。不要なら削除してください", count($up_old_manual));
-    upgrade_out("    NextFormManual 以下は組み込みに隠れて中身が出ません");
-    upgrade_out("    ToraToraWikiManual 以下は普通のページとして残ります");
-    upgrade_out("    管理者なら ?option=delete からロックを外さずに消せます");
-    upgrade_out("    このツールはページを消しません");
+    upgrade_out("  マニュアルが組み込みになりました (0.7.0):");
+    upgrade_out("    生成の操作は要りません。アップグレードのたびに中身も新しくなります");
+}
+if($up_manual_removed > 0) {
+    upgrade_out("    焼き付けてあった %d 件は削除しました (組み込みに置き換わりました)", $up_manual_removed);
+    upgrade_out("    「削除されたページ」から戻せます。完全に消すには ?option=delete から");
+}
+if(count($up_manual_kept) > 0) {
+    upgrade_out("    手を入れた形跡のある %d 件は残しました:", count($up_manual_kept));
+    foreach($up_manual_kept as $up_kept_pagename)
+        upgrade_out("      %s", $up_kept_pagename);
+    upgrade_out("    組み込みの方が表示されるので中身は出ません。要否を確かめて削除してください");
+}
+if(count($up_old_toratora) > 0) {
+    upgrade_out("    ToraToraWikiManual 以下 %d 件は普通のページとして残っています", count($up_old_toratora));
+    upgrade_out("    こちらは消しません。不要なら管理者が ?option=delete から削除してください");
+    upgrade_out("    (ロックを外す必要はありません)");
 }
 
 /*
