@@ -398,8 +398,7 @@ $LANGUAGE['ja'] = array(
     '色調 \'$tone$\' が見つかりません．$default$ が使われます．',
     'Could not delete the tone.' => '色調の削除に失敗しました．',
     'Deleted the tone.' => '色調を削除しました．',
-    'deleting a tone that came with NextForm brings the original back' =>
-    'はじめから入っている色調を上書きした場合、消すと元に戻ります',
+    'Choose a tone to delete.' => '削除する色調が選ばれていません．',
 
     'User Manager' => 'ユーザーの管理',
     'New user' => '新しいユーザー',

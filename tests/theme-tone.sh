@@ -139,6 +139,21 @@ html_value() {
         | sed -E 's/.*value="([^"]*)".*/\1/' | head -1
 }
 
+# 「保存した色調の削除」で選ばれている値 (空なら空文字)
+tone_delete_selected() {
+    curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+        | python3 -c '
+import re, sys
+html = sys.stdin.read()
+select = re.search(r"<select name=\"tone_delete_id\">(.*?)</select>", html, re.S)
+if not select:
+    print("(欄が無い)")
+    sys.exit(0)
+option = re.search(r"<option value=\"([^\"]*)\"[^>]*selected", select.group(1))
+print(option.group(1) if option else "(選択なし)")
+'
+}
+
 # 「色調の読み込み」の選択肢の識別子 ($1 番目)
 tone_load_option() {
     curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
@@ -315,7 +330,18 @@ check_eq "消すと組み込みに戻る" "ベージュ/グリーン" "$(tone_op
 check_eq "ファイルが消える"     "0"                 "$(tone_exists beige-green)"
 echo
 
-echo "10. 使えない識別子は保存しない"
+echo "10. 削除はうっかり押しても起きない"
+# 選択欄の既定が保存済みの色調だと、押しただけで 1 つ消える。
+check_eq "既定は空"           ""   "$(tone_delete_selected)"
+check_eq "選択肢には出る"     "1"  \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+            | grep -c 'option value="custom-tone"' | head -1)"
+body=$(apply_tone_setup "tone_delete=1" "tone_delete_id=")
+check_eq "選ばずに押すと断る" "1"  "$(printf '%s' "$body" | grep -c '削除する色調が選ばれていません')"
+check_eq "何も消えない"       "2"  "$(sudo ls "${THEME_TEST_SITE}/storage/tone/" | wc -l)"
+echo
+
+echo "11. 使えない識別子は保存しない"
 for bad in "../evil" "日本語" "" "a/b"; do
     apply_tone_setup "tone_save=1" "tone_id=${bad}" "tone_name=x" > /dev/null
 done
@@ -325,7 +351,7 @@ check_eq "storage の外に書かない" "0" \
          "$(sudo find "${THEME_TEST_SITE}" -name 'evil*' | wc -l)"
 echo
 
-echo "11. 色調のファイルを失っても色は決まる"
+echo "12. 色調のファイルを失っても色は決まる"
 # 上流から引き継いだサイトは THEME_TONE に色調の名前を持っている。
 # その色調が無くなっても、色が 1 つも決まらない状態にはしない。
 helper set-tone custom-tone > /dev/null
@@ -337,7 +363,7 @@ code "${THEME_TEST_URL}/?option=admin_setup_tone&apply=theme" > /dev/null
 check_eq "作り直すと既定に落ちる" "1" "$(css_has '#fbf6ea')"
 echo
 
-echo "12. PHP の警告を出さない"
+echo "13. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

@@ -215,6 +215,10 @@ function admin_setup_tone_save(&$args) {
 
 function admin_setup_tone_delete(&$args) {
     $id = default_value($args['tone_delete_id'], '');
+    if($id === '') {
+	message_error(l('Choose a tone to delete.'));
+	return false;
+    }
     if(!tone_delete($id)) {
 	message_error(l('Could not delete the tone.'));
 	return false;
@@ -280,6 +284,8 @@ function admin_setup_tone_form_foot($form) {
     }
     if(count($saved) <= 0)
 	return;
+    /* 消すのは取り消せない。押しただけで先頭のものが消えないよう、既定は空にする。 */
+    $saved = array('' => '') + $saved;
 
     $dt = dom_append_child($dl, 'dt');
     dom_append_text($dt, l('Delete a saved tone'));
@@ -288,8 +294,6 @@ function admin_setup_tone_form_foot($form) {
     dom_append_text($dd, ' ');
     dom_append_child($dd, 'input', '',
 		     array('type' => 'submit', 'name' => 'tone_delete', 'value' => l('Delete')));
-    $small = dom_append_child($dd, 'small');
-    dom_append_text($small, l('deleting a tone that came with NextForm brings the original back'));
 }
 
 /*
