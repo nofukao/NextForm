@@ -9,6 +9,7 @@
  *   guest-admin        ログインしていない利用者に admin 権限を与える
  *   values <カテゴリ>   設定の項目を `名前=base64(値)` で並べる (site / theme)
  *   theme              保存されているテーマ名 (theme=...)
+ *   saved <定数名>      保存されている値 (saved=... 未設定なら saved=(unset))
  *   set-tone <識別子>   保存されている色調を差し替える (theme=... と同じ保存先)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -57,6 +58,13 @@ case 'values':
 	    continue;
 	printf("%s=%s\n", $key, base64_encode(defined($key) ? constant($key) : ''));
     }
+    break;
+
+case 'saved':
+    $contents = setup_read('site');
+    $values = ($contents === false) ? array() : unserialize($contents);
+    printf("saved=%s\n",
+	   array_key_exists($rest[0], $values) ? $values[$rest[0]] : '(unset)');
     break;
 
 case 'set-tone':

@@ -1,4 +1,8 @@
 <?php
+/* 画像の設定でできること (アップロード以外) */
+define('ADMIN_SETUP_IMAGE_DEFAULT', 'default');
+define('ADMIN_SETUP_IMAGE_NONE', 'none');
+
 $OPTIONS['admin_setup_site'] = array('show' => 'admin_setup_site');
 $OPTIONS['admin_setup_theme'] = array('show' => 'admin_setup_theme');
 $OPTIONS['admin_setup_tone'] = array('show' => 'admin_setup_tone');
@@ -289,6 +293,21 @@ function admin_setup_tone_form_foot($form) {
 }
 
 /*
+ * アップロードした画像を消す。拡張子は上げたときのものが残るので全部見る。
+ */
+function admin_setup_image_delete_files($setup_constant) {
+    $delete_path = THEME_DIR_PATH . '/' . $setup_constant['path'];
+    if(isset($setup_constant['extensions'])) {
+	foreach($setup_constant['extensions'] as $extension) {
+	    if(is_file($delete_path . $extension))
+		unlink($delete_path . $extension);
+	}
+    } else if(is_file($delete_path)) {
+	unlink($delete_path);
+    }
+}
+
+/*
  * 保存されているテーマ名を返す。定数 THEME は起動時の値なので、
  * 設定を保存した直後のリクエストでは両者が食い違う。
  */
@@ -346,22 +365,27 @@ function admin_setup(&$args, $dom, $target_categories, $note = '',
 	    $type = default_value($setup_constant['type'], 'string');
 
 	    if($type === 'theme_file_image') {
-		if((!isset($_FILES[$name]['name']) || $_FILES[$name]['name'] === '') &&
-		   isset($args[$name . '_delete']) && $args[$name . '_delete'] === 'on') {
-		    $values[$key] = '';
-		    $delete_path = THEME_DIR_PATH . '/' . $setup_constant['path'];
-		    if(isset($setup_constant['extensions'])) {
-			foreach($setup_constant['extensions'] as $extension) {
-			    if(is_file($delete_path . $extension))
-				unlink($delete_path . $extension);
-			}
-		    } else if(is_file($delete_path)) {
-			unlink($delete_path);
-		    }
+		$is_uploaded = isset($_FILES[$name]['name']) && $_FILES[$name]['name'] !== '';
+		$action = default_value($args[$name . '_action'], '');
+		if(!$is_uploaded &&
+		   ($action === ADMIN_SETUP_IMAGE_DEFAULT || $action === ADMIN_SETUP_IMAGE_NONE)) {
+		    /*
+		     * 標準に戻す = 設定値そのものを消す。setup_local() が
+		     * $setup_constant['default'] を使うので、テーマ同梱の画像に戻り、
+		     * テーマを切り替えればそのテーマの画像に追随する。
+		     * 空文字を保存すると「設定された値」になってしまい、戻れない。
+		     *
+		     * 表示しない = 空文字を保存する。html.php は空なら出さない。
+		     */
+		    if($action === ADMIN_SETUP_IMAGE_DEFAULT)
+			unset($values[$key]);
+		    else
+			$values[$key] = '';
+		    admin_setup_image_delete_files($setup_constant);
 		    continue;
 		}
-		
-		if(empty($_FILES[$name]) || !isset($_FILES[$name]['name']) || $_FILES[$name]['name'] === '')
+
+		if(!$is_uploaded)
 		    continue;
 
 		$path_info = pathinfo($_FILES[$name]['name']);
@@ -582,15 +606,19 @@ function admin_setup(&$args, $dom, $target_categories, $note = '',
 	    $file = dom_append_child($label, 'input', '',
 				     array('type' => 'file', 'name' => $name,
 					   'accept' => 'image/*'));
-	    if(!empty($setup_constant['allowempty']) && $value !== '') {
-		$label = dom_append_child($dd, 'label', 'file_upload_delete');
-		$check = dom_append_child($label, 'input', '',
-					  array(
-					      'type' => 'checkbox',
-					      'name' => $name . '_delete',
-					      'value' => 'on',
-					      ));
-		dom_append_text($label, l('Delete'));
+	    if(!empty($setup_constant['allowempty'])) {
+		/*
+		 * 画像を上げ直す以外にできること。「標準に戻す」が無いと、
+		 * 一度差し替えた画像から元に戻す手段が無くなる。
+		 */
+		dom_append_text($dd, ' ');
+		dom_append_selector(
+		    $dd, $name . '_action',
+		    array(
+			'' => l('Keep the current image'),
+			ADMIN_SETUP_IMAGE_DEFAULT => l('Restore the default image'),
+			ADMIN_SETUP_IMAGE_NONE => l('Do not show'),
+			));
 	    }
 
 	    if($value !== '') {
