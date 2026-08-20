@@ -650,7 +650,10 @@ if(count($up_old_manual) > 0) {
     upgrade_out("");
     upgrade_out("  古いマニュアルのページが残っています (0.7.0):");
     upgrade_out("    マニュアルは組み込みになりました。生成の操作は要りません");
-    upgrade_out("    生成済みのページ (%d 件) は表示に使われません。不要なら削除してください", count($up_old_manual));
+    upgrade_out("    生成済みのページ (%d 件) が storage に残っています。不要なら削除してください", count($up_old_manual));
+    upgrade_out("    NextFormManual 以下は組み込みに隠れて中身が出ません");
+    upgrade_out("    ToraToraWikiManual 以下は普通のページとして残ります");
+    upgrade_out("    管理者なら ?option=delete からロックを外さずに消せます");
     upgrade_out("    このツールはページを消しません");
 }
 
