@@ -8,7 +8,8 @@
  *   make-page <名前> <本文>  ページを 1 件作る
  *   page-body <名前>        ページの本文 (body=...)
  *   normalize-lookup <名前>  handler_function() が normalize を引けるか (func=名前|false)
- *   normalize-apply <名前>   引いた関数で実際に整形できるか (changed=1/0, aligned=1/0)
+ *   normalize-apply <名前>   引いた関数で実際に整形できるか
+ *                           (changed=1/0, aligned=1/0, warnings=件数)
  *   texts-lookup <名前>      handler_function() が texts を引けるか (func=名前|false)
  *   cleanup                 このヘルパが作ったページを消す
  *
@@ -79,10 +80,21 @@ case 'normalize-apply':
     $contents = page_get_contents($page);
     $func = handler_function($page, 'normalize');
     if($func === false) {
-        printf("changed=0\naligned=0\n");
+        printf("changed=0\naligned=0\nwarnings=0\n");
         break;
     }
+    /*
+     * 整形の途中で PHP の警告が出ないことも見る。&include で取り込んだ
+     * ページの表の位置を自分の本文に当てて substr() が範囲外になる不具合が
+     * あった (handler/wiki.inc の wiki_normalize)。
+     */
+    $normalize_warnings = 0;
+    set_error_handler(function($no, $str, $file, $line) use (&$normalize_warnings) {
+        $normalize_warnings++;
+        return true;
+    });
     $normalized = $func($page, $contents);
+    restore_error_handler();
     printf("changed=%d\n", $normalized !== $contents ? 1 : 0);
     /* 表の桁が揃うと、どの行も同じ長さになる */
     $widths = array();
@@ -91,6 +103,7 @@ case 'normalize-apply':
             $widths[strlen($line)] = true;
     printf("aligned=%d\n", count($widths) === 1 ? 1 : 0);
     printf("result=%s\n", str_replace("\n", '/', $normalized));
+    printf("warnings=%d\n", $normalize_warnings);
     break;
 
 case 'cleanup':

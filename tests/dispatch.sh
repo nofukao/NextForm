@@ -146,6 +146,13 @@ P="DispatchTest/Page"
 helper make-page "$P" "これは本文です。" > /dev/null
 helper make-page "DispatchTest/Table" '|a|bb|
 |ccc|d|' > /dev/null
+# 整形が &include を跨がないことを見るための組。取り込まれる側を長くして、
+# 後ろの行の位置が外側の本文の長さを超えるようにする。
+helper make-page "DispatchTest/Included" "$(printf '|row%02d|value%02d|\n' $(seq 0 29) | paste -d'\n' - /dev/null | head -60)" > /dev/null
+helper make-page "DispatchTest/Includer" '&include([[DispatchTest/Included]]);
+
+|xxxx|y|
+|z|wwww|' > /dev/null
 echo
 
 echo "1. 呼べない action を指定しても 500 にならないこと"
@@ -182,6 +189,17 @@ out=$(helper normalize-apply "DispatchTest/Table")
 check_eq "normalize が実際に整形する"       "1" "$(value_of "$out" changed)"
 check_eq "  表の桁が揃う"                   "1" "$(value_of "$out" aligned)"
 check_eq "  整形結果が期待どおり"           '|a  |bb|/|ccc|d |' "$(value_of "$out" result)"
+check_eq "  警告を出さない"                 "0" "$(value_of "$out" warnings)"
+
+# 整形は「この本文の何バイト目」を指す data-twp を見て桁を揃える。
+# &include で取り込んだページも同じ文書に変換されて入るので、その行の
+# 位置を自分の本文に当てると関係のない場所を書き換える。実際 substr() が
+# 範囲外になり Uninitialized string offset 0 が出ていた。
+# 整形は保存のたびに走るので、普通のページを保存するだけで踏める。
+out=$(helper normalize-apply "DispatchTest/Includer")
+check_eq "&include したページを整形しても警告が出ない" "0" "$(value_of "$out" warnings)"
+check_eq "  自分の表は揃う"  '&include([[DispatchTest/Included]]);//|xxxx|y   |/|z   |wwww|' \
+         "$(value_of "$out" result)"
 
 # texts は検索が使っている。引けなくなると検索が 0 件になる。
 # ページ名は結果の HTML に複数回出るので、件数ではなく有無で見る。

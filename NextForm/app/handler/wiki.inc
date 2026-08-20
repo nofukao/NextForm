@@ -143,18 +143,33 @@ function wiki_texts(&$page) {
     return $texts_info;
 }
 
+/*
+ * 表の桁を揃える。
+ *
+ * data-twp / data-twl は「この本文の何バイト目から何バイト」を指す。
+ * ところが &include で取り込んだページも同じ文書に変換されて入り、
+ * そちらの行にも data-twp が付く。位置は**取り込まれた側の本文**を
+ * 指しているので、これを $text に当てると関係のない場所を書き換える。
+ *
+ * 取り込まれた中身は page_handle() が section[@data-pagename] で包む
+ * (page.inc を参照)。ここで変換する本文は包まれないので、
+ * その中にある表と行は除いて数える。
+ *
+ * 実際 substr() が範囲外になって空文字を返し、$tr_text[0] が
+ * 「Uninitialized string offset 0」の警告を出していた。空の判定も足す。
+ */
 function wiki_normalize(&$page, $text) {
     $trial_dom = dom_create_document();
     wiki_convert($page, $trial_dom, $text);
     $offset = 0;
     $xpath = new DOMXPath(dom_owner($trial_dom));
-    $tables = $xpath->query('//table[@data-twp]');
+    $tables = $xpath->query('//table[@data-twp][not(ancestor::section[@data-pagename])]');
     if(!is_null($tables)) {
 	foreach($tables as $table) {
 	    $max_widths = array();
 	    $rows = array();
 
-	    $dom_trs = $xpath->query('.//tr[@data-twp]', $table);
+	    $dom_trs = $xpath->query('.//tr[@data-twp][not(ancestor::section[@data-pagename])]', $table);
 	    $trs = array();
 	    if(!is_null($dom_trs))
 		foreach($dom_trs as $tr)
@@ -167,7 +182,8 @@ function wiki_normalize(&$page, $text) {
 		$length = dom_get_attribute($tr, 'data-twl');
 		$tr_text = substr($text, $position + $offset, $length);
 
-		if($tr_text[0] != '|' || substr_count($tr_text, "\n") > 1)
+		if($tr_text === '' || $tr_text[0] != '|' ||
+		   substr_count($tr_text, "\n") > 1)
 		    continue;
 
 		$fields = preg_split('/(?<!\&)\|/', $tr_text);
