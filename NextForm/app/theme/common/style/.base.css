@@ -77,14 +77,16 @@ li.has_children {
 }
 
 /* indent */
-section.section section.section,
+/*
+ * 節そのものは下げない。
+ *
+ * 上流は wiki 記法の節の深さを margin-left で表していたが、Markdown の見出しは
+ * フラットで「節がどこで終わるか」が本文から決まらず、同じようには下げられない。
+ * 深さは .heading.css の文字の大きさで表し、両方の種別で同じ見え方にする。
+ */
 ul, ol,
 dd {
     margin-left: 24px;
-}
-section.page.section > section.section,
-article.page > section.section {
-    margin-left: 0px;
 }
 
 /* bounding box padding */

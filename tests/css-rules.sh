@@ -90,6 +90,10 @@ rules_common() {
           "bool(re.search(r'article\.main section\.markdown h4,\s*article\.main section\.markdown h5,\s*article\.main section\.markdown h6\s*\{[^}]*font-size', css, re.S))"
     check "見出しは深いほど小さい" \
           "(lambda a: a == sorted(a, reverse=True))([int(re.search(r'article\.main section\.markdown h%d\b[^{}]*\{[^}]*font-size:\s*([0-9]+)px' % n, css, re.S).group(1)) for n in (1, 2, 3, 4)])"
+    # 節そのものは下げない。Markdown の見出しはフラットで同じようには
+    # 下げられないため、深さは大きさで表す (.base.css の indent を参照)。
+    check "節の入れ子にインデントが付いていない" \
+          "not re.search(r'section\.section\s+section\.section[^{]*\{[^}]*margin-left', css, re.S)"
     check "Markdown の引用が pre 扱いのままになっていない" \
           "bool(re.search(r'section\.markdown blockquote\s*\{[^}]*white-space:\s*normal', css, re.S))"
 
