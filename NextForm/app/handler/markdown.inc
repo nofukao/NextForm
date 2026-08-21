@@ -196,8 +196,68 @@ function markdown_convert(&$page, $dom, $contents = null) {
     $section = dom_append_child($dom, 'section', 'markdown');
     if(!markdown_append_html($section, $html))
 	return false;
+    markdown_append_sentence($page, $section);
     markdown_set_heading_ids($page, $section);
     return true;
+}
+
+/*
+ * 変換後の DOM の文字に sentence の後処理を掛ける。
+ *
+ * wiki 記法は文字を組み立てながら sentence_append() に通すので、検索から
+ * ページを開いたときに語が印 (mark) で示される。Markdown はライブラリが
+ * 作った HTML を DOM ごと取り込むため、その経路を通らず、印が付かなかった。
+ *
+ * **ページ名の自動リンク (pagename) は掛けない。** Markdown を書く人は
+ * [[...]] で明示的にリンクする習慣を持っており、素の語が勝手にリンクになるのは
+ * 驚きになる。種別 text (text_show) と &pre が同じ理由で excludes している。
+ *
+ * pre / code の中と、リンクの中には掛けない。前者は原文をそのまま見せる場所で、
+ * 後者は表示名を組み替えたくないため。
+ */
+function markdown_append_sentence(&$page, $dom) {
+    if(!isset($page['sentence']))
+	return;
+
+    $texts = array();
+    markdown_collect_texts($dom, $texts);
+    foreach($texts as $text_node) {
+	$parent = $text_node->parentNode;
+	if(!($parent instanceof DOMElement))
+	    continue;
+
+	$converted = dom_create_document();
+	sentence_append($converted, $text_node->nodeValue, $page,
+			array('excludes' => array('pagename')));
+	/* 何も当たらなければ文字 1 つが返る。触らずに残す */
+	if($converted->childNodes->length == 1 &&
+	   $converted->firstChild instanceof DOMText)
+	    continue;
+
+	$owner = dom_owner($text_node);
+	foreach($converted->childNodes as $child)
+	    $parent->insertBefore($owner->importNode($child, true), $text_node);
+	$parent->removeChild($text_node);
+    }
+}
+
+/*
+ * 後処理を掛ける文字を集める。あとで木を組み替えるので、先に集めきる。
+ */
+function markdown_collect_texts($dom, &$texts) {
+    static $skips = array('pre' => true, 'code' => true, 'a' => true);
+    foreach($dom->childNodes as $child) {
+	if($child instanceof DOMText) {
+	    if(trim($child->nodeValue) !== '')
+		$texts[] = $child;
+	    continue;
+	}
+	if(!($child instanceof DOMElement))
+	    continue;
+	if(isset($skips[strtolower($child->nodeName)]))
+	    continue;
+	markdown_collect_texts($child, $texts);
+    }
 }
 
 function markdown_show(&$page, $dom) {
