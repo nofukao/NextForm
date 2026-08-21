@@ -46,30 +46,26 @@ form.refpage h1 {
     margin-top: 28px;
 }
 
-/* 見出しの階層。浅いほど大きく、深いほど本文に近づける */
-h1 {
+/* 見出しの階層。浅いほど大きく、深いほど本文に近づける。
+   大きさは共通側 (.heading.css) が決めるので、ここは罫線と余白だけ。
+   セレクタを共通の関数から出すので、種別 wiki と markdown に同じだけ効く */
+<?php echo(theme_headings_selector()); ?> {
     border-bottom: none;
     font-weight: bold;
     line-height: 1.45;
 }
-section.page > section.section > h1 {
-    font-size: <?php echo(THEME_FONT_SIZE_HUGE - 2); ?>px;
+<?php echo(theme_heading_selectors(1)); ?> {
     border-bottom: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
     padding-bottom: 6px;
-    margin-top: 40px;
 }
-section.section section.section > h1 {
-    font-size: <?php echo(THEME_FONT_SIZE_LARGE + 2); ?>px;
-    border-bottom: none;
-    margin-top: 32px;
+<?php
+$docs_heading_margins = array(1 => 40, 2 => 32, 3 => 24, 4 => 20);
+foreach(theme_heading_levels() as $docs_level) { ?>
+<?php echo(theme_heading_selectors($docs_level)); ?> {
+    margin-top: <?php echo(theme_density_px($docs_heading_margins[$docs_level])); ?>px;
 }
-section.section section.section section.section > h1 {
-    font-size: <?php echo(THEME_FONT_SIZE_LARGE); ?>px;
-    margin-top: 24px;
-}
-section.section section.section section.section section.section > h1 {
-    font-size: <?php echo(THEME_FONT_SIZE_NORMAL); ?>px;
-    margin-top: 20px;
+<?php } ?>
+<?php echo(theme_heading_selectors(THEME_HEADING_LEVEL_MAX)); ?> {
     letter-spacing: 0.04em;
 }
 
@@ -144,20 +140,6 @@ section.page a:visited {
     text-underline-offset: 2px;
 }
 
-/* Markdown の見出しも、深さで大きさの段差を付ける (h1 だけ罫線) */
-section.markdown h1 {
-    border-bottom: solid 1px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;
-    padding-bottom: 6px;
-    margin-top: <?php echo(theme_density_px(40)); ?>px;
-}
-section.markdown h2,
-section.markdown h3,
-section.markdown h4,
-section.markdown h5,
-section.markdown h6 {
-    border-bottom: none;
-    margin-top: <?php echo(theme_density_px(32)); ?>px;
-}
 section.markdown blockquote {
     border: none;
     border-left: solid 4px <?php trw_color_v(THEME_COLOR_TEXT, $docs_rule); ?>;

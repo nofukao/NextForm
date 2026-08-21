@@ -2,16 +2,17 @@
 /*
  * 種別 markdown のページ (section.markdown の中身)。
  *
- * wiki 記法の出力は section.section の入れ子で、余白も見出しもその構造に
- * 合わせた規則が当たる。Markdown が出すのは素の h1〜h6 / p / ul / table で、
- * そのままでは 2 つの穴が空く。
+ * wiki 記法の出力は section.section の入れ子で、余白もその構造に合わせた規則が
+ * 当たる。Markdown が出すのは素の h1〜h6 / p / ul / table なので、
+ * section.section > * の余白が当たらない。ここで同じリズムに揃える。
  *
- *   ・**h2 以降に当たる規則が 1 つも無い** (wiki は深さを section の入れ子で
- *     表すので、見出しは常に h1。h2〜h6 はブラウザ既定のままだった)
- *   ・section.section > * の余白が当たらない
+ * **見出しはここでは扱わない。** 深さ別の大きさは common/style/.heading.css、
+ * 深さによらない見た目 (罫線・行間) は .base.css と .standard.css が
+ * theme_headings_selector() で両方の種別にまとめて当てている。
+ * 見出しだけ別扱いなのは、wiki と markdown で DOM の形が違うためで、
+ * 「どこに何を当てるか」を 1 箇所に集めないと必ずずれるから (.constants.php)。
  *
- * ここで同じリズムに揃える。テーマ固有の味付けは各テーマの .theme.css が
- * このあとに上書きする。
+ * テーマ固有の味付けは各テーマの .theme.css がこのあとに上書きする。
  */
 ?>
 /* markdown ================================== */
@@ -40,38 +41,6 @@ section.markdown > dl {
 }
 section.markdown > *:first-child {
     margin-top: 0;
-}
-
-/* 見出し。Markdown は深さを数字で表すので、大きさで段差を出す */
-section.markdown h1 {
-    font-size: <?php echo(THEME_FONT_SIZE_HUGE); ?>px;
-}
-section.markdown h2 {
-    font-size: <?php echo(THEME_FONT_SIZE_LARGE + 2); ?>px;
-}
-section.markdown h3 {
-    font-size: <?php echo(THEME_FONT_SIZE_LARGE); ?>px;
-}
-section.markdown h4,
-section.markdown h5,
-section.markdown h6 {
-    font-size: <?php echo(THEME_FONT_SIZE_NORMAL); ?>px;
-}
-section.markdown h1,
-section.markdown h2,
-section.markdown h3,
-section.markdown h4,
-section.markdown h5,
-section.markdown h6 {
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-    padding: <?php echo(theme_density_px(2)); ?>px 0;
-    line-height: 1.4;
-}
-section.markdown h4,
-section.markdown h5,
-section.markdown h6 {
-    border-bottom: none;
 }
 
 /* 引用。base.css の blockquote は wiki 用に white-space: pre になっている。

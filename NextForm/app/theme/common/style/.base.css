@@ -134,7 +134,8 @@ section.section:after {
 /* element special ========================================= */
 
 /* heading */
-h1 {
+/* h1 だけでは種別 markdown の h2〜h6 に当たらない (.constants.php を参照) */
+<?php echo(theme_headings_selector()); ?> {
     line-height: 100%;
 }
 

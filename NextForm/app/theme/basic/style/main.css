@@ -30,5 +30,6 @@ include(theme_get_common_dir_path() . '/.colors.php');
 <?php include(theme_get_common_dir_path() . '/style/.background-image.css'); ?>
 <?php include(theme_get_common_dir_path() . '/style/.standard.css'); ?>
 <?php include(theme_get_common_dir_path() . '/style/.markdown.css'); ?>
+<?php include(theme_get_common_dir_path() . '/style/.heading.css'); ?>
 /* form.css ================================= */
 <?php include(theme_get_common_dir_path() . '/style/.form.css'); ?>

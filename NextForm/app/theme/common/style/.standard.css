@@ -343,7 +343,8 @@ ul.messages {
 }
 
 /* base element modify ========================================= */
-h1 {
+/* 見出しは深さによらずこの見た目。深さ別の大きさは .heading.css が上書きする */
+<?php echo(theme_headings_selector()); ?> {
     border-bottom-style: solid;
     border-bottom-width: 1px;
     padding: 2px 0;

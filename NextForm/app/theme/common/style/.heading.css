@@ -1,0 +1,22 @@
+<?php
+/*
+ * 見出しの深さ → 文字の大きさ。
+ *
+ * 種別 wiki と種別 markdown で同じ深さの見出しが同じ大きさで出るように、
+ * 両方のセレクタを .constants.php の theme_heading_selectors() から出す。
+ *
+ * 上流の wiki 記法は深さを「同じ大きさ + インデント」で表していた。
+ * Markdown の見出しはフラットで、節がどこで終わるかが本文から決まらないため、
+ * インデントでは表せない。揃える方向は「大きさの段差」しかない。
+ * インデントは .base.css で外した。
+ *
+ * テーマは同じ関数を使って上書きできる (docs / plain がそうしている)。
+ */
+?>
+/* heading ================================== */
+
+<?php foreach(theme_heading_levels() as $heading_level) { ?>
+<?php echo(theme_heading_selectors($heading_level)); ?> {
+    font-size: <?php echo(theme_heading_font_size($heading_level)); ?>px;
+}
+<?php } ?>

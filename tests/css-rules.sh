@@ -77,10 +77,19 @@ rules_common() {
     check "アスキーアート pre.paa は折り返さない" \
           "bool(re.search(r'pre\.paa\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
 
-    # 種別 markdown のページ。wiki の出力とは構造が違うので、当たる規則が
-    # あることを名指しで見る (h2 以降はどのテーマでも規則が無かった)。
-    check "Markdown の h2 に大きさが指定されている" \
-          "bool(re.search(r'section\.markdown h2\s*\{[^}]*font-size', css, re.S))"
+    # 見出しの見え方が種別をまたいで揃っていること。
+    #
+    # 種別 wiki は深さを section.section の入れ子で表し要素は常に h1、
+    # 種別 markdown は h1〜h6 のフラットで、DOM の形が違う。セレクタを
+    # 別々に書くと片方だけ直したときにずれるので、同じ深さの wiki と
+    # markdown が**同じ規則の中に並んでいる**ことを見る
+    # (app/theme/common/.constants.php の theme_heading_selectors())。
+    check "見出しの深さ 1〜3 が wiki と markdown で同じ規則に入っている" \
+          "all(re.search(r'article\.main section\.page(\s*>\s*section\.section){%d}\s*>\s*h1,\s*article\.main section\.markdown h%d\s*\{[^}]*font-size' % (n, n), css, re.S) for n in (1, 2, 3))"
+    check "一番深い段に markdown の h4〜h6 が入っている" \
+          "bool(re.search(r'article\.main section\.markdown h4,\s*article\.main section\.markdown h5,\s*article\.main section\.markdown h6\s*\{[^}]*font-size', css, re.S))"
+    check "見出しは深いほど小さい" \
+          "(lambda a: a == sorted(a, reverse=True))([int(re.search(r'article\.main section\.markdown h%d\b[^{}]*\{[^}]*font-size:\s*([0-9]+)px' % n, css, re.S).group(1)) for n in (1, 2, 3, 4)])"
     check "Markdown の引用が pre 扱いのままになっていない" \
           "bool(re.search(r'section\.markdown blockquote\s*\{[^}]*white-space:\s*normal', css, re.S))"
 
@@ -131,8 +140,9 @@ rules_basic() {
 
 rules_plain() {
     rules_standard_layout
+    # 見出しの規則は種別 markdown の h2〜h6 も一緒に持つ (theme_headings_selector())
     check "見出しの下線が消えている (線と余白で段差を出す)" \
-          "bool(re.search(r'(^|\})\s*h1\s*\{[^}]*border-bottom:\s*none', css, re.S))"
+          "bool(re.search(r'(^|\})\s*h1,\s*section\.markdown h2[^{]*\{[^}]*border-bottom:\s*none', css, re.S))"
 }
 
 rules_docs() {

@@ -32,8 +32,8 @@ pre, code, tt {
 article.main {
     padding: 0 28px;
 }
-section.section > h1 {
-    margin-top: 32px;
+<?php echo(theme_heading_selectors_all()); ?> {
+    margin-top: <?php echo(theme_density_px(32)); ?>px;
 }
 article.main > footer {
     margin-top: 40px;
@@ -52,8 +52,9 @@ form.refpage h1 {
     letter-spacing: 0.02em;
 }
 
-/* 見出し: 下線をやめ、太字と余白で段差を出す */
-h1 {
+/* 見出し: 下線をやめ、太字と余白で段差を出す。
+   セレクタを共通の関数から出すので、種別 markdown の h2〜h6 にも同じだけ効く */
+<?php echo(theme_headings_selector()); ?> {
     border-bottom: none;
     padding: 0;
     font-weight: bold;
@@ -146,17 +147,6 @@ section.page a:visited {
     text-underline-offset: 2px;
 }
 
-/* Markdown の見出しも、線をやめて太字と余白で段差を出す */
-section.markdown h1,
-section.markdown h2,
-section.markdown h3,
-section.markdown h4,
-section.markdown h5,
-section.markdown h6 {
-    border-bottom: none;
-    padding: 0;
-    margin-top: <?php echo(theme_density_px(32)); ?>px;
-}
 section.markdown blockquote {
     border: none;
     border-left: solid 3px <?php trw_color_v(THEME_COLOR_TEXT, $plain_rule); ?>;
