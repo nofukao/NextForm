@@ -1,5 +1,5 @@
 ---
-title: フロントマターは本文に出ない
+title: ゴールデンマスター (フロントマター由来の題名)
 tags: [markdown, golden]
 ---
 

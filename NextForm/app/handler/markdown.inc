@@ -120,13 +120,17 @@ function markdown_append_html($dom, $html) {
 /*
  * 変換して HTML の文字列を返す。false は「ライブラリが無い」。
  *
+ * $front_matter には先頭のメタ情報が key => value の配列で入る (無ければ空)。
+ * ここで受け取れるようにしてあるのは、ライブラリの型を知る場所を増やさないため。
+ *
  * [[ページ名]] の相対指定を解決するために、変換中はどのページを描いているかを
  * 大域に置く。変換器はリクエストごとに 1 つを使い回し、1 回のリクエストで
  * 本文とサイドページの両方を描くことがあるので、前の値に必ず戻す。
  */
-function markdown_render_html(&$page, $contents) {
+function markdown_render_html(&$page, $contents, &$front_matter = null) {
     global $MARKDOWN_CURRENT_PAGENAME;
 
+    $front_matter = array();
     $converter = markdown_converter();
     if($converter === false)
 	return false;
@@ -134,23 +138,56 @@ function markdown_render_html(&$page, $contents) {
     $previous = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
     $MARKDOWN_CURRENT_PAGENAME = $page['name'];
     try {
-	$html = (string)$converter->convert($contents);
+	$rendered = $converter->convert($contents);
     } finally {
 	$MARKDOWN_CURRENT_PAGENAME = $previous;
     }
-    return $html;
+
+    if($rendered instanceof League\CommonMark\Extension\FrontMatter\FrontMatterProviderInterface) {
+	$data = $rendered->getFrontMatter();
+	if(is_array($data))
+	    $front_matter = $data;
+    }
+    return (string)$rendered;
+}
+
+/*
+ * フロントマターの title をページの題名にする。
+ *
+ * wiki 記法の &title{} と同じ経路に載せる。$page['title'] に入れておくと
+ * page_write() が meta['title'] に保存し (page.inc)、page_handle() が
+ * 次からその題名でページを開く。title_dom はいま描いている画面の題名で、
+ * 保存前のプレビューでも新しい題名が出るようにするために立てる。
+ *
+ * &title と同じく、**title: を消しても meta に残った題名は消えない**。
+ * 消すにはメタ情報の画面から消す (マニュアルにも同じ注意がある)。
+ * 挙動を種別でずらさないほうがよいと判断した。
+ */
+function markdown_set_title(&$page, $front_matter) {
+    if(!is_array($front_matter) || !isset($front_matter['title']))
+	return;
+    $title = trim((string)$front_matter['title']);
+    if($title === '')
+	return;
+
+    $page['title'] = $title;
+    $page['title_dom'] = dom_create_document();
+    sentence_append($page['title_dom'], $title . ' ', $page);
+    title_append_actual($page['title_dom'], dom_pagename($page['name']));
 }
 
 function markdown_convert(&$page, $dom, $contents = null) {
     if(is_null($contents))
 	$contents = page_get_contents($page);
 
-    $html = markdown_render_html($page, $contents);
+    $front_matter = array();
+    $html = markdown_render_html($page, $contents, $front_matter);
     if($html === false) {
 	message_error(l('Markdown library is missing. Showing the source instead.'));
 	markdown_source_append($page, $dom, $contents);
 	return false;
     }
+    markdown_set_title($page, $front_matter);
 
     $section = dom_append_child($dom, 'section', 'markdown');
     if(!markdown_append_html($section, $html))
@@ -317,14 +354,22 @@ function markdown_summary(&$page, $dom) {
 }
 
 /*
- * 保存前の整形。Markdown では何もしない。
+ * 保存前の整形。本文には手を入れない。
  *
  * wiki 記法の normalize は表の桁揃えなどを行うが、Markdown の原文は
  * 利用者が書いたとおりに残すべきで、整形すると別のツール (Obsidian など) と
  * 往復したときに差分が出る。この関数が無いと insert / replace / listedit /
  * templateedit の 4 画面が Markdown ページで動かないので、素通しで用意する。
+ *
+ * 本文は返すだけだが、**フロントマターの title だけはここで拾う**。
+ * wiki 記法の &title{} も wiki_normalize() の中の変換で拾われており、
+ * 保存の経路 (write / insert / replace / listedit / templateedit) が
+ * どれでも題名が付くのはそのため。同じ場所に置いて経路を揃える。
  */
 function markdown_normalize(&$page, $text) {
+    $front_matter = array();
+    markdown_render_html($page, $text, $front_matter);
+    markdown_set_title($page, $front_matter);
     return $text;
 }
 ?>
