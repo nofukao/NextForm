@@ -26,6 +26,7 @@ function text_summary(&$page, $dom) {
 }
 
 function text_edit(&$page, $dom, $type = 'text', $contents = null, $ticket = null) {
+    global $PAGE_TYPES_PREVIEWABLE;
     $has_permission = auth_warn($page['name'], 'write') && lock_warn($page);
     title_set_pagename('Editing $pagename$', $page['name']);
     $source_contents = page_get_contents($page);
@@ -61,7 +62,7 @@ function text_edit(&$page, $dom, $type = 'text', $contents = null, $ticket = nul
     if(!$has_permission)
 	dom_set_attribute($submit, 'disabled', 'disabled');
 
-    if($type == 'wiki') {
+    if(in_array($type, $PAGE_TYPES_PREVIEWABLE)) {
 	$li = dom_append_child($ul, 'li');
 	$submit = dom_append_child($li, 'input', '',
 				   array('type' => 'submit', 'name' => 'preview',
@@ -76,13 +77,28 @@ function text_edit(&$page, $dom, $type = 'text', $contents = null, $ticket = nul
     dom_append_child($label, 'input', '', $check_attrs);
     dom_append_text($label, l('Keep modify time'));
 
-    if($type == 'wiki') {
-	$li = dom_append_child($ul, 'li');
-	$manual_page_name = MANUAL_PAGENAME . '/' . LANG . '/Wiki/CheatSheet';
-	/* マニュアルは組み込みになったので、公式サイトへ逃げる経路は要らない */
-	$a = dom_append_link($li, url_make($manual_page_name), l('Wiki Cheat Sheet'));
-	dom_set_attribute($a, 'target', '_blank');
-    }
+    text_edit_append_cheat_sheet($ul, $type);
+}
+
+/*
+ * 記法の早見表へのリンク。
+ *
+ * マニュアルは組み込みになったので、公式サイトへ逃げる経路は要らない。
+ * ただし言語によっては訳が無い (英語版に Markdown のページはまだ無い) ので、
+ * 実在を確かめてから出す。無いページへのリンクを編集画面に置かない。
+ */
+function text_edit_append_cheat_sheet($ul, $type) {
+    global $PAGE_TYPE_CHEAT_SHEETS;
+    if(empty($PAGE_TYPE_CHEAT_SHEETS[$type]))
+	return;
+    $cheat_sheet = $PAGE_TYPE_CHEAT_SHEETS[$type];
+    $manual_page_name = MANUAL_PAGENAME . '/' . LANG . $cheat_sheet['page'];
+    if(!page_is_exists($manual_page_name))
+	return;
+
+    $li = dom_append_child($ul, 'li');
+    $a = dom_append_link($li, url_make($manual_page_name), l($cheat_sheet['label']));
+    dom_set_attribute($a, 'target', '_blank');
 }
 
 function text_write(&$page, $dom, $type = 'text') {

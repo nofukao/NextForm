@@ -22,6 +22,10 @@ $HANDLERS['markdown'] = array(
     'normalize' => 'markdown_normalize',
     );
 $PAGE_TYPES_TEXTBASE[] = 'markdown';
+$PAGE_TYPES_PREVIEWABLE[] = 'markdown';
+/* 早見表の役をするのはマニュアルの Markdown のページ (記法の一覧と対応表) */
+$PAGE_TYPE_CHEAT_SHEETS['markdown'] = array('page' => '/Markdown',
+					    'label' => 'Markdown Notation');
 
 define('MARKDOWN_VENDOR_AUTOLOAD', APP_DIR_PATH . '/vendor/autoload.php');
 

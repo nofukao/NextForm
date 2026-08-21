@@ -13,6 +13,9 @@ $HANDLERS['wiki'] = array(
     'normalize' => 'wiki_normalize',
     );
 $PAGE_TYPES_TEXTBASE[] = 'wiki';
+$PAGE_TYPES_PREVIEWABLE[] = 'wiki';
+$PAGE_TYPE_CHEAT_SHEETS['wiki'] = array('page' => '/Wiki/CheatSheet',
+					'label' => 'Wiki Cheat Sheet');
 
 $WIKI_TOKEN_SYMBOLS = array(
     "'''",

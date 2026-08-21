@@ -1,5 +1,21 @@
 <?php
 $HANDLERS = array();
+
+/*
+ * 編集画面の作りをページ種別ごとに決める表。
+ *
+ * $PAGE_TYPES_PREVIEWABLE   保存せずに変換結果を見られる種別
+ * $PAGE_TYPE_CHEAT_SHEETS   記法の早見表を持つ種別。値は
+ *                           array('page' => マニュアルの相対パス,
+ *                                 'label' => 表示名の言語キー)
+ *
+ * text.inc が種別名を直に比べていたため、種別 markdown はプレビューボタンが
+ * 出ず (markdown_write() は preview を処理できるのに押す口が無かった)、
+ * 早見表のリンクも出ないままだった。種別が増えるたびに text.inc を直さずに
+ * 済むよう、$PAGE_TYPES_TEXTBASE と同じ流儀でハンドラ側から登録する。
+ */
+$PAGE_TYPES_PREVIEWABLE = array();
+$PAGE_TYPE_CHEAT_SHEETS = array();
 require_once(APP_DIR_PATH . '/handler/wiki.inc');
 require_once(APP_DIR_PATH . '/handler/text.inc');
 require_once(APP_DIR_PATH . '/handler/markdown.inc');
