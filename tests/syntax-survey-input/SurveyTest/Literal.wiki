@@ -1,0 +1,4 @@
+&title そのまま表示のページ
+*&&calendar の書き方
+ &calendar;
+ &include([[どこか]]);

@@ -1,0 +1,3 @@
+&title 別名を使うページ
+*別名
+&direct(https://example.com/){外部へ}

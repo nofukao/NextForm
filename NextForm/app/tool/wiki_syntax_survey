@@ -1,0 +1,443 @@
+<?php
+/*
+ * 種別 wiki のページに、どの記法がどれだけ使われているかを数える。
+ *
+ *   php NextForm/app/tool/wiki_syntax_survey /path/to/wiki/index.php [オプション]
+ *
+ *     --base <ページ名>  そのページ以下だけを数える (既定はサイト全体)
+ *     --list <件数>      写せない記法を含むページ名を出す (既定 20、0 で全件)
+ *     --blockers-only    写せない記法だけを表に出す
+ *     --csv              集計を CSV で出す
+ *     --user <名前>      本文を読むのに使う管理者ユーザー名
+ *
+ * **読み取り専用**。storage/ には一切書き込まない。
+ *
+ * 何のための道具か:
+ *
+ *   wiki 記法のページを Markdown に変換して記法を一本化する、という案を
+ *   判断するには「変換すると何が失われるのか」を数で知る必要がある。
+ *   ファンクション (&calendar &include &calc など) に Markdown の対応物は
+ *   無く、変換は不可逆なので、実際にどれだけ使われているかが分からないまま
+ *   決めることはできない。この道具はその材料を出すためだけにある。
+ *
+ * 数え方:
+ *
+ *   正規表現で記法を探すのではなく、**wiki 記法のパーサそのもの**に数えさせる。
+ *   本文を wiki_lex() から wiki_blocks_to_tree() まで通し、できた木の
+ *   WikiApplyTree->id と WikiBlockTree->group を集計する。id はそのまま
+ *   演算子名 / ファンクション名になっている (handler/wiki/wiki_convert.inc)。
+ *   正規表現方式だと &pre の中に書かれた記号まで数えてしまうが、
+ *   パーサに数えさせればそういう取り違えが起きない。
+ *
+ *   ファンクションの対象 (&more{ ... } の中) は、木の上では生のトークンのまま
+ *   残っていて、変換のときに初めて解釈される。中に入っている記法も数えたいので、
+ *   対象のトークンはここでもう一度パーサに通す。
+ *
+ *   ただし**対象を文字としてそのまま出すファンクションは通さない**
+ *   ($SURVEY_LITERAL_TARGETS)。&pre の中に書かれた &ファンクション名 は
+ *   ただの文字であって、記法として使われているわけではない。通してしまうと
+ *   記法の説明を書いたページが、使ってもいない記法の山として数えられる。
+ *
+ * 分類:
+ *
+ *   「出現」は記法が現れた箇所の数で、**塊と行の両方を数える**。3 行の表なら
+ *   表そのもので 1、行で 3 の計 4 になる。記法どうしの大小を見るための数で、
+ *   判断に使うのは分類と「その記法を使っているページ数」のほう。
+ *
+ *   a  Markdown にそのまま写せる
+ *   b  写せるが落ちるものがある (表のセル結合、節の折りたたみなど)
+ *   c  Markdown に無い
+ *
+ *   **登録されている記法で、表に無いものは c として数える。** ファンクションが
+ *   増えたときに、黙って「写せる」側に入って結果を甘くしないため。
+ *   分類の正本は組み込みマニュアルの「Wiki記法との対応」。
+ *
+ *   どこにも登録されていない名前 (&calcの方は… のように & のあとが日本語の
+ *   文になっているもの) は、ファンクションではない。変換器はそれを文字として
+ *   出す (wiki_convert_from_tree の最後の分岐) ので、a として数える。
+ *
+ * 終了コード: 0 = 全ページ写せる / 1 = 写せないページがある / 2 = 使い方の誤り
+ */
+
+$argv = $_SERVER['argv'];
+
+function usage() {
+    fprintf(STDERR, "Usage: php wiki_syntax_survey <path/to/wiki/index.php>\n");
+    fprintf(STDERR, "                              [--base <pagename>] [--list <n>]\n");
+    fprintf(STDERR, "                              [--blockers-only] [--csv] [--user <name>]\n");
+    exit(2);
+}
+
+if(count($argv) < 2)
+    usage();
+
+$index_path = $argv[1];
+$base_pagename = '';
+$list_max = 20;
+$is_blockers_only = false;
+$is_csv = false;
+$user = '';
+
+for($i = 2; $i < count($argv); $i++) {
+    switch($argv[$i]) {
+    case '--base':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$base_pagename = $argv[++$i];
+	break;
+    case '--list':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$list_max = (int)$argv[++$i];
+	break;
+    case '--blockers-only':
+	$is_blockers_only = true;
+	break;
+    case '--csv':
+	$is_csv = true;
+	break;
+    case '--user':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$user = $argv[++$i];
+	break;
+    default:
+	usage();
+    }
+}
+
+require_once(dirname(dirname(__FILE__)) . '/tool/common');
+eval_index_php($index_path);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+/*
+ * 本文を読む。CLI にはセッションが無く auth_get_user() が false を返すため、
+ * 読み取りに権限が要るサイトでは弾かれる。search_index_check と同じ方法で
+ * 管理者を差し込む。
+ */
+if($user !== '')
+    $GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $user, 'method' => 'digest');
+head_tags_init();
+
+/*
+ * 記法の分類表。値は array(分類, 説明)。
+ * 分類の正本は組み込みマニュアルの「Wiki記法との対応」で、ここはその写し。
+ */
+$SURVEY_CLASSES = array(
+    /* --- a: そのまま写せる --- */
+    'root'          => array('a', '文書そのもの'),
+    'paragraph'     => array('a', '段落'),
+    'section'       => array('a', '節 -> 見出し'),
+    'list'          => array('a', '箇条書き'),
+    'blockquote'    => array('a', '引用'),
+    'hr'            => array('a', '区切り線'),
+    'pre'           => array('a', '整形済みテキスト -> コードブロック'),
+    'code'          => array('a', 'コード'),
+    'link'          => array('a', 'リンク'),
+    'bracelink'     => array('a', 'ページへのリンク'),
+    'em'            => array('a', '強調'),
+    'strong'        => array('a', '重要'),
+    'del'           => array('a', '打ち消し'),
+    'br'            => array('a', '改行'),
+    'title'         => array('a', 'ページの題名 -> フロントマターの title'),
+    'entity'        => array('a', '文字'),
+    'entity_number' => array('a', '文字 (番号指定)'),
+
+    /* --- b: 写せるが落ちるものがある --- */
+    'table'         => array('b', '表 (セル結合・幅指定・並べ替えは落ちる)'),
+    'csv'           => array('b', 'CSV 形式の表 (表には直せる)'),
+    'deflist'       => array('b', '関連リスト (Markdown では箇条書きか表で代用)'),
+    'plain'         => array('b', 'そのまま表示 (エスケープで代用)'),
+    'paa'           => array('b', 'アスキーアート (折り返しの指定は落ちる)'),
+    'through'       => array('b', '素通し'),
+
+    /* --- c: Markdown に無い --- */
+    'align'         => array('c', '配置の指定'),
+    'alias'         => array('c', '記法の別名の定義'),
+    'bgcolor'       => array('c', '背景色'),
+    'btime'         => array('c', '作成日時の埋め込み'),
+    'calc'          => array('c', '数値計算'),
+    'calclist'      => array('c', '数値計算 (行頭)'),
+    'calendar'      => array('c', 'カレンダー'),
+    'color'         => array('c', '文字色'),
+    'counter'       => array('c', 'カウンタ'),
+    'datepages'     => array('c', '日付のページの一覧'),
+    'export'        => array('c', '書き出し'),
+    'feed'          => array('c', '新着の一覧'),
+    'include'       => array('c', '他のページの取り込み'),
+    'index'         => array('c', '見出しの一覧'),
+    'insert'        => array('c', '書き込みフォーム'),
+    'inserttemplate'=> array('c', 'テンプレートからの書き込み'),
+    'listadd'       => array('c', '箇条書きへの追記フォーム'),
+    'math'          => array('c', '数式'),
+    'meta'          => array('c', 'メタ情報の埋め込み'),
+    'more'          => array('c', '折りたたみ'),
+    'mtime'         => array('c', '更新日時の埋め込み'),
+    'pages'         => array('c', 'ページの一覧'),
+    'popularpages'  => array('c', 'よく見られているページ'),
+    'redirect'      => array('c', '転送'),
+    'search'        => array('c', '検索結果の埋め込み'),
+    'select'        => array('c', '選択肢'),
+    'size'          => array('c', '文字の大きさ'),
+    'taro'          => array('c', '飾り'),
+    'time'          => array('c', '日時の埋め込み'),
+    'toro'          => array('c', '飾り'),
+    'toratora'      => array('c', '飾り'),
+    'wikiexample'   => array('c', '記法の実演'),
+    'writepage'     => array('c', 'ページの書き込み'),
+    );
+
+$SURVEY_CLASS_LABELS = array(
+    'a' => 'そのまま',
+    'b' => '一部落ちる',
+    'c' => '無い',
+    );
+
+/*
+ * 対象を文字としてそのまま出すファンクション。中身は記法ではないので数えない。
+ * handler/wiki/function/ で wiki_tokens_to_string_without_escape() を使って
+ * いるものと、TeX の原文を渡す math がこれにあたる。
+ *
+ * &wikiexample は原文を見せたうえで変換もするが、中身は「記法の説明」であって
+ * そのページが使っている記法ではないので、同じ扱いにする。
+ */
+$SURVEY_LITERAL_TARGETS = array(
+    'pre' => true, 'code' => true, 'paa' => true,
+    'plain' => true, 'alias' => true, 'math' => true, 'wikiexample' => true,
+    );
+
+/*
+ * 別名は展開先のファンクションで分類する。
+ *
+ * $WIKI_ALIASES['direct'] は '&link(raw,<PARAMS>){<TARGET>}' で、中身はリンク。
+ * Markdown に写せる。「別名だから」というだけで写せない側に入れると、
+ * リンクをよく使うサイトが軒並み写せない扱いになって、数が意味を失う。
+ */
+function survey_resolve_alias($id, $depth = 0) {
+    global $WIKI_ALIASES;
+    if($depth > 4 || !isset($WIKI_ALIASES[$id]))
+	return $id;
+    if(!preg_match('/&([A-Za-z_][A-Za-z0-9_]*)/', $WIKI_ALIASES[$id], $matches))
+	return $id;
+    return survey_resolve_alias($matches[1], $depth + 1);
+}
+
+/* この wiki が記法として知っている名前か */
+function survey_is_known($id) {
+    global $WIKI_OPERATORS_FUNCTION, $WIKI_ALIASES;
+    global $WIKI_OPERATORS_LINE_HEAD, $WIKI_OPERATORS_INLINE;
+    return $id === 'paragraph' ||
+	isset($WIKI_OPERATORS_FUNCTION[$id]) || isset($WIKI_ALIASES[$id]) ||
+	isset($WIKI_OPERATORS_LINE_HEAD[$id]) || isset($WIKI_OPERATORS_INLINE[$id]);
+}
+
+function survey_class($id) {
+    global $SURVEY_CLASSES;
+    $id = survey_resolve_alias($id);
+    if(isset($SURVEY_CLASSES[$id]))
+	return $SURVEY_CLASSES[$id][0];
+    /* 記法ではない名前は文字として出るだけ。写せる */
+    if(!survey_is_known($id))
+	return 'a';
+    /* 記法なのに表に無い。増えたファンクションが黙って甘い側に入らないように */
+    return 'c';
+}
+
+function survey_description($id) {
+    global $SURVEY_CLASSES, $WIKI_ALIASES;
+    $prefix = '';
+    if(isset($WIKI_ALIASES[$id])) {
+	$resolved = survey_resolve_alias($id);
+	if($resolved !== $id) {
+	    $prefix = '別名 -> ' . $resolved . ' / ';
+	    $id = $resolved;
+	}
+    }
+    if(isset($SURVEY_CLASSES[$id]))
+	return $prefix . $SURVEY_CLASSES[$id][1];
+    if(!survey_is_known($id))
+	return 'ファンクションではない文字';
+    return $prefix . '(分類表に無い。要確認)';
+}
+
+/*
+ * 木を辿って記法を数える。$counts は id => 出現回数。
+ *
+ * ファンクションの対象 (WikiApplyTree->target) は生のトークンなので、
+ * もう一度パーサに通してから辿る。通さないと &more{ ... } の中に書かれた
+ * 表や箇条書きが数から漏れる。
+ */
+function survey_walk(&$context, $tree, &$counts, $depth = 0) {
+    if($depth > 32)		/* 壊れた入力で深追いしない */
+	return;
+    if(is_array($tree)) {
+	foreach($tree as $child)
+	    survey_walk($context, $child, $counts, $depth);
+	return;
+    }
+    if(!($tree instanceof WikiTree))
+	return;
+
+    if($tree instanceof WikiApplyTree) {
+	global $SURVEY_LITERAL_TARGETS;
+	$id = $tree->id;
+	$counts[$id] = isset($counts[$id]) ? $counts[$id] + 1 : 1;
+	survey_walk($context, $tree->children, $counts, $depth + 1);
+	if(empty($SURVEY_LITERAL_TARGETS[$id]))
+	    survey_walk_tokens($context, $tree->target, $counts, $depth + 1);
+	return;
+    }
+    if($tree instanceof WikiBlockTree) {
+	$id = ($tree->group === null || $tree->group === '') ? 'paragraph' : $tree->group;
+	$counts[$id] = isset($counts[$id]) ? $counts[$id] + 1 : 1;
+	survey_walk($context, $tree->children, $counts, $depth + 1);
+	return;
+    }
+    if($tree instanceof WikiDivisionTree) {
+	survey_walk($context, $tree->children, $counts, $depth + 1);
+	return;
+    }
+}
+
+/* トークンの並びを木にしてから辿る */
+function survey_walk_tokens(&$context, $tokens, &$counts, $depth) {
+    if(empty($tokens) || !is_array($tokens))
+	return;
+    $target = $tokens;		/* 参照で渡すので複製してから */
+    $subtrees = &wiki_parse_tokens_to_subtrees($context, $target);
+    $blocks = &wiki_subtrees_to_blocks($subtrees);
+    survey_walk($context, $blocks, $counts, $depth);
+}
+
+/* 1 ページ分の記法を数える。読めなければ false */
+function survey_page($pagename, &$counts) {
+    $page = page_read($pagename);
+    $contents = page_get_contents($page);
+    if(!is_string($contents) || $contents === '')
+	return true;
+
+    $context = wiki_default_context($page);
+    $tokens = &wiki_lex($context, $contents);
+    if(empty($tokens))
+	return true;
+    if(!empty($context['append_line_head']))
+	array_unshift($tokens, new WikiLineHeadToken('', $tokens[0]->position, 0));
+    $subtrees = &wiki_parse_tokens_to_subtrees($context, $tokens);
+    $blocks = &wiki_subtrees_to_blocks($subtrees);
+    $tree = &wiki_blocks_to_tree($blocks);
+    survey_walk($context, $tree, $counts);
+    return true;
+}
+
+/* --- 集計 ---------------------------------------------------- */
+
+$total_counts = array();	/* id => 出現回数 */
+$page_counts = array();		/* id => その記法を使っているページ数 */
+$blocker_pages = array();	/* ページ名 => 分類 c の記法の数 */
+$lossy_page_num = 0;		/* c は無いが b を含むページ */
+$wiki_page_num = 0;
+
+$default_type = defined('DEFAULT_PAGE_TYPE') ? DEFAULT_PAGE_TYPE : 'wiki';
+foreach(page_find($base_pagename, array('is_pagename_only' => true)) as $listed) {
+    $pagename = $listed['name'];
+    $page = page_read($pagename);
+    $type = default_value($page['meta']['type'], $default_type);
+    if($type !== 'wiki')
+	continue;
+    $wiki_page_num++;
+
+    $counts = array();
+    survey_page($pagename, $counts);
+
+    $blockers = 0;
+    $lossy = 0;
+    foreach($counts as $id => $count) {
+	$total_counts[$id] = isset($total_counts[$id]) ? $total_counts[$id] + $count : $count;
+	$page_counts[$id] = isset($page_counts[$id]) ? $page_counts[$id] + 1 : 1;
+	$class = survey_class($id);
+	if($class === 'c')
+	    $blockers += $count;
+	else if($class === 'b')
+	    $lossy += $count;
+    }
+    if($blockers > 0)
+	$blocker_pages[$pagename] = $blockers;
+    else if($lossy > 0)
+	$lossy_page_num++;
+}
+
+/* --- 出力 ---------------------------------------------------- */
+
+function survey_report_ratio($label, $num, $total) {
+    printf("%s: %d / %d", $label, $num, $total);
+    if($total > 0)
+	printf(" (%.1f%%)", $num * 100.0 / $total);
+    printf("\n");
+}
+
+function survey_compare($a, $b) {
+    global $total_counts;
+    $class_order = array('c' => 0, 'b' => 1, 'a' => 2);
+    $ca = $class_order[survey_class($a)];
+    $cb = $class_order[survey_class($b)];
+    if($ca !== $cb)
+	return $ca - $cb;
+    return $total_counts[$b] - $total_counts[$a];
+}
+
+$ids = array_keys($total_counts);
+usort($ids, 'survey_compare');
+
+if($is_csv) {
+    printf("notation,class,occurrences,pages,description\n");
+    foreach($ids as $id) {
+	$class = survey_class($id);
+	if($is_blockers_only && $class !== 'c')
+	    continue;
+	printf("%s,%s,%d,%d,\"%s\"\n",
+	       $id, $class, $total_counts[$id], $page_counts[$id],
+	       str_replace('"', '""', survey_description($id)));
+    }
+} else {
+    printf("対象: %s\n", dirname(realpath($index_path)));
+    if($base_pagename !== '')
+	printf("範囲: %s 以下\n", $base_pagename);
+    printf("種別 wiki のページ: %d 件\n\n", $wiki_page_num);
+
+    printf("%-16s %8s %8s  %-10s %s\n", '記法', '箇所', 'ページ', 'Markdown', '説明');
+    printf("%s\n", str_repeat('-', 78));
+    foreach($ids as $id) {
+	$class = survey_class($id);
+	if($is_blockers_only && $class !== 'c')
+	    continue;
+	printf("%-16s %8d %8d  %-10s %s\n",
+	       $id, $total_counts[$id], $page_counts[$id],
+	       $SURVEY_CLASS_LABELS[$class], survey_description($id));
+    }
+    printf("%s\n\n", str_repeat('-', 78));
+
+    $blocker_num = count($blocker_pages);
+    $clean_num = $wiki_page_num - $blocker_num - $lossy_page_num;
+    survey_report_ratio('そのまま写せるページ', $clean_num, $wiki_page_num);
+    survey_report_ratio('一部が落ちるページ  ', $lossy_page_num, $wiki_page_num);
+    survey_report_ratio('写せないページ      ', $blocker_num, $wiki_page_num);
+
+    if($blocker_num > 0) {
+	arsort($blocker_pages);
+	printf("\n写せない記法を含むページ (%d 件", $blocker_num);
+	if($list_max > 0 && $blocker_num > $list_max)
+	    printf(" のうち %d 件", $list_max);
+	printf("):\n");
+	$shown = 0;
+	foreach($blocker_pages as $pagename => $count) {
+	    if($list_max > 0 && $shown >= $list_max)
+		break;
+	    printf("\t%s (%d 箇所)\n", $pagename, $count);
+	    $shown++;
+	}
+    }
+}
+
+exit(empty($blocker_pages) ? 0 : 1);
+?>
