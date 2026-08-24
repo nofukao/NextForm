@@ -44,6 +44,15 @@ tar czf "$OUT" --sort=name --owner=0 --group=0 --numeric-owner -C "$WORK" NextFo
 # 終了して tar が SIGPIPE で落ち、pipefail がそれを失敗として拾ってしまう。
 LIST="$(tar tzf "$OUT")"
 
+# 一覧に行があるか。**パイプで grep -q に渡してはいけない。**
+# 上と同じ理由で、一致した瞬間に grep が終了し、まだ書いている echo が
+# SIGPIPE で落ちて、pipefail が「見つかった」を「失敗」に変えてしまう。
+# 一覧が小さいうちは echo が先に書き終わるので表面化しなかったが、
+# ライブラリの同梱で 52KB になり、実行するたびに結果が変わるようになった。
+list_has() {
+    [[ $'\n'"$LIST"$'\n' == *$'\n'"$1"$'\n'* ]]
+}
+
 echo "作成: $OUT  ($(stat -c %s "$OUT") bytes, ref=$REF)"
 echo
 echo "内容の確認:"
@@ -51,15 +60,15 @@ echo "$LIST" | wc -l | sed 's/^/  ファイル数: /'
 echo "$LIST" | grep -E '^NextForm/[^/]*$' | sed 's/^/  /'
 
 # 生成物や実行時データが混ざっていないこと
-if echo "$LIST" | grep -qE '^NextForm/(theme|storage)/|^NextForm/install-info\.dat'; then
+for generated in $(echo "$LIST" | grep -E '^NextForm/(theme|storage)/|^NextForm/install-info\.dat' || true); do
     echo
-    echo "エラー: 生成物が含まれています" >&2
+    echo "エラー: 生成物が含まれています: $generated" >&2
     exit 1
-fi
+done
 
 # アップグレードに必要なものが入っていること
 for required in NextForm/UPGRADE.md NextForm/app/tool/upgrade NextForm/app/version.inc; do
-    if ! echo "$LIST" | grep -qx "$required"; then
+    if ! list_has "$required"; then
         echo
         echo "エラー: $required が含まれていません" >&2
         exit 1
