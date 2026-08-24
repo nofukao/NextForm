@@ -1,4 +1,8 @@
 <?php
+/*
+ * 種別の登録。**読み込む順がそのまま画面の選択肢の並びになる** ($HANDLERS の
+ * キーの順)。新規作成の種別の欄はこの順で出るので、よく使うものを先に置く。
+ */
 $HANDLERS = array();
 
 /*
@@ -16,9 +20,9 @@ $HANDLERS = array();
  */
 $PAGE_TYPES_PREVIEWABLE = array();
 $PAGE_TYPE_CHEAT_SHEETS = array();
+require_once(APP_DIR_PATH . '/handler/markdown.inc');
 require_once(APP_DIR_PATH . '/handler/wiki.inc');
 require_once(APP_DIR_PATH . '/handler/text.inc');
-require_once(APP_DIR_PATH . '/handler/markdown.inc');
 require_once(APP_DIR_PATH . '/handler/file.inc');
 
 /*
@@ -93,6 +97,14 @@ function handle(&$page, $dom, $action = '') {
 	$type = default_value($args['newpage_type'], DEFAULT_PAGE_TYPE);
 	if($action == 'show') {
 	    if(!empty($page['is_main'])) {
+		/*
+		 * 画面から作るときだけ NEWPAGE_DEFAULT_TYPE を初期選択にする。
+		 * DEFAULT_PAGE_TYPE のままにすると、&insert &listadd
+		 * &writepage が種別を指定せずに書き込むページまで一緒に動く
+		 * (setup.inc の 2 つの定数の説明を参照)。
+		 */
+		if(empty($args['newpage_type']))
+		    $type = NEWPAGE_DEFAULT_TYPE;
 		$action = 'edit';
 
 		$form = dom_append_form($dom, array('page' => $page['name']), 'newpage_type', 'GET');

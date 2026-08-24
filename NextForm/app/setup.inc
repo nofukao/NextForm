@@ -105,6 +105,18 @@ set_const('PAGE_FILE_SHOW_GPS', 'false');
 set_const('CONTENTS_READ_BUFFER_SIZE', 4096);
 set_const('CONTENTS_READ_MAX_SIZE', 1024 * 1024);
 
+/*
+ * ページ種別の既定値は 2 つある。役割が違うので分けてある。
+ *
+ *   NEWPAGE_DEFAULT_TYPE  画面から新規作成するときに種別の欄で選ばれている種別
+ *   DEFAULT_PAGE_TYPE     種別がどこにも書かれていないときの落とし先
+ *
+ * 後者を markdown にしてはいけない。&insert &listadd &writepage (&newpage) が
+ * 作るページは種別を指定せずに書き込むので、ここに落ちる。これらは wiki 記法の
+ * ファンクションで、書き込む中身も wiki 記法なので、wiki のままにしておく。
+ * 種別の読めないページの落とし先でもある。
+ */
+set_const('NEWPAGE_DEFAULT_TYPE', 'markdown');
 set_const('DEFAULT_PAGE_TYPE', 'wiki');
 
 set_const('FFMPEG_PATH', 'ffmpeg');
@@ -269,7 +281,8 @@ function setup_read($name) {
 |{PAGE_FILE_SHOW_GPS|false|種別fileのページでGPS情報を表示するか|}
 |{CONTENTS_READ_BUFFER_SIZE|4096|ページの内容を表示するときのバッファサイズ|}
 |{CONTENTS_READ_MAX_SIZE|1024 * 1024|メモリに読み込めるページ容量の最大サイズ|}
-|{DEFAULT_PAGE_TYPE|wiki|デフォルトのページ種別|}
+|{NEWPAGE_DEFAULT_TYPE|markdown|新規作成の画面で最初に選ばれているページ種別|}
+|{DEFAULT_PAGE_TYPE|wiki|種別が指定されなかったときのページ種別。&&insertなどが作るページが該当する|}
 |{FFMPEG_PATH|ffmpeg|ffmpegコマンドの名称|}
 |{SEARCH_SNIPPET_LENGTH|30|検索結果のスニペットの文字数|}
 |{SEARCH_RESULTS_PER_PAGE|50|検索結果を1画面に出す件数(0で全件)|}

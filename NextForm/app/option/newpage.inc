@@ -40,7 +40,7 @@ function newpage_dom_append_form($dom, $default_name = '') {
     
     $label = dom_append_child($form, 'label');
     dom_append_text($label, l('Type'));
-    dom_append_selector($label, 'newpage_type', $options, DEFAULT_PAGE_TYPE);
+    dom_append_selector($label, 'newpage_type', $options, NEWPAGE_DEFAULT_TYPE);
 
     $submit = dom_append_child($form, 'input', '', array('type' => 'submit', 'value' => l('Create')));
 }
