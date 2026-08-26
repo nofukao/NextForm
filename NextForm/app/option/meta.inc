@@ -35,9 +35,16 @@ function meta_show(&$args, $dom) {
     $default_value = isset($page['meta']['title']) ? $page['meta']['title'] : '';
     dom_append_child($dd, 'input', 'title',
 		     array('type' => 'text', 'name' => 'title', 'value' => $default_value));
-    if(page_get_type($page) === 'wiki') {
+    /*
+     * 本文が題名を決める種別では、ここで付けた題名が次の本文保存で
+     * 置き換わる。入力欄のすぐ横で断っておく。
+     */
+    $title_notices = array('wiki'     => 'overwritten with &title wiki function',
+			   'markdown' => 'overwritten with front matter title');
+    $type = page_get_type($page);
+    if(isset($title_notices[$type])) {
 	$small = dom_append_child($dd, 'small');
-	dom_append_text($small, l('overwritten with &title wiki function'));
+	dom_append_text($small, l($title_notices[$type]));
     }
 
     $dt = dom_append_child($dl, 'dt');

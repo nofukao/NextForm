@@ -231,7 +231,9 @@ $LANGUAGE['ja'] = array(
     'Description' => '説明',
     'referred by search engines' => '検索エンジンに利用されます',
     'overwritten with &title wiki function' =>
-    'wikiの&titleを使用している場合は&titleが優先されます．',
+    '本文の&titleが優先されます．本文から&titleを消すとここの題名も消えます．',
+    'overwritten with front matter title' =>
+    'フロントマターのtitle:が優先されます．そちらを消すとここの題名も消えます．',
 
     'All pages' => '全ページ一覧',
     'Display table style' => '表形式で表示する',

@@ -161,9 +161,32 @@ function wiki_texts(&$page) {
  * 実際 substr() が範囲外になって空文字を返し、$tr_text[0] が
  * 「Uninitialized string offset 0」の警告を出していた。空の判定も足す。
  */
+/*
+ * 保存前の整形。表の桁を揃えるのが主な仕事。
+ *
+ * ついでに **&title{} が本文から消えたら題名も消す**。ここでの変換は
+ * ファンクションを実際に走らせるので、&title があれば wiki_operator_title()
+ * が $page['title'] を立てる。立たなければ本文に &title は無い。
+ *
+ * 前の変換の結果が残っていると「あった」と誤って判定するので、先に落とす。
+ * (?option=insert などは同じ $page を使い回す)
+ *
+ * 消すのは保存の経路だけ。表示の経路 (wiki_convert) では消さない。
+ * storage には残っているのに画面にだけ出ない、という食い違いを作らないため。
+ * Markdown のフロントマターと同じ約束にしてある。
+ */
 function wiki_normalize(&$page, $text) {
+    unset($page['title']);
+
     $trial_dom = dom_create_document();
     wiki_convert($page, $trial_dom, $text);
+
+    if(!isset($page['title'])) {
+	/* 空文字が「消す」の合図 (page_write)。meta を直に落としてはいけない */
+	$page['title'] = '';
+	unset($page['title_dom']);
+    }
+
     $offset = 0;
     $xpath = new DOMXPath(dom_owner($trial_dom));
     $tables = $xpath->query('//table[@data-twp][not(ancestor::section[@data-pagename])]');
