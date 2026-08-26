@@ -301,6 +301,10 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] `&insert` `&listadd` (`&comment`) `&writepage` (`&newpage`) が
       **wiki 記法のページを作る** (markdown にならない)
 - [ ] Markdown のページを検索して、結果から開くと**語がハイライトされる**
+- [ ] 既存の Markdown ページがある場合、**検索インデックスを再構築する**。
+      これまでフロントマターが本文として索引に入っていたので、
+      `app/tool/search_index_check --deep` に「本文に無い ngram」として出る。
+      検索結果は本文で照合し直すので実害は無いが、索引がずれた状態が残る
 - [ ] 一覧と検索の体感速度が落ちていない
 - [ ] マニュアルに「Wiki記法との対応」の節と、フロントマターの `tags:` の
       説明がある
