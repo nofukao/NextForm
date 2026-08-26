@@ -161,8 +161,37 @@ function dom_has_class($dom, $class) {
     return in_array($class, explode(' ', dom_get_attribute($dom, 'class')));
 }
 
+/*
+ * 子を持たない要素に、空のテキストを 1 つ足す。
+ *
+ * 直列化は saveXML() なので、子が無い要素は XML の自己終了形 <x/> になる。
+ * HTML のパーサは section や div の自己終了を認めず、そこを「開いたまま」と
+ * 見なして後ろの要素を中に取り込む。本文が空の markdown ページで
+ * <section class="markdown"/> が出たとき、footer が article.main の直下から
+ * 外れて枠が消えたのがこれ。td や li でも同じことが起きる。
+ *
+ * 上流も同じ罠を tool_page_tags() で手当てしている
+ * (dom_append_text($dd, '') を 1 つ置いてある)。同じ手を直列化の直前に
+ * まとめて掛ける。void 要素には足さない (dom_model.inc の表)。
+ */
+function dom_expand_empty_elements($dom) {
+    global $DOM_VOID_TAGNAMES;
+    foreach($dom->childNodes as $child) {
+	if(!($child instanceof DOMElement))
+	    continue;
+	if($child->hasChildNodes()) {
+	    dom_expand_empty_elements($child);
+	    continue;
+	}
+	if(isset($DOM_VOID_TAGNAMES[strtolower($child->nodeName)]))
+	    continue;
+	$child->appendChild(dom_owner($child)->createTextNode(''));
+    }
+}
+
 function dom_save_html($dom) {
     $owner = dom_owner($dom);
+    dom_expand_empty_elements($dom);
     $output = '';
     foreach($dom->childNodes as $child) {
 	$output .= $owner->saveXML($child);

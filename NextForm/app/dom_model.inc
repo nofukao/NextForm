@@ -54,6 +54,31 @@ $DOM_PHRASING_CONTENT_TAGNAMES = array(
     'wbr' => true,
     );
 
+/*
+ * 子を持てない要素 (void 要素)。
+ *
+ * dom_save_html() が空の要素へ空テキストを 1 つ足すときに、ここに載っている
+ * ものは避ける。<br></br> のように書くと HTML のパーサが br を 2 つと数える
+ * ため、足してはいけない。
+ */
+$DOM_VOID_TAGNAMES = array(
+    'area' => true,
+    'base' => true,
+    'br' => true,
+    'col' => true,
+    'embed' => true,
+    'hr' => true,
+    'img' => true,
+    'input' => true,
+    'keygen' => true,
+    'link' => true,
+    'meta' => true,
+    'param' => true,
+    'source' => true,
+    'track' => true,
+    'wbr' => true,
+    );
+
 function dom_is_phrasing_content($dom) {
     global $DOM_PHRASING_CONTENT_TAGNAMES;
     if($dom instanceof DOMText)
