@@ -1,20 +1,20 @@
 <?php
+/*
+ * タグの画面 (option/tag.inc) からの書き込み。
+ *
+ * タグ一覧の件数を直すのは page_write() の側。write_tag を使う経路が
+ * ここだけではなくなったため (Markdown のフロントマター)、両方で呼ぶと
+ * 二重に数えてしまう。
+ */
 function tag_set_page_tags(&$page, $tags) {
     $uniq_tags = array();
     foreach($tags as $tag) {
 	$uniq_tags[$tag] = true;
     }
-    $uniq_tags = array_keys($uniq_tags);
-
-    $old_tags = tag_get_page_tags($page);
-    
-    $page['write_tag'] = list_to_string($uniq_tags);
+    $page['write_tag'] = list_to_string(array_keys($uniq_tags));
 
     $fp = page_open_contents($page);
-    $status = page_write($page, $fp, $page['meta']['ticket']);
-    if($status)
-	tag_alltags_update($old_tags, $uniq_tags);
-    return $status;
+    return page_write($page, $fp, $page['meta']['ticket']);
 }
 
 function tag_get_page_tags(&$page) {

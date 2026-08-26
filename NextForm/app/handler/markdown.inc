@@ -166,28 +166,95 @@ function markdown_render_html(&$page, $contents, &$front_matter = null) {
 }
 
 /*
- * フロントマターの title をページの題名にする。
+ * フロントマターの title / tags をページの meta に写す。
  *
- * wiki 記法の &title{} と同じ経路に載せる。$page['title'] に入れておくと
+ * $is_write が真のとき (= 保存の経路) は、**書いていない項目を消す**。
+ * フロントマターは「そのページの題名とタグを本文の中で決める」場所なので、
+ * 宣言を消したのに値が残ると、ファイルを見てもページの状態が分からなくなる。
+ * 外のエディタと往復させる前提の記法なので、ファイルのほうを正とする。
+ * 代償として、メタ情報の画面やタグの画面で付けた値は、次に本文を保存した
+ * ときに消える。
+ *
+ * 表示の経路 (markdown_convert) では消さない。storage には残っているのに
+ * 画面にだけ出ない、という食い違いを作らないため。
+ *
+ * wiki 記法の &title{} は「消しても meta に残る」ままにしてある。
+ * あちらは本文の中に埋める記法で、題名を宣言する場所が本文の外に無い。
+ */
+function markdown_apply_front_matter(&$page, $front_matter, $is_write = false) {
+    if(!is_array($front_matter))
+	$front_matter = array();
+    markdown_set_title($page, $front_matter, $is_write);
+    markdown_set_tags($page, $front_matter, $is_write);
+}
+
+/*
+ * 題名。wiki 記法の &title{} と同じ経路に載せる。$page['title'] に入れておくと
  * page_write() が meta['title'] に保存し (page.inc)、page_handle() が
  * 次からその題名でページを開く。title_dom はいま描いている画面の題名で、
  * 保存前のプレビューでも新しい題名が出るようにするために立てる。
- *
- * &title と同じく、**title: を消しても meta に残った題名は消えない**。
- * 消すにはメタ情報の画面から消す (マニュアルにも同じ注意がある)。
- * 挙動を種別でずらさないほうがよいと判断した。
  */
-function markdown_set_title(&$page, $front_matter) {
-    if(!is_array($front_matter) || !isset($front_matter['title']))
+function markdown_set_title(&$page, $front_matter, $is_clearable = false) {
+    $title = '';
+    if(isset($front_matter['title']) && !is_array($front_matter['title']))
+	$title = trim((string)$front_matter['title']);
+
+    if($title === '') {
+	if($is_clearable) {
+	    /*
+	     * page_write() は isset($page['title']) のときしか meta を書かない。
+	     * 「消す」には meta のほうを直に落とす必要がある。
+	     */
+	    unset($page['title']);
+	    unset($page['title_dom']);
+	    unset($page['meta']['title']);
+	}
 	return;
-    $title = trim((string)$front_matter['title']);
-    if($title === '')
-	return;
+    }
 
     $page['title'] = $title;
     $page['title_dom'] = dom_create_document();
     sentence_append($page['title_dom'], $title . ' ', $page);
     title_append_actual($page['title_dom'], dom_pagename($page['name']));
+}
+
+/*
+ * タグ。$page['write_tag'] は page_write() がタグを書き換えるための口で、
+ * タグの画面 (tag_set_page_tags) が使っているものと同じ。空文字を入れると
+ * meta のタグが消える。
+ */
+function markdown_set_tags(&$page, $front_matter, $is_clearable = false) {
+    if(!isset($front_matter['tags'])) {
+	if($is_clearable)
+	    $page['write_tag'] = '';
+	return;
+    }
+    $page['write_tag'] = list_to_string(markdown_parse_tags($front_matter['tags']));
+}
+
+/*
+ * フロントマターのタグを配列にする。次の 4 つを同じに扱う。
+ *
+ *   tags: [alpha, beta]     tags: alpha, beta     tags: alpha beta
+ *   tags:
+ *     - alpha
+ *     - beta
+ *
+ * タグの保存形式は半角スペース区切りの 1 行なので、**タグ自体に空白は
+ * 入れられない**。「文中 タグ」と書くと 2 個になる。
+ */
+function markdown_parse_tags($value) {
+    if(is_array($value))
+	$parts = $value;			/* ブロック形式 */
+    else
+	$parts = explode(',', trim(trim((string)$value), '[]'));
+
+    $tags = array();
+    foreach($parts as $part)
+	/* 空白での分割と全角スペースの正規化は string_to_list に任せる */
+	foreach(string_to_list(trim((string)$part, " \t\"'")) as $tag)
+	    $tags[$tag] = true;
+    return array_keys($tags);
 }
 
 function markdown_convert(&$page, $dom, $contents = null) {
@@ -201,7 +268,7 @@ function markdown_convert(&$page, $dom, $contents = null) {
 	markdown_source_append($page, $dom, $contents);
 	return false;
     }
-    markdown_set_title($page, $front_matter);
+    markdown_apply_front_matter($page, $front_matter);
 
     $section = dom_append_child($dom, 'section', 'markdown');
     if(!markdown_append_html($section, $html))
@@ -435,15 +502,16 @@ function markdown_summary(&$page, $dom) {
  * 往復したときに差分が出る。この関数が無いと insert / replace / listedit /
  * templateedit の 4 画面が Markdown ページで動かないので、素通しで用意する。
  *
- * 本文は返すだけだが、**フロントマターの title だけはここで拾う**。
+ * 本文は返すだけだが、**フロントマターの title と tags はここで拾う**。
  * wiki 記法の &title{} も wiki_normalize() の中の変換で拾われており、
  * 保存の経路 (write / insert / replace / listedit / templateedit) が
  * どれでも題名が付くのはそのため。同じ場所に置いて経路を揃える。
+ * ここは保存の経路なので、書いていない項目は消す (markdown_apply_front_matter)。
  */
 function markdown_normalize(&$page, $text) {
     $front_matter = array();
     markdown_render_html($page, $text, $front_matter);
-    markdown_set_title($page, $front_matter);
+    markdown_apply_front_matter($page, $front_matter, true);
     return $text;
 }
 ?>

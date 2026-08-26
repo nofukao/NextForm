@@ -198,10 +198,19 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	$old_ngrams = search_page_ngram($old_page);
     }
     if(isset($page['write_tag'])) {
+	/*
+	 * タグ一覧 (?option=alltag) の件数はキャッシュで、書き込みのたびに
+	 * 差分で直す必要がある。直していたのはタグの画面が呼ぶ
+	 * tag_set_page_tags() だけだったので、それ以外の経路 (Markdown の
+	 * フロントマター) からタグを付けると件数が合わなくなる。
+	 * write_tag を見るこの場所に寄せて、経路によらず 1 回だけ直す。
+	 */
+	$old_tags = tag_get_page_tags($page);
 	if($page['write_tag'] == '')
 	    unset($page['meta']['tag']);
 	else
 	    $page['meta']['tag'] = $page['write_tag'];
+	$new_tags = tag_get_page_tags($page);
     }
     if(isset($page['title']))
 	$page['meta']['title'] = $page['title'];
@@ -209,6 +218,8 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	$page['meta']['description'] = $page['description'];
     $result = storage_page_write($page, $contents, $error);
     if($result) {
+	if(isset($old_tags))
+	    tag_alltags_update($old_tags, $new_tags);
 	user_history_add_page_view($page['name']);
 	$npage = page_read($page['name']);
 	if(SEARCH_ENGINE === 'builtin') {
