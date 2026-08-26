@@ -11,6 +11,7 @@
  *   page-mtime <名前>         page_get_mtime() の答え (mtime=...)
  *   stored-exists <名前>      storage に写しがあるか (stored=1/0)
  *   manual-count              マニュアルのページ数 (count=...)
+ *   manual-list               マニュアルの全ページ名 (page=... の行が並ぶ)
  *   find-count                page_find() が返すマニュアルの件数 (count=...)
  *   write-try <名前> <本文>   書き込みを試す (written=1/0)
  *   delete-try <名前>         削除を試す (deleted=1/0)
@@ -88,6 +89,11 @@ case 'stored-exists':
 
 case 'manual-count':
     printf("count=%d\n", count(manual_get_pages()));
+    break;
+
+case 'manual-list':
+    foreach(manual_get_pages() as $pagename => $dummy)
+	printf("page=%s\n", $pagename);
     break;
 
 case 'find-count':

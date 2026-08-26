@@ -23,6 +23,7 @@
 #   3. 一般ページから [[...]] でリンクが張れること
 #   4. 書き換えられないこと (編集・削除・改名・施錠のすべて)
 #   5. 検索の対象に残っていること。かつ一覧には出ないこと
+#   6. 全ページが警告なしで描画でき、マニュアル内部のリンクが切れていないこと
 #
 # 権限を書き換えるので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -313,10 +314,54 @@ check_eq "管理ツールに項目が無い" "no" \
          "$(contains "$(curl -sk "${MANUAL_TEST_URL}/?option=admin")" 'admin_manual')"
 echo
 
-echo "10. PHP の警告を出さないこと"
+echo "10. 全ページが警告なしで描画でき、リンクが切れていないこと"
+# ページ名は組み込みの一覧から取る。ここで数えるのは
+#   - 全ページが HTTP 200 で開くこと
+#   - マニュアル名前空間へのリンクに not_exists が付いていないこと
+#     (ページを分割・改名したときのリンク切れはここで捕まえる。
+#      マニュアルの外へのリンクは見ない。本文の例に出るページ名まで
+#      存在を求めることになるため)
+#   - 巡回の前後で PHP のエラーログが増えないこと
+manual_pages=$(helper manual-list | sed -n 's/^page=//p')
+page_count=$(printf '%s\n' "$manual_pages" | grep -c .)
+check_eq "ページの一覧が取れる (10 件以上)" "yes" \
+         "$([[ "$page_count" -ge 10 ]] && echo yes || echo no)"
 before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
-code "${MANUAL_TEST_URL}/?${MJA}" > /dev/null
-code "${MANUAL_TEST_URL}/?${M}" > /dev/null
+crawl_bad=0
+crawl_report=""
+while IFS= read -r pagename; do
+    [[ -z "$pagename" ]] && continue
+    response=$(curl -sk -w $'\n%{http_code}' "${MANUAL_TEST_URL}/?${pagename}")
+    status=${response##*$'\n'}
+    html=${response%$'\n'*}
+    if [[ "$status" != "200" ]]; then
+        crawl_bad=$((crawl_bad + 1))
+        crawl_report+="        ${pagename}: HTTP ${status}"$'\n'
+        continue
+    fi
+    # リンク検査は ja のページだけ。en は入口の骨組みしかなく、
+    # CheatSheet がまだ書かれていない en/Basic などを指しているのは既知
+    # (ja が固まってから en を作り直す)。
+    case "$pagename" in
+        "${M}/ja"|"${M}/ja/"*) ;;
+        *) continue ;;
+    esac
+    # 属性の並び順に依存しないよう、アンカーごとに切り出してから見る。
+    # ja/Wiki/Basic の [[../イタリアン]] は相対ページ名の実例で、
+    # 「存在しないページへのリンクは色が変わる」ことまで含めて例示に
+    # なっているので除く。
+    anchors=$(printf '%s' "$html" | grep -o '<a[^>]*>' | grep 'not_exists' \
+              | grep -o 'data-link-pagename="[^"]*"' | grep "\"${M}" \
+              | grep -v "\"${M}/ja/Wiki/イタリアン\"" | sort -u)
+    if [[ -n "$anchors" ]]; then
+        crawl_bad=$((crawl_bad + 1))
+        crawl_report+="        ${pagename} のリンク切れ: ${anchors//$'\n'/, }"$'\n'
+    fi
+done <<< "$manual_pages"
+check_eq "全 ${page_count} ページが 200 で、マニュアル内のリンクが切れていない" \
+         "0" "$crawl_bad"
+[[ -n "$crawl_report" ]] && printf '%s' "$crawl_report"
+# 巡回で通らない経路もエラーログの検査の窓に入れておく
 code "${MANUAL_TEST_URL}/?${MJA}&action=edit" > /dev/null
 code "${MANUAL_TEST_URL}/?option=admin_manual" > /dev/null
 code "${MANUAL_TEST_URL}/?ManualTest/Link" > /dev/null
