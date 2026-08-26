@@ -284,7 +284,8 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] 種別 wiki を選んで作ると、今までどおり wiki 記法のページになる
 - [ ] Markdown のページを 1 枚作って保存できる
 - [ ] Markdown の編集画面に**プレビューボタン**が出て、押すと変換結果が出る
-- [ ] 編集画面から**記法の一覧**へ飛べる
+- [ ] 編集画面から **Markdown 早見表** (`NextFormManual/ja/Markdown/CheatSheet`)
+      へ飛べる
 - [ ] フロントマターの `title:` がページの題名になる
       (ブラウザのタブと `?option=meta` の両方)
 - [ ] フロントマターの `tags:` がページのタグになり、`?option=alltag` の
@@ -314,8 +315,11 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
       `app/tool/search_index_check --deep` に「本文に無い ngram」として出る。
       検索結果は本文で照合し直すので実害は無いが、索引がずれた状態が残る
 - [ ] 一覧と検索の体感速度が落ちていない
-- [ ] マニュアルに「Wiki記法との対応」の節と、フロントマターの `tags:` の
-      説明がある
+- [ ] マニュアルの入口 (`?NextFormManual/ja`) から Markdown・Wiki 記法・
+      対応表 (`Comparison`) に対等に飛べる
+- [ ] マニュアルの Markdown の木 (早見表 / 基本要素 / 拡張要素 /
+      リンク・画像・添付 / フロントマター) が読め、フロントマターの
+      `tags:` の説明がある
 - [ ] 既存のタグが `?option=alltag` から消えていない
       (種別 markdown のページを 1 枚保存し直すと、そのページのタグは
       フロントマターの内容で置き換わる。これは仕様)
