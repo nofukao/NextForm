@@ -274,6 +274,7 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] 4 つのテーマ (basic / plain / docs / card) すべてで確かめた
 - [ ] 箇条書きと関連リストの字下げは**残っている**
 - [ ] 表・整形済みテキスト・引用の見え方が変わっていない
+- [ ] 空のセルを含む表が崩れていない (空要素の書き出し方を変えたため)
 - [ ] サイドページの見出しが巻き込まれていない
       (深さ別の大きさは `article.main` の中だけに当たる)
 
@@ -286,6 +287,11 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] 編集画面から**記法の一覧**へ飛べる
 - [ ] フロントマターの `title:` がページの題名になる
       (ブラウザのタブと `?option=meta` の両方)
+- [ ] フロントマターの `tags:` がページのタグになり、`?option=alltag` の
+      件数にも入る
+- [ ] `title:` / `tags:` を消して保存すると、題名とタグも消える
+- [ ] 本文がフロントマターだけのページで、**フッターの枠が出る**
+      (タグとページ情報が `article.main` の直下にある)
 - [ ] 既存の wiki ページを編集して保存できる (`&title{}` が効いたままか)
 - [ ] 添付・ロック・改名が通る
 
@@ -296,7 +302,11 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
       **wiki 記法のページを作る** (markdown にならない)
 - [ ] Markdown のページを検索して、結果から開くと**語がハイライトされる**
 - [ ] 一覧と検索の体感速度が落ちていない
-- [ ] マニュアルに「Wiki記法との対応」の節がある
+- [ ] マニュアルに「Wiki記法との対応」の節と、フロントマターの `tags:` の
+      説明がある
+- [ ] 既存のタグが `?option=alltag` から消えていない
+      (種別 markdown のページを 1 枚保存し直すと、そのページのタグは
+      フロントマターの内容で置き換わる。これは仕様)
 - [ ] 古い `ToraToraWikiManual` 以下が残っている場合、その扱いが案内どおり
 
 **参考: 記法の棚卸し**
