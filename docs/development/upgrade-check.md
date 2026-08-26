@@ -293,6 +293,9 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] 本文がフロントマターだけのページで、**フッターの枠が出る**
       (タグとページ情報が `article.main` の直下にある)
 - [ ] 既存の wiki ページを編集して保存できる (`&title{}` が効いたままか)
+- [ ] wiki ページから `&title{}` を消して保存すると、題名も消える
+- [ ] `?option=meta` の題名の欄に「本文が優先される」注意書きが出る
+      (種別 wiki と markdown の両方。文面は種別で違う)
 - [ ] 添付・ロック・改名が通る
 
 **実データでしか踏めないもの**
@@ -300,6 +303,11 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] `&include` `&calendar` `&pages` `&index` を含むページが壊れていない
 - [ ] `&insert` `&listadd` (`&comment`) `&writepage` (`&newpage`) が
       **wiki 記法のページを作る** (markdown にならない)
+- [ ] ⚠️ **メタ情報の画面だけで題名を付けていたページ**は、次に本文を
+      保存したときに題名が消える (`&comment` などの書き込みも本文の保存)。
+      本文が正になったための仕様。実運用のサイト (967 ページ) で数えた
+      ところ該当は **0 件**だった (題名を持つ wiki ページ 295 枚はすべて
+      本文に `&title` がある) が、対象サイトでも先に数えておく
 - [ ] Markdown のページを検索して、結果から開くと**語がハイライトされる**
 - [ ] 既存の Markdown ページがある場合、**検索インデックスを再構築する**。
       これまでフロントマターが本文として索引に入っていたので、

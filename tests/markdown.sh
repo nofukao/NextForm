@@ -22,6 +22,7 @@
 #   4. メタ情報画面 / タグ画面で付けた値は、本文の保存で上書きされること
 #   5. 本文が空でも <section class="markdown"> が閉じること
 #      (閉じないと footer が article.main の直下から外れ、枠が出なくなる)
+#   6. 種別 wiki の &title{} も同じに揃うこと (消せば題名も消える)
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -147,6 +148,10 @@ check_eq "tags: がタグになる"  "議事録"   "$(value_of "$(helper tags "$
 TAIL_HTML="$(main_html "$P_TAIL")"
 check_eq "  本文にフロントマターが出ない" "no"  "$(contains "$TAIL_HTML" 'title: 会議メモ')"
 check_eq "  水平線として読まれていない"   "no"  "$(contains "$TAIL_HTML" '<hr')"
+# 編集画面は本文を変換しないので、題名は meta['title'] からしか出せない。
+# 保存のときに meta へ写せていないと、編集画面だけ題名が消える。
+check_eq "  編集画面にも題名が出る" "yes" \
+         "$(contains "$(main_html "${P_TAIL}&action=edit")" '会議メモ')"
 echo
 
 echo "2. tags: がシステムのタグになること"
@@ -200,13 +205,19 @@ check_eq "footer の前で section.page が閉じている" "yes" \
          "$(contains "$(printf '%s' "$EMPTY_HTML" | tr -d '\n' | sed 's/<footer>.*//')" '</section></section>')"
 echo
 
-echo "6. 種別 wiki は変わらないこと"
+echo "6. 種別 wiki の &title{} も同じに揃うこと"
 check_eq "保存できる" "1" \
          "$(value_of "$(helper write-wiki "$P_WIKI" "$(printf -- '&title{wiki の題名};\n*見出し\n本文\n')")" written)"
-check_eq "&title{} は今までどおり効く" "wiki の題名" "$(value_of "$(helper meta "$P_WIKI" title)" value)"
+check_eq "&title{} が題名になる" "wiki の題名" "$(value_of "$(helper meta "$P_WIKI" title)" value)"
 helper write-wiki "$P_WIKI" "$(printf -- '*見出し\n本文\n')" > /dev/null
-check_eq "&title{} を消しても題名は残る (今までどおり)" "wiki の題名" \
-         "$(value_of "$(helper meta "$P_WIKI" title)" value)"
+check_eq "&title{} を消すと題名も消える" "0" "$(value_of "$(helper meta "$P_WIKI" title)" isset)"
+check_eq "消した題名が索引に残らない" "0" "$(value_of "$(helper index-stale "$P_WIKI")" stale)"
+
+# メタ情報の画面で付けた題名も、本文を保存すると置き換わる (markdown と同じ)
+helper set-meta-title "$P_WIKI" "画面で付けた題名" > /dev/null
+check_eq "画面から題名を付けられる" "画面で付けた題名" "$(value_of "$(helper meta "$P_WIKI" title)" value)"
+helper write-wiki "$P_WIKI" "$(printf -- '*見出し\n別の本文\n')" > /dev/null
+check_eq "本文を保存すると画面の値も残らない" "0" "$(value_of "$(helper meta "$P_WIKI" title)" isset)"
 echo
 
 helper cleanup > /dev/null
