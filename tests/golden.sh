@@ -40,6 +40,10 @@ TARGETS=(
     "Syntax=?GoldenMaster/Syntax"
     "Markdown=?GoldenMaster/Markdown"
     "MarkdownSummary=?GoldenMaster/Markdown&option=summary"
+    # 本文がフロントマターだけのページ。**入力ファイルは末尾に改行が無い**。
+    # 閉じの --- の後ろに改行が無くてもフロントマターとして読むこと、
+    # 本文が空でも section.markdown が閉じることの 2 つを固定する。
+    "MarkdownFrontMatter=?GoldenMaster/MarkdownFrontMatter"
 )
 
 # 比較対象を <article class="main"> の中だけに絞り、実行のたびに変わる値を潰す。
