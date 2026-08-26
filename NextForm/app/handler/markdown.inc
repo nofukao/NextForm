@@ -139,6 +139,16 @@ function markdown_render_html(&$page, $contents, &$front_matter = null) {
     if($converter === false)
 	return false;
 
+    /*
+     * 末尾に改行が無いとフロントマターとして読まれない。同梱ライブラリの
+     * 正規表現 (FrontMatterParser::REGEX_FRONT_MATTER) が、閉じの --- の
+     * **後ろの改行まで**を必要とするため。本文がフロントマターだけのページを
+     * 書くと、題名も付かず、水平線 + 見出しとして本文に出てしまっていた。
+     * 保存する本文には手を入れず、変換に渡すものだけを整える。
+     */
+    if($contents !== '' && substr($contents, -1) !== "\n")
+	$contents .= "\n";
+
     $previous = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
     $MARKDOWN_CURRENT_PAGENAME = $page['name'];
     try {
