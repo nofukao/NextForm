@@ -212,8 +212,20 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	    $page['meta']['tag'] = $page['write_tag'];
 	$new_tags = tag_get_page_tags($page);
     }
-    if(isset($page['title']))
-	$page['meta']['title'] = $page['title'];
+    if(isset($page['title'])) {
+	/*
+	 * 空文字は「消す」。write_tag と同じ約束にしてある。
+	 *
+	 * 消す側がここより手前で meta['title'] を落としてしまうと、
+	 * すぐ上の $old_page = $page が題名の消えた状態を写すことになり、
+	 * **消した題名の ngram が索引に残る**。meta を書き換えるのは
+	 * 古い ngram を数え終えたこの場所だけ、という約束を守る。
+	 */
+	if($page['title'] === '')
+	    unset($page['meta']['title']);
+	else
+	    $page['meta']['title'] = $page['title'];
+    }
     if(isset($page['description']))
 	$page['meta']['description'] = $page['description'];
     $result = storage_page_write($page, $contents, $error);

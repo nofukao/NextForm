@@ -10,6 +10,7 @@
  *   meta <名前> <キー>        meta の 1 項目 (isset=1/0 value=...)
  *   tags <名前>               ページのタグ (tags=<空白区切り>)
  *   alltag <タグ>             タグ一覧の数え上げ (count=...)
+ *   index-stale <名前>        索引に残った余分な ngram の数 (stale=...)
  *   set-tags <名前> <タグ..>  タグ画面と同じ経路でタグを付ける (written=1/0)
  *   set-meta-title <名前> <題名>
  *                             メタ情報画面と同じ経路で題名を付ける (written=1/0)
@@ -103,6 +104,16 @@ case 'set-meta-title':
     $page['keep_mtime'] = true;
     $fp = page_open_contents($page);
     printf("written=%d\n", page_write($page, $fp, $page['meta']['ticket']) ? 1 : 0);
+    break;
+
+case 'index-stale':
+    /* 索引に残っているのに本文には無い ngram の数 (search_index_check の stale) */
+    $collected = search_index_collect(true);
+    $page = page_read($rest[0]);
+    $should = search_page_ngram($page);
+    $actual = isset($collected['page_ngrams'][$rest[0]]) ?
+	$collected['page_ngrams'][$rest[0]] : array();
+    printf("stale=%d\n", count(array_diff_key($actual, $should)));
     break;
 
 case 'cleanup':

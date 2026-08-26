@@ -202,12 +202,12 @@ function markdown_set_title(&$page, $front_matter, $is_clearable = false) {
     if($title === '') {
 	if($is_clearable) {
 	    /*
-	     * page_write() は isset($page['title']) のときしか meta を書かない。
-	     * 「消す」には meta のほうを直に落とす必要がある。
+	     * 空文字が「消す」の合図 (page_write)。ここで meta を直に
+	     * 落としてはいけない。page_write が古い ngram を数える前に
+	     * 題名が消え、消した題名の ngram が索引に残る。
 	     */
-	    unset($page['title']);
+	    $page['title'] = '';
 	    unset($page['title_dom']);
-	    unset($page['meta']['title']);
 	}
 	return;
     }

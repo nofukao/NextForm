@@ -166,6 +166,9 @@ helper write "$P_DROP" "$(printf -- '本文だけ\n')" > /dev/null
 check_eq "title: を消すと題名も消える" "0" "$(value_of "$(helper meta "$P_DROP" title)" isset)"
 check_eq "tags: を消すとタグも消える" ""  "$(value_of "$(helper tags "$P_DROP")" tags)"
 check_eq "タグ一覧からも減る" "0" "$(value_of "$(helper alltag epsilon)" count)"
+# 消した題名が検索インデックスに残らないこと。meta['title'] は索引の対象で、
+# page_write() が古い ngram を数える前に消すと、消した題名で引けてしまう。
+check_eq "消した題名が索引に残らない" "0" "$(value_of "$(helper index-stale "$P_DROP")" stale)"
 echo
 
 echo "4. 画面で付けた値より本文が強いこと"
