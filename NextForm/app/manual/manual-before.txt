@@ -22,7 +22,7 @@ WikiエンジンはWebページの編集, 表示, 管理等の機能を提供し
 NextFormは[[ToraToraWiki:http://toratora.wiki/]] 1.3.10のforkです．
 ライセンスはGPLv3を引き継いでいます．
 
-(早く書き方を知りたい方は[[Markdown早見表:$manualpage$/ja/Markdown/CheatSheet]]か
+(早く書き方を知りたい方は[[Markdown記法早見表:$manualpage$/ja/Markdown/CheatSheet]]か
 [[Wiki記法早見表:$manualpage$/ja/Wiki/CheatSheet]]へ)
 
 *ページ
@@ -30,7 +30,7 @@ NextFormを使ったサイトは複数のページによって構成されます
 それぞれのページは以下の4つのいずれかの種別に属します．
 
 |種別    |説明                                                       |h
-|markdown|[[Markdown>./Markdown]]で表記されたページ(新規作成の既定)  |
+|markdown|[[Markdown記法>./Markdown]]で表記されたページ(新規作成の既定)|
 |wiki    |[[Wiki記法>./Wiki]]によって表記されたページ                |
 |text    |書いたものが何の装飾もなくそのまま表示されるページ         |
 |file    |ひとつのファイルが保存されたページ                         |
@@ -105,7 +105,11 @@ Topページやサイドページ内に
 という形で行を追記します(この書き方は種別markdownでも種別wikiでも同じです)．
 するとその部分は存在しないページへのリンクになります．
 存在しないページへのリンクをクリックするとそのページの新規作成画面にいくことができます．
-この方法が簡単なのでおすすめです．}
+この方法が簡単なのでおすすめです．
+なお実際には，リンクの文字をページ名とは別の''表示名''にすることが多くあります．
+表示名の付け方は記法によって違うので，Markdown記法は
+[[リンク・画像・添付:./Markdown/Link#ページへのリンク]]を，
+Wiki記法は[[リンク:./Wiki/Basic#リンク]]を参照してください．}
 
 *添付ファイル
 他のWikiエンジンで添付ファイルに相当する機能はNextFormでは種別fileの子ページを作ることで実現できます．
@@ -116,7 +120,7 @@ Topページやサイドページ内に
 ''ページメニュー''内の''添付''機能により上記のことが簡単に行えるようになっています．
 また，NextFormでは複数のファイルを同時に添付することができます．
 
-添付した画像や動画をページ内に埋め込むには，Markdownでは ""![説明](ファイル名)""
+添付した画像や動画をページ内に埋め込むには，Markdown記法では ""![説明](ファイル名)""
 ([[リンク・画像・添付:./Markdown/Link]])を，Wiki記法では
 [[&&include:./Wiki/Function/include]]を使用します．
 
@@ -130,10 +134,22 @@ Topページやサイドページ内に
 ロックをする権利があるユーザーはロックしたままページを編集することができますが，警告メッセージが表示されます．
 
 *ページの書き方
-種別markdownと種別wikiの詳しいマニュアルは以下のページにあります．
--[[Markdown>./Markdown]]
+文章のページはMarkdown記法かWiki記法で書きます．どちらも正式な書き方です．
+
+Markdown記法は多くのツールやサービスで共通に使われている書き方です．
+NextFormは[[CommonMark:https://commonmark.org/]]と，表や打ち消し線などの拡張を
+解釈します．他のツールで書いた文章をそのまま持ち込めるのが持ち味です．
+
+Wiki記法はNextFormのもとになったToraToraWikiから受け継いだ書き方です．
+行頭の記号で文書の構造を表す，PukiWikiに代表されるWikiエンジンの記法の流れを
+くんでいます(そのままではなく，ToraToraWiki独自の拡張が入っています)．
+ページの一覧やカレンダーを埋め込む[[ファンクション:./Wiki/Function]]が使えるのは
+Wiki記法だけで，「動くページ」を作れるのが持ち味です．
+
+詳しくは以下のページにあります．
+-[[Markdown記法>./Markdown]]
 -[[Wiki記法について>./Wiki]]
--[[Wiki記法とMarkdownの対応>./Comparison]]
+-[[Wiki記法とMarkdown記法の対応>./Comparison]]
 
 *サイトの管理
 サイトの管理については以下のページを参照して下さい．
@@ -329,7 +345,7 @@ NextFormではWebサーバーのアクセスログを集計することで，
 
 /**
 @manual $manualpage$/ja/Markdown
-&title Markdown
+&title Markdown記法
 
 *概要
 種別markdownのページは[[Markdown:https://commonmark.org/]]で書きます．
@@ -343,14 +359,14 @@ NextFormではWebサーバーのアクセスログを集計することで，
 (早く書き方を知りたい方は[[こちら:./CheatSheet]])
 
 *書き方の説明
--[[Markdown早見表>./CheatSheet]]
+-[[Markdown記法早見表>./CheatSheet]]
 -[[基本要素>./Basic]] (見出し，強調，箇条書き，引用，コードなど)
 -[[拡張要素>./Extra]] (表，チェックボックス，脚注など)
 -[[リンク・画像・添付>./Link]] (ページへのリンクとファイルの埋め込み)
 -[[フロントマター>./FrontMatter]] (先頭のメタ情報．題名とタグ)
 
 同じことをWiki記法でどう書くかは
-[[Wiki記法とMarkdownの対応:../Comparison]]にまとめてあります．
+[[Wiki記法とMarkdown記法の対応:../Comparison]]にまとめてあります．
 
 *編集方法
 ''ページメニュー''内の''編集''をクリックするとソースを編集できます．
@@ -359,16 +375,16 @@ NextFormではWebサーバーのアクセスログを集計することで，
 
 *使いどころ
 種別markdownと種別wikiはどちらも正式な書き方です．
-読ませる文書はMarkdownで，[[ファンクション:../Wiki/Function]]
+読ませる文書はMarkdown記法で，[[ファンクション:../Wiki/Function]]
 (ページ一覧やカレンダーの埋め込みなど)を使う「動くページ」はWiki記法で，
 という使い分けができます．
 種別markdownのページではファンクションは使えません．
-何が書けて何が書けないかは[[Wiki記法とMarkdownの対応:../Comparison]]を参照してください．
+何が書けて何が書けないかは[[Wiki記法とMarkdown記法の対応:../Comparison]]を参照してください．
 */
 
 /**
 @manual $manualpage$/ja/Markdown/CheatSheet
-&title Markdown早見表
+&title Markdown記法早見表
 
 *[[基本要素:../Basic]]
 |目的|記法|h
@@ -407,7 +423,7 @@ NextFormではWebサーバーのアクセスログを集計することで，
 
 /**
 @manual $manualpage$/ja/Markdown/Basic
-&title Markdownの基本要素
+&title Markdown記法の基本要素
 
 Markdownの土台([[CommonMark:https://spec.commonmark.org/]])の範囲の書き方です．
 表や脚注などの拡張は[[拡張要素:../Extra]]に，
@@ -430,7 +446,7 @@ Markdownの土台([[CommonMark:https://spec.commonmark.org/]])の範囲の書き
 別の書き方もあります．文のすぐ下の行にうっかり ""---"" を書くと，
 区切り線ではなくその文が見出しになるので注意してください．
 
-Wiki記法の節と違い，Markdownの見出しは折りたたみを持たず，範囲も持ちません．
+Wiki記法の節と違い，Markdown記法の見出しは折りたたみを持たず，範囲も持ちません．
 
 *強調
 |書き方|出るもの|h
@@ -497,7 +513,7 @@ Wiki記法の節と違い，Markdownの見出しは折りたたみを持たず�
 
 /**
 @manual $manualpage$/ja/Markdown/Extra
-&title Markdownの拡張要素
+&title Markdown記法の拡張要素
 
 [[CommonMark:https://commonmark.org/]]の土台に加えて，
 [[GitHub Flavored Markdown:https://github.github.com/gfm/]]の拡張
@@ -559,7 +575,7 @@ URLをそのまま書くとリンクになります．""www."" で始まる語�
 
 /**
 @manual $manualpage$/ja/Markdown/Link
-&title Markdownのリンク・画像・添付
+&title Markdown記法のリンク・画像・添付
 
 *ページへのリンク
 &[&[ と &]&] で囲むと，このサイトの中のページへのリンクになります．
@@ -646,16 +662,16 @@ Wiki記法の [[&&title{}:../../Wiki/Function/title]] も同じ約束です．
 
 /**
 @manual $manualpage$/ja/Comparison
-&title Wiki記法とMarkdownの対応
+&title Wiki記法とMarkdown記法の対応
 
 種別wikiのページと種別markdownのページは，どちらも正式な書き方です．
-ファンクションを使う「動くページ」はWiki記法で，読ませる文書はMarkdownで，
+ファンクションを使う「動くページ」はWiki記法で，読ませる文書はMarkdown記法で，
 という使い分けができます．このページでは同じことを両方でどう書くかを並べます．
 
-それぞれの記法の説明は[[Markdown:../Markdown]]と[[Wiki記法について:../Wiki]]にあります．
+それぞれの記法の説明は[[Markdown記法:../Markdown]]と[[Wiki記法について:../Wiki]]にあります．
 
 *そのまま写せるもの
-|やりたいこと|Wiki記法|Markdown|h
+|やりたいこと|Wiki記法|Markdown記法|h
 |段落|空行をいれる|空行をいれる|
 |重要|&'&'重要&'&'|""**重要**""|
 |強調|&'&'&'強調&'&'&'|""*強調*""|
@@ -671,24 +687,24 @@ Wiki記法の [[&&title{}:../../Wiki/Function/title]] も同じ約束です．
 |表(基本)|&|セル1&|セル2&||&|セル1&|セル2&||
 
 &[&[ &]&] の中の並びは''逆''です．
-Wiki記法は表示名が先，Markdownは対象が先になります．
+Wiki記法は表示名が先，Markdown記法は対象が先になります．
 
 *意味は同じだが働きが違うもの
-|やりたいこと|Wiki記法|Markdown|違い|h
-|見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdownの見出しは範囲を持ちません|
-|見出しの折りたたみ|&*(optional)|なし|Markdownに折りたたみはありません|
+|やりたいこと|Wiki記法|Markdown記法|違い|h
+|見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
+|見出しの折りたたみ|&*(optional)|なし|Markdown記法に折りたたみはありません|
 |節の終わりを明示|&*(end)|なし|同上|
-|関連リスト(定義リスト)|&:項目&|説明|なし|Markdownでは箇条書きか表で代用します|
-|表の書式指定|行末の h f c l r n など|区切り行で列の揃えを指定|Markdownで指定できるのは列の揃えだけです|
-|表のセル結合|&< &> &^ &_|なし|Markdownにセル結合はありません|
-|表の桁揃え|保存時に自動でそろえる|そろえない|Markdownの原文は書いたとおりに残します|
-|コードのハイライト|行頭スペースのあとに (code)|""$bq$$bq$$bq$php""|Wiki記法は色分けまで行われます．Markdownは言語名が記録されるだけで，色分けはされません|
-|チェックボックス|なし|""- [ ] 項目""|Markdownだけの機能です|
+|関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
+|表の書式指定|行末の h f c l r n など|区切り行で列の揃えを指定|Markdown記法で指定できるのは列の揃えだけです|
+|表のセル結合|&< &> &^ &_|なし|Markdown記法にセル結合はありません|
+|表の桁揃え|保存時に自動でそろえる|そろえない|Markdown記法の原文は書いたとおりに残します|
+|コードのハイライト|行頭スペースのあとに (code)|""$bq$$bq$$bq$php""|Wiki記法は色分けまで行われます．Markdown記法は言語名が記録されるだけで，色分けはされません|
+|チェックボックス|なし|""- [ ] 項目""|Markdown記法だけの機能です|
 |脚注|なし|""本文[^1]"" と ""[^1]: 中身""|同上|
 
 見出しへのリンク &[&[ページ名#見出し&]&] は，種別をまたいで同じ場所に届きます．
 
-*Markdownでは書けないもの
+*Markdown記法では書けないもの
 種別markdownのページでは，Wiki記法のファンクションは使えません．
 次のようなことをしたいページは，種別wikiで作ってください．
 
@@ -714,13 +730,13 @@ Wiki記法は表示名が先，Markdownは対象が先になります．
 *Wiki記法とは
 
 -[[Wiki記法早見表:$manualpage$/ja/Wiki/CheatSheet]]
--[[Wiki記法とMarkdownの対応:../Comparison]]
+-[[Wiki記法とMarkdown記法の対応:../Comparison]]
 
 Wiki記法とは構造化や装飾された文章を簡単に記述するための記法です．
 特定のルールに基づいてテキストを記述すれば，Wikiエンジンがそのテキストを見やすい形で表示してくれます．
 このWiki記法のルールで書かれたテキストをソースと呼びます．
 Wiki記法を使用するには種別wikiのページを作成し，その内容にソースを記述し保存します．
-[[Markdown:../Markdown]]と並ぶ正式な書き方で，[[ファンクション>./Function]]
+[[Markdown記法:../Markdown]]と並ぶ正式な書き方で，[[ファンクション>./Function]]
 (ページの一覧やカレンダーの埋め込みなど)まで書けるのがWiki記法の持ち味です．
 
 NextFormのWiki記法は以下のように大分できます．

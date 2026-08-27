@@ -727,7 +727,7 @@ v0.6 で種別 `markdown` は「動く」ところまで来たが、**同じ機�
 | 見出しの見え方 | **「深さ → 見た目」を共通定義から出す。** wiki の節のインデントはやめ、大きさの段差に一本化 |
 | Markdown の題名 | **フロントマターの `title:`。** wiki の `&title{}` と同じ経路・同じ挙動 |
 | ページ名の自動リンク | **Markdown では掛けない。** 検索語のハイライトだけ掛ける |
-| 対応表の正本 | **組み込みマニュアルの「Wiki記法との対応」** (`app/manual/manual-before.txt`) |
+| 対応表の正本 | **組み込みマニュアルの「Wiki記法とMarkdown記法の対応」** (`app/manual/manual-before.txt`)。v0.8 で独立ページ `NextFormManual/ja/Comparison` に切り出した |
 
 #### 記法の対応関係 (調査の結論)
 
@@ -1002,7 +1002,7 @@ FencedCode line 21-23  byte 176..189  |```⏎code⏎```⏎|
 | Markdown のページ題名 (追記 2026-08-21) | **フロントマターの `title:`。`&title{}` と同じ経路・同じ挙動** | `$page['title']` → `meta['title']` の経路をそのまま使えば、表示・保存・`insert` などの別経路がすべて wiki と同じになる。`title:` を消しても meta に残る点も `&title` に揃えた。種別で挙動をずらすと説明が 2 通りになる |
 | Markdown でのページ名の自動リンク (追記 2026-08-21) | **掛けない。検索語のハイライトだけ掛ける** | Markdown を書く人は `[[...]]` で明示的にリンクする習慣を持っており、素の語が勝手にリンクになるのは驚きになる。種別 text と `&pre` が同じ理由で `pagename` を excludes している |
 | 外部取得のタイムアウト (追記 2026-08-17) | `EXTERNAL_FETCH_TIMEOUT` (5 秒) に集約 | `&calendar` と Elasticsearch がページ描画の途中で同期的に取りに行く。未指定だと `default_socket_timeout` (60 秒) 任せになる |
-| マニュアルの構成 (追記 2026-08-26) | **入口は記法に中立、記法ごとに 1 本の木、対応表は独立ページ**。ja は `Markdown/`(CheatSheet・Basic・Extra・Link・FrontMatter)と `Wiki/` が対等で、`Comparison` がどちらにも属さない | マニュアルが wiki 記法だけを前提にしたままだと、既定種別が markdown になった v0.8 の実態と食い違う。対応表を Markdown の一節に置くと「Markdown 側の文書」になってしまうので中立の場所に出した。記法の説明は同梱ライブラリの出力を実測してから書く (仕様書にあっても実装が出さないものは書かない) |
+| マニュアルの構成 (追記 2026-08-26) | **入口は記法に中立、記法ごとに 1 本の木、対応表は独立ページ**。ja は `Markdown/`(CheatSheet・Basic・Extra・Link・FrontMatter)と `Wiki/` が対等で、`Comparison` がどちらにも属さない | マニュアルが wiki 記法だけを前提にしたままだと、既定種別が markdown になった v0.8 の実態と食い違う。対応表を Markdown の一節に置くと「Markdown 側の文書」になってしまうので中立の場所に出した。記法の説明は同梱ライブラリの出力を実測してから書く (仕様書にあっても実装が出さないものは書かない)。**呼び方も対称にする**: 2 つを並べる文脈では「Wiki 記法」と「Markdown 記法」、書式そのもの (CommonMark / GFM) や種別名を指すときは「Markdown」「種別 markdown」 |
 
 ## 8. ロックの仕様 (2026-08-03 に調査、不具合ではない)
 

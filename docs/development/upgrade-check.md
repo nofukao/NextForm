@@ -284,7 +284,7 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] 種別 wiki を選んで作ると、今までどおり wiki 記法のページになる
 - [ ] Markdown のページを 1 枚作って保存できる
 - [ ] Markdown の編集画面に**プレビューボタン**が出て、押すと変換結果が出る
-- [ ] 編集画面から **Markdown 早見表** (`NextFormManual/ja/Markdown/CheatSheet`)
+- [ ] 編集画面から **Markdown 記法早見表** (`NextFormManual/ja/Markdown/CheatSheet`)
       へ飛べる
 - [ ] フロントマターの `title:` がページの題名になる
       (ブラウザのタブと `?option=meta` の両方)
