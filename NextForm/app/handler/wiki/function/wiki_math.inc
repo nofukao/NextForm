@@ -177,4 +177,36 @@ function wiki_option_math_show(&$args, $dom) {
 $WIKI_ALIASES['mathi'] = '&math(inline,<PARAMS>){<TARGET>}';
 
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/math
+&title &&math
+
+*Overview
+ &math(inline, dpi=DPI of the image){ a formula in TeX notation }
+Shows a formula. The formula is processed as a TeX formula, turned into an image and
+shown.
+This function cannot be used unless the administrator of the site has enabled it.
+To enable it, set the setting WIKI_MATH_ENABLE to 'true'. Enabling it calls for care.
+
+*Parameters
+:{inline|keep the height of the formula within the line. Use it for a formula inside a
+sentence.
+Writing &&mathi instead of &&math also sets inline.
+}
+:dpi=DPI of the image|set the DPI used when turning the formula into an image. It decides the size of the formula. The default is 120.
+
+*Target
+Write the formula as the target. Formulas are written in TeX notation.
+
+*Example
+
+&wikiexample{
+&math{ F(x) = \int_a^{a + b} \frac{f(x)}{x} dx}
+
+&math(dpi=144){ F(x) = \int_a^{a + b} \frac{f(x)}{x} dx}
+
+&math(inline) {f_N(x) = \sum_{i=0}^N \sqrt\frac{x^2 + 4x + 10}{x + 1}}
+}
+*/
 ?>

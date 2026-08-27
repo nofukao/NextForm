@@ -188,4 +188,137 @@ sequence=3のように数字を指定するとページ名の桁数を指定で�
  `$WIKI_ALIASES['newpage']`
 */
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/writepage
+&title &&writepage
+
+*Overview
+ &writepage([[page name]], move, label=label, ask){template}
+Shows a form for editing the fields pulled out of the page named, using a template.
+When the page named does not match the template, its contents are rewritten into
+the template.
+
+*Parameters
+:&[&[page name&]&]|edit each field of the page named.
+:{move|go to the edited page once the editing is done.
+Set by default. Write !move to turn it off.}
+:label=label|the text shown on the button.
+:{ask|show a form for entering the fields.
+Set by default. Write !ask to turn it off.
+With !ask, the page is saved using the default values of the template.}
+:{placeholder|enable pulling fields out of the template in the form @field@ (see below).
+Set by default. Write !placeholder to turn it off.}
+
+*Target
+Write the template as the target.
+Write the contents of the page to be edited into the template as they are.
+The parts of those contents that you want to edit, though, are written as follows.
+Writing them in the form
+ @field@
+makes them entries in the form, replaced by the text entered when the page is created.
+The form
+ @field=default@
+can also be used, and the default given is put into the form.
+Ending the field name with a # symbol, as in
+ @field#@
+lets several lines be entered for that field.
+Ending the field name with a * symbol, as in
+ @field*@
+makes it a required field.
+Ending the field name with a ' symbol, as in
+ @field'@
+makes Wiki notation entered into that field be ignored.
+Ending the field name with a / symbol and listing choices after it, as in
+ @field/choice1/choice2/...@
+turns that field into a pull down menu to choose from the choices given.
+Writing a symbol of [[line head notation:../../LineHead]] before the field name, as in
+ @-field@
+adds that symbol to the start of the lines entered into the form.
+They can be combined, as in
+ @-field#'*=default@
+
+Writing &$user&$ as the default is replaced by the name of the user who posted the
+form, and &$time&$ by the time the form was posted.
+
+Writing &$LAST&$ in the template uses the template used just before.
+
+*Example
+ &writepage([[./Articles]], !move) {
+ *@title@
+ :author|@name=$user$@
+ @ body#=the body goes here@
+ }
+*/
+
+/**
+@manual $manualpage$/en/Wiki/Function/newpage
+&title &&newpage
+
+*Overview
+ &newpage([[page name]], move, pagename, sequence, label=label, ask){template}
+Shows a form for creating a new child page.
+Given a template, a page can be created with contents based on it.
+
+*Parameters
+:&[&[page name&]&]|create a child page of the page named. Left out, the current page is used.
+:{move|go to the edited page once the editing is done.
+Set by default. Write !move to turn it off.}
+:{pagename|show a form for entering the page name.
+Set by default. Write !pagename to turn it off.}
+:{sequence|when the name of the new child page is left out, use a running number as the
+page name.
+Set by default. Write !sequence to turn it off.
+Giving a number, as in sequence=3, sets how many digits the page name has, but take
+care: 001 and 0001 are different pages.
+}
+:label=label|the text shown on the button.
+:{ask|show a form for entering the fields.
+Set by default. Write !ask to turn it off.
+With !ask, the page is created using the default values of the template.}
+:{placeholder|enable pulling fields out of the template in the form @field@ (see below).
+Set by default. Write !placeholder to turn it off.}
+
+*Target
+Write the template as the target.
+Write the contents of the page to be created into the template in Wiki notation,
+as they are.
+Writing, in the template, the form
+ @field@
+makes it an entry in the form, replaced by the text entered when the page is created.
+The form
+ @field=default@
+can also be used, and the default given is put into the form.
+Ending the field name with a # symbol, as in
+ @field#@
+lets several lines be entered for that field.
+Ending the field name with a * symbol, as in
+ @field*@
+makes it a required field.
+Ending the field name with a ' symbol, as in
+ @field'@
+makes Wiki notation entered into that field be ignored.
+Ending the field name with a / symbol and listing choices after it, as in
+ @field/choice1/choice2/...@
+turns that field into a pull down menu to choose from the choices given.
+Writing a symbol of [[line head notation:../../LineHead]] before the field name, as in
+ @-field@
+adds that symbol to the start of the lines entered into the form.
+They can be combined, as in
+ @-field#'*=default@
+
+Writing &$user&$ in the template is replaced by the name of the user who posted the
+form, and &$time&$ by the time the form was posted.
+
+*Example
+ &newpage() {
+ *@title@
+ :author|@name=$user$@
+ @ body#=the body goes here@
+ }
+
+*Alias
+&&newpage is an alias defined as follows.
+ `$WIKI_ALIASES['newpage']`
+*/
 ?>

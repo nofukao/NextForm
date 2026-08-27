@@ -564,4 +564,67 @@ function wiki_operator_calendar_get_day_page_info_for_external_tool($basepagenam
 	//'summary' => $dom
 	);
 }
+
+/**
+@manual $manualpage$/en/Wiki/Function/calendar
+
+&title &&calendar
+
+*Overview
+ &calendar([[page name]], month, weeks, behind=N, ahead=N){
+ event data
+ }
+Shows a calendar. One day on the calendar can also be tied to one page, making a simple
+scheduler. The page for a day is a child page of the current page, named
+''current page name/year-month-day''.
+Each box of the calendar shows a summary of the page for that day.
+Double clicking a box of the calendar edits the child page straight away.
+[[&&datepages:../datepages]] lists the child pages with their contents.
+
+*Parameters
+:&[&[page name&]&]|the parent of the child pages the calendar creates. With nothing given, the page itself is the parent.
+:month|show a month, like an ordinary calendar. Set by default.
+:weeks|show a few weeks around this week. Which weeks are shown is set by the behind and ahead parameters.
+:behind=N|with weeks set, show N weeks into the past (N is a whole number).
+:ahead=N|with weeks set, show N weeks into the future (N is a whole number).
+
+*Target
+Data about events such as public holidays can be written as the target.
+Ordinary public holidays are shown through Google Calendar even with nothing written,
+but using Google Calendar means getting a Google API key allowed to reach the Calendar
+API and setting it in site menu > Admin tools > Site setup, under Google API key.
+The php settings also have to contain ""extension=openssl.so"", so that the API can be
+reached over SSL.
+
+Write one rule per line. Two kinds of rule can be used.
+-the calendar ID of a Google Calendar (the API key has to be set)
+-{crontab style notation
+ year month day week weekday name of the event
+Write the rule in that form.
+Year, month, day, week and weekday can be a number or &*. &* means anything will do.
+Week sets which occurrence of that weekday in the month it is. For example
+ * * * 3 Tue collection of recyclables
+means the third Tuesday of every month. A negative value counts from the end of
+the month.}
+
+In both cases, writing holiday after the rule, with a space before it, treats it as
+a holiday.
+
+*Example
+
+Take the following setup as an example.
+-show the events of the Google Calendar hogehogefoobar@group.calendar.google.com
+-the 20th of June every year is Founder's Day, a holiday
+-21 May 2012 is the annular solar eclipse
+-the last Tuesday of December every year is the big clean
+
+&wikiexample{
+&calendar(weeks,ahead=2,behind=1) {
+hogehogefoobar@group.calendar.google.com
+* 6 20 * * Founder's Day holiday
+2012 5 21 * * annular solar eclipse
+* 12 * -1 Tue the big clean
+}
+}
+*/
 ?>

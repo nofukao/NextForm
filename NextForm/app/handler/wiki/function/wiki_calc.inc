@@ -532,6 +532,125 @@ upと同様にdown,left,rightも同様に使用できます．
 */
 
 /**
+@manual $manualpage$/en/Wiki/Calc
+
+&title Calculation
+
+*Overview
+NextForm has a calculation feature that computes the value of an expression written in
+Wiki notation. There are two ways to use it: writing &= at the start of a line, and
+using &&calc.
+
+ = expression
+
+ &calc{expression}
+
+Writing &= at the start of a line is treated as a list, and several can follow one
+another. &&calc is used to calculate within a sentence.
+
+*Expressions
+
+Numbers in an expression may carry &, as a thousands separator, as in 1,000.
+The following operators, functions and constants can be used.
+When passing several arguments to a function, separate them with &&.
+
+- operators
+-- the four operations &+, &-, &*, &/
+-- remainder &%
+-- power &^
+-- assignment &=
+- functions
+-- trigonometric sin(x), cos(x), tan(x)
+-- logarithm log(x), log(base & x)
+-- rounding round(x), round(x & number of decimals)
+-- round up ceil(x)
+-- round down floor(x)
+-- minimum min(a & b & c & ..)
+-- maximum max(a & b & c & ..)
+-- total sum(a & b & c & ..)
+-- average average(a & b & c & ..)
+- constants
+-- pi pi
+-- base of the natural logarithm e
+
+They can be used like this:
+
+&wikiexample{
+= (1 + 2) * 3 ^ 2 / 4
+&calc{ sin(pi/4) + cos(pi/4) + log(2 & 1024) }
+}
+
+A part surrounded by &[ and &] inside an expression is ignored.
+Use this to write units or notes, as follows.
+
+&wikiexample{= 1,000[ml] * 20[bottles] / 1000[to L]}
+
+Normally an expression is replaced by its result.
+Writing &= at the end of the expression shows both the expression and the result
+instead of replacing it.
+
+&wikiexample{
+= (1 + 2) * 3 ^ 2 / 4 =
+= 1,000[ml] * 20[bottles] / 1000[to L] = [L]
+}
+
+*Variables
+Variables can be used as follows. Once assigned, a variable is valid within the
+same page.
+&wikiexample{
+= foo = 2 + 5
+= foo * 20 =
+}
+
+Assignment takes the assigned value as its result, so the first expression above shows
+7. When the value of an expression does not matter (when what matters is its side
+effect), write &: after the &= and the result is not shown.
+&wikiexample{
+=: foo = 10
+= foo * 20 =
+}
+
+*Parameters
+The behaviour of a calculation can also be customized as follows.
+ =(parameters) expression
+ &calc(parameters){ expression }
+
+The following can be set. Separate several of them with commas.
+:round=number of decimals|round to the given number of decimal places. The default is 2.
+:{comma|show the result with thousands separators.
+It is set automatically when the expression uses numbers with thousands separators.}
+:!comma|do not show the result with thousands separators.
+:replace|replace the expression with the result. Set by default.
+:!replace|show the expression and the result instead of replacing the expression.
+:result|show the result. Set by default.
+:{!result|do not show the result. Set this when only the side effect, such as an
+assignment to a variable, is needed.
+It has the same effect as writing &=&: at the start of the line.}
+
+*Spreadsheets
+
+Writing &= first in a table cell, followed by an expression, lets you use the table
+like a spreadsheet.
+The ordinary operators and functions can be used inside a table too, and in addition
+the following variables and functions are available.
+
+:cell numbers such as A1 or B2|upper case only. The number of a cell is shown by resting the mouse cursor over it
+:ranges of cell numbers such as A1:C3|upper case only
+:up|every cell above the current one
+:up(n & m)|skipping n cells upwards, the next m cells (with m left out, m is unlimited)
+down, left and right work the same way as up.
+
+&wikiexample{
+|name        |language    |maths       |English     |total          |hc
+|Ichiro Suzuki|90         |70          |80          |=sum(left(0&3))|lr
+|Jiro Sato   |50          |75          |100         |=sum(left(0&3))|
+|Saburo Tanaka|60         |100         |30          |=sum(left(0&3))|
+|average     |=average(up)|=average(up)|=average(up)|=average(up)   |f
+|top score   |=max(up(1)) |=max(up(1)) |=max(up(1)) |=max(up(1))    |f
+}
+*/
+
+/**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
 |[[数値計算(文中):../../Function/calc]]|&&calc{式} or &&calc(round=桁数, comma){式}|
 */

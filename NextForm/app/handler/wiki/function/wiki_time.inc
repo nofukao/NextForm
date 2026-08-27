@@ -119,4 +119,39 @@ NEW!のみを表示して日時の表示が不要なときに!showと指定し�
 }
 */
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/time
+&title &&time
+
+*Overview
+ &time(new, left, elapsed, show, format){date and time}
+Shows a date and time in the format given.
+It can also mark a date as recent, or show the time left until a target date.
+
+*Parameters
+:{new|when the date given is recent, add the word NEW! to mark it.
+By default recent means within `WIKI_TIME_DEFAULT_NEW_HOUR` hours.
+Giving it in the form new=hours sets how long NEW! is shown for.}
+:left|show the time left until the time given.
+:elapsed|show the time passed since the time given. It is shown as for left.
+:{show|show the time. Set by default.
+Write !show when only NEW! is wanted and the date itself is not.}
+:{format|show the date and time in the format given.
+The format follows the
+[[strftime format:http://php.net/manual/en/function.strftime.php]].
+The default is `TIME_FORMAT`.}
+
+*Target
+Write a date and time as the target.
+It may contain other notation such as &&mtime;.
+
+*Example
+
+&wikiexample{
+There is &time(left){2013-1-1} until the new year of 2013.
+
+This page was created on &time(%Y/%m/%d){ &mtime; }.
+}
+*/
 ?>

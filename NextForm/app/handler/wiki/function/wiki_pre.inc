@@ -257,4 +257,66 @@ function wiki_operator_paa(&$context, $dom, $tree) {
 }}}
 }}}}}}
 */
+
+/**
+@manual $manualpage$/en/Wiki/Function/pre
+&title &&pre
+
+*Overview
+ &pre(code, paa, linenum, linenum=starting line number, wrap, nowrap) {the target text}
+Shows the target text as preformatted text, exactly as it is.
+It does the same as the notation of writing a space at the start of the line, but it
+is set by surrounding the text with &{ and &} instead of putting a space at the start
+of every line.
+
+*Parameters
+:code|highlight the target text as a programming language.
+:paa|show it in a way suited to ASCII art made with a proportional font.
+:linenum|show line numbers when code is set.
+:{linenum=line number|show line numbers when code is set. The numbering starts from the number given.}
+:wrap|wrap lines longer than the width of the page.
+:nowrap|do not wrap lines longer than the width of the page; scroll sideways instead.
+
+With neither wrap nor nowrap set, the setting of the site is followed
+(Admin tools &gt; Appearance &gt; long lines in preformatted text).
+With paa set, lines are never wrapped, because wrapping would break the picture.
+
+*Target
+Write preformatted text or a programming language as the target text.
+
+When the target text contains an unmatched ''&{'' or ''&}'', it can be mistaken for
+the end of the target text.
+In that case, surround it with runs of ''&{&{&{'' and ''&}&}&}''
+(any number of them, as long as the two runs match).
+
+&wikiexample{{{{{{
+&pre{{{
+target text containing } and {
+}}}
+}}}}}}
+
+*Example
+
+&wikiexample{
+&pre{
+ +------------+
+ | ASCII Art  |====>
+ +------------+
+}
+
+&pre(paa) {
+ASCII art goes here
+}
+
+&pre(code, linenum) {
+#include<stdio.h>
+
+int main(int argc, char **argv) {
+	printf("Hello NextForm.\n");
+	return 0;
+}
+}
+
+}
+*/
 ?>

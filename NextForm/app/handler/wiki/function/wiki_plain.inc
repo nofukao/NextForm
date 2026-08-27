@@ -64,4 +64,38 @@ function wiki_operator_plain(&$context, $node, $tree) {
 }
 }
 */
+
+/**
+@manual $manualpage$/en/Wiki/Function/plain
+&title &&plain
+
+*Overview
+ &plain(break){the target text}
+Shows the target text as ordinary text rather than as Wiki notation.
+Use it where being read as Wiki notation would be a nuisance, such as text using many
+&& symbols.
+When the target text fits on one line, surrounding it with &"&" (two double quotes)
+has the same effect.
+
+*Parameters
+:{break|show the line breaks in the target text as line breaks.
+In ordinary writing, though, a line break carries no meaning.
+If the breaks really do carry meaning, use
+[[preformatted text:../../LineHead#Preformatted text]] or
+[[quotes:../../LineHead#Quotes]].
+}
+
+*Target
+The target text, as it is.
+
+*Example
+
+&wikiexample{
+&plain(break){text you want shown
+exactly as it is,
+containing & and [[
+and so on
+}
+}
+*/
 ?>

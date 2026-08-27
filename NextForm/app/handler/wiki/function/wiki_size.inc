@@ -46,4 +46,37 @@ function wiki_operator_size(&$context, $dom, $tree) {
 }
 */
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/size
+&title &&size
+
+*Overview
+ &size(percent%, size pt, size px, size em, size ex){text}
+Changes the size of text.
+
+*Note
+This function was used as the example in
+[[the basics of functions:..#The basics of functions]] because it makes things easy to
+follow, but the function itself is not recommended.
+If you are writing prose, the size of the text carries no meaning.
+Use [[the notation for emphasis:../../Basic#Emphasis]] when you want to emphasize, and
+[[the notation for strong:../../Basic#Strong]] when you want to mark importance.
+Think of this function as staging for readability, not as a statement of what the
+text means.
+
+*Parameters
+:size|set the size of the text as a number. The unit is one of %, pt, px, em or ex.
+
+*Target
+The text whose size you want to change.
+
+*Example
+
+&wikiexample{
+&size(150%) { one and a half times the size }
+
+&size(6em) { the size of 6em }
+}
+*/
 ?>

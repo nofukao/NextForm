@@ -315,4 +315,65 @@ function setup_read($name) {
 |{DEBUG_MODE|false|(開発者向け) デバッグモード|}
 |{GOOGLE_API_KEY||&&calendarで使用するGoole APIキー|}
 */
+
+/**
+@manual $manualpage$/en/Administration/Settings
+&title Settings
+
+-For how to set them, see [[Site administration:..]].
+|constant|default|description|h
+|{BASE_URI||the URL of the site (normally no need to change)|}
+|{PASSWORD_REMINDER_EMAIL_FROM|(automatic)|the sender address of the password reset mail|}
+|{MANUAL_PAGENAME|NextFormManual|the page name of the manual pages|}
+|{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type markdown. Setting it true lets anyone who can edit embed a script|}
+|{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
+|{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
+|{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}
+|{STORAGE_FILE_DIR_PATH|./storage|the directory that stores the various data of the site|}
+|{PLUGIN_DIR_PATH|./plugin|the directory plugins are loaded from|}
+|{THEME_DIR_PATH|theme|the directory themes are cached in|}
+|{THEME_URI|theme|the URL for reaching THEME_DIR_PATH|}
+|{BACKUP_SKIP_TIME_SECONDS|15 * 60|no backup is taken for edits within this many seconds|}
+|{EXTERNAL_FETCH_TIMEOUT|5|the limit on how long to wait when fetching from an external server (seconds)|}
+|{CSRF_PROTECTION|true|limit operations that change state to POST from the same origin (turn it off and a trap site can delete pages)|}
+|{PAGE_FIND_CREATE_CACHE_TIME|0.01|cache the result of the internal page listing when it took at least this many seconds|}
+|{PAGE_FILE_IMAGE_RESIZE|max 640x640|the size at which images are shown in pages of type file|}
+|{PAGE_FILE_IMAGE_RESIZE_MAX_SIZE|1048576|to protect memory, image files of at least this many bytes are not resized|}
+|{PAGE_FILE_SHOW_GPS|false|whether GPS data is shown in pages of type file|}
+|{CONTENTS_READ_BUFFER_SIZE|4096|the buffer size used when showing the contents of a page|}
+|{CONTENTS_READ_MAX_SIZE|1024 * 1024|the largest page that can be read into memory|}
+|{NEWPAGE_DEFAULT_TYPE|markdown|the page type selected first on the new page screen|}
+|{DEFAULT_PAGE_TYPE|wiki|the page type used when no type was given. Pages created by &&insert and the like fall under this|}
+|{FFMPEG_PATH|ffmpeg|the name of the ffmpeg command|}
+|{SEARCH_SNIPPET_LENGTH|30|the number of characters in a snippet of a search result|}
+|{SEARCH_RESULTS_PER_PAGE|50|how many search results are shown on one screen (0 for all)|}
+|{SEARCH_SNIPPET_MAX|5|the limit on snippets shown for one search result (0 for no limit)|}
+|{SEARCH_DEFAULT_ORDER|score|the order of search results. score: by how often the words appear, mtime: by the time of modification|}
+|{SEARCH_ENGINE|builtin|the search engine to use. builtin: the search engine inside NextForm, elasticsearch: use Elasticsearch|}
+|{SEARCH_ELASTICSEARCH_URL|http://localhost:9200/nextform|the URL of Elasticsearch|}
+|{FEED_DEFAULT_PAGE_NUM|20|the default number of entries in a feed|}
+|{USER_HISTORY_ENABLE|false|record the pages a user has read (experimental, not recommended)|}
+|{USER_HISTORY_UNREAD|false|mark links to unread pages (USER_HISTORY_ENABLE has to be true)|}
+|{WIKI_ICON_IMAGE_WIDTH|16|the width of icons such as emoticons|}
+|{WIKI_ICON_IMAGE_HEIGHT|16|the height of icons such as emoticons|}
+|{WIKI_INCLUDE_URI_DEFAULT_VIDEO_WIDTH|600|the standard width when embedding from a video site|}
+|{WIKI_INCLUDE_URI_DEFAULT_VIDEO_HEIGHT|600 * 9 / 16|the standard height when embedding from a video site|}
+|{WIKI_TIME_DEFAULT_NEW_HOUR|24|the default number of hours [[&&time:../../Wiki/Function/time]] shows NEW! for|}
+|{WIKI_SUMMARY_IMAGE_RESIZE|max 100x100|the size at which a page of an image file is summarized|}
+|{WIKI_CALENDAR_RULES_DEFAULT|omitted (see setup.inc)|the event data always shown by [[&&calendar:../../Wiki/Function/calendar]]|}
+|{WIKI_MATH_ENABLE|false|whether [[&&math:../../Wiki/Function/math]] is enabled (enabling it calls for care)|}
+|{WIKI_MATH_COMMAND|omitted (see setup.inc)|the command that turns LaTeX source into an image|}
+|{WIKI_MATH_COMMAND_ENVS|PATH=/usr/local/bin:/usr/bin:/bin|the environment variables for running the command that turns LaTeX source into an image|}
+|{EXPORT_ENABLE|false|whether the export function is enabled|}
+|{EXPORT_DIR_PATH|./export|the directory exported to|}
+|{EXPORT_POST_COMMAND||the command run after an export (the directory exported to is passed as a command argument)|}
+|{EXPORT_DEFAULT_TEMPLATE_WIKI|omitted|the default template for exporting pages of type wiki|}
+|{EXPORT_DEFAULT_TEMPLATE_MARKDOWN|the same as EXPORT_DEFAULT_TEMPLATE_WIKI|the default template for exporting pages of type markdown|}
+|{IMPORT_PUKIWIKI_ENABLE|false|whether importing pages from PukiWiki is enabled|}
+|{IMPORT_ATWIKIBACKUP_ENABLE|true|whether importing pages from an @Wiki data backup is enabled|}
+|{ANALYZE_STORAGE_LIFE_DAYS|7|how many days the records of the access counter are kept|}
+|{$WIKI_ALIASES (array)|omitted|the definitions of aliases valid across the whole site|}
+|{DEBUG_MODE|false|(for developers) debug mode|}
+|{GOOGLE_API_KEY||the Google API key used by &&calendar|}
+*/
 ?>

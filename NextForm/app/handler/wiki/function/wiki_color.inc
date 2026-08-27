@@ -101,4 +101,42 @@ red, blueなどの色の名前や#f84, #ff8844の形式が使用できます．�
 */
 
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/color
+
+&title &&color
+
+*Overview
+ &color(text colour){ the target }
+ &color(text colour, background colour){ the target }
+Colours text. The background colour of the text can be set as well.
+
+*Note
+This function was used as the example in
+[[the basics of functions:..#The basics of functions]] because it makes things easy to
+follow, but the function itself is not recommended.
+If you are writing prose, the colour of the text carries no meaning.
+Use [[the notation for emphasis:../../Basic#Emphasis]] when you want to emphasize, and
+[[the notation for strong:../../Basic#Strong]] when you want to mark importance.
+Think of this function as staging for readability, not as a statement of what the
+text means.
+
+*Parameters
+:{text colour|set the colour of the text.
+Colour names such as red and blue, and the forms #f84 and #ff8844, can be used.
+Left out, red is used.}
+:background colour|set the background colour of the text.
+
+*Target
+The text whose colour you want to change.
+
+*Example
+
+&wikiexample{
+Blue text is written &color(blue){like this}.
+The background colour can &color(navy,#aaff00)be set like this
+too.
+}
+*/
 ?>

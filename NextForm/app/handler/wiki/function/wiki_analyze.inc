@@ -205,4 +205,97 @@ day=0はtodayと，day=1はyesterdayと同じ効果になります．
  &popularpages(fields=[[pagename]]); //ページ名だけ表示(アクセス件数は非表示)
 */
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/counter
+&title &&counter
+
+*Overview
+ &counter([[page name]],  total, today, yesterday, day=N, days=N, allpages);
+Shows an access counter.
+The period and the page to total up can be set.
+Only the number is shown, so put whatever wording you like around it.
+The value of the access counter does not rise the moment a page is accessed;
+it is updated at a regular interval.
+Repeated accesses to the same page by the same user in a short time are not counted.
+
+The administrator of the site can also see the value of the counter at
+''Admin tools'' -> ''Access analysis''.
+
+*Note
+If you installed NextForm yourself, the administrator of the web server has to set up
+access analysis before the access counter can be used.
+See [[Access analysis settings:../../../Administration/Analyzer]] for details.
+
+*Parameters
+:{&[&[page name&]&]|the page whose number of accesses you want.
+Left out, the current page is used.}
+:total|show the total number of accesses. Set by default.
+:today|show the number of accesses today.
+:yesterday|show the number of accesses yesterday.
+:{day=N|put a number of days in N. Shows the number of accesses N days ago.
+How many days of data are kept depends on the settings of the site.
+On this site it is `ANALYZE_STORAGE_LIFE_DAYS` days.
+day=0 has the same effect as today, and day=1 the same as yesterday.
+}
+:{days=N|put a number of days in N. Shows the total number of accesses from N days ago
+until now.
+How many days of data are kept depends on the settings of the site.
+On this site it is `ANALYZE_STORAGE_LIFE_DAYS` days.}
+:allpages|show the total over every page of the site rather than one page. Writing &[&[&]&] has the same effect.
+
+*Target
+No target is given.
+
+*Example
+ -accesses to this page: &counter;
+ -accesses to this page today: &counter(today);
+ -accesses to this page yesterday: &counter(yesterday);
+ -accesses to the Top page from 3 days ago: &counter([[Top]], days=3);
+ -accesses to this site in total: &counter(allpages);
+ -accesses to this site today: &counter(allpages, today);
+ -accesses to this site 4 days ago: &counter(allpages, day=4);
+*/
+
+/**
+@manual $manualpage$/en/Wiki/Function/popularpages
+&title &&popularpages
+
+*Overview
+ &popularpages(total, today, yesterday, day=N, days=N, number of pages);
+Lists the popular pages (the pages with the most accesses), most accessed first.
+
+The administrator of the site can also see the numbers of accesses at
+''Admin tools'' -> ''Access analysis''.
+
+*Note
+If you installed NextForm yourself, the administrator of the web server has to set up
+access analysis before the list of popular pages can be used.
+See [[Access analysis settings:../../../Administration/Analyzer]] for details.
+
+*Parameters
+:&[&[page name&]&]|limit the list to the child pages of the page named.
+:total|list them by the total number of accesses. Set by default.
+:today|list them by the number of accesses today.
+:yesterday|list them by the number of accesses yesterday.
+:{day=N|put a number of days in N. Lists them by the number of accesses N days ago.
+How many days of data are kept depends on the settings of the site.
+On this site it is `ANALYZE_STORAGE_LIFE_DAYS` days.
+day=0 has the same effect as today, and day=1 the same as yesterday.
+}
+:{days=N|put a number of days in N. Lists them by the number of accesses from N days
+ago until now.
+How many days of data are kept depends on the settings of the site.
+On this site it is `ANALYZE_STORAGE_LIFE_DAYS` days.}
+:number of pages|how many to show. Left out, 10 are shown.
+
+The parameters of [[&&pages:../pages]] can be used as well.
+*Target
+No target is given.
+
+*Example
+ &popularpages; //show the 10 most popular pages
+ &popularpages(show=table, today, name=!Top, name=!Side, 5); //today's 5 most popular in a table, leaving out Top and Side
+ &popularpages(fields=[[pagename]]); //show only the page names (not the access counts)
+*/
 ?>

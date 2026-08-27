@@ -681,4 +681,166 @@ priority=高い/低い,
 &pre{`$WIKI_ALIASES['tracker']`}
 
 */
+
+/**
+@manual $manualpage$/en/Wiki/Function/pages
+&title &&pages
+
+*Overview
+ &pages([[page name]], 
+        show=how to show,
+        limit=number,
+        each=number,
+        name=page name,
+        type=type,
+        tag=tag,
+        sort=order,
+        reverse,
+        children,
+        withsystem,
+        fields=field1 field2 ...,
+        header=field1 field2 ...,
+        footer=field1 field2 ...,
+        showhidden,
+        conditions...,
+        orderings...);
+Lists the child pages of the page named.
+The conditions and the way they are shown can be set in detail.
+Fields can also be pulled out of the contents of the child pages.
+
+*Parameters
+:{&[&[page name&]&]|list the child pages of the page named. Left out, the child pages
+of the current page are listed.
+Write &[&[&]&] to cover every page.}
+:{show=how to show|how to show the list. The following can be given.
+:show=list|list the pages as a bulleted list. Set by default.
+:show=tree|list the pages as a tree, with child pages nested.
+:show=table|show the list of pages as a table. Name the fields you want with the fields parameter.
+:show=contents|show the contents of the pages as well as their names.
+}
+:limit=number|show only the given number of pages.
+:each=number|show the given number at a time. The rest go onto the next page.
+:{name=page name|of the child pages of the &[&[page name&]&] above, show only the pages
+whose name is given here.
+Wildcards such as &* and ? can be used.
+Writing name=!page name shows the pages other than that one.
+Writing several, as in name=page1 page2 ..., makes it an "or" condition.
+Writing name=page1, name=page2, name=.. makes it an "and" condition, matching all of them.
+}
+:{type=type|show only pages of the type given.
+Give it as type=wiki or type=file and so on.
+Wildcards such as &* and ? can be used.
+Writing type=!type shows the pages that do not have that type.
+Writing several, as in type=type1 type2 ..., makes it an "or" condition.
+}
+:{tag=tag|show the pages carrying the tag given.
+Wildcards such as &* and ? can be used.
+Writing tag=!tag1 shows the pages that do not carry tag1.
+Writing several, as in tag=tag1 tag2 ..., makes it an "or" condition.
+Writing tag=tag1, tag=tag2, tag=.. makes it an "and" condition, carrying all of them.
+}
+:{sort=order|sort=mtime sorts by the time of modification, sort=btime by the time of
+creation and sort=size by the size of the page.
+With nothing given, they are shown in order of page name.}
+:reverse|show them in the reverse order.
+:children|show only the direct child pages. Grandchild pages are not shown.
+:withsystem|show the pages used by the system, such as the manual pages, as well.
+:{fields=field1 field2 ...|name the fields to show, separated by spaces. The following can be given.
+:pagename|the page name
+:basename|the shortened page name
+:relname|the page name relative to the page named
+:title|the title of the page. Without a title, basename is used.
+:title-pagename|the title of the page. Without a title, pagename is used.
+:title-relname|the title of the page. Without a title, relname is used.
+:tags|the tags of the page
+:mtime|the time the page was modified
+:mdate|the date the page was modified
+:btime|the time the page was created
+:bdate|the date the page was created
+:editor|who modified it last
+:creator|who created it
+:edit|an edit button
+:delete|a delete button
+:a field pulled out by a template|a field pulled out by a template (see below)
+:_ (an underscore alone)|the fields pulled out by the template that were not named
+
+Surrounding a field with &[&[ and &]&], as follows, makes that field a link.
+ [[field]]
+Writing as follows sets the description of the field. The description is used for
+things such as the column headings of a table.
+ field@description
+}
+:{header=field1 field2 ...|with show=contents, the fields shown before the contents of
+each page. They are given as for the fields parameter.}
+:{footer=field1 field2 ...|with show=contents, the fields shown after the contents of
+each page. They are given as for the fields parameter.}
+:{showhidden|show a link that lists the hidden pages (see below) as well.
+Set by default. Write !showhidden to turn it off.}
+:{field:value&|background colour|
+when the field given holds the value given, show it with the background colour given
+(only with show=table).
+The background colours are the same ones [[&&color:../color]] can use.
+Giving none instead of a colour hides that field.
+This parameter may be given several times; they are compared in the order written and
+the first match is used as the background colour.
+Writing :> or :< instead of &: compares by size rather than by equality.}
+:{field;value&|background colour|the same as above, but compared as numbers.}
+:{field#ordering|
+sort the list by the field given. Write asc in the ordering for ascending and desc for
+descending.
+Besides asc and desc, listing values separated by / (slash) sorts them in the order
+listed.
+When several are given, the ones written first take priority in the sorting.
+}
+
+*Target
+The target is not normally needed, but a template can be written.
+Writing a template lets the fields you want in the list be taken from the contents of
+the child pages.
+It is handy when the child pages are written in the same (or a similar) form.
+
+Write the contents of a child page into the template as they are (the source, for
+type wiki).
+Give the parts of the template that differ between child pages a name of your choosing
+and surround it with @ symbols, as in
+ @field@
+and the matching part of each child page is pulled out as a field, usable in the
+fields, header and footer parameters.
+
+Templates are written as they are for [[&&newpage:../newpage]] and
+[[&&writepage:../writepage]].
+Combine those with &&pages and you can create and list pages in any form you like.
+
+Writing &$LAST&$ in the template uses the template used just before.
+
+*Example
+
+&wikiexample{
+*the 3 most recently updated
+&pages([[]], sort=mtime, limit=3);
+
+*sibling pages (by size)
+&pages([[..]], show=table, fields=[[basename]] size@size type, sort=size, withsystem, limit=5);
+}
+
+*(optional)An advanced example
+//a bug tracker style template
+//(copying this onto a page such as SandBox and trying it should make it easy to follow)
+
+ &pages(
+ status:held|yellow,
+ status:started|#aaf,
+ status:done|none,               //do not show tasks whose status is done,
+ status#proposed/held/started/done, //sort by status, in that order,
+ priority#high/medium/low,       //with the same status, sort by priority,
+ mtime#desc,                     //with the same priority, sort by the time of modification,
+ ) {
+ &title @title=&insert(once) title goes here@
+ :category|&select($bq$core/plugin/design$bq$)@category@
+ :status  |&select($bq$proposed/held/started/done$bq$)@status@
+ :priority|&select($bq$high/medium/low$bq$)@priority@
+ :due     |@due=&insert(once)@
+ :author  |@author=$user$@
+ }
+*/
 ?>

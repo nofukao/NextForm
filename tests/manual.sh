@@ -339,26 +339,22 @@ while IFS= read -r pagename; do
         crawl_report+="        ${pagename}: HTTP ${status}"$'\n'
         continue
     fi
-    # リンク検査は ja のページだけ。en は入口の骨組みしかなく、
-    # CheatSheet がまだ書かれていない en/Basic などを指しているのは既知
-    # (ja が固まってから en を作り直す)。
-    case "$pagename" in
-        "${M}/ja"|"${M}/ja/"*) ;;
-        *) continue ;;
-    esac
     # 属性の並び順に依存しないよう、アンカーごとに切り出してから見る。
-    # ja/Wiki/Basic の [[../イタリアン]] は相対ページ名の実例で、
-    # 「存在しないページへのリンクは色が変わる」ことまで含めて例示に
-    # なっているので除く。
+    #
+    # 除外は 2 つだけ。どちらも「存在しないページへのリンクはこう見える」
+    # ことまで含めた実例なので、存在を求めてはいけない。
+    #   ja/Wiki/Basic  [[../イタリアン]]
+    #   en/Wiki/Basic  [[../Italian]]     (同じ節の英語版)
     anchors=$(printf '%s' "$html" | grep -o '<a[^>]*>' | grep 'not_exists' \
               | grep -o 'data-link-pagename="[^"]*"' | grep "\"${M}" \
-              | grep -v "\"${M}/ja/Wiki/イタリアン\"" | sort -u)
+              | grep -v "\"${M}/ja/Wiki/イタリアン\"" \
+              | grep -v "\"${M}/en/Wiki/Italian\"" | sort -u)
     if [[ -n "$anchors" ]]; then
         crawl_bad=$((crawl_bad + 1))
         crawl_report+="        ${pagename} のリンク切れ: ${anchors//$'\n'/, }"$'\n'
     fi
 done <<< "$manual_pages"
-check_eq "全 ${page_count} ページが 200 で、マニュアル内のリンクが切れていない" \
+check_eq "全 ${page_count} ページが 200 で、マニュアル内のリンクが切れていない (ja + en)" \
          "0" "$crawl_bad"
 [[ -n "$crawl_report" ]] && printf '%s' "$crawl_report"
 # 巡回で通らない経路もエラーログの検査の窓に入れておく

@@ -65,4 +65,39 @@ function wiki_operator_title(&$context, $dom, $tree) {
 
 */
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/title
+&title &&title
+
+*Overview
+ &title(show){ the title }
+Changes the title of the page.
+The title of a page is normally its page name, but this function changes it to any
+title you like.
+It may be written anywhere in the page; when several are given, the last one wins.
+
+*Note
+It is ''the text'' that decides the title.
+&&title overrides the title set in the metadata of the page.
+Remove &&title from the source and save, and ''the title in the metadata is
+removed too''.
+A title set on the metadata screen is replaced the next time the text is saved.
+This is so that the state of a page can be seen from its source.
+
+The front matter (""title:"") of a page of type markdown follows the same promise.
+
+*Parameters
+:{show|change the title and use the title as text as well.
+For example, to change the title and make a section heading at the same time, write
+ * &title(show) { the real title }
+}
+
+*Target
+Write the title as the target.
+
+*Example
+ &title{Some title}
+
+*/
 ?>

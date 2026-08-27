@@ -157,4 +157,55 @@ function wiki_operator_include(&$context, $dom, $tree) {
  &include(http://www.youtube.com/watch?v=vdQj2ohqCBk);
 
 */
+
+/**
+@manual $manualpage$/en/Wiki/Function/include
+
+&title &&include
+
+*Overview
+ &include([[page name]], widthxheight, percent%, open);
+ &include(URL , widthxheight, percent%, open);
+Embeds the contents of the page or URL named.
+The page named may be of any type: wiki, text, file and so on.
+Use it to embed an image or a video in a page.
+
+Naming the URL of an image embeds that image.
+Writing the URL of a YouTube or Niconico video embeds that video.
+''When you write a , (comma) after a URL, put a space before it.
+Otherwise the comma is read as part of the URL.''
+
+To embed an attached file (a file uploaded as a child page), move the cursor to the
+position on the editing screen where it should go, press the attach button and choose
+the file.
+
+*Parameters
+:{widthxheight|the symbol between the width and the height is a lower case x.
+Give them in pixels, as in 640x400. Only the width or only the height can be given,
+as in 640x or x400.
+Adding a &! at the end resizes without keeping the aspect ratio.
+Writing max at the start, as in max 640x400, stops it resizing when the content is
+already within the given size.}
+:{percent%|how much to enlarge, as a percentage of the original size.
+It is ignored for content whose original size cannot be found.}
+:{!adjust|resize the image in the browser rather than on the server.
+The quality may improve, but more data is transferred.
+It works only for attached image files.
+}
+:open|open the image in a new window (tab) when it is clicked.
+:!link|only show the image, without making it a link.
+:left|place it on its own at the left.
+:right|place it on its own at the right.
+
+*Target
+The target is not required.
+When given, it is shown as the caption of the embedded content.
+
+*Example
+
+ &include([[./some.jpg]], 600x300);
+ &include([[./foo.png]], 600x, open) { how foo looks }
+ &include(http://www.youtube.com/watch?v=vdQj2ohqCBk);
+
+*/
 ?>

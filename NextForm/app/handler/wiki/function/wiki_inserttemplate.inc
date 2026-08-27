@@ -196,4 +196,32 @@ $WIKI_ALIASES['bbs'] =
 &pre{`$WIKI_ALIASES['bbs']`}
 
 */
+
+/**
+@manual $manualpage$/en/Wiki/Function/bbs
+&title &&bbs
+
+*Overview
+ &bbs(url, japanese);
+Shows the posting form of a bulletin board.
+
+*Parameters
+:{url|allow URLs to be entered. Set by default.
+Write !url to turn it off.}
+:japanese|allow only entries that contain Japanese.
+
+*Target
+No target is given.
+
+*Example
+
+&wikiexample{
+&bbs;
+}
+
+*Alias
+&&bbs is an alias defined as follows.
+&pre{`$WIKI_ALIASES['bbs']`}
+
+*/
 ?>

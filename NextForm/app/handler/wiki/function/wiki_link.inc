@@ -231,4 +231,60 @@ $WIKI_ALIASES['direct'] = '&link(raw,<PARAMS>){<TARGET>}';
  `$WIKI_ALIASES['direct']`
 
 */
+
+/**
+@manual $manualpage$/en/Wiki/Function/link
+
+&title &&link
+
+*Overview
+ &link([[page name]], edit, open){ what the link shows }
+ &link(URL ,open){ what the link shows }
+Builds links of various kinds.
+For example, a link that opens the page or URL named in a new window (tab), or a link
+to the editing screen of a page.
+
+*Parameters
+:&[&[page name&]&]|a link to the page name given. Left out, it is the current page.
+:open|a link that opens in a new window (tab).
+:{URL|writing a URL as the parameter makes it a link to that URL
+(the edit, tag and other settings below then have no effect).
+''When you write a , (comma) after a URL, put a space before it.
+Otherwise the comma is read as part of the URL.''
+In this function alone, characters other than letters and digits can be used in
+the URL.
+}
+:edit|make it a link to the editing screen.
+:tag|make it a link to the tag setting screen.
+:history|make it a link to the history.
+:lock|make it a link to the lock screen.
+:unlock|make it a link to the unlock screen.
+:delete|make it a link to the delete screen.
+:rename|make it a link to the rename screen.
+:attach|make it a link to the attach screen.
+:meta|make it a link to the metadata.
+:debuginfo|make it a link to the debug information screen.
+:newpage|make it a link to the new page screen.
+:allpage|make it a link to the list of all pages.
+:alltag|make it a link to the list of tags.
+:deletedpage|make it a link to the list of deleted pages.
+:config|make it a link to the personal settings.
+:{charset=character encoding|
+set the character encoding used when characters other than letters and digits go into
+the URL. Left out, UTF-8 is used. SJIS, EUC-JP and others can be given.
+}
+
+*Target
+Write what the link shows. Left out, it is set automatically.
+
+*Example
+
+&wikiexample{
+Click &link(edit){here} to edit this page
+
+&link([[Side]],edit,open){edit the menu bar in a new tab}
+
+&link(http://www.google.com, open);
+}
+*/
 ?>

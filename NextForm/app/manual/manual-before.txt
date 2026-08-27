@@ -6,9 +6,159 @@
 
 /**
 @manual $manualpage$/en
-[[Wiki Cheat Sheet:./Wiki/CheatSheet]]
 
-Not yet. English manual pages are now wanted.
+&title NextForm Manual
+*What NextForm is
+NextForm ([[official site:`OFFICIAL_URL`]]) is a wiki engine.
+A wiki engine provides the functions to edit, show and manage web pages.
+
+NextForm is a fork of [[ToraToraWiki:http://toratora.wiki/]] 1.3.10.
+It inherits the GPLv3 license.
+
+(In a hurry? Go to the [[Markdown Cheat Sheet:$manualpage$/en/Markdown/CheatSheet]] or the
+[[Wiki Cheat Sheet:$manualpage$/en/Wiki/CheatSheet]])
+
+*Pages
+A site built with NextForm is made of pages.
+Every page belongs to one of the four types below.
+
+|type    |description                                                                  |h
+|markdown|a page written in [[Markdown notation>./Markdown]] (the default for new pages)|
+|wiki    |a page written in [[Wiki notation>./Wiki]]                                   |
+|text    |a page shown exactly as written, with no decoration                          |
+|file    |a page that holds a single file                                              |
+
+The type is chosen when the page is created and cannot be changed afterwards.
+
+A typical way to use them is to write documents as markdown or wiki pages, and to
+upload images and downloadable files as file pages.
+A file page can then be embedded in a document page or linked from it.
+
+How a file page is shown depends on what the file holds.
+An image file is shown as an image, a video file is shown in a player where possible,
+and any other file is shown as a download screen.
+
+**Page names
+Every page has a name, called the page name from here on.
+A page name may contain any character.
+
+Pages can also stand in a parent and child relationship.
+To create a page that is the child of another page (called a child page),
+just use a slash in the name:
+ parent page name/child name
+For example, creating a page named
+ Cooking/Japanese
+makes it a child page of the page Cooking.
+
+Writing the structure into the page name makes the shape of your documents clear,
+and lets you rename or delete a whole set of child pages at once.
+
+The relationship can be nested as deep as you like:
+ Cooking/Italian/Pizza
+Here the parent of ''Cooking/Italian/Pizza'' (called the parent page) is
+''Cooking/Italian'', and the parent of that in turn is ''Cooking''.
+
+**Relative page names
+Inside a page you often write a page name to refer to another page.
+When you do, ''.'' and ''..'' let you refer to other pages relative to your own.
+''.'' means the page itself, and ''..'' means the parent page.
+For example, writing ''.'' inside the page
+''Cooking/Italian''
+refers to ''Cooking/Italian'' itself, and writing ''..'' refers to ''Cooking''.
+Here are some more examples.
+
+|written in Cooking/Italian|page it refers to    |h
+|.                         |Cooking/Italian      |
+|..                        |Cooking              |
+|./Pizza                   |Cooking/Italian/Pizza|
+|../Japanese               |Cooking/Japanese     |
+
+*Special pages
+
+**The top page
+The page named ''Top'' is shown when a visitor first arrives at the site.
+The name ''Top'' can be changed in the settings.
+
+**The side page
+It depends on the design theme, but the default theme always shows a page named
+''Side'' in a smaller area at the left.
+Apart from being shown smaller, ''Side'' is an ordinary page you can edit freely.
+List links to the pages you use often there and it becomes the navigation of your site.
+The name ''Side'' can be changed in the settings.
+
+*How to create a new page
+There are several ways to create a new page. They are listed below.
+:{Use ''New page'' in the ''site menu'' and type a page name|
+A page created this way can only be reached from ''All pages'' in the ''site menu''.
+That is inconvenient on its own, so you will end up
+creating a link to the new page somewhere.}
+:{Make the link first, on the Top page or the side page|
+Add a line of the form
+ [[name of the page you want to create]]
+to the Top page or the side page
+(this is written the same way in both markdown and wiki pages).
+That part becomes a link to a page that does not exist yet.
+Clicking a link to a page that does not exist takes you to the screen that creates it.
+This way is easy, so we recommend it.
+In practice the text of a link is often a ''display name'' different from the page name.
+How to write one differs between the notations, so see
+[[Links, images and attachments:./Markdown/Link#Links to pages]] for Markdown notation
+and [[Link:./Wiki/Basic#Link]] for Wiki notation.}
+
+*Attached files
+What other wiki engines offer as attached files is done in NextForm by creating child
+pages of type file.
+Attaching example1.jpg and example2.png to the page ''Cooking/Japanese'' means you have
+created the two pages of type file
+-''Cooking/Japanese/example1.jpg''
+-''Cooking/Japanese/example2.png''
+The ''Attach'' function in the ''page menu'' makes this easy.
+NextForm can also attach several files at once.
+
+To embed an attached image or video in a page, Markdown notation uses
+""![description](file name)"" ([[Links, images and attachments:./Markdown/Link]])
+and Wiki notation uses [[&&include:./Wiki/Function/include]].
+
+*Backup
+A backup is taken before a page is edited (it is skipped when the edits come close
+together). You can therefore show the contents of a page as it was at some point in
+the past, or compare two versions.
+
+*Lock
+Locking a page makes it impossible to edit. Only a user who has been granted the right
+to lock can lock a page. Unlocking returns it to the editable state.
+A user who has the right to lock can edit a page while it stays locked,
+but a warning message is shown.
+
+*How to write pages
+Document pages are written in Markdown notation or in Wiki notation.
+Both are first-class ways of writing.
+
+Markdown notation is the way of writing used in common across many tools and services.
+NextForm understands [[CommonMark:https://commonmark.org/]] and extensions such as
+tables and strikethrough. Its strength is that text written in another tool can be
+brought in as it is.
+
+Wiki notation is the way of writing NextForm inherited from ToraToraWiki, the engine it
+is based on. It follows the tradition of wiki engine notations represented by PukiWiki,
+in which symbols at the start of a line express the structure of the document
+(not the same as it: ToraToraWiki added extensions of its own).
+[[Functions:./Wiki/Function]], which embed things such as page lists and calendars,
+are available only in Wiki notation, and being able to build "living pages"
+is its strength.
+
+For details see the pages below.
+-[[Markdown notation>./Markdown]]
+-[[About Wiki notation>./Wiki]]
+-[[Wiki notation and Markdown notation>./Comparison]]
+
+*Site administration
+For administering the site, see the page below.
+-[[Site administration:./Administration]]
+
+*Export function
+For the export function, see below.
+-[[Export function:./Export]]
 */
 
 /**
@@ -344,6 +494,205 @@ NextFormではWebサーバーのアクセスログを集計することで，
 */
 
 /**
+@manual $manualpage$/en/Administration
+
+&title Site administration
+
+*Site settings
+To make the basic settings of the site, log in as a user with administrator rights
+and choose ''site menu'' > ''Admin tools'' > ''Site setup''.
+
+**(optional)Advanced site settings
+Advanced site settings are made by adding constant definitions to index.php.
+A constant is defined in the following form.
+ define('constant name', 'value of the constant');
+For example, to set the constant ''DEFAULT_PAGE_TYPE'', which sets the default page
+type, to ''text'', rewrite index.php to look like this:
+ (code)
+ <?php
+ // custom settings here -------
+ define('DEFAULT_PAGE_TYPE', 'text');
+ 
+ // ----------------------------
+ require_once('app/boot.inc');
+ ?>
+
+If you use the Apache HTTP Server, you can set the same thing by prefixing the
+constant name with ''NEXTFORM_'' and writing a line such as
+ SetEnv NEXTFORM_DEFAULT_PAGE_TYPE "text"
+in httpd.conf or .htaccess.
+
+For the constants that can be set, see the page below.
+
+-[[Settings:./Settings]]
+
+*Users
+NextForm can set rights per user and per page.
+To set up users, choose ''site menu'' > ''Admin tools'' > ''Manage users''.
+The rights are as follows. They grow stronger from the top down,
+and each right includes the ones above it.
+
+|right          |description                   |h
+|not available  |no feature can be used.       |
+|read only      |only reading pages is possible                               |
+|insert text only|inserting comments and so on through the forms provided by [[&&comment:../Wiki/Function/comment]] and [[&&bbs:../Wiki/Function/bbs]] is possible (careful, see below)|
+|writable       |editing pages is possible|
+|lockable       |locking pages is possible|
+|exportable     |exporting is possible when the [[export function:../Export]] is enabled|
+|administrator  |everything is possible, including the settings of the site|
+
+Besides these rights, choosing the entry ''set per page'' lets rights be set page
+by page.
+
+The insert text only right appears to allow editing only through
+[[&&comment:../Wiki/Function/comment]] and [[&&bbs:../Wiki/Function/bbs]], but in
+truth it is the right to insert any text at any position.
+For example, a malicious user could use a special method to insert '&/&*' at the top
+of a page and '&*&/' at the end of it, turning the whole contents of the page into a
+comment (invisible).
+Treat the insert text only right as effectively the same as writable: it is a
+comforting right that merely makes editing a page awkward outside the forms provided.
+
+*Tones (the colours of the screen)
+You can choose the colours of the screen as a set, or make and save your own.
+This is done at ''site menu'' > ''Admin tools'' > ''Tone setup''.
+-See [[Tones:./Tone]].
+
+*Access analysis settings
+For access analysis
+-see [[Access analysis settings:./Analyzer]].
+*/
+
+/**
+@manual $manualpage$/en/Administration/Tone
+
+&title Tones
+
+*What a tone is
+A tone is a set of the 25 colours used on the screen.
+It is a separate axis from the theme (which makes the layout and the spacing), so the
+same tone can be used whichever theme you choose.
+It is decided at ''site menu'' > ''Admin tools'' > ''Tone setup''.
+
+*Choosing the colours
+''Tone setup'' simply lays out the 25 colours.
+Rewrite only the colours you want to change and press ''Apply'' at the bottom.
+
+You can also start from a tone that came with NextForm or from one you saved.
+Choose it in ''Load tone'' at the top and press ''Load'', and those colours are put
+into the input fields. Nothing has changed at this point; they are used once you
+press ''Apply''.
+
+*Saving a tone
+Once the colours are decided, enter an identifier and a display name in
+''Save this tone'' and press ''Save''.
+It is saved on the server and appears in ''Load tone''.
+(Pressing ''Save'' applies it at the same time.)
+
+The identifier becomes the file name as it is, so only the characters a-z, 0-9 and
+. _ - can be used (up to 32 characters).
+Put a name in your own language in the ''display name'' instead.
+
+Choose one in ''Delete a saved tone'' and press ''Delete'' to remove it.
+Deleting cannot be undone.
+In the list for loading, ''the more recently saved come higher up''.
+
+*Where they are saved
+One tone is one file. They are loaded from two directories.
+
+|directory|contents|h
+|app/tone/|the tones that come with NextForm. They are replaced on every update, so do not edit anything here|
+|storage/tone/|the tones saved on this site. They survive an update|
+
+With the same file name, the one in ''storage'' is used.
+Saving under the same identifier as a tone that came with NextForm overrides it, and
+removing the file on the storage side brings the original back.
+
+The administrator of the server can also place these files directly, or copy them to
+another site.
+
+*The file format
+It is JSON.
+
+ (code)
+ {
+     "order": 100,
+     "names": {"en": "deep sea", "ja": "深い海"},
+     "colors": {
+         "THEME_COLOR_BACKGROUND": "#0b1b2b",
+         "THEME_COLOR_TEXT": "#e6eef7"
+     }
+ }
+
+|entry|contents|h
+|order|the order in which the tones that come with NextForm are listed. Smaller comes first (10 to 60). Saved tones come above them, newest first, whatever this says|
+|names|the display name per language. Without a name for that language English is used, and without that the file name|
+|colors|the colours. The names begin with ''THEME_COLOR_'' and the values are in ''#rrggbb'' form|
+
+Colours not written in colors are not used.
+Saving from the screen always writes all 25 colours, so when making one by hand the
+sure way is to copy a saved file and rewrite it.
+*/
+
+/**
+@manual $manualpage$/en/Administration/Analyzer
+
+&title Access analysis settings
+This page is aimed at the administrator of the web server, someone at home with
+operating the OS.
+
+NextForm builds the
+[[access counter:../../Wiki/Function/counter]] and
+[[popular pages:../../Wiki/Function/popularpages]]
+features by totalling up the access log of the web server.
+To use these features you therefore have to run a script that totals up the access log
+at a regular interval.
+
+*The totalling script
+
+The script that does the totalling is used as follows.
+ $ php <install dir>/app/tool/analyze_weblog <path to index.php> <URL> <path to resume file> <log file>
+:<install dir>|the directory NextForm was installed in
+:<path to index.php>|the path to the index.php of the site (that is, the settings file of the site)
+:<URL>|the URL of the site
+:{<path to resume file>|the path to the resume file.
+It does not have to exist already, but you need the rights to create and write it.
+This file records which access log has been totalled up to where.
+Removing it, or totalling up while naming a different file, risks counting twice.}
+:{<log file>|the path to the access log of the web server.
+The formats supported at present are common and combined, and those two with the host
+name of a virtual host in front.
+Totalling skips ahead to where the last run finished, based on the resume file, so
+running it many times against the same log file does not count twice.
+''Always name the log file by either a relative path or an absolute path, consistently.''
+This script treats a different path as a different log file and counts twice.
+When the inode number has changed since the last run, or the file has become smaller,
+it takes the log to have been rotated and totals from the start of the file.
+If it does count twice, removing the resume file at the moment the log rotates may
+put it right.
+}
+Run the script ''as a user who has the right to write into the NextForm directory and
+to read the access log''.
+
+Only while the access log is still there, if it has counted twice, running
+ $ php <install dir>/app/tool/analyze_weblog <path to index.php> <URL> <path to resume file> --delete-all
+removes every total and the resume file, so that you can total again from the start.
+
+*Running the script at a regular interval
+
+Before running it automatically, we recommend running the command by hand and
+checking that nothing is wrong.
+
+To run it every 10 minutes with cron, for example, set up crontab like this
+(mind the rights of the user).
+ # NextForm access log totalling
+ $comment_end$10 * * * * php /var/www/nextform/app/tool/analyze_weblog /var/www/html/index.php http://example.jp/wiki/ /var/www/nextform-resume.txt /var/log/httpd/access_log >/dev/null 2>&1
+
+*The results
+The results can be seen at ''Admin tools'' -> ''Access analysis''.
+*/
+
+/**
 @manual $manualpage$/ja/Markdown
 &title Markdown記法
 
@@ -661,6 +1010,345 @@ Wiki記法の [[&&title{}:../../Wiki/Function/title]] も同じ約束です．
 
 
 /**
+@manual $manualpage$/en/Markdown
+&title Markdown notation
+
+*Overview
+Pages of type markdown are written in [[Markdown:https://commonmark.org/]].
+NextForm follows [[CommonMark:https://spec.commonmark.org/]] and also supports
+extensions such as tables and strikethrough
+([[GitHub Flavored Markdown:https://github.github.com/gfm/]]) and footnotes.
+Unless you choose otherwise when creating a page, the type will be markdown.
+
+Text written in another tool (Obsidian or Notion, for example) can be pasted in
+as it is and will look much the same.
+
+(In a hurry? Go [[here:./CheatSheet]])
+
+*Guides to writing
+-[[Markdown Cheat Sheet>./CheatSheet]]
+-[[Basic elements>./Basic]] (headings, emphasis, lists, quotes, code and so on)
+-[[Extra elements>./Extra]] (tables, checkboxes, footnotes and so on)
+-[[Links, images and attachments>./Link]] (links to pages and embedding files)
+-[[Front matter>./FrontMatter]] (the metadata at the top; title and tags)
+
+How the same things are written in Wiki notation is collected in
+[[Wiki notation and Markdown notation:../Comparison]].
+
+*How to edit
+Click ''Edit'' in the ''page menu'' to edit the source.
+Press ''Preview'' on the editing screen to check the converted result before saving.
+The editing screen also links to the cheat sheet.
+
+*When to use it
+Types markdown and wiki are both first-class ways of writing.
+You can use Markdown notation for documents meant to be read, and Wiki notation for
+"living pages" that use [[functions:../Wiki/Function]] (embedding page lists,
+calendars and so on).
+Functions cannot be used in pages of type markdown.
+For what can and cannot be written, see
+[[Wiki notation and Markdown notation:../Comparison]].
+*/
+
+/**
+@manual $manualpage$/en/Markdown/CheatSheet
+&title Markdown Cheat Sheet
+
+*[[Basic elements:../Basic]]
+|object|notation|h
+|[[heading:../Basic#Headings]]|""# heading"" (six levels, by the number of #)|
+|[[paragraph:../Basic#Paragraphs and line breaks]]|insert an empty line|
+|[[line break:../Basic#Paragraphs and line breaks]]|two spaces at the end of the line|
+|[[strong:../Basic#Emphasis]]|""**strong words**""|
+|[[emphasis:../Basic#Emphasis]]|""*emphasized words*""|
+|[[code in a sentence:../Basic#Code in a sentence]]|""$bq$code$bq$""|
+|[[list:../Basic#Lists]]|""- item"" (indent to nest)|
+|[[numbered list:../Basic#Lists]]|""1. item""|
+|[[quote:../Basic#Quotes]]|""> quoted text""|
+|[[code block:../Basic#Code blocks]]|surround with lines of ""$bq$$bq$$bq$""|
+|[[horizontal rule:../Basic#Horizontal rules]]|""---""|
+|[[symbol as it is:../Basic#Escaping]]|put a backslash before the symbol|
+
+*[[Extra elements:../Extra]]
+|object|notation|h
+|[[table:../Extra#Tables]]|write &|cell1&|cell2&| and make the second row &|---&|---&||
+|[[strikeout:../Extra#Strikethrough]]|""~~struck out words~~""|
+|[[checkbox:../Extra#Checkboxes]]|""- [ ] item"" and ""- [x] item""|
+|[[footnote:../Extra#Footnotes]]|""text[^1]"" and ""[^1]: the note""|
+|[[automatic link:../Extra#Automatic links]]|write the URL as it is|
+
+*[[Links, images and attachments:../Link]]
+|object|notation|h
+|[[link to a page:../Link#Links to pages]]|""[[page name]]"" or &[&[page name&|display name&]&]|
+|[[external link:../Link#External links]]|""[display name](URL)""|
+|[[image or attachment:../Link#Images and attachments]]|""![description](file name)""|
+
+*[[Front matter:../FrontMatter]]
+|object|notation|h
+|[[title:../FrontMatter#Title]]|""title: the title"" inside the ""---"" fence at the very top|
+|[[tags:../FrontMatter#Tags]]|""tags: [tag1, tag2]"" inside the same fence|
+*/
+
+/**
+@manual $manualpage$/en/Markdown/Basic
+&title Basic elements of Markdown notation
+
+These are the ways of writing that belong to the base of Markdown
+([[CommonMark:https://spec.commonmark.org/]]).
+Extensions such as tables and footnotes are in [[Extra elements:../Extra]], and
+links to pages and images are in [[Links, images and attachments:../Link]].
+
+*Paragraphs and line breaks
+An empty line separates paragraphs.
+A line break inside a paragraph does not appear in the output
+(it is treated as a separator between words).
+To break the line without starting a new paragraph, put ''two spaces'' at the end of
+the line, or write a single ''backslash''.
+
+*Headings
+Write ""#"" and a space at the start of the line.
+The number of ""#"" (from one to six) is the depth of the heading.
+
+ # the largest heading
+ ## the second heading
+ ### the third heading
+
+There is another way to write them: a line of ""==="" ''below'' the text makes a first
+level heading, and a line of ""---"" makes a second level heading.
+Take care not to write ""---"" on the line right below a sentence by accident:
+it turns that sentence into a heading instead of drawing a horizontal rule.
+
+Unlike sections in Wiki notation, headings in Markdown notation cannot be folded and
+do not span a range.
+
+*Emphasis
+|notation|result|h
+|""**strong**""|bold|
+|""*emphasis*""|italic|
+|""***strong and emphasized***""|bold italic|
+
+Underscores work the same as asterisks (""__strong__"", ""_emphasis_"").
+
+*Code in a sentence
+Surround text with ""$bq$"" to make code inside a sentence (a fixed width font).
+To put a ""$bq$"" itself inside the code, surround it with ""$bq$$bq$"".
+
+*Lists
+Write ""- "" at the start of the line.
+Indenting an item by two spaces nests it.
+
+ - item
+ - item
+   - nested item
+
+Starting with a number and ""."" makes a numbered list.
+The first number is the number the list starts from, and the rest are renumbered
+when the page is shown.
+
+ 1. numbered item
+ 2. numbered item
+
+To put several paragraphs or a code block into one item, leave an empty line and
+continue at the indent of the item.
+
+*Quotes
+Write ""> "" at the start of the line.
+Repeating it as ""> > "" makes a quote inside a quote.
+
+ > It was the best of times,
+ > it was the worst of times.
+
+*Code blocks
+Lines of ""$bq$$bq$$bq$"" around the text show it exactly as written, line breaks and all.
+A language name can follow the opening line (""$bq$$bq$$bq$php"", for example).
+The language name only records what the source is; as the
+[[comparison table:../../Comparison]] notes, it is not coloured.
+
+ $bq$$bq$$bq$
+ int func(int a) {
+     return a * 2;
+ }
+ $bq$$bq$$bq$
+
+Lines of ""~~~"" work the same way (useful when the text itself contains ""$bq$$bq$$bq$"").
+Indenting the lines by four spaces also makes a code block, with no fence.
+
+*Horizontal rules
+A line consisting only of ""---"", ""***"" or ""___"" becomes a horizontal rule.
+Written right after a sentence it is read as [[the underline of a heading:.#Headings]],
+so leave an empty line before it.
+A ""---"" at the very ''top'' of the document starts the
+[[front matter:../FrontMatter]] instead.
+
+*Escaping
+To show a symbol as itself rather than as notation,
+write a backslash before the symbol.
+
+ \*asterisks, not emphasis\*
+
+*Character references
+An HTML character reference such as &&copy; written in the source becomes that
+character (© in this example).
+*/
+
+/**
+@manual $manualpage$/en/Markdown/Extra
+&title Extra elements of Markdown notation
+
+On top of the base of [[CommonMark:https://commonmark.org/]] you can use the extensions
+of [[GitHub Flavored Markdown:https://github.github.com/gfm/]]
+(tables, strikethrough, checkboxes and automatic links) and footnotes.
+Ways of writing that work on GitHub or in Obsidian mostly work here too.
+
+*Tables
+Separate the cells with ""|"" and write one row of the table per line.
+The first row is the header, and the second must be a separator row of ""---"".
+
+ | item | price |
+ | --- | --- |
+ | apple | 1.20 |
+ | orange | 0.80 |
+
+Adding a colon to the separator row sets how each column is aligned.
+
+ | left | center | right |
+ | :--- | :---: | ---: |
+
+Notation such as emphasis and code in a sentence can be used inside cells.
+Unlike tables in Wiki notation, cells cannot be merged.
+The columns are not lined up when the page is saved either
+(the source stays exactly as you wrote it).
+
+*Strikethrough
+Surrounding text with ""~~"" strikes it out.
+
+ ~~that was wrong~~
+
+*Checkboxes
+Starting a list item with ""[ ]"" or ""[x]"" makes a checkbox.
+
+ - [ ] item still to do
+ - [x] item that is done
+
+The checkbox that is shown is only there to be read; it cannot be ticked from the
+screen. Edit the source to change it.
+
+*Footnotes
+Write a mark such as ""[^1]"" in the text and ""[^1]: the note"" on a line of its own.
+Footnotes are shown together at the foot of the page, with links back and forth.
+
+ Once upon a time[^1] there was.
+ 
+ [^1]: The exact date is not known.
+
+The mark does not have to be a number (""[^note]"" works too).
+What is shown is a running number.
+
+*Automatic links
+A URL written as it is becomes a link. So does a word starting with ""www."".
+You can also surround a URL with ""<"" and "">"".
+
+*Raw HTML
+By default, HTML written inside Markdown is not interpreted as HTML and is shown as
+plain characters. This avoids a state in which anyone who can edit can embed a script.
+It can be interpreted through the site setting
+([[MARKDOWN_ALLOW_HTML:../../Administration/Settings]]).
+Links to dangerous URLs such as ""javascript:"" are never created, whatever the setting.
+*/
+
+/**
+@manual $manualpage$/en/Markdown/Link
+&title Links, images and attachments in Markdown notation
+
+*Links to pages
+Surrounding a name with &[&[ and &]&] makes a link to a page inside this site.
+
+|notation|meaning|h
+|""[[page name]]""|a link to that page|
+|&[&[page name&|display name&]&]|a link with a different display name|
+|""[[../the next page]]""|a relative name (resolved as [[relative page names:../..#Relative page names]] are)|
+|""[[page name#heading]]""|a link to a heading in that page|
+
+Unlike Wiki notation, what comes first inside &[&[ &]&] is ''the target, and the
+display name comes second''. This matches the order used by Obsidian and MediaWiki.
+
+A link to a page that does not exist is shown in a different colour,
+just as in Wiki notation.
+Positions of headings are decided the same way whatever the type of the page, so
+""[[page name#heading]]"" reaches headings in pages of type wiki as well.
+
+*External links
+""[display name](URL)"" makes a link to an external site.
+A URL written as it is [[also becomes a link:../Extra#Automatic links]].
+
+When you link to the same URL many times, you can also write the URL away from the
+text, in the reference form.
+
+ See [here][ref] for details.
+ 
+ [ref]: https://example.com/
+
+*Images and attachments
+""![description](file name)"" first looks for a child page of the current page.
+Attachments are saved as child pages, so writing the name of a file uploaded through
+''Attach'' embeds it.
+
+If there is no such child page, the name is resolved as a page name by the same rules
+as Wiki notation (starting with ''./'' or ''../'' makes it relative, otherwise it is
+a name from the top).
+Pointing at a file that does not exist yet makes a link, so that it can be created.
+
+Writing a URL shows an external image as it is.
+*/
+
+/**
+@manual $manualpage$/en/Markdown/FrontMatter
+&title Front matter
+
+A part at the very top of the document surrounded by lines of ""---"" is treated as
+metadata (the front matter) and is not shown in the text.
+Text brought over from Obsidian or Notion can be pasted in with it still attached.
+
+ ---
+ title: Meeting notes
+ tags: [minutes, meeting]
+ ---
+
+What NextForm reads is ""title:"" and ""tags:"".
+Other entries do no harm; they simply stay in the source.
+
+*Title
+Writing ""title:"" makes it the title of the page.
+It works like &&title{} in Wiki notation: a name shown separately from the page name.
+
+*Tags
+Writing ""tags:"" makes them the tags of the page.
+They are the same tags you set from the ''Tag'' screen, and they appear in the tag list.
+Any of the following ways of writing them will do.
+
+ tags: [minutes, meeting]
+ tags: minutes, meeting
+ tags: minutes meeting
+ tags:
+   - minutes
+   - meeting
+
+Tags are saved separated by spaces, so ''a tag cannot contain a space''.
+Writing "minutes 2026" gives two tags.
+
+*What is not written is removed
+The title and the tags become ''exactly what the front matter says''.
+Remove ""title:"" and save, and the title is removed too;
+remove ""tags:"" and save, and the tags are removed.
+Values set from the ''Meta information'' or ''Tag'' screens are replaced the next time
+the text is saved.
+This is so that the state of a page can be seen from its source.
+
+The same promise applies to
+[[&&title{}:../../Wiki/Function/title]] in Wiki notation.
+*/
+
+/**
 @manual $manualpage$/ja/Comparison
 &title Wiki記法とMarkdown記法の対応
 
@@ -721,6 +1409,72 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |CSV形式の表|行頭の &,|
 
 これらが1つでも要るページは，Wiki記法のまま置いてください．
+*/
+
+/**
+@manual $manualpage$/en/Comparison
+&title Wiki notation and Markdown notation
+
+Pages of type wiki and pages of type markdown are both first-class ways of writing.
+You can use Wiki notation for "living pages" that use functions, and Markdown notation
+for documents meant to be read.
+This page puts the two side by side, showing how the same thing is written in each.
+
+Each notation is described in [[Markdown notation:../Markdown]] and
+[[About Wiki notation:../Wiki]].
+
+*Things that carry over directly
+|what you want|Wiki notation|Markdown notation|h
+|paragraph|insert an empty line|insert an empty line|
+|strong|&'&'strong&'&'|""**strong**""|
+|emphasis|&'&'&'emphasis&'&'&'|""*emphasis*""|
+|strikeout|&%&%strikeout&%&%|""~~strikeout~~""|
+|list (unordered)|&- item|""- item""|
+|list (ordered)|&+ item|""1. item""|
+|quote|&>quoted text|""> quoted text""|
+|preformatted text|a space at the start of the line|surround with ""$bq$$bq$$bq$""|
+|horizontal rule|&=&=&=&=|""---""|
+|link to a page|&[&[display name:page name&]&]|&[&[page name&|display name&]&]|
+|external link|&[&[display name:URL&]&]|""[display name](URL)""|
+|page title|&&title{title}|""title:"" in the front matter|
+|table (basic)|&|cell1&|cell2&||&|cell1&|cell2&||
+
+The order inside &[&[ &]&] is ''the other way round''.
+Wiki notation puts the display name first, Markdown notation puts the target first.
+
+*Things that mean the same but work differently
+|what you want|Wiki notation|Markdown notation|difference|h
+|heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
+|folding a heading|&*(optional)|none|Markdown notation has no folding|
+|marking the end of a section|&*(end)|none|as above|
+|description list|&:item&|description|none|In Markdown notation use a list or a table instead|
+|table formatting|h f c l r n and so on at the end of the row|column alignment in the separator row|All you can set in Markdown notation is the column alignment|
+|merging table cells|&< &> &^ &_|none|Markdown notation cannot merge cells|
+|lining up table columns|done automatically when saved|not done|The source in Markdown notation stays exactly as written|
+|highlighting code|(code) after the leading space|""$bq$$bq$$bq$php""|Wiki notation colours the code. Markdown notation only records the language name; it is not coloured|
+|checkbox|none|""- [ ] item""|Only Markdown notation has this|
+|footnote|none|""text[^1]"" and ""[^1]: the note""|as above|
+
+A link to a heading, &[&[page name#heading&]&], reaches the same place
+whatever the type of the page.
+
+*Things Markdown notation cannot write
+Functions of Wiki notation cannot be used in pages of type markdown.
+Create a page of type wiki when you want to do any of the following.
+
+|what you want|Wiki notation|h
+|pulling in another page|&&include|
+|lists of pages|&&pages &&index &&subpage|
+|calendars|&&calendar &&datepages|
+|calculation and spreadsheets|&= at the start of a line and &= in a cell|
+|embedding search results|&&search|
+|lists of new and updated pages|&&feed &&mtime|
+|colour and size of text|&&color &&size|
+|alignment|&&align|
+|folding|&&more|
+|tables in CSV form|&, at the start of a line|
+
+Keep a page in Wiki notation if it needs even one of these.
 */
 
 /**
@@ -867,6 +1621,159 @@ Wiki記法で使う記号をそのまま表示したい場合は&&を記号の�
 ""&や[[などWiki記法で使用する記号を多用するときダブルクォート2つで囲むとそのまま表示されます""
 }
 
+*/
+
+/**
+@manual $manualpage$/en/Wiki
+&title About Wiki notation
+*What Wiki notation is
+
+-[[Wiki Cheat Sheet:$manualpage$/en/Wiki/CheatSheet]]
+-[[Wiki notation and Markdown notation:../Comparison]]
+
+Wiki notation is a notation for writing structured and decorated text easily.
+Write your text following certain rules and the wiki engine will display it in a
+readable shape. Text written under the rules of Wiki notation is called the source.
+To use Wiki notation, create a page of type wiki, write the source as its contents
+and save it.
+It stands alongside [[Markdown notation:../Markdown]] as a first-class way of writing,
+and its strength is that it goes as far as [[functions>./Function]]
+(embedding page lists, calendars and so on).
+
+The Wiki notation of NextForm divides broadly as follows.
+-[[Basic elements>./Basic]]
+-[[Line head notation>./LineHead]]
+-[[Functions>./Function]]
+
+*How to edit
+''To edit an existing page, double click the part you want to edit.''
+Double clicking replaces just that part with its source and lets you edit it.
+For a list, double clicking switches to a display in which items can be removed or
+struck out. Double clicking an item again lets you edit its source.
+Alt and click works instead of a double click.
+
+Another way is to click ''Edit'' in the ''page menu'', which lets you edit the source
+of the whole page.
+
+*Calculation
+Writing an expression in Wiki notation lets you compute its value.
+See the [[Calculation>./Calc]] page for details.
+*/
+
+/**
+@manual $manualpage$/en/Wiki/Basic
+&title Basic elements
+*Ordinary text
+Write ordinary characters in the source and the wiki engine shows them as they are.
+A line break in the source means no more than a single space, though.
+
+&wikiexample{
+Some text
+and a second line in the source..
+}
+
+*Paragraph
+Text separated by an empty line is treated as a separate paragraph.
+
+&wikiexample{
+Some text
+
+and an empty line in the source...
+}
+
+*URL
+A URL written as it is appears as a link.
+
+&wikiexample{The NextForm site is at `OFFICIAL_URL`.}
+
+*Strong
+Surrounding text with &'&' and &'&' marks it as strongly important.
+Use it for the important parts of a piece of writing.
+
+&wikiexample{... this article is ''about cooking''. ...}
+
+*Emphasis
+Surrounding text with &'&'&' and &'&'&' emphasizes it.
+Use it for the part of a sentence you want to stand out.
+
+&wikiexample{I like '''Japanese food'''.}
+
+*Strikeout
+Surrounding text with &%&% and &%&% strikes it out.
+
+&wikiexample{%%Good morning%%Good evening}
+
+*Link
+Text surrounded by &[&[ and &]&] becomes a link to another page.
+Writing &[&[Cooking/Japanese&]&] makes a link to the page ''Cooking/Japanese''.
+Writing &[&[the food I like:Cooking/Japanese&]&] also links to ''Cooking/Japanese'',
+but the link is shown as ''the food I like''.
+The separator can be &| or &> or &>&> as well as &:.
+Separating with &>&> makes a link that opens in a new window (tab).
+The page name can be a [[relative page name:../..#Relative page names]]
+using ''.'' or ''..''.
+Adding ''#heading name'' after the page name links to a section within that page.
+A URL can be written instead of a page name.
+Use [[&&link:../Function/link]] when you want to build a link with finer control.
+
+&wikiexample{
+[[Cooking/Japanese]]
+[[the food I like:Cooking/Japanese]]
+[[../Italian]]
+[[$manualpage$/en#Backup]]
+[[NextForm official page:`OFFICIAL_URL`]]
+}
+
+*Comment
+Characters from where &/&/ is written to the end of the line are ignored.
+A part surrounded by &/&* and &*&/ (several lines allowed) is ignored in the same way.
+Use this to put notes in the source.
+
+&wikiexample{
+Good moring //fix the spelling later
+$comment_begin$
+Text we do not want shown yet
+but want to keep
+$comment_end$
+}
+
+*Line break
+Writing &~ at the end of a line breaks the line.
+In ordinary writing, though, you should not break lines just to tidy the look or to
+make it easier to read.
+If the break carries meaning, we recommend inserting an empty line and separating it
+as a paragraph instead.
+And when you want to show text with its line breaks exactly as they are, we recommend
+[[preformatted text:../LineHead#Preformatted text]].
+To break a line somewhere other than the end of a line, you can write &&br; instead.
+
+*Symbols
+To show a symbol used by Wiki notation as it is, put && in front of it.
+For example, write &&/&&/ to show &/&/ as it is, and &&&& to show && as it is.
+
+HTML character entity references and numeric character references can be used,
+such as &&copy; &&nbsp; and &&#9834;.
+
+The following emoticons can also be used.
+|notation|shown|hlc
+|&&heart;|&heart;|
+|&&smile;|&smile;|
+|&&bigsmile;|&bigsmile;|
+|&&huh;|&huh;|
+|&&oh;|&oh;|
+|&&wink;|&wink;|
+|&&sad;|&sad;|
+|&&worried;|&worried;|
+
+*Showing text as it is
+To show symbols as they are across a long stretch of text, surround the range with
+&"&" (two double quotes) and &"&".
+The range surrounded that way is not read as Wiki notation and is shown as it is.
+To do the same across several lines, use [[&&plain:../Function/plain]].
+
+&wikiexample{
+""when you use many symbols of Wiki notation such as & or [[, surrounding them with two double quotes shows them as they are""
+}
 */
 
 /**
@@ -1115,6 +2022,221 @@ CSV形式のデータを表として表示できます．
 */
 
 /**
+@manual $manualpage$/en/Wiki/LineHead
+
+&title Line head notation
+
+*The basics of line head notation
+Writing a set symbol at the start of a line in the source gives that line a special
+meaning. The basic form is
+ symbol the text it applies to
+For example ''&-(minus)'' at the start of a line means a list, so a list is made
+like this:
+ - pasta
+When the text it applies to runs over several lines, surround it with &{ and &}:
+ symbol{
+ first line of the text
+ second line of the text
+ }
+Wiki notation can be used inside &{ and &} as well. For example:
+ -{pasta is
+ delicious}
+As an exception, a &{ that comes first is still read as line head notation.
+The example above can therefore also be written:
+ {-pasta is
+ delicious}
+
+A part surrounded by &( and &) right after the symbol of a line head notation is read
+as a special setting.
+When you write &( right after the symbol, put a space before the &(.
+
+*Sections
+Writing &* at the start of a line begins a section.
+Text after the &* becomes the heading of that section.
+A section is read as continuing until the next section or the end of the page.
+Writing several &* in a row, as in &*&*, makes a section inside a section.
+There is no limit to the number of &*.
+
+To mark the end of a section, write as many &* from the start of the line as the depth
+of the section you want to end, and write ''(end)'' right after them.
+Writing ''(optional)'' right after the &* shows the section folded.
+
+&wikiexample{
+*How to make pasta
+**Ingredients
+The ingredients are...
+***Ingredients for the dough
+The dough needs..
+***Ingredients for the sauce
+The sauce needs..
+*(optional)One small extra touch
+A little fiddling makes it taste better.
+}
+
+*Lists
+Writing &- or &+ at the start of a line makes a list.
+&- makes a list whose order carries no meaning, &+ a list whose order does.
+Continuing them without an empty line makes them one list.
+&- and &+ can be mixed.
+Writing the symbol several times in a row expresses a nested list
+(a list inside a list). There is no limit to the depth.
+
+Writing ''(optional)'' right after the &- or &+ shows the list folded.
+
+&wikiexample{
+-Ingredients
+--Meat
+---Beef
+---Pork
+--Vegetables
+---Cabbage
+---Carrot
+
++Preparation
+++Chop the following
+---Cabbage
+---Carrot
++Make the sauce
+++{Heat the frying pan
+and add oil, over several lines...}
+++Add the chopped ingredients
+}
+
+*Description lists
+You can write a list of pairs, such as an item and its description
+(a description list).
+To write one, put &: at the start of the line.
+Then write the item and the description, separated by &|.
+Continuing them without an empty line makes them one description list.
+
+&wikiexample{
+:knife|A knife is a blade used for cooking.
+:{ladle|
+A ladle is...
+When it runs over several lines, write { and } after the :.
+}
+}
+
+*Preformatted text
+Writing a space at the start of a line shows everything after that space exactly as
+written, line breaks included.
+It is handy when you want text shown as it is.
+On the editing screen, select the range you want as preformatted text and press the
+''Quote'' button twice to make preformatted text quickly.
+When writing a programming language, write (code) after the space on the first line
+to turn on highlighting.
+See the [[&&pre:../Function/pre]] page for how to use it in detail.
+
+&wikiexample{
+ abcde
+ fghij
+
+ (code)
+ int func(int a) {
+     return a * 2;
+ }
+}
+
+*Quotes
+
+Writing &> at the start of a line shows the text as quoted from another source.
+Continuing them without an empty line makes them one quote.
+On the editing screen, select the range you want quoted and press the ''Quote'' button
+to make a quote quickly.
+
+&wikiexample{
+>It was the best of times,
+>it was the worst of times.
+}
+
+*Horizontal rules
+Writing four or more &= from the start of a line makes a horizontal rule.
+
+&wikiexample{
+====
+}
+
+*Calculation
+Writing a single &= at the start of a line, followed by an expression, replaces it with
+the result of that expression.
+Writing &= at the end of the expression shows both the expression and the result
+instead of replacing it.
+A part surrounded by &[ and &] inside an expression is ignored.
+When you write &( right after the &=, put a space before it.
+
+See the [[details of calculation>../Calc]] page as well.
+
+&wikiexample{
+= (1 + 2) * 3 ^ 2 / 4
+= sin(pi/4) + cos(pi/4) + log(2 & 1024) =
+= 1,000[ml] * 20[bottles] / 1000[to L] = [L]
+}
+
+*Tables
+Writing &| at the start of a line makes a table.
+One line in the source is one row of the table.
+Separating further with &| within the line writes the columns of the table.
+Write a &| after the last column as well.
+
+Listing the following characters ''after the &| at the end of the row'' sets the format
+of the cells. Writing them several times sets the cells in order from the left
+(except for h and f).
+With nothing set, a cell follows the format of the cell before it or of the row.
+
+|character|effect                                                    |h
+|h        |make the row a header                                     |
+|f        |make the row a footer                                     |
+|c        |centre the cell                                           |
+|l        |align the cell left                                       |
+|r        |align the cell right                                      |
+|n        |clear centre, left and right alignment                     |
+|#        |highlight the background of the cell                      |
+|&=       |clear the background highlight                            |
+|%        |highlight the text of the cell                            |
+|/        |clear the text highlight                                  |
+|&,       |show the expression in the cell with thousands separators  |
+|.        |clear the thousands separators                            |
+|w        |set the width of the cell, written as w100 or w14em        |
+|e        |set the height of the cell, written as e100 or e14em       |
+Width and height can be cleared by writing ''w'' or ''e'' on their own.
+
+Writing only &^ &_ &< or &> inside a cell merges it with the cell above, below,
+to the left or to the right.
+
+Writing &~ at the start of a cell makes that cell a heading cell.
+Writing &= at the start of a cell lets you write an expression, giving you a
+spreadsheet. See [[details of calculation>../Calc]].
+
+Even when the &| are out of line in the source, the columns are lined up when the page
+is saved, so the table is easy to read in the source too.
+
+Clicking a header (a row formatted with h) while reading sorts the table freely.
+
+&wikiexample{
+|ingredient   |amount   |price     |h,
+|cabbage      |quarter  |=100      |lcr
+|carrot       |half     |=50       |
+|good tomatoes|<        |=1200     |
+|salt         |a pinch  |unknown   |%/
+|pepper       |a pinch  |=10       |/
+|love         |plenty   |=100000000|#
+|total        |<        |=sum(up)  |f=
+}
+
+Making a column in the header or footer of the form
+''@item name/choice1/choice2/...@'' shows the choices when a cell in that column is
+double clicked to be edited.
+
+*Tables in CSV form
+Writing &, at the start of a line and CSV data after it shows the CSV data as a table.
+
+&wikiexample{
+,apple,1.00
+,"orange, mandarin",2.00
+}
+*/
+
+/**
 @manual $manualpage$/ja/Wiki/CheatSheet/Standard
 |[[節:../../LineHead#節]]|&* 見出し|
 |[[箇条書き(順序なし):../../LineHead#箇条書き]]|&- 項目|
@@ -1206,6 +2328,78 @@ colorがファンクション名，redがパラメータ, "赤い文字"が対�
 &include([[../CheatSheet/Function]]);
 *各種ファンクション(上級者向け)
 より複雑な機能をもつ以下のようなファンクションもあります．
+&include([[../CheatSheet/FunctionAdvanced]]);
+*/
+
+/**
+@manual $manualpage$/en/Wiki/Function
+
+&title Functions
+*The basics of functions
+A notation called function notation is provided for using more involved features.
+Function notation is written in one of the following forms.
+
+ &function name(parameters) the target..
+
+ &function name(parameters) the target..; text after it that is not the target
+
+ &function name(parameters) { target 1
+ target 2
+ target 3..
+ }
+
+The function name is the fixed name given to each feature.
+The parameters are additional instructions to that feature.
+The target is the text and so on that the feature applies to.
+
+For example [[&&color:./color]] is the function that changes the colour of text.
+It is used like this:
+
+&wikiexample{Now I write &color(red){text in red}.}
+
+Here color is the function name, red is the parameter and "text in red" is the target.
+The end of the target can also be marked with a &; symbol or with a line break,
+as follows.
+
+ Now I write &color(red)text in red;.
+
+ Now I write &color(red)text in red
+ here.
+
+A function can also be used inside another function or inside other Wiki notation.
+[[&&size:./size]] is the function that changes the size of text.
+
+&wikiexample{
+- &color(green)a list item in green
+&size(150%) { &color(blue) { big blue text }}
+}
+
+**Parameters
+The &( and &) can be left out along with the parameters.
+When there are several parameters, separate them with a &, symbol.
+How the parameters are written differs from feature to feature, but as a rule they
+follow the patterns below.
+:a particular English word|turn an additional feature on
+:!a particular English word|turn an additional feature off
+:a particular English word=value|set a value
+:&[&[page name&]&]|name the page to act on
+:a number|set an amount
+
+**(optional)Marking the target with repeated braces
+The target can also be surrounded by runs of ''&{&{&{'' and ''&}&}&}'' symbols
+(any number of them, as long as the two runs match).
+Written that way, the target works as expected even when it contains
+''&{ symbols'' or ''&} symbols''.
+
+&wikiexample{{{{{
+&color(green) {{{{green text with a brace } in it.}}}}
+}}}}}
+
+*The functions
+The following functions are available.
+&include([[../CheatSheet/Function]]);
+*The functions (advanced)
+There are also functions with more involved features, as follows.
 &include([[../CheatSheet/FunctionAdvanced]]);
 */
 
@@ -1415,4 +2609,223 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
  &export(directory=real, label=本番環境へエクスポート);
 これはテスト環境と本番環境のディレクトリ(testとreal)を用意し，それぞれに対してボタンを作成しています．
 テスト環境でエクスポート結果を確認した後で本番環境に反映させるといったような使い方ができます．
+*/
+
+/**
+@manual $manualpage$/en/Export
+&title Export function
+
+NextForm can write out the pages you made with it as HTML files, image files, CSS files
+and so on, letting you build a site of static content.
+This is called the export function.
+
+With the export function you can manage the contents and the design of a site, and the
+screens that administer it, in [[Wiki notation:../Wiki]].
+Put grandly, NextForm is a CMSMS that can build and manage a CMS (Content Management
+System) itself. That is, the administrator of a site can easily hand the editors of the
+site a minimal CMS, or a CMS with helpful explanations added.
+
+*Enabling it
+
+The export function is disabled by default.
+To use it, add
+ define('EXPORT_ENABLE', 'true');
+to index.php. (For index.php see
+[[advanced site settings:../Administration#Advanced site settings]].)
+
+Only an administrator, or a user granted the export right, can use the export function.
+
+*Basic setup
+To use the export function you have to set which page is written out to which file.
+To do so, write a setup table on any page you like, using a
+[[table in Wiki notation:../Wiki/LineHead#Tables]].
+The setup table has a link to the page in the first column and the name of the file to
+write in the second column.
+In Wiki notation, write something like
+ |page name       |file name    |h
+ |[[Top page]]    |index.html   |
+ |[[Style sheet]] |css/style.css|
+The header row (the first row above) is ignored, so you may leave it out or make it
+whatever you like.
+
+Once the setup table is written, create the pages you made into links in the table.
+We recommend making the pages you want as HTML files pages of type wiki, and the
+other pages of type text or type file.
+
+Next, make a button that actually writes the files out following this setup.
+To make this button, write
+ &export;
+This may go above or below the setup table, or on another page entirely.
+When it is on another page, though, write
+ &export([[the page with the setup table]]);
+For more advanced ways of using &&export;, see
+[[here:../Wiki/Function/export]].
+That makes the button, and pressing it actually writes the files out (exports them).
+
+The files are saved under the name set in the second column of the setup table, in the
+directory set by ''EXPORT_DIR_PATH'' in the [[settings:../Administration/Settings]].
+Configuring the web server for that directory and publishing it builds a static site
+made of HTML files and so on.
+To manage content on a web server other than the one NextForm is installed on, see
+[[what happens after an export:.#What happens after an export]].
+
+*Templates
+The example above wrote out the files index.html and css/style.css, but index.html was
+not made to use css/style.css as its style, so css/style.css is meaningless.
+Setting a template for the export solves this.
+To use a template, make a third column in the setup table and write a link to the page
+that is the template. For example
+ |page name       |file name    |template                |h
+ |[[Top page]]    |index.html   |[[Normal page template]]|
+ |[[Style sheet]] |css/style.css|                        |
+Once the template is written in the setup table, create the template.
+Make the page that is the template type text or type file.
+Give it contents such as the following.
+ (code)
+ <!DOCTYPE html>
+ <html>
+   <head>
+     <meta charset="UTF-8">
+     <title>$title$</title>
+     <link rel="stylesheet" type="text/css" href="./css/style.css"/>
+   </head>
+   <body>
+     $contents$
+   </body>
+ </html>
+Set a template like this and export, and the contents of the template are written to
+index.html, with the $title$ part of the template becoming the page name and the
+$contents$ part becoming the contents of the page named in the first column of the
+setup table.
+
+Write nothing in the third column, the template column, and the contents of the first
+column are written out as they are.
+
+The templates of the export function and the templates of
+[[&&pages:../Wiki/Function/pages]] and
+[[&&writepage:../Wiki/Function/writepage]] in Wiki notation are different things.
+Take care.
+
+**How to write a template
+Write a particular keyword in the template, such as the $title$ and $contents$ above,
+and it is replaced by something else.
+The keywords are as follows.
+
+:$title$|the page name, or the title set by [[&&title:../Wiki/Function/title]]
+:$contents$|the contents of the page
+:{$&[&[page name&]&]$|replaced by the contents of the page named.
+The page name may be a [[relative name:..#Relative page names]] seen from the template
+page.
+}
+:{$mtime$|the time the page was modified
+ $mtime?format=%Y/%m/%d$
+Written like this it can take any format.
+The format follows the
+[[strftime format:http://php.net/manual/en/function.strftime.php]].
+}
+:$btime$|the time the page was created (the format is set as for $mtime$)
+:$exporttime$|the time of the export (the format is set as for $mtime$)
+:{$tags$|shows the list of tags of the page.
+ $tags?list=[[page name]]$
+Written as above it sets where the tags link to.
+Name a page that lists pages with [[&&pages:../Wiki/Function/pages]] or the like.
+Clicking a tag then leads to the page list narrowed to those carrying that tag.
+Furthermore
+ $tags?list=[[page name]]&prefix=This article has the tags &sep= and &suffix=.$
+sets what is shown before the tags, what is shown after them, and the separator
+between them, when there are any tags.
+}
+
+*Settings for several pages
+When exporting several pages you do not have to write every page and file name into the
+setup table.
+When a page named in the first column of the setup table links to another page, the
+linked page is exported too.
+Likewise pages linked from those linked pages are exported.
+That is, every page that can be reached by following links from the pages in the setup
+table is exported.
+
+Pages exported as a knock-on effect of a link like this have no file name or template
+set for them.
+The file name and template are then decided automatically, but they can also be stated
+in the setup table. For example:
+ |page name       |file name        |template                |h
+ |[[Top page]]    |index.html       |[[Normal page template]]|
+ |[[Style sheet]] |css/style.css    |                        |
+ |Blog/&*         |                 |[[Blog template]]       |
+ |type=wiki       |                 |[[Normal page template]]|
+ |&*.jpg          |images/$basename$|                        |
+
+The first column of the setup table can name a pattern of page names using wildcards,
+instead of a link to a page.
+Pages matching the pattern use that row as their setup.
+''Note that &* and &/&* and &*&/ mean a heading or a comment in Wiki notation, so the
+&* has to be escaped by putting an && in front of it.''
+In the example above, every child page of the page ''Blog'' uses the template
+''Blog template'', and the file name is blank so it is decided automatically.
+
+The first column of the setup table can also name a page type, in the form
+ type=page type
+In the example above every page of type wiki uses ''Normal page template''.
+
+The conditions in the first column are checked from the top down, and the first row
+that matches is used as the setup.
+
+The second column of the setup table holds the name of the file to write, and writing
+particular keywords there sets a file name that follows the page.
+The keywords are as follows.
+
+:$id$|a run of letters and digits, decided automatically, that no other page shares.
+:$basename$|the part of the page name after the last / (slash).
+:$extension$|the extension of the page name taken as a file name. The dot is included.
+:$filename$|$basename$ with the part that is the extension removed.
+:{$args$|replaced by a run of letters and digits that uniquely identifies a variation,
+when one page has several of them
+(when a list runs over several pages because the contents parameter of
+[[&&pages:../Wiki/Function/pages]] is used, or when a list can be narrowed to a
+particular tag).}
+
+*What happens after an export
+A UNIX command can be run after an export.
+The command to run is set by ''EXPORT_POST_COMMAND'' in the
+[[settings:../Administration/Settings]].
+The command is passed the directory exported to as a command argument, and the names of
+the files actually exported are fed to its standard input, separated by NUL
+characters ('\0').
+
+Set this command to a script that sends the files with rsync or ftp and you can manage
+the content of a web server on a remote host.
+
+''Note that the strings fed to the command are strings that can be edited freely on the
+NextForm site.''
+
+The command is treated as having failed when it exits with a status other than 0.
+
+For example, a shell script that keeps a log of the export looks like this.
+ (code)
+ #!/bin/bash
+ dir="$1"
+ log() {
+     local time
+     time=$(date '+%F %T')
+     echo "$time: $1" >> log.txt
+ }
+ log "start export $dir"
+ while read -d $'\0' file; do
+     log "export $file"
+ done
+ log "end export $dir"
+ exit 0
+
+*Switching where you export to
+You may make several buttons that export against one setup table.
+The directory parameter of [[&&export:../Wiki/Function/export]] lets you export the
+same content to different directories.
+For example, write:
+ &export(directory=test, label=Export to the test environment);
+ &export(directory=real, label=Export to the live environment);
+This prepares directories for a test environment and a live environment (test and real)
+and makes a button for each.
+You can use it to check the result of an export in the test environment before
+reflecting it in the live one.
 */

@@ -254,4 +254,39 @@ $WIKI_ALIASES['comment'] = '&listadd(name,date,<PARAMS>){<TARGET>}';
 
 */
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/comment
+&title &&comment
+
+*Overview
+ &comment(before, after, escape, url, japanese, nest, ordered);
+Shows a form for leaving a simple comment on the page.
+
+*Parameters
+:before|add the comment before the form. Set by default. Writing above does the same.
+:after|add the comment after the form. Writing below does the same.
+:escape|turn off Wiki notation in the comment entered into the form.
+:{url|allow URLs to be entered. Set by default.
+Write !url to turn it off.}
+:japanese|allow only entries that contain Japanese.
+:{nest|allow replies to existing comments. Set by default.
+Write !nest to turn it off.}
+:ordered|make it an ordered (numbered) list.
+
+*Target
+The target is read as the initial value of the form.
+
+*Example
+
+&wikiexample{
+-Now I see how to use comment. -- toro &time(new){2012-07-28 15:59:31}
+&comment;
+}
+
+*Alias
+&&comment is an alias defined as follows.
+ `$WIKI_ALIASES['comment']`
+
+*/
 ?>

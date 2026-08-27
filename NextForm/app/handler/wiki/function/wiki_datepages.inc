@@ -91,4 +91,32 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
  &datepages([[予定]]], future, 20, 2012-07-01);
 */
 
+
+/**
+@manual $manualpage$/en/Wiki/Function/datepages
+
+&title &&datepages
+
+*Overview
+ &datepages([[page name]], past, future, all, reverse, each=pages to show, year-month-day);
+Lists the child pages of the page named whose names are in date form (YYYY-MM-DD).
+It suits showing the pages for each day made with [[&&calendar:../calendar]]
+in order of time.
+
+*Parameters
+:&[&[page name&]&]|the parent of the child pages to list. With nothing given, the page itself is the parent.
+:past|show pages dated from now into the past. Set by default.
+:future|show pages dated from now into the future.
+:all|show every page.
+:reverse|reverse the order they are shown in.
+:each=pages to show|how many child pages to show at a time. The default is 30.
+:year-month-day|take the date given, rather than now, as the point past and future are measured from.
+
+*Target
+No target is given.
+
+*Example
+Lists the child pages of ''Schedule'' dated from 2012-07-01 into the future, 20 at a time.
+ &datepages([[Schedule]]], future, 20, 2012-07-01);
+*/
 ?>

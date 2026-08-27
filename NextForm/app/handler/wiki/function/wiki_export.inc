@@ -82,4 +82,36 @@ function wiki_operator_export(&$context, $dom, $tree) {
  &export(directory=domains/test, label=テスト環境へエクスポート, force);
  &export(directory=domains/real, label=本番環境へエクスポート, quiet);
 */
+
+/**
+@manual $manualpage$/en/Wiki/Function/export
+&title &&export
+
+*Overview
+ &export([[page name]], directory=directory, url=URL exported to, label=label, force, quiet);
+Shows a button that exports.
+For the export function, see [[here:../../../Export]].
+
+*Parameters
+:&[&[page name&]&]|the page holding the export setup table. Left out, the current page is used.
+:{directory=directory|the directory to export to.
+The directory is a path seen from ''EXPORT_DIR_PATH'' in the
+[[settings:../../../Administration/Settings]].}
+:{url=URL exported to|this parameter has no effect at all on the export itself.
+Using it to state the URL that matches the directory exported to makes the file names
+on the result screen into links to where they actually went.
+That makes it easy to check the pages of the exported site.}
+:label=label|the text shown on the button.
+:{force|the export function normally compares the times of the page and the file and
+skips the export when it is not needed.
+With this parameter it never skips and always exports.}
+:quiet|do not show the table of export results. This gives the editors of the site a simpler experience.
+
+*Target
+No target is given.
+
+*Example
+ &export(directory=domains/test, label=Export to the test environment, force);
+ &export(directory=domains/real, label=Export to the live environment, quiet);
+*/
 ?>
