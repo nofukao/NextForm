@@ -320,6 +320,9 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] マニュアルの Markdown の木 (早見表 / 基本要素 / 拡張要素 /
       リンク・画像・添付 / フロントマター) が読め、フロントマターの
       `tags:` の説明がある
+- [ ] `?option=admin_setup` で `LANG` を `en` にすると、サイトメニューの
+      「マニュアル」が `NextFormManual/en` に向き、英語のマニュアルが
+      読める (確認したら元に戻す)
 - [ ] 既存のタグが `?option=alltag` から消えていない
       (種別 markdown のページを 1 枚保存し直すと、そのページのタグは
       フロントマターの内容で置き換わる。これは仕様)
