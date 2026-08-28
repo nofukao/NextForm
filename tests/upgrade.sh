@@ -38,6 +38,9 @@ PHP_ERROR_LOG="${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}"
 SITE_B="${TEST_SITE}-manual"
 URL_B="${TEST_URL}-manual"
 
+# 工程 3 (テーマ再生成) をわざと失敗させる 3 つめのサイト
+SITE_C="${TEST_SITE}-themefail"
+
 DIST="$(mktemp -d)"
 fail=0
 total=0
@@ -46,10 +49,11 @@ cleanup() {
     rm -rf "$DIST"
     if [[ "${KEEP:-0}" != "1" ]]; then
         sudo rm -rf "$TEST_SITE" "${TEST_SITE}".backup-* "${TEST_SITE}".fullbackup \
-                    "$SITE_B" "${SITE_B}".backup-* 2>/dev/null
+                    "$SITE_B" "${SITE_B}".backup-* \
+                    "$SITE_C" "${SITE_C}".backup-* 2>/dev/null
     else
         echo
-        echo "KEEP=1 のため検証サイトを残しました: $TEST_SITE  $SITE_B"
+        echo "KEEP=1 のため検証サイトを残しました: $TEST_SITE  $SITE_B  $SITE_C"
     fi
 }
 trap cleanup EXIT
@@ -400,6 +404,107 @@ B_BAD=$(sudo find "${SITE_B}/app" "${SITE_B}/theme" \! -user "${B_OWNER%%:*}" -p
 check_eq "app/ theme/ が元の所有者 (${B_OWNER}) のまま" "" "$B_BAD"
 code=$(curl -sk -o /dev/null -w '%{http_code}' "${URL_B}/")
 check_eq "トップページが HTTP 200" "200" "$code"
+echo
+
+# --- PHP の版数が足りないとき -----------------------------------------------
+# 2026-08-28、PHP 5.4 のサーバに 0.8.0 を当ててサイトが 500 になった。
+# ツールは PHP の版数を表示するだけで検査していなかった。
+#
+# 古い PHP をここに用意することはできないので、逆に配布物側の下限を
+# 届かない値に書き換えて、検査の経路そのものを実走する。
+echo "[14] PHP の版数が足りないとき"
+DIST_FUTURE="${DIST}/future"
+rm -rf "$DIST_FUTURE"
+mkdir -p "$DIST_FUTURE"
+cp -a "${DIST}/NextForm" "${DIST_FUTURE}/NextForm"
+FUTURE_VERSION_INC="${DIST_FUTURE}/NextForm/app/version.inc"
+check_cmd "配布物に NEXTFORM_PHP_MIN がある" "grep -q NEXTFORM_PHP_MIN '$FUTURE_VERSION_INC'"
+if grep -q NEXTFORM_PHP_MIN "$FUTURE_VERSION_INC"; then
+    sed -i "s/define('NEXTFORM_PHP_MIN', *'[^']*')/define('NEXTFORM_PHP_MIN', '99.0')/" \
+        "$FUTURE_VERSION_INC"
+    BEFORE_PHPMIN=$(fingerprint "$TEST_SITE")
+    NOBACKUP="${DIST}/backup-should-not-exist"
+    sudo php "${DIST_FUTURE}/NextForm/app/tool/upgrade" "${TEST_SITE}/index.php" \
+         --yes --backup-dir "$NOBACKUP" > "${DIST}/phpmin.log" 2>&1
+    rc=$?
+    sed 's/^/  | /' "${DIST}/phpmin.log"
+    check_cmd "PHP が下限に届かなければ中止する (終了コードが 0 以外)" "test $rc -ne 0"
+    check_cmd "  必要な版数を出す" "grep -q '99.0' '${DIST}/phpmin.log'"
+    check_cmd "  実行中の版数を出す" "grep -q '$(php -r 'echo PHP_VERSION;')' '${DIST}/phpmin.log'"
+    check_eq  "  サイトを 1 バイトも変えない" "$BEFORE_PHPMIN" "$(fingerprint "$TEST_SITE")"
+    check_cmd "  バックアップより前に止まる" "! sudo test -e '$NOBACKUP'"
+
+    # --force は版数の取り違えのためのもの。PHP の下限は素通りさせない。
+    # 版数を無視して進めてもサイトが壊れるだけで、やり直しも効かないため。
+    sudo php "${DIST_FUTURE}/NextForm/app/tool/upgrade" "${TEST_SITE}/index.php" \
+         --yes --force --backup-dir "$NOBACKUP" > "${DIST}/phpmin-force.log" 2>&1
+    rc=$?
+    check_cmd "--force でも素通りしない" "test $rc -ne 0"
+    check_eq  "  --force でもサイトを 1 バイトも変えない" \
+              "$BEFORE_PHPMIN" "$(fingerprint "$TEST_SITE")"
+
+    # --dry-run は書き換えないので通してよい、とはしない。
+    # 「その配布物はこのサーバでは動かない」ことこそ下見で知りたい。
+    sudo php "${DIST_FUTURE}/NextForm/app/tool/upgrade" "${TEST_SITE}/index.php" \
+         --dry-run > "${DIST}/phpmin-dry.log" 2>&1
+    check_cmd "--dry-run でも知らせる" "test $? -ne 0"
+    sudo rm -rf "$NOBACKUP"
+fi
+echo
+
+# --- 実行時 (web 側) のガード -----------------------------------------------
+# ツールが見られるのは CLI の PHP だけ。CLI と PHP-FPM / mod_php が
+# 別の版ということがあるので、web 側にも同じ検査を置く。
+# ここでも下限を届かない値に書き換えて経路を実走する。
+echo "[15] 実行時のガード ($URL_B)"
+B_VERSION_INC="${SITE_B}/app/version.inc"
+if sudo grep -q NEXTFORM_PHP_MIN "$B_VERSION_INC" 2>/dev/null; then
+    sudo cp -a "$B_VERSION_INC" "${DIST}/version.inc.orig"
+    sudo sed -i "s/define('NEXTFORM_PHP_MIN', *'[^']*')/define('NEXTFORM_PHP_MIN', '99.0')/" \
+         "$B_VERSION_INC"
+    # opcache は既定で 2 秒ごとにしか更新時刻を見に行かない
+    # (opcache.revalidate_freq)。待たずに叩くと、書き換える前の version.inc が
+    # そのまま使われて素通りする。
+    sleep 3
+    code=$(curl -sk -o "${DIST}/phpguard.html" -w '%{http_code}' "${URL_B}/")
+    check_eq  "PHP が下限に届かなければ HTTP 500" "500" "$code"
+    check_cmd "  真っ白ではなく理由が出る" "grep -qi 'PHP' '${DIST}/phpguard.html'"
+    check_cmd "  必要な版数が出る" "grep -q '99.0' '${DIST}/phpguard.html'"
+    sudo cp -a "${DIST}/version.inc.orig" "$B_VERSION_INC"
+    sleep 3
+    code=$(curl -sk -o /dev/null -w '%{http_code}' "${URL_B}/")
+    check_eq  "戻せば元どおり開く" "200" "$code"
+else
+    check_cmd "サイトの app/version.inc に NEXTFORM_PHP_MIN がある" "false"
+fi
+echo
+
+# --- 工程 3 が失敗したときの後始末 ------------------------------------------
+# コードを置き換えたあとにテーマ生成が失敗すると、所有者を戻さないまま
+# 終了していた。配布物を展開した人の所有のまま残るので、web サーバから
+# 読めない。コードが新しくなったうえに所有者も違う、という二重の壊れ方をする。
+#
+# theme/ をディレクトリではなく通常ファイルにしておくと、生成先の mkdir が
+# root でも失敗するので、工程 3 の失敗を確実に起こせる。
+echo "[16] テーマ生成に失敗したとき"
+sudo rm -rf "$SITE_C" "${SITE_C}".backup-*
+sudo cp -a "$SRC_SITE" "$SITE_C"
+sudo chown -Rh --reference="${SITE_C}/index.php" "$SITE_C"
+C_OWNER=$(sudo stat -c '%U:%G' "${SITE_C}/index.php")
+sudo rm -rf "${SITE_C}/theme"
+sudo tee "${SITE_C}/theme" > /dev/null <<'EOF'
+ディレクトリではなく通常ファイル。テーマの生成先を作れなくする。
+EOF
+sudo chown -h "$C_OWNER" "${SITE_C}/theme"
+sudo php "${DIST}/NextForm/app/tool/upgrade" "${SITE_C}/index.php" --yes > "${DIST}/themefail.log" 2>&1
+rc=$?
+sed 's/^/  | /' "${DIST}/themefail.log"
+check_cmd "テーマ生成に失敗したら終了コードが 0 以外" "test $rc -ne 0"
+check_cmd "  失敗したと分かる" "grep -q 'テーマ' '${DIST}/themefail.log'"
+C_BAD=$(sudo find "${SITE_C}/app" \! -user "${C_OWNER%%:*}" -printf '%P\n' 2>/dev/null | head -5)
+check_eq "  失敗しても所有者は元のまま (${C_OWNER})" "" "$C_BAD"
+check_cmd "  バックアップから戻す手順を出す" \
+          "grep -q 'cp -a' '${DIST}/themefail.log'"
 echo
 
 echo "----------------------------------------"
