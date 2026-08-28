@@ -140,6 +140,27 @@ function upgrade_restore_attrs($path, $rel, &$attrs, $uid, $gid) {
 }
 
 /*
+ * 控えておいた属性を、書き換えた範囲すべてに戻す。
+ *
+ * 工程 4 の本体だが、**工程 2 / 工程 3 が失敗したときにも呼ぶ**。
+ * upgrade_copy_tree() は配布物側の所有者をそのまま持ってくるので、
+ * 途中で抜けると「配布物を展開した人」の所有のまま残り、web サーバから
+ * 読めなくなる。コードが新しくなったうえに所有者も違う、という二重の
+ * 壊れ方をする。失敗の後始末としてここだけは必ず通す。
+ */
+function upgrade_restore_all() {
+    global $up_site, $up_attrs, $up_site_uid, $up_site_gid;
+    foreach(explode(',', UPGRADE_TARGET_DIRS) as $up_dir)
+	upgrade_restore_attrs($up_site . '/' . $up_dir, $up_dir,
+			      $up_attrs, $up_site_uid, $up_site_gid);
+    foreach(explode(',', UPGRADE_TARGET_FILES) as $up_file)
+	upgrade_restore_attrs($up_site . '/' . $up_file, $up_file,
+			      $up_attrs, $up_site_uid, $up_site_gid);
+    upgrade_restore_attrs($up_site . '/theme', 'theme',
+			  $up_attrs, $up_site_uid, $up_site_gid);
+}
+
+/*
  * $src を $dst へ再帰コピーする。$dst にある余分なファイルは消さない。
  * 失敗したら $error に「どのパスで何ができなかったか」を入れて false を返す。
  *
@@ -566,6 +587,8 @@ if($up_failed === null) {
 }
 if($up_failed !== null) {
     printf("failed\n");
+    /* 途中まで置き換わっている。せめて所有者は元に戻してから抜ける */
+    upgrade_restore_all();
     upgrade_out("");
     upgrade_out("  %s のコピーに失敗しました。", $up_failed);
     if($up_copy_error !== null)
@@ -612,21 +635,34 @@ if(theme_convert(THEME)) {
     printf("done  (%s)\n", THEME);
 } else {
     printf("failed\n");
+    /*
+     * コードはもう置き換わっている。ここで抜けると所有者が配布物側のまま
+     * 残り、web サーバから読めなくなる。工程 4 と同じ復元を通してから
+     * 終わる (upgrade_restore_all のコメントを参照)。
+     */
+    upgrade_restore_all();
     upgrade_out("");
-    upgrade_out("  テーマ [%s] の生成に失敗しました。コードの更新は済んでいます。", THEME);
-    upgrade_out("  管理画面の「テーマ設定」を開いて適用し直すか、次を実行してください:");
+    upgrade_out("  テーマ [%s] の生成に失敗しました。", THEME);
+    upgrade_out("  コードの更新は済んでいて、所有者も元に戻してあります。");
+    upgrade_out("  静的 CSS が古いままなので、このままでは見た目が崩れます。");
+    upgrade_out("");
+    upgrade_out("  作り直すなら、管理画面の「テーマ設定」を開いてそのまま適用するか、次を実行してください:");
     upgrade_out("      php %s/app/tool/update_wiki %s", $up_site, $up_index_real);
+    if($up_backup_path !== null) {
+	upgrade_out("");
+	upgrade_out("  アップグレードごと戻すなら:");
+	upgrade_out("      rm -rf %s/app %s/resource %s/theme", $up_site, $up_site, $up_site);
+	upgrade_out("      cp -a %s/app %s/resource %s/theme %s/license.txt %s/",
+		    $up_backup_path, $up_backup_path, $up_backup_path,
+		    $up_backup_path, $up_site);
+    }
     exit(1);
 }
 
 /* --- 5. 所有者とパーミッションの復元 ------------------------------------- */
 
 printf("  4. 所有者の復元 .. ");
-foreach(explode(',', UPGRADE_TARGET_DIRS) as $up_dir)
-    upgrade_restore_attrs($up_site . '/' . $up_dir, $up_dir, $up_attrs, $up_site_uid, $up_site_gid);
-foreach(explode(',', UPGRADE_TARGET_FILES) as $up_file)
-    upgrade_restore_attrs($up_site . '/' . $up_file, $up_file, $up_attrs, $up_site_uid, $up_site_gid);
-upgrade_restore_attrs($up_site . '/theme', 'theme', $up_attrs, $up_site_uid, $up_site_gid);
+upgrade_restore_all();
 printf("done\n");
 
 /* --- 6. 事後確認 --------------------------------------------------------- */
