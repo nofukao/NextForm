@@ -1,5 +1,6 @@
 <?php
 define('APP_DIR_PATH', dirname(__FILE__));
+require_once(APP_DIR_PATH . '/php_version.inc');
 
 $INSTALL_INFO = array();
 $main_page_dom = null;
