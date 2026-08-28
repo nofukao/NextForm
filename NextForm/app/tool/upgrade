@@ -322,8 +322,11 @@ $up_old_version  = upgrade_read_define($up_site . '/app/version.inc', 'NEXTFORM_
 $up_old_upstream = upgrade_read_define($up_site . '/app/version.inc', 'TORATORAWIKI_VERSION');
 $up_new_version  = upgrade_read_define($up_new_root . '/app/version.inc', 'NEXTFORM_VERSION');
 $up_new_upstream = upgrade_read_define($up_new_root . '/app/version.inc', 'TORATORAWIKI_VERSION');
+$up_new_php_min  = upgrade_read_define($up_new_root . '/app/version.inc', 'NEXTFORM_PHP_MIN');
 if($up_new_version === null)
     upgrade_fatal("配布物が壊れています (NEXTFORM_VERSION が読めません): %s", $up_new_root);
+if($up_new_php_min === null)
+    upgrade_fatal("配布物が壊れています (NEXTFORM_PHP_MIN が読めません): %s", $up_new_root);
 
 upgrade_out("  対象サイト    %s", $up_site);
 upgrade_out("  配布物        %s", $up_new_root);
@@ -332,8 +335,32 @@ upgrade_out("  現在の版      %s",
 	     ? sprintf("ToraToraWiki %s (NextForm 化されていません)", $up_old_upstream)
 	     : sprintf("NextForm %s", $up_old_version)));
 upgrade_out("  更新後の版    NextForm %s", $up_new_version);
-upgrade_out("  実行中の PHP  %s", PHP_VERSION);
+upgrade_out("  実行中の PHP  %s  (必要: %s 以上)", PHP_VERSION, $up_new_php_min);
 upgrade_out("");
+
+/*
+ * 走っている PHP が配布物の要求に届いているか。
+ *
+ * **ここは何よりも先に見る。** 版数の取り違えより前、バックアップより前。
+ * 工程 2 で新しいコードを置いてから、工程 3 でその新しいコードを同じ
+ * プロセスで動かす作りなので、動かない PHP だと気づいたときには
+ * サイトはもう書き換わっている。
+ *
+ * --force でも素通りさせない。--force は「版数の取り違えを承知で進む」ための
+ * ものだが、こちらは承知したところで動かないものは動かない。素通りさせても
+ * サイトが壊れるだけで、しかも復旧作業が要る。
+ *
+ * 2026-08-28、PHP 5.4 のサーバに 0.8.0 を当てて全ページが 500 になった。
+ * ツールは PHP の版数を表示するだけで、検査していなかった。
+ *
+ * ここで見られるのは **CLI の PHP** だけであることに注意。web サーバが
+ * 別の版を使っていることがあるので、app/php_version.inc でも同じ検査をする。
+ */
+if(version_compare(PHP_VERSION, $up_new_php_min, '<'))
+    upgrade_fatal("この配布物には PHP %s 以上が必要ですが、実行中の PHP は %s です。\n" .
+		  "       先に PHP を上げてから、もう一度実行してください。\n" .
+		  "       (--force では素通りしません。動かない版を置くとサイトが壊れます)",
+		  $up_new_php_min, PHP_VERSION);
 
 if($up_old_version === null && $up_old_upstream !== $up_new_upstream && !$up_force)
     upgrade_fatal("NextForm は ToraToraWiki %s の fork ですが、対象は %s です。\n" .
