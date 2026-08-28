@@ -9,6 +9,25 @@
 define('NEXTFORM_VERSION', '0.8.0');
 
 /*
+ * この版の NextForm が動くのに必要な PHP の最低版数。
+ *
+ * composer.json の require.php と揃える。値を 2 か所に散らさないため、
+ * コードから見るときは必ずこの定数を読む。
+ *
+ * 読む人が 2 人いる:
+ *
+ *   - app/tool/upgrade    … 書き換えを始める前に、走っている PHP を検査する
+ *   - app/php_version.inc … web から開かれたときに、同じ検査をする
+ *
+ * ツールが見られるのは CLI の PHP だけで、web サーバ (PHP-FPM / mod_php) は
+ * 別の版ということがある。だから両方で検査する。
+ *
+ * 2026-08-28、PHP 5.4 のサーバに 0.8.0 を当てて全ページが 500 になった。
+ * 当時ツールは PHP の版数を表示するだけで、検査していなかった。
+ */
+define('NEXTFORM_PHP_MIN', '8.3');
+
+/*
  * fork 元の ToraToraWiki の版数。
  *
  * NextForm がどの上流版を基にしているかという情報自体に意味があるので残す。
