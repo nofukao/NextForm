@@ -23,6 +23,8 @@
 #   5. 本文が空でも <section class="markdown"> が閉じること
 #      (閉じないと footer が article.main の直下から外れ、枠が出なくなる)
 #   6. 種別 wiki の &title{} も同じに揃うこと (消せば題名も消える)
+#   7. 折りたたみ (:::details) — 開閉の書き方、入れ子、コードブロックの中の :::、
+#      折りたたんだ中身が検索と目次に載ること
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -138,6 +140,7 @@ P_DROP="MarkdownTest/Drop"
 P_HAND="MarkdownTest/Hand"
 P_EMPTY="MarkdownTest/Empty"
 P_WIKI="MarkdownTest/Wiki"
+P_DETAILS="MarkdownTest/Details"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -218,6 +221,73 @@ helper set-meta-title "$P_WIKI" "画面で付けた題名" > /dev/null
 check_eq "画面から題名を付けられる" "画面で付けた題名" "$(value_of "$(helper meta "$P_WIKI" title)" value)"
 helper write-wiki "$P_WIKI" "$(printf -- '*見出し\n別の本文\n')" > /dev/null
 check_eq "本文を保存すると画面の値も残らない" "0" "$(value_of "$(helper meta "$P_WIKI" title)" isset)"
+echo
+
+echo "7. 折りたたみ (:::details)"
+helper write "$P_DETAILS" "$(printf -- ':::details 手順\n**中身**\n:::\n')" > /dev/null
+D_HTML="$(main_html "$P_DETAILS")"
+check_eq "details が出る" "yes" "$(contains "$D_HTML" '<details>')"
+check_eq "  summary にラベルが入る" "yes" "$(contains "$D_HTML" '<summary>手順</summary>')"
+check_eq "  既定は閉じている" "no" "$(contains "$D_HTML" '<details open')"
+check_eq "  中身は Markdown として変換される" "yes" "$(contains "$D_HTML" '<strong>中身</strong>')"
+
+helper write "$P_DETAILS" "$(printf -- ':::details\n中身\n:::\n')" > /dev/null
+check_eq "ラベルを省くと既定の語が入る" "yes" \
+         "$(contains "$(main_html "$P_DETAILS")" '<summary>詳細</summary>')"
+
+helper write "$P_DETAILS" "$(printf -- ':::details+ 開いて出る\n中身\n:::\n')" > /dev/null
+check_eq "+ で開いた状態になる" "yes" \
+         "$(contains "$(main_html "$P_DETAILS")" '<details open="open">')"
+
+helper write "$P_DETAILS" "$(printf -- ':::details open 開いて出る\n中身\n:::\n')" > /dev/null
+D_HTML="$(main_html "$P_DETAILS")"
+check_eq "open でも開いた状態になる" "yes" "$(contains "$D_HTML" '<details open="open">')"
+check_eq "  open はラベルに残らない" "yes" "$(contains "$D_HTML" '<summary>開いて出る</summary>')"
+
+# open で始まるラベルを書きたいときの逃げ道。マニュアルにも書いてある
+helper write "$P_DETAILS" "$(printf -- ':::details+ open な話\n中身\n:::\n')" > /dev/null
+check_eq "+ を使えば open で始まるラベルも書ける" "yes" \
+         "$(contains "$(main_html "$P_DETAILS")" '<summary>open な話</summary>')"
+
+helper write "$P_DETAILS" "$(printf -- ':::detailsX ラベル\n中身\n:::\n')" > /dev/null
+check_eq "ラベルの前に区切りが無ければ反応しない" "no" \
+         "$(contains "$(main_html "$P_DETAILS")" '<details')"
+
+helper write "$P_DETAILS" "$(printf -- '::::details 外\n:::details 内\n中身\n:::\n::::\n')" > /dev/null
+D_HTML="$(main_html "$P_DETAILS")"
+check_eq "外側のコロンを増やすと入れ子になる" "2" \
+         "$(printf '%s' "$D_HTML" | grep -o '<details' | wc -l)"
+check_eq "  内側が外側の中に入る" "yes" \
+         "$(contains "$(printf '%s' "$D_HTML" | tr -d '\n')" '<summary>外</summary><details><summary>内</summary>')"
+
+# ここが肝。ライブラリは外側のブロックから順に tryContinue() を呼ぶので、
+# 素直に書くとコードブロックの中の ::: で両方まとめて閉じる。
+helper write "$P_DETAILS" "$(printf -- ':::details 例\n```\n:::\n```\n:::\n')" > /dev/null
+D_HTML="$(main_html "$P_DETAILS")"
+check_eq "コードブロックの中の ::: では閉じない" "1" \
+         "$(printf '%s' "$D_HTML" | grep -o '<details' | wc -l)"
+check_eq "  ::: はコードとして残る" "yes" "$(contains "$D_HTML" '<code>:::')"
+
+helper write "$P_DETAILS" "$(printf -- ':::details 例\n    :::\n:::\n')" > /dev/null
+check_eq "字下げした ::: では閉じない" "1" \
+         "$(printf '%s' "$(main_html "$P_DETAILS")" | grep -o '<details' | wc -l)"
+
+helper write "$P_DETAILS" "$(printf -- ':::details 閉じ忘れ\n中身\n')" > /dev/null
+check_eq "閉じ忘れても文書の終わりで閉じる" "yes" \
+         "$(contains "$(printf '%s' "$(main_html "$P_DETAILS")" | tr -d '\n')" '<summary>閉じ忘れ</summary><p>中身</p></details>')"
+
+helper write "$P_DETAILS" "$(printf -- ':::note 注意\n中身\n:::\n')" > /dev/null
+D_HTML="$(main_html "$P_DETAILS")"
+check_eq ":::note は折りたたみにならない" "no" "$(contains "$D_HTML" '<details')"
+check_eq "  そのまま文字として出る" "yes" "$(contains "$D_HTML" ':::note 注意')"
+
+helper write "$P_DETAILS" "$(printf -- ':::details ラベル\n隠れた言葉\n:::\n')" > /dev/null
+check_eq "折りたたんだ中身も検索の文字に入る" "yes" \
+         "$(contains "$(helper texts "$P_DETAILS")" '隠れた言葉')"
+
+helper write "$P_DETAILS" "$(printf -- ':::details ラベル\n# 中の見出し\n:::\n')" > /dev/null
+check_eq "中の見出しは目次に出る" "yes" \
+         "$(contains "$(main_html "${P_DETAILS}&option=summary")" '中の見出し')"
 echo
 
 helper cleanup > /dev/null

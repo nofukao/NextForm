@@ -11,6 +11,7 @@
  *   tags <名前>               ページのタグ (tags=<空白区切り>)
  *   alltag <タグ>             タグ一覧の数え上げ (count=...)
  *   index-stale <名前>        索引に残った余分な ngram の数 (stale=...)
+ *   texts <名前>              索引に入る文字 (texts=<空白区切り>)
  *   set-tags <名前> <タグ..>  タグ画面と同じ経路でタグを付ける (written=1/0)
  *   set-meta-title <名前> <題名>
  *                             メタ情報画面と同じ経路で題名を付ける (written=1/0)
@@ -114,6 +115,19 @@ case 'index-stale':
     $actual = isset($collected['page_ngrams'][$rest[0]]) ?
 	$collected['page_ngrams'][$rest[0]] : array();
     printf("stale=%d\n", count(array_diff_key($actual, $should)));
+    break;
+
+case 'texts':
+    /* 索引に載る文字。折りたたんだ中身が漏れていないかを見る */
+    $page = page_read($rest[0]);
+    $texts = handler_function($page, 'texts');
+    $lines = array();
+    if($texts !== false) {
+	foreach($texts($page) as $group)
+	    foreach($group as $line)
+		$lines[] = $line;
+    }
+    printf("texts=%s\n", str_replace("\n", ' ', implode(' ', $lines)));
     break;
 
 case 'cleanup':

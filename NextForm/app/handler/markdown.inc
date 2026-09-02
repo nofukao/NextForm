@@ -47,6 +47,7 @@ function markdown_converter() {
     require_once(APP_DIR_PATH . '/handler/markdown/front_matter.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/wikilink.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/image.inc');
+    require_once(APP_DIR_PATH . '/handler/markdown/details.inc');
 
     $config = array(
 	/*
@@ -73,6 +74,10 @@ function markdown_converter() {
      */
     $environment->addInlineParser(new MarkdownWikiLinkParser(), 100);
     $environment->addRenderer('MarkdownWikiLink', new MarkdownWikiLinkRenderer());
+
+    /* :::details の折りたたみ。CommonMark に折りたたみは無いので独自に足す */
+    $environment->addBlockStartParser(new MarkdownDetailsStartParser());
+    $environment->addRenderer('MarkdownDetails', new MarkdownDetailsRenderer());
 
     /* ![説明](子ページ) を添付の埋め込みにする。標準の描画より先に見せる */
     $environment->addRenderer(League\CommonMark\Extension\CommonMark\Node\Inline\Image::class,

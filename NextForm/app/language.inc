@@ -39,6 +39,7 @@ $LANGUAGE['ja'] = array(
     'Escape' => 'そのまま文字として出す',
     'Allow' => 'HTMLとして解釈する',
     'allowing it lets anyone who can edit run scripts' => 'HTMLとして解釈すると、編集できる人は誰でもスクリプトを埋め込めます',
+    'Details' => '詳細',
     'Markdown library is missing. Showing the source instead.' => 'Markdownの変換に必要なファイル (app/vendor/) がありません。原文を表示します。',
     'Source' => 'ソース',
     'Page name' => 'ページ名',
