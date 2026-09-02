@@ -77,7 +77,7 @@ function history_show(&$args, $dom) {
 	dom_append_text($td, default_value($backup_page['meta']['last_modify_user']));
 
 	$td = dom_append_child($tr, 'td');
-	dom_append_text($td, $backup_page['meta']['type']);
+	dom_append_text($td, page_type_label($backup_page['meta']['type']));
 
 	$td = dom_append_child($tr, 'td');
 	dom_append_link($td, $uri_show, l('Show'));

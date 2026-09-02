@@ -93,7 +93,7 @@ function tool_page_info(&$page) {
 	$dt = dom_append_child($dl, 'dt');
 	$dd = dom_append_child($dl, 'dd', 'type');
 	dom_append_text($dt, l('Page type'));
-	dom_append_text($dd, $type);
+	dom_append_text($dd, page_type_label($type));
     }
 
     if(!empty($page['mtime'])) {

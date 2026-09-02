@@ -23,6 +23,7 @@ $HANDLERS['markdown'] = array(
     );
 $PAGE_TYPES_TEXTBASE[] = 'markdown';
 $PAGE_TYPES_PREVIEWABLE[] = 'markdown';
+$PAGE_TYPE_LABELS['markdown'] = 'Markdown';
 $PAGE_TYPE_CHEAT_SHEETS['markdown'] = array('page' => '/Markdown/CheatSheet',
 					    'label' => 'Markdown Cheat Sheet');
 

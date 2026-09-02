@@ -361,6 +361,18 @@ function page_type_is_text_base($page_type) {
     return in_array($page_type, $PAGE_TYPES_TEXTBASE);
 }
 
+/*
+ * 画面に出す種別の表示名。登録が無ければ種別名をそのまま返す。
+ * 保存されている種別名 ('markdown') と表示 ('Markdown') を分けるためのもので、
+ * 絞り込みや並べ替えに使う値には通さない。
+ */
+function page_type_label($page_type) {
+    global $PAGE_TYPE_LABELS;
+    if(isset($PAGE_TYPE_LABELS[$page_type]))
+	return $PAGE_TYPE_LABELS[$page_type];
+    return $page_type;
+}
+
 function page_find($base_pagename = '', $condition = array()) {
     return storage_page_find($base_pagename, $condition);
 }

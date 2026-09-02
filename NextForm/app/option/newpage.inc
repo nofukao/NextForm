@@ -35,7 +35,7 @@ function newpage_dom_append_form($dom, $default_name = '') {
 
     $options = array();
     foreach($HANDLERS as $type => &$handler) {
-	$options[$type] = $type;
+	$options[$type] = page_type_label($type);
     }
     
     $label = dom_append_child($form, 'label');

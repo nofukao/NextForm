@@ -12,6 +12,9 @@ $HANDLERS = array();
  * $PAGE_TYPE_CHEAT_SHEETS   記法の早見表を持つ種別。値は
  *                           array('page' => マニュアルの相対パス,
  *                                 'label' => 表示名の言語キー)
+ * $PAGE_TYPE_LABELS         画面に出す表示名が種別名と違う種別
+ *                           (種別名は meta['type'] に焼き付いていて変えられない。
+ *                            'Markdown' のような固有名詞はここで表示だけ直す)
  *
  * text.inc が種別名を直に比べていたため、種別 markdown はプレビューボタンが
  * 出ず (markdown_write() は preview を処理できるのに押す口が無かった)、
@@ -20,6 +23,7 @@ $HANDLERS = array();
  */
 $PAGE_TYPES_PREVIEWABLE = array();
 $PAGE_TYPE_CHEAT_SHEETS = array();
+$PAGE_TYPE_LABELS = array();
 require_once(APP_DIR_PATH . '/handler/markdown.inc');
 require_once(APP_DIR_PATH . '/handler/wiki.inc');
 require_once(APP_DIR_PATH . '/handler/text.inc');
@@ -112,7 +116,7 @@ function handle(&$page, $dom, $action = '') {
 		dom_append_text($label, l('Page type'));
 		$options = array();
 		foreach($HANDLERS as $htype => &$handler) {
-		    $options[$htype] = $htype;
+		    $options[$htype] = page_type_label($htype);
 		}
 		dom_append_selector($label, 'newpage_type', $options, $type);
 		$submit = dom_append_child($form, 'input', 'redundant',

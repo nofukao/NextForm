@@ -548,12 +548,18 @@ function pagelist_append_field($dom, &$page, $field, &$list_options) {
 	}
     } else if(isset($field['term'])) {
 	switch($field['term']) {
+	case 'type':
+	    /* 絞り込みと並べ替えは種別名のまま。表示だけ page_type_label() を通す */
+	    if(isset($page['terms']['type']['value']))
+		dom_append_text($tdom, page_type_label($page['terms']['type']['value']));
+	    else
+		dom_append_text($tdom, '');
+	    break;
 	case 'pageview':
 	case 'size':
 	    if($dom->tagName == 'td')
 		dom_append_class($dom, 'numeric');
 	case 'content_type':
-	case 'type':
 	case 'pagename':
 	case 'basename':
 	case 'relname':
