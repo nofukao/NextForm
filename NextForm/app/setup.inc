@@ -264,7 +264,7 @@ function setup_read($name) {
 |{BASE_URI||サイトのURL(通常は変更の必要なし)|}
 |{PASSWORD_REMINDER_EMAIL_FROM|(自動)|パスワード再設定メールの送信者メールアドレス|}
 |{MANUAL_PAGENAME|NextFormManual|マニュアルページのページ名|}
-|{MARKDOWN_ALLOW_HTML|false|種別markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
+|{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
@@ -307,7 +307,7 @@ function setup_read($name) {
 |{EXPORT_DIR_PATH|./export|エクスポートのディレクトリ|}
 |{EXPORT_POST_COMMAND||エクスポート後に実行されるコマンド(エクスポート先ディレクトリがコマンド引数として渡される)|}
 |{EXPORT_DEFAULT_TEMPLATE_WIKI|省略|種別wikiのページをエクスポートする際のデフォルトのテンプレート|}
-|{EXPORT_DEFAULT_TEMPLATE_MARKDOWN|EXPORT_DEFAULT_TEMPLATE_WIKIと同じ|種別markdownのページをエクスポートする際のデフォルトのテンプレート|}
+|{EXPORT_DEFAULT_TEMPLATE_MARKDOWN|EXPORT_DEFAULT_TEMPLATE_WIKIと同じ|種別Markdownのページをエクスポートする際のデフォルトのテンプレート|}
 |{IMPORT_PUKIWIKI_ENABLE|false|Pukiwikiからページをインポートする機能を有効にするか|}
 |{IMPORT_ATWIKIBACKUP_ENABLE|true|@Wikiのデータバックアップからページをインポートする機能を有効にするか|}
 |{ANALYZE_STORAGE_LIFE_DAYS|7|アクセスカウンタの記録保存日数|}
@@ -325,7 +325,7 @@ function setup_read($name) {
 |{BASE_URI||the URL of the site (normally no need to change)|}
 |{PASSWORD_REMINDER_EMAIL_FROM|(automatic)|the sender address of the password reset mail|}
 |{MANUAL_PAGENAME|NextFormManual|the page name of the manual pages|}
-|{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type markdown. Setting it true lets anyone who can edit embed a script|}
+|{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type Markdown. Setting it true lets anyone who can edit embed a script|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
 |{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
 |{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}
@@ -368,7 +368,7 @@ function setup_read($name) {
 |{EXPORT_DIR_PATH|./export|the directory exported to|}
 |{EXPORT_POST_COMMAND||the command run after an export (the directory exported to is passed as a command argument)|}
 |{EXPORT_DEFAULT_TEMPLATE_WIKI|omitted|the default template for exporting pages of type wiki|}
-|{EXPORT_DEFAULT_TEMPLATE_MARKDOWN|the same as EXPORT_DEFAULT_TEMPLATE_WIKI|the default template for exporting pages of type markdown|}
+|{EXPORT_DEFAULT_TEMPLATE_MARKDOWN|the same as EXPORT_DEFAULT_TEMPLATE_WIKI|the default template for exporting pages of type Markdown|}
 |{IMPORT_PUKIWIKI_ENABLE|false|whether importing pages from PukiWiki is enabled|}
 |{IMPORT_ATWIKIBACKUP_ENABLE|true|whether importing pages from an @Wiki data backup is enabled|}
 |{ANALYZE_STORAGE_LIFE_DAYS|7|how many days the records of the access counter are kept|}

@@ -23,14 +23,14 @@ A site built with NextForm is made of pages.
 Every page belongs to one of the four types below.
 
 |type    |description                                                                  |h
-|markdown|a page written in [[Markdown notation>./Markdown]] (the default for new pages)|
+|Markdown|a page written in [[Markdown notation>./Markdown]] (the default for new pages)|
 |wiki    |a page written in [[Wiki notation>./Wiki]]                                   |
 |text    |a page shown exactly as written, with no decoration                          |
 |file    |a page that holds a single file                                              |
 
 The type is chosen when the page is created and cannot be changed afterwards.
 
-A typical way to use them is to write documents as markdown or wiki pages, and to
+A typical way to use them is to write documents as Markdown or wiki pages, and to
 upload images and downloadable files as file pages.
 A file page can then be embedded in a document page or linked from it.
 
@@ -96,7 +96,7 @@ creating a link to the new page somewhere.}
 Add a line of the form
  [[name of the page you want to create]]
 to the Top page or the side page
-(this is written the same way in both markdown and wiki pages).
+(this is written the same way in both Markdown and wiki pages).
 That part becomes a link to a page that does not exist yet.
 Clicking a link to a page that does not exist takes you to the screen that creates it.
 This way is easy, so we recommend it.
@@ -180,14 +180,14 @@ NextFormを使ったサイトは複数のページによって構成されます
 それぞれのページは以下の4つのいずれかの種別に属します．
 
 |種別    |説明                                                       |h
-|markdown|[[Markdown記法>./Markdown]]で表記されたページ(新規作成の既定)|
+|Markdown|[[Markdown記法>./Markdown]]で表記されたページ(新規作成の既定)|
 |wiki    |[[Wiki記法>./Wiki]]によって表記されたページ                |
 |text    |書いたものが何の装飾もなくそのまま表示されるページ         |
 |file    |ひとつのファイルが保存されたページ                         |
 
 種別はページを作るときに選び，あとから変更することはできません．
 
-典型的な使い方を例に挙げると，文章は種別markdownか種別wikiのページとして作成し，
+典型的な使い方を例に挙げると，文章は種別Markdownか種別wikiのページとして作成し，
 画像ファイルやダウンロードさせたいファイルは種別fileのページとしてファイルをアップロードすることで作成します．
 種別fileのページは文章のページに埋め込んだり，リンクを張ることで利用できます．
 
@@ -252,7 +252,7 @@ NextFormを使ったサイトは複数のページによって構成されます
 :{Topページやサイドページで先にリンクをつくってしまう|
 Topページやサイドページ内に
  [[新しく作成したいページ名]]
-という形で行を追記します(この書き方は種別markdownでも種別wikiでも同じです)．
+という形で行を追記します(この書き方は種別Markdownでも種別wikiでも同じです)．
 するとその部分は存在しないページへのリンクになります．
 存在しないページへのリンクをクリックするとそのページの新規作成画面にいくことができます．
 この方法が簡単なのでおすすめです．
@@ -697,10 +697,10 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 &title Markdown記法
 
 *概要
-種別markdownのページは[[Markdown:https://commonmark.org/]]で書きます．
+種別Markdownのページは[[Markdown:https://commonmark.org/]]で書きます．
 [[CommonMark:https://spec.commonmark.org/]]に準拠し，
 表や打ち消し線などの拡張([[GitHub Flavored Markdown:https://github.github.com/gfm/]])と
-脚注も使えます．新しいページを作るときに特に選ばなければ，種別はmarkdownになります．
+脚注も使えます．新しいページを作るときに特に選ばなければ，種別はMarkdownになります．
 
 他のツール(ObsidianやNotionなど)で書いた文章をそのまま貼り付けても，
 おおむね同じ見え方になります．
@@ -723,11 +723,11 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 編集画面からはこの早見表にも飛べます．
 
 *使いどころ
-種別markdownと種別wikiはどちらも正式な書き方です．
+種別Markdownと種別wikiはどちらも正式な書き方です．
 読ませる文書はMarkdown記法で，[[ファンクション:../Wiki/Function]]
 (ページ一覧やカレンダーの埋め込みなど)を使う「動くページ」はWiki記法で，
 という使い分けができます．
-種別markdownのページではファンクションは使えません．
+種別Markdownのページではファンクションは使えません．
 何が書けて何が書けないかは[[Wiki記法とMarkdown記法の対応:../Comparison]]を参照してください．
 */
 
@@ -1014,11 +1014,11 @@ Wiki記法の [[&&title{}:../../Wiki/Function/title]] も同じ約束です．
 &title Markdown notation
 
 *Overview
-Pages of type markdown are written in [[Markdown:https://commonmark.org/]].
+Pages of type Markdown are written in [[Markdown:https://commonmark.org/]].
 NextForm follows [[CommonMark:https://spec.commonmark.org/]] and also supports
 extensions such as tables and strikethrough
 ([[GitHub Flavored Markdown:https://github.github.com/gfm/]]) and footnotes.
-Unless you choose otherwise when creating a page, the type will be markdown.
+Unless you choose otherwise when creating a page, the type will be Markdown.
 
 Text written in another tool (Obsidian or Notion, for example) can be pasted in
 as it is and will look much the same.
@@ -1041,11 +1041,11 @@ Press ''Preview'' on the editing screen to check the converted result before sav
 The editing screen also links to the cheat sheet.
 
 *When to use it
-Types markdown and wiki are both first-class ways of writing.
+Types Markdown and wiki are both first-class ways of writing.
 You can use Markdown notation for documents meant to be read, and Wiki notation for
 "living pages" that use [[functions:../Wiki/Function]] (embedding page lists,
 calendars and so on).
-Functions cannot be used in pages of type markdown.
+Functions cannot be used in pages of type Markdown.
 For what can and cannot be written, see
 [[Wiki notation and Markdown notation:../Comparison]].
 */
@@ -1352,7 +1352,7 @@ The same promise applies to
 @manual $manualpage$/ja/Comparison
 &title Wiki記法とMarkdown記法の対応
 
-種別wikiのページと種別markdownのページは，どちらも正式な書き方です．
+種別wikiのページと種別Markdownのページは，どちらも正式な書き方です．
 ファンクションを使う「動くページ」はWiki記法で，読ませる文書はMarkdown記法で，
 という使い分けができます．このページでは同じことを両方でどう書くかを並べます．
 
@@ -1393,7 +1393,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 見出しへのリンク &[&[ページ名#見出し&]&] は，種別をまたいで同じ場所に届きます．
 
 *Markdown記法では書けないもの
-種別markdownのページでは，Wiki記法のファンクションは使えません．
+種別Markdownのページでは，Wiki記法のファンクションは使えません．
 次のようなことをしたいページは，種別wikiで作ってください．
 
 |やりたいこと|Wiki記法|h
@@ -1415,7 +1415,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 @manual $manualpage$/en/Comparison
 &title Wiki notation and Markdown notation
 
-Pages of type wiki and pages of type markdown are both first-class ways of writing.
+Pages of type wiki and pages of type Markdown are both first-class ways of writing.
 You can use Wiki notation for "living pages" that use functions, and Markdown notation
 for documents meant to be read.
 This page puts the two side by side, showing how the same thing is written in each.
@@ -1459,7 +1459,7 @@ A link to a heading, &[&[page name#heading&]&], reaches the same place
 whatever the type of the page.
 
 *Things Markdown notation cannot write
-Functions of Wiki notation cannot be used in pages of type markdown.
+Functions of Wiki notation cannot be used in pages of type Markdown.
 Create a page of type wiki when you want to do any of the following.
 
 |what you want|Wiki notation|h

@@ -48,7 +48,7 @@ function wiki_operator_title(&$context, $dom, $tree) {
 メタ情報の画面で付けたタイトルも，次に本文を保存したときに置き換わります．
 ソースを見ればページの状態が分かるようにするためです．
 
-種別markdownのページのフロントマター(""title:"")も同じ約束です．
+種別Markdownのページのフロントマター(""title:"")も同じ約束です．
 
 *パラメータ
 :{show|タイトルを変更するとともにタイトルをテキストとしても用います．
@@ -85,7 +85,7 @@ removed too''.
 A title set on the metadata screen is replaced the next time the text is saved.
 This is so that the state of a page can be seen from its source.
 
-The front matter (""title:"") of a page of type markdown follows the same promise.
+The front matter (""title:"") of a page of type Markdown follows the same promise.
 
 *Parameters
 :{show|change the title and use the title as text as well.
