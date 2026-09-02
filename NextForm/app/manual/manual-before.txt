@@ -710,7 +710,7 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 *書き方の説明
 -[[Markdown記法早見表>./CheatSheet]]
 -[[基本要素>./Basic]] (見出し，強調，箇条書き，引用，コードなど)
--[[拡張要素>./Extra]] (表，チェックボックス，脚注など)
+-[[拡張要素>./Extra]] (表，チェックボックス，脚注，折りたたみなど)
 -[[リンク・画像・添付>./Link]] (ページへのリンクとファイルの埋め込み)
 -[[フロントマター>./FrontMatter]] (先頭のメタ情報．題名とタグ)
 
@@ -757,6 +757,7 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 |[[チェックボックス:../Extra#チェックボックス]]|""- [ ] 項目"" と ""- [x] 項目""|
 |[[脚注:../Extra#脚注]]|""本文[^1]"" と ""[^1]: 中身""|
 |[[URLの自動リンク:../Extra#自動リンク]]|URLをそのまま書く|
+|[[折りたたみ:../Extra#折りたたみ]]|"":::details 見出し"" の行と "":::"" の行で囲む|
 
 *[[リンク・画像・添付:../Link]]
 |目的|記法|h
@@ -796,6 +797,7 @@ Markdownの土台([[CommonMark:https://spec.commonmark.org/]])の範囲の書き
 区切り線ではなくその文が見出しになるので注意してください．
 
 Wiki記法の節と違い，Markdown記法の見出しは折りたたみを持たず，範囲も持ちません．
+本文の一部をたたみたいときは[[折りたたみ:../Extra#折りたたみ]]で囲んでください．
 
 *強調
 |書き方|出るもの|h
@@ -868,6 +870,7 @@ Wiki記法の節と違い，Markdown記法の見出しは折りたたみを持�
 [[GitHub Flavored Markdown:https://github.github.com/gfm/]]の拡張
 (表・打ち消し線・チェックボックス・自動リンク)と脚注が使えます．
 GitHubやObsidianで通じる書き方は，おおむねそのまま通じます．
+折りたたみだけはNextForm独自の書き方です．
 
 *表
 ""|"" でセルを区切って，1行に表の1行分を書きます．
@@ -914,6 +917,50 @@ Wiki記法の表と違い，セルの結合はできません．
 *自動リンク
 URLをそのまま書くとリンクになります．""www."" で始まる語もリンクになります．
 ""<"" と "">"" でURLを囲んで書くこともできます．
+
+*折りたたみ
+コロン3つに続けて ""details"" と書いた行から，コロン3つだけの行までが
+折りたたみになります．""details"" の後ろに書いた文字が，たたまれているときの
+見出しになります．
+
+ :::details 詳しい手順
+ 中身はふつうのMarkdownです．見出しでも表でも書けます．
+ :::
+
+既定では閉じた状態で表示されます．最初から開いておくには，
+""details"" の直後に ""+"" を付けるか，""open"" と書きます．どちらも同じ意味です．
+
+ :::details+ 最初から開いている
+ 中身
+ :::
+
+ :::details open 最初から開いている
+ 中身
+ :::
+
+見出しを ""open"" という語で始めたいときは，""+"" のほうを使ってください．
+
+ :::details+ open な話
+ 中身
+ :::
+
+入れ子にするときは，外側のコロンを増やします．
+閉じるコロンは，開いたときと同じ数以上でなければなりません．
+閉じ忘れたときは，ページの終わりで閉じられます．
+
+ ::::details 外側
+ :::details 内側
+ 中身
+ :::
+ ::::
+
+見出しの文字に記法は効きません(そのままの文字として表示されます)．
+""details"" 以外の語(""note"" など)を書いても折りたたみにはなりません．
+
+この書き方はNextForm独自のもので，Markdownの標準ではありません．
+他のツールに貼り付けると，コロンの行が文字として見えます(中身は残ります)．
+またブラウザの「ページ内検索」は，閉じている中身を見つけられません
+(サイトの検索には中身も載ります)．印刷でも閉じたまま印刷されます．
 
 *生のHTML
 既定では，Markdownの中に書いたHTMLはHTMLとして解釈されず，そのまま文字として表示されます．
@@ -1028,7 +1075,7 @@ as it is and will look much the same.
 *Guides to writing
 -[[Markdown Cheat Sheet>./CheatSheet]]
 -[[Basic elements>./Basic]] (headings, emphasis, lists, quotes, code and so on)
--[[Extra elements>./Extra]] (tables, checkboxes, footnotes and so on)
+-[[Extra elements>./Extra]] (tables, checkboxes, footnotes, folding and so on)
 -[[Links, images and attachments>./Link]] (links to pages and embedding files)
 -[[Front matter>./FrontMatter]] (the metadata at the top; title and tags)
 
@@ -1076,6 +1123,7 @@ For what can and cannot be written, see
 |[[checkbox:../Extra#Checkboxes]]|""- [ ] item"" and ""- [x] item""|
 |[[footnote:../Extra#Footnotes]]|""text[^1]"" and ""[^1]: the note""|
 |[[automatic link:../Extra#Automatic links]]|write the URL as it is|
+|[[folding:../Extra#Folding]]|wrap it in a "":::details heading"" line and a "":::"" line|
 
 *[[Links, images and attachments:../Link]]
 |object|notation|h
@@ -1119,7 +1167,8 @@ Take care not to write ""---"" on the line right below a sentence by accident:
 it turns that sentence into a heading instead of drawing a horizontal rule.
 
 Unlike sections in Wiki notation, headings in Markdown notation cannot be folded and
-do not span a range.
+do not span a range. To fold part of the text, wrap it in a
+[[folding block:../Extra#Folding]].
 
 *Emphasis
 |notation|result|h
@@ -1199,6 +1248,7 @@ On top of the base of [[CommonMark:https://commonmark.org/]] you can use the ext
 of [[GitHub Flavored Markdown:https://github.github.com/gfm/]]
 (tables, strikethrough, checkboxes and automatic links) and footnotes.
 Ways of writing that work on GitHub or in Obsidian mostly work here too.
+Only the folding notation is specific to NextForm.
 
 *Tables
 Separate the cells with ""|"" and write one row of the table per line.
@@ -1247,6 +1297,50 @@ What is shown is a running number.
 *Automatic links
 A URL written as it is becomes a link. So does a word starting with ""www."".
 You can also surround a URL with ""<"" and "">"".
+
+*Folding
+A line of three colons followed by ""details"", down to a line of three colons on
+its own, becomes a folded block. What you write after ""details"" is the heading
+shown while it is folded.
+
+ :::details The detailed steps
+ The contents are ordinary Markdown. Headings and tables work too.
+ :::
+
+It is shown folded by default. To have it open from the start, put ""+"" right
+after ""details"", or write ""open"". The two mean the same thing.
+
+ :::details+ open from the start
+ contents
+ :::
+
+ :::details open open from the start
+ contents
+ :::
+
+Use the ""+"" form when the heading itself has to start with the word ""open"".
+
+ :::details+ open questions
+ contents
+ :::
+
+To nest them, add colons to the outer one. The closing colons must be at least as
+many as the opening ones. If you forget to close it, it is closed at the end of
+the page.
+
+ ::::details outer
+ :::details inner
+ contents
+ :::
+ ::::
+
+Notation does not apply inside the heading; it is shown as plain characters.
+A word other than ""details"" (""note"", for instance) does not fold anything.
+
+This notation is specific to NextForm and is not part of standard Markdown.
+Pasted into another tool, the colon lines show up as text (the contents remain).
+The browser's own find-in-page cannot find contents that are folded away
+(the site search does index them). Printing keeps them folded as well.
 
 *Raw HTML
 By default, HTML written inside Markdown is not interpreted as HTML and is shown as
@@ -1380,7 +1474,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 *意味は同じだが働きが違うもの
 |やりたいこと|Wiki記法|Markdown記法|違い|h
 |見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
-|見出しの折りたたみ|&*(optional)|なし|Markdown記法に折りたたみはありません|
+|折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます|
 |節の終わりを明示|&*(end)|なし|同上|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
 |表の書式指定|行末の h f c l r n など|区切り行で列の揃えを指定|Markdown記法で指定できるのは列の揃えだけです|
@@ -1405,7 +1499,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |新着・更新の一覧|&&feed &&mtime|
 |文字の色や大きさ|&&color &&size|
 |配置の指定|&&align|
-|折りたたみ|&&more|
+|抜粋の区切り|&&more|
 |CSV形式の表|行頭の &,|
 
 これらが1つでも要るページは，Wiki記法のまま置いてください．
@@ -1445,7 +1539,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 *Things that mean the same but work differently
 |what you want|Wiki notation|Markdown notation|difference|h
 |heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
-|folding a heading|&*(optional)|none|Markdown notation has no folding|
+|folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''|
 |marking the end of a section|&*(end)|none|as above|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
 |table formatting|h f c l r n and so on at the end of the row|column alignment in the separator row|All you can set in Markdown notation is the column alignment|
@@ -1471,7 +1565,7 @@ Create a page of type wiki when you want to do any of the following.
 |lists of new and updated pages|&&feed &&mtime|
 |colour and size of text|&&color &&size|
 |alignment|&&align|
-|folding|&&more|
+|marking where the excerpt ends|&&more|
 |tables in CSV form|&, at the start of a line|
 
 Keep a page in Wiki notation if it needs even one of these.
