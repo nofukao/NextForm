@@ -289,7 +289,7 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 
 **POST の経路**
 
-- [ ] 新規作成の種別の欄が **markdown / wiki / text / file** の順で、markdown が選ばれている
+- [ ] 新規作成の種別の欄が **Markdown / wiki / text / file** の順で、Markdown が選ばれている
 - [ ] 種別 wiki を選んで作ると、今までどおり wiki 記法のページになる
 - [ ] Markdown のページを 1 枚作って保存できる
 - [ ] Markdown の編集画面に**プレビューボタン**が出て、押すと変換結果が出る
@@ -305,14 +305,14 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 - [ ] 既存の wiki ページを編集して保存できる (`&title{}` が効いたままか)
 - [ ] wiki ページから `&title{}` を消して保存すると、題名も消える
 - [ ] `?option=meta` の題名の欄に「本文が優先される」注意書きが出る
-      (種別 wiki と markdown の両方。文面は種別で違う)
+      (種別 wiki と Markdown の両方。文面は種別で違う)
 - [ ] 添付・ロック・改名が通る
 
 **実データでしか踏めないもの**
 
 - [ ] `&include` `&calendar` `&pages` `&index` を含むページが壊れていない
 - [ ] `&insert` `&listadd` (`&comment`) `&writepage` (`&newpage`) が
-      **wiki 記法のページを作る** (markdown にならない)
+      **wiki 記法のページを作る** (Markdown にならない)
 - [ ] ⚠️ **メタ情報の画面だけで題名を付けていたページ**は、次に本文を
       保存したときに題名が消える (`&comment` などの書き込みも本文の保存)。
       本文が正になったための仕様。実運用のサイト (967 ページ) で数えた
@@ -333,7 +333,7 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
       「マニュアル」が `NextFormManual/en` に向き、英語のマニュアルが
       読める (確認したら元に戻す)
 - [ ] 既存のタグが `?option=alltag` から消えていない
-      (種別 markdown のページを 1 枚保存し直すと、そのページのタグは
+      (種別 Markdown のページを 1 枚保存し直すと、そのページのタグは
       フロントマターの内容で置き換わる。これは仕様)
 - [ ] 古い `ToraToraWikiManual` 以下が残っている場合、その扱いが案内どおり
 
