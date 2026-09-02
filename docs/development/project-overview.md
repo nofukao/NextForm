@@ -839,6 +839,10 @@ wiki 記法の `&title{}` も同じ約束に揃えた (2026-08-26)。影響を�
 
 ### v0.9 — 検索機能の高度化 と Markdown の部分編集
 
+#### Markdown の折りたたみ `:::details` ✅ 完了 (2026-09-02)
+
+設計と却下した案は [design-markdown-details.md](design-markdown-details.md) にある。
+
 #### 検索機能の高度化
 
 - 正規表現、AND/OR/NOT、タイトル/本文限定、更新日範囲
@@ -1007,6 +1011,7 @@ FencedCode line 21-23  byte 176..189  |```⏎code⏎```⏎|
 | Markdown のページ題名 (追記 2026-08-21) | **フロントマターの `title:`。`&title{}` と同じ経路・同じ挙動** | `$page['title']` → `meta['title']` の経路をそのまま使えば、表示・保存・`insert` などの別経路がすべて wiki と同じになる。`title:` を消しても meta に残る点も `&title` に揃えた。種別で挙動をずらすと説明が 2 通りになる |
 | Markdown でのページ名の自動リンク (追記 2026-08-21) | **掛けない。検索語のハイライトだけ掛ける** | Markdown を書く人は `[[...]]` で明示的にリンクする習慣を持っており、素の語が勝手にリンクになるのは驚きになる。種別 text と `&pre` が同じ理由で `pagename` を excludes している |
 | 種別名の表示 (追記 2026-09-02) | **保存する種別名と画面に出す表示名を分ける** (`$PAGE_TYPE_LABELS` / `page_type_label()`)。種別 `markdown` は画面上「Markdown」 | Markdown は固有名詞なので、選択肢・フッター・履歴・マニュアルに小文字で出るのは誤り。ただし `meta['type']` は焼き付いていて変えられないので、**値は `markdown` のまま**にし、表示だけをレジストリ経由で差し替える。`&pages` の絞り込み・並べ替え (`type=markdown`) と `NEWPAGE_DEFAULT_TYPE` は値を見るので通さない。wiki / text / file は一般名詞なので登録しない |
+| Markdown の折りたたみ (追記 2026-09-02) | **`:::details` の囲みブロックを独自に足す**。出すのは素の `<details><summary>` で **JavaScript は使わない** | CommonMark にも GFM にも折りたたみの標準が無い。`:::` は仕様上どのブロックでもないので**既存ページの意味を一切変えない**。Notion 式の `>` は CommonMark では引用なので採れない (他のツールから貼った引用が全部トグルに化ける)。生 HTML を開ける案は `MARKDOWN_ALLOW_HTML` の既定を崩すので採らない。wiki の `*(optional)` は節の範囲に乗っているので移植できない。**実装の肝はコードブロックの中の `:::` で閉じないこと** — ライブラリは外側のブロックから順に `tryContinue()` を呼ぶので、素直に書くと内側のコードブロックより先に見て両方閉じる |
 | 外部取得のタイムアウト (追記 2026-08-17) | `EXTERNAL_FETCH_TIMEOUT` (5 秒) に集約 | `&calendar` と Elasticsearch がページ描画の途中で同期的に取りに行く。未指定だと `default_socket_timeout` (60 秒) 任せになる |
 | マニュアルの構成 (追記 2026-08-26) | **入口は記法に中立、記法ごとに 1 本の木、対応表は独立ページ**。ja は `Markdown/`(CheatSheet・Basic・Extra・Link・FrontMatter)と `Wiki/` が対等で、`Comparison` がどちらにも属さない | マニュアルが wiki 記法だけを前提にしたままだと、既定種別が markdown になった v0.8 の実態と食い違う。対応表を Markdown の一節に置くと「Markdown 側の文書」になってしまうので中立の場所に出した。記法の説明は同梱ライブラリの出力を実測してから書く (仕様書にあっても実装が出さないものは書かない)。**呼び方も対称にする**: 2 つを並べる文脈では「Wiki 記法」と「Markdown 記法」、書式そのもの (CommonMark / GFM) や種別名を指すときは「Markdown」「種別 Markdown」(2026-09-02 に小文字の「種別 markdown」から改めた。この表の「種別名の表示」を参照)。英語版は ja の木をそのまま写し、"Wiki notation" / "Markdown notation" で対称にする。**ファンクション詳細は本文から参照されるものだけ訳す** (en の早見表は 52 個すべてを英語の 1 行で載せ、かつ詳細ページへリンクしないので木として閉じる) |
 
