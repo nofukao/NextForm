@@ -36,7 +36,13 @@ EXPECTED_DIR="${GOLDEN_DIR}/expected"
 # 名前が衝突しないので、それ以外のページは自由に編集してよい。
 TARGETS=(
     "Top=?GoldenMaster/Top"
-    "Calendar=?GoldenMaster/Calendar"
+    # 月はクエリで固定する。本文の &calendar(2026-08) は**効かない** —
+    # wiki_parse_parameters() の受け口が pagename ([[...]]) / behind= / ahead= /
+    # month / weeks だけで、2026-08 はどの分岐にも当たらず捨てられる。
+    # 表示月は wiki_calendar.inc の $base_time = $now で決まり、
+    # 上書きできるのは URL の ?calendar= だけ。付けないと月が変わった日に落ちる
+    # (2026-08 に採取したものが 09-01 から落ちた)。
+    "Calendar=?GoldenMaster/Calendar&calendar=2026-08"
     "Syntax=?GoldenMaster/Syntax"
     "Markdown=?GoldenMaster/Markdown"
     "MarkdownSummary=?GoldenMaster/Markdown&option=summary"
@@ -67,9 +73,9 @@ out = re.sub(r"([&?]|&amp;)t=\d+", r"\1t=EPOCH", out)
 
 # 「今日」に依存する 2 か所を潰す。
 #
-# フィクスチャは &calendar(2026-08) と月を固定してあるので表そのものは動かない
-# が、その中で今日にあたるセルに today クラスが付き、「週」リンクの日付が
-# 今日になる。expected を採取した日にしか通らないテストになってしまう。
+# 月は TARGETS のクエリ (?calendar=2026-08) で固定してあるので表そのものは
+# 動かないが、その中で今日にあたるセルに today クラスが付き、「週」リンクの
+# 日付が今日になる。expected を採取した日にしか通らないテストになってしまう。
 # (2026-08-03 に採取したものが 08-09 に落ちた。)
 out = re.sub(r"class=\"([^\"]*)\"",
              lambda m: "class=\"" + re.sub(r"\s*\btoday\b", "", m.group(1)).strip() + "\"",
