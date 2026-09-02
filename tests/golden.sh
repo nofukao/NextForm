@@ -50,6 +50,9 @@ TARGETS=(
     # 閉じの --- の後ろに改行が無くてもフロントマターとして読むこと、
     # 本文が空でも section.markdown が閉じることの 2 つを固定する。
     "MarkdownFrontMatter=?GoldenMaster/MarkdownFrontMatter"
+    # 折りたたみ (:::details)。開閉の書き方・入れ子・コードブロックの中の :::・
+    # details 以外は素通し、をまとめて 1 枚で固定する。
+    "MarkdownDetails=?GoldenMaster/MarkdownDetails"
 )
 
 # 比較対象を <article class="main"> の中だけに絞り、実行のたびに変わる値を潰す。

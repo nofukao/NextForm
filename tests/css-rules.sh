@@ -77,6 +77,11 @@ rules_common() {
     check "アスキーアート pre.paa は折り返さない" \
           "bool(re.search(r'pre\.paa\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
 
+    # 折りたたみ (:::details) の summary が押せると分かること。
+    # cursor が既定のままだと、畳まれた見出しがただの太字に見えて誰も押さない。
+    check "折りたたみの summary に cursor: pointer がある" \
+          "bool(re.search(r'section\.markdown\s+details\s*>\s*summary\s*\{[^}]*cursor:\s*pointer', css, re.S))"
+
     # 見出しの見え方が種別をまたいで揃っていること。
     #
     # 種別 wiki は深さを section.section の入れ子で表し要素は常に h1、

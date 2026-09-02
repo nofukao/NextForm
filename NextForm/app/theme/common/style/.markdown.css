@@ -96,3 +96,21 @@ section.markdown td > code,
 section.markdown th > code {
     padding: 0 <?php echo(theme_density_px(3)); ?>px;
 }
+
+/*
+ * 折りたたみ (:::details)。<details> はブラウザ標準なので JS は要らない。
+ * wiki 記法の *(optional) が prototype.js で畳んでいるのと違い、静的に
+ * 書き出したページでも JavaScript を切っていても開閉できる。
+ */
+section.markdown > details {
+    margin-top: <?php echo(theme_density_px(24)); ?>px;
+    margin-bottom: <?php echo(theme_density_px(24)); ?>px;
+}
+section.markdown details > summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+/* 開いたときに、どこまでが中身かを字下げで見せる */
+section.markdown details > *:not(summary) {
+    margin-left: <?php echo(theme_density_px(12)); ?>px;
+}
