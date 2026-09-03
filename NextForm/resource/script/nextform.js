@@ -364,6 +364,32 @@ Element.prototype.wikiEditStartHandler = function(event, isForceText) {
     return false;
 }
 
+/*
+ * 自分の範囲に入っている後ろの兄弟。
+ *
+ * 種別 Markdown の見出しは「その節の終わりまで」を範囲に持つが、見出しは
+ * h1..h6 のフラットで節を包んでいない。隠さずに編集を始めると、節ぜんぶを
+ * 入れたテキストエリアの下に、同じ中身がそのまま出たままになる。
+ *
+ * 種別 wiki では何も返さない。あちらは section.section が節を包んでいて、
+ * 兄弟どうしの範囲は重ならないため。
+ */
+Element.prototype.wikiEditCoveredElements = function() {
+    var elements = [];
+    var position = parseInt(this.getAttribute('data-twp'));
+    var length = parseInt(this.getAttribute('data-twl'));
+    if(isNaN(position) || isNaN(length) || length < 0)
+	return elements;
+
+    for(var element = this.next(); element; element = element.next()) {
+	var next = parseInt(element.getAttribute('data-twp'));
+	if(isNaN(next) || next >= position + length)
+	    break;
+	elements.push(element);
+    }
+    return elements;
+}
+
 Element.prototype.wikiEditMakeTextarea = function(request) {
     var hiddens = {
 	'page': mainPagename,
@@ -413,6 +439,8 @@ Element.prototype.wikiEditMakeTextarea = function(request) {
 	this.parentNode.insertBefore(form, this);
 	this.hide();
 	form.showElement = this;
+	form.coveredElements = this.wikiEditCoveredElements();
+	form.coveredElements.each(function(element) { element.hide(); });
     }
     editingForm = form;
     form.textarea.fitHeight();
@@ -1473,6 +1501,8 @@ function wikiEditReset() {
 
 	if(editingForm.showElement)
 	    editingForm.showElement.show();
+	if(editingForm.coveredElements)
+	    editingForm.coveredElements.each(function(element) { element.show(); });
 	if(editingForm.removeElement)
 	    editingForm.removeElement.remove();
 
