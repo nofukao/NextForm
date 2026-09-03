@@ -295,8 +295,14 @@ function wikiEditSetup() {
     }); 
 
     if(location.href.match(/action=edit\b/) && !cookieGet('partial_edit_info')) {
+	/*
+	 * 見るのは data-type (保存されている種別名)。dd の文字は表示名で、
+	 * 種別 markdown は「Markdown」と出る。文字で分岐すると表示名を
+	 * 変えたときに壊れる。
+	 */
 	var typeElement = $$('dl.page_info dd.type')[0];
-	if(typeElement && typeElement.textValue() == 'wiki') {
+	var pageType = typeElement ? typeElement.getAttribute('data-type') : null;
+	if(pageType == 'wiki' || pageType == 'markdown') {
 	    messagesAdd('info', l('You can edit this page by double-clicking, too.'));
 	    cookieSetLong('partial_edit_info');
 	}

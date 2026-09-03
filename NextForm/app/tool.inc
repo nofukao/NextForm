@@ -91,7 +91,14 @@ function tool_page_info(&$page) {
 	$type = $page['meta']['type'];
     if($type !== '') {
 	$dt = dom_append_child($dl, 'dt');
-	$dd = dom_append_child($dl, 'dd', 'type');
+	/*
+	 * data-type には**保存されている種別名**をそのまま出す。
+	 * 画面に見えるほうは page_type_label() を通した表示名 (markdown は
+	 * 「Markdown」) なので、JavaScript が表示名で分岐すると、表示名を
+	 * 変えるたびに黙って壊れる。実際 v0.8 で表示名を変えたとき、
+	 * 二重クリックの案内の分岐が種別 markdown に当たらなくなっていた。
+	 */
+	$dd = dom_append_child($dl, 'dd', 'type', array('data-type' => $type));
 	dom_append_text($dt, l('Page type'));
 	dom_append_text($dd, page_type_label($type));
     }
