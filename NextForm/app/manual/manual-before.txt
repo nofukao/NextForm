@@ -718,7 +718,15 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 [[Wiki記法とMarkdown記法の対応:../Comparison]]にまとめてあります．
 
 *編集方法
-''ページメニュー''内の''編集''をクリックするとソースを編集できます．
+''本文の一部をダブルクリックすると，そこだけを編集できます．''
+編集できる単位は段落・見出し・箇条書きの項目・表・コードブロック・引用・折りたたみです．
+見出しをダブルクリックすると''その節ぜんぶ''(次の同じ深さ以上の見出しの手前まで)を編集します．
+ダブルクリックの代わりにAltキー+クリックでも編集が開始できます．
+
+Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表の1行だけ，といった単位では編集できません．
+表は表ぜんぶが1つの単位になります．
+
+別の方法として''ページメニュー''内の''編集''をクリックするとページ全体のソースを編集できます．
 編集画面の''プレビュー''を押すと，保存する前に変換結果を確かめられます．
 編集画面からはこの早見表にも飛べます．
 
@@ -1083,7 +1091,18 @@ How the same things are written in Wiki notation is collected in
 [[Wiki notation and Markdown notation:../Comparison]].
 
 *How to edit
-Click ''Edit'' in the ''page menu'' to edit the source.
+''Double click a part of the page to edit just that part.''
+The units you can edit are paragraphs, headings, list items, tables, code blocks,
+quotes and folds.
+Double clicking a heading edits ''the whole section'' (up to the next heading of the
+same or a shallower level).
+Alt and click works instead of a double click.
+
+Unlike Wiki notation, you cannot edit a part of a line (emphasis or strikethrough on
+its own) or a single row of a table. A table is one unit as a whole.
+
+Another way is to click ''Edit'' in the ''page menu'', which lets you edit the source
+of the whole page.
 Press ''Preview'' on the editing screen to check the converted result before saving.
 The editing screen also links to the cheat sheet.
 
@@ -1476,6 +1495,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
 |折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます|
 |節の終わりを明示|&*(end)|なし|同上|
+|部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
 |表の書式指定|行末の h f c l r n など|区切り行で列の揃えを指定|Markdown記法で指定できるのは列の揃えだけです|
 |表のセル結合|&< &> &^ &_|なし|Markdown記法にセル結合はありません|
@@ -1541,6 +1561,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
 |folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''|
 |marking the end of a section|&*(end)|none|as above|
+|unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
 |table formatting|h f c l r n and so on at the end of the row|column alignment in the separator row|All you can set in Markdown notation is the column alignment|
 |merging table cells|&< &> &^ &_|none|Markdown notation cannot merge cells|
