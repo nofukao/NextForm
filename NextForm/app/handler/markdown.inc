@@ -79,6 +79,10 @@ function markdown_converter() {
     $environment->addBlockStartParser(new MarkdownDetailsStartParser());
     $environment->addRenderer('MarkdownDetails', new MarkdownDetailsRenderer());
 
+    /* 部分編集の範囲 (data-twp / data-twl)。markdown_set_block_positions() を見よ */
+    $environment->addEventListener(League\CommonMark\Event\DocumentParsedEvent::class,
+				   'markdown_set_block_positions');
+
     /* ![説明](子ページ) を添付の埋め込みにする。標準の描画より先に見せる */
     $environment->addRenderer(League\CommonMark\Extension\CommonMark\Node\Inline\Image::class,
 			      new MarkdownImageRenderer(), 10);
@@ -136,8 +140,9 @@ function markdown_append_html($dom, $html) {
  * 大域に置く。変換器はリクエストごとに 1 つを使い回し、1 回のリクエストで
  * 本文とサイドページの両方を描くことがあるので、前の値に必ず戻す。
  */
-function markdown_render_html(&$page, $contents, &$front_matter = null) {
+function markdown_render_html(&$page, $contents, &$front_matter = null, $is_positioned = false) {
     global $MARKDOWN_CURRENT_PAGENAME;
+    global $MARKDOWN_LINE_OFFSETS, $MARKDOWN_CONTENTS_LENGTH;
 
     $front_matter = array();
     $converter = markdown_converter();
@@ -151,15 +156,28 @@ function markdown_render_html(&$page, $contents, &$front_matter = null) {
      * 書くと、題名も付かず、水平線 + 見出しとして本文に出てしまっていた。
      * 保存する本文には手を入れず、変換に渡すものだけを整える。
      */
-    if($contents !== '' && substr($contents, -1) !== "\n")
-	$contents .= "\n";
+    $padded = $contents;
+    if($padded !== '' && substr($padded, -1) !== "\n")
+	$padded .= "\n";
 
     $previous = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
+    $previous_offsets = isset($MARKDOWN_LINE_OFFSETS) ? $MARKDOWN_LINE_OFFSETS : null;
+    $previous_length = isset($MARKDOWN_CONTENTS_LENGTH) ? $MARKDOWN_CONTENTS_LENGTH : 0;
     $MARKDOWN_CURRENT_PAGENAME = $page['name'];
+    /*
+     * 行→バイトの表は**変換に渡す文字列**から作る (末尾の改行を足した後)。
+     * ライブラリが返す行番号はそちらを指すため。長さのほうは**保存されている
+     * 本文**の長さで抑える。足した改行は storage に無いので、最後のブロックの
+     * 範囲がその 1 バイトぶんはみ出す。
+     */
+    $MARKDOWN_LINE_OFFSETS = $is_positioned ? markdown_line_offsets($padded) : null;
+    $MARKDOWN_CONTENTS_LENGTH = strlen($contents);
     try {
-	$rendered = $converter->convert($contents);
+	$rendered = $converter->convert($padded);
     } finally {
 	$MARKDOWN_CURRENT_PAGENAME = $previous;
+	$MARKDOWN_LINE_OFFSETS = $previous_offsets;
+	$MARKDOWN_CONTENTS_LENGTH = $previous_length;
     }
 
     if($rendered instanceof League\CommonMark\Extension\FrontMatter\FrontMatterProviderInterface) {
@@ -262,12 +280,212 @@ function markdown_parse_tags($value) {
     return array_keys($tags);
 }
 
+/*
+ * 部分編集の範囲 (data-twp / data-twl)。
+ *
+ * 種別 wiki は変換の途中で dom_set_position() が全ノードに「原文の何バイト目
+ * から何バイト」を書き込んでおり、resource/script/nextform.js がその属性を
+ * 持つ要素に二重クリックを仕掛けている。属性が無いと wikiPosition が null に
+ * なり、いつもページ全体の編集画面へ飛ぶ。種別 Markdown で部分編集が効かなかった
+ * のは**この属性が無かったからだけ**で、?option=partial と ?option=replace は
+ * 元から種別を見ていない (page_type_is_text_base() を通る)。
+ *
+ * 同梱ライブラリはブロック要素に限って行番号を持っている
+ * (AbstractBlock::getStartLine() / getEndLine())。行→バイトの表を作れば
+ * そのまま data-twp / data-twl になる。**インライン要素は位置を持たない**ので、
+ * 最小の粒度は段落になる。
+ *
+ * **範囲が 1 バイトずれると、保存でページが壊れる。** ブロックの種類ごとに
+ * 「切り出しが原文と一致するか」を tests/markdown.sh の 8. で見ている。
+ */
+
+/*
+ * 行番号 → その行の先頭のバイト位置。1 行目が 1。
+ * 最終行の次 (行数 + 1) まで作るので、範囲の終わりも表から引ける。
+ * 改行そのものを 1 バイトとして数えるだけなので、CRLF でも合う (\r は
+ * その行の文字として strlen に入る)。
+ */
+function markdown_line_offsets($contents) {
+    $offsets = array();
+    $line = 1;
+    $position = 0;
+    foreach(explode("\n", $contents) as $text) {
+	$offsets[$line++] = $position;
+	$position += strlen($text) + 1;
+    }
+    $offsets[$line] = $position;
+    return $offsets;
+}
+
+/*
+ * ブロックの行範囲を [位置, 長さ] に直す。取れなければ false。
+ *
+ * 終わりは「次の行の先頭」なので、そのブロックの最後の改行までが入る。
+ * 二重クリックの編集は末尾の改行を外して見せ、送るときに戻す作りなので
+ * (nextform.js の endsLf)、wiki 側と同じこの数え方に揃える。
+ */
+function markdown_block_range($block, &$offsets, $limit) {
+    if(!($block instanceof League\CommonMark\Node\Block\AbstractBlock))
+	return false;
+
+    $start = $block->getStartLine();
+    $end = $block->getEndLine();
+    if(is_null($start) || is_null($end))
+	return false;
+    if(!isset($offsets[$start]) || !isset($offsets[$end + 1]))
+	return false;
+
+    $position = $offsets[$start];
+    $to = min($offsets[$end + 1], $limit);
+    if($to <= $position)
+	return false;
+    return array($position, $to - $position);
+}
+
+/*
+ * 文書の直下にある見出しは、**その節の終わりまで**を範囲にする。
+ * 見出しを押せば節まるごと、段落を押せばその段落。押す場所で粒度が決まる。
+ *
+ * 種別 wiki も同じ見え方になっている。あちらは section.section が節を包んで
+ * いて、見出し自体は観測の対象から外してある (nextform.js の
+ * 'section.section > h1')。Markdown の見出しはフラットで節を包めないので、
+ * 範囲のほうを節の終わりまで伸ばす。
+ *
+ * 入れ子の中 (:::details や引用の中) の見出しは伸ばさない。囲みの外まで
+ * 範囲が届くと、押した所と書き換わる所が食い違う。
+ */
+function markdown_heading_range($heading, &$offsets, $limit) {
+    $range = markdown_block_range($heading, $offsets, $limit);
+    if($range === false)
+	return false;
+    if(!($heading->parent() instanceof League\CommonMark\Node\Block\Document))
+	return $range;
+
+    /*
+     * 節が終わるのは「次の同じ深さ以上の見出し」の手前。深い見出し
+     * (# の次の ##) は節の中なので、そこでは切らない。種別 wiki の
+     * section.section が入れ子になっているのと同じ勘定にしてある。
+     *
+     * 終わりは**次の見出しの行の手前**ではなく、**節の最後のブロックの
+     * 終わり**にする。あいだの空行を範囲に入れると、節を編集して保存する
+     * たびに次の見出しとの空行が 1 つずつ消える (二重クリックの編集は
+     * 末尾の改行を 1 つだけ戻す作りなので)。
+     */
+    $to = $range[0] + $range[1];
+    for($next = $heading->next(); !is_null($next); $next = $next->next()) {
+	if($next instanceof League\CommonMark\Extension\CommonMark\Node\Block\Heading &&
+	   $next->getLevel() <= $heading->getLevel())
+	    break;
+	if(markdown_is_footnote_block($next))
+	    continue;
+	$next_range = markdown_block_range($next, $offsets, $limit);
+	if($next_range !== false)
+	    $to = max($to, $next_range[0] + $next_range[1]);
+    }
+
+    if($to <= $range[0])
+	return $range;
+    return array($range[0], $to - $range[0]);
+}
+
+/*
+ * 変換後の木のブロックに範囲を書き込む (DocumentParsedEvent)。
+ * 描画器は $node->data->get('attributes') を属性として出すので、
+ * ここで入れておけば標準の描画器がそのまま書き出す。
+ *
+ * **脚注には付けない。** FootnoteContainer は最初の定義から最後の定義までを
+ * 自分の行範囲として持つ。定義が本文のあちこちに散っていると、その間にある
+ * 関係のない段落まで範囲に入り、脚注の一覧を押しただけで本文が消える。
+ */
+function markdown_is_footnote_block($node) {
+    return ($node instanceof League\CommonMark\Extension\Footnote\Node\Footnote ||
+	    $node instanceof League\CommonMark\Extension\Footnote\Node\FootnoteContainer);
+}
+
+function markdown_set_block_positions(League\CommonMark\Event\DocumentParsedEvent $event) {
+    global $MARKDOWN_LINE_OFFSETS, $MARKDOWN_CONTENTS_LENGTH;
+    if(empty($MARKDOWN_LINE_OFFSETS))
+	return;
+    markdown_set_block_positions_children($event->getDocument(),
+					  $MARKDOWN_LINE_OFFSETS, $MARKDOWN_CONTENTS_LENGTH);
+}
+
+/*
+ * $limit は「ここから先は自分のものではない」というバイト位置。
+ * 子の範囲は親の範囲を超えない。囲みの中の最後のブロックが囲みの閉じまで
+ * 食い込むのを、ここで止める。
+ */
+function markdown_set_block_positions_children($node, &$offsets, $limit) {
+    foreach($node->children() as $child) {
+	if(!($child instanceof League\CommonMark\Node\Block\AbstractBlock))
+	    continue;
+	if(markdown_is_footnote_block($child))
+	    continue;
+
+	if($child instanceof League\CommonMark\Extension\CommonMark\Node\Block\Heading)
+	    $range = markdown_heading_range($child, $offsets, $limit);
+	else
+	    $range = markdown_block_range($child, $offsets, $limit);
+
+	if($range !== false) {
+	    /*
+	     * **文字列で入れる。** 属性の値は最後に Xml::escape() を通るが、
+	     * あれは string しか受けない (strict_types)。整数のまま入れると
+	     * 描画の時点で TypeError になり、ページ全体が 500 になる。
+	     */
+	    $child->data->set('attributes/data-twp', (string)$range[0]);
+	    $child->data->set('attributes/data-twl', (string)$range[1]);
+	}
+
+	$child_limit = ($range === false) ? $limit : $range[0] + $range[1];
+	/*
+	 * 折りたたみの閉じの ::: の行は囲みのもの。中の最後のブロックの
+	 * 範囲をその行の手前で止める (MarkdownDetails::isFenceClosed())。
+	 * 止めないと、中の段落を編集して保存したときに ::: ごと消え、
+	 * 折りたたみが壊れる。
+	 */
+	if($child instanceof MarkdownDetails && $child->isFenceClosed()) {
+	    $fence_line = $child->getEndLine();
+	    if(!is_null($fence_line) && isset($offsets[$fence_line]))
+		$child_limit = min($child_limit, $offsets[$fence_line]);
+	}
+	markdown_set_block_positions_children($child, $offsets, $child_limit);
+    }
+}
+
+/*
+ * コードブロックの範囲を <code> から <pre> へ移す。
+ *
+ * FencedCodeRenderer は属性を <code> のほうに付ける (<pre> は素で出す)。
+ * 当たり先が中の <code> だと、コードの余白を押しても編集が始まらない。
+ * 見た目の枠は <pre> なので、そちらに移す。
+ */
+function markdown_move_code_positions($dom) {
+    $codes = array();
+    foreach($dom->getElementsByTagName('code') as $code)
+	$codes[] = $code;
+
+    foreach($codes as $code) {
+	if(!$code->hasAttribute('data-twp'))
+	    continue;
+	$pre = $code->parentNode;
+	if(!($pre instanceof DOMElement) || strtolower($pre->nodeName) !== 'pre')
+	    continue;
+	if(!$pre->hasAttribute('data-twp')) {
+	    dom_set_attribute($pre, 'data-twp', $code->getAttribute('data-twp'));
+	    dom_set_attribute($pre, 'data-twl', $code->getAttribute('data-twl'));
+	}
+	$code->removeAttribute('data-twp');
+	$code->removeAttribute('data-twl');
+    }
+}
+
 function markdown_convert(&$page, $dom, $contents = null) {
     if(is_null($contents))
 	$contents = page_get_contents($page);
 
     $front_matter = array();
-    $html = markdown_render_html($page, $contents, $front_matter);
+    $html = markdown_render_html($page, $contents, $front_matter, true);
     if($html === false) {
 	message_error(l('Markdown library is missing. Showing the source instead.'));
 	markdown_source_append($page, $dom, $contents);
@@ -278,6 +496,7 @@ function markdown_convert(&$page, $dom, $contents = null) {
     $section = dom_append_child($dom, 'section', 'markdown');
     if(!markdown_append_html($section, $html))
 	return false;
+    markdown_move_code_positions($section);
     markdown_append_sentence($page, $section);
     markdown_set_heading_ids($page, $section);
     return true;

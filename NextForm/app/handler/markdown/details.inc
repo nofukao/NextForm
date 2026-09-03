@@ -24,6 +24,7 @@
 class MarkdownDetails extends League\CommonMark\Node\Block\AbstractBlock {
     private $label;
     private $is_open;
+    private $is_fence_closed = false;
 
     public function __construct(string $label, bool $is_open) {
 	parent::__construct();
@@ -37,6 +38,23 @@ class MarkdownDetails extends League\CommonMark\Node\Block\AbstractBlock {
 
     public function isOpen(): bool {
 	return $this->is_open;
+    }
+
+    /*
+     * 閉じの ::: で終わったか (文書の終わりで暗黙に閉じたのではないか)。
+     *
+     * 部分編集の範囲を出すときに要る。閉じフェンスの行は**囲みのもの**で、
+     * 中の最後のブロックのものではない。ライブラリは囲みを閉じるときに
+     * 開いていた子もその行で閉じるので (MarkdownParser::closeBlockParsers)、
+     * 素直に行番号を使うと中の段落の範囲に ::: が入り、その段落を編集して
+     * 保存すると閉じフェンスごと消える。
+     */
+    public function markFenceClosed(): void {
+	$this->is_fence_closed = true;
+    }
+
+    public function isFenceClosed(): bool {
+	return $this->is_fence_closed;
     }
 }
 
@@ -121,8 +139,10 @@ class MarkdownDetailsParser extends League\CommonMark\Parser\Block\AbstractBlock
 	    /* 閉じは開始と同じ数以上。入れ子は外側のコロンを増やして表す */
 	    $match = League\CommonMark\Util\RegexHelper::matchFirst(
 		'/^:{3,}(?=[ \t]*$)/', $cursor->getLine(), $cursor->getNextNonSpacePosition());
-	    if($match !== null && strlen($match[0]) >= $this->fence_length)
+	    if($match !== null && strlen($match[0]) >= $this->fence_length) {
+		$this->block->markFenceClosed();
 		return League\CommonMark\Parser\Block\BlockContinue::finished();
+	    }
 	}
 
 	return League\CommonMark\Parser\Block\BlockContinue::at($cursor);
@@ -142,7 +162,15 @@ class MarkdownDetailsRenderer implements League\CommonMark\Renderer\NodeRenderer
 	$summary = new League\CommonMark\Util\HtmlElement(
 	    'summary', array(), League\CommonMark\Util\Xml::escape($label));
 
-	$attributes = array();
+	/*
+	 * 部分編集の範囲 (data-twp / data-twl) は
+	 * markdown_set_block_positions() が data に入れる。標準の描画器は
+	 * これを読んで属性にするので、独自の描画器も同じように読む。
+	 * 読まないと、折りたたみだけ二重クリックで編集できない。
+	 */
+	$attributes = $node->data->get('attributes', array());
+	if(!is_array($attributes))
+	    $attributes = array();
 	if($node->isOpen())
 	    $attributes['open'] = 'open';
 

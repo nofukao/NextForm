@@ -248,9 +248,11 @@ echo
 echo "7. 折りたたみ (:::details)"
 helper write "$P_DETAILS" "$(printf -- ':::details 手順\n**中身**\n:::\n')" > /dev/null
 D_HTML="$(main_html "$P_DETAILS")"
-check_eq "details が出る" "yes" "$(contains "$D_HTML" '<details>')"
+# 属性の並び順に寄りかからない。部分編集の範囲 (data-twp) が details にも
+# 付くので、'<details>' のような閉じ括弧まで込みの照合はここでは使えない。
+check_eq "details が出る" "yes" "$(contains "$D_HTML" '<details')"
 check_eq "  summary にラベルが入る" "yes" "$(contains "$D_HTML" '<summary>手順</summary>')"
-check_eq "  既定は閉じている" "no" "$(contains "$D_HTML" '<details open')"
+check_eq "  既定は閉じている" "no" "$(contains "$D_HTML" 'open="open"')"
 check_eq "  中身は Markdown として変換される" "yes" "$(contains "$D_HTML" '<strong>中身</strong>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::details\n中身\n:::\n')" > /dev/null
@@ -259,11 +261,11 @@ check_eq "ラベルを省くと既定の語が入る" "yes" \
 
 helper write "$P_DETAILS" "$(printf -- ':::details+ 開いて出る\n中身\n:::\n')" > /dev/null
 check_eq "+ で開いた状態になる" "yes" \
-         "$(contains "$(main_html "$P_DETAILS")" '<details open="open">')"
+         "$(contains "$(main_html "$P_DETAILS")" 'open="open"')"
 
 helper write "$P_DETAILS" "$(printf -- ':::details open 開いて出る\n中身\n:::\n')" > /dev/null
 D_HTML="$(main_html "$P_DETAILS")"
-check_eq "open でも開いた状態になる" "yes" "$(contains "$D_HTML" '<details open="open">')"
+check_eq "open でも開いた状態になる" "yes" "$(contains "$D_HTML" 'open="open"')"
 check_eq "  open はラベルに残らない" "yes" "$(contains "$D_HTML" '<summary>開いて出る</summary>')"
 
 # open で始まるラベルを書きたいときの逃げ道。マニュアルにも書いてある
@@ -280,7 +282,7 @@ D_HTML="$(main_html "$P_DETAILS")"
 check_eq "外側のコロンを増やすと入れ子になる" "2" \
          "$(printf '%s' "$D_HTML" | grep -o '<details' | wc -l)"
 check_eq "  内側が外側の中に入る" "yes" \
-         "$(contains "$(printf '%s' "$D_HTML" | tr -d '\n')" '<summary>外</summary><details><summary>内</summary>')"
+         "$(contains "$(printf '%s' "$D_HTML" | tr -d '\n')" '<summary>外</summary><details')"
 
 # ここが肝。ライブラリは外側のブロックから順に tryContinue() を呼ぶので、
 # 素直に書くとコードブロックの中の ::: で両方まとめて閉じる。
@@ -295,8 +297,10 @@ check_eq "字下げした ::: では閉じない" "1" \
          "$(printf '%s' "$(main_html "$P_DETAILS")" | grep -o '<details' | wc -l)"
 
 helper write "$P_DETAILS" "$(printf -- ':::details 閉じ忘れ\n中身\n')" > /dev/null
+D_HTML="$(printf '%s' "$(main_html "$P_DETAILS")" | tr -d '\n')"
 check_eq "閉じ忘れても文書の終わりで閉じる" "yes" \
-         "$(contains "$(printf '%s' "$(main_html "$P_DETAILS")" | tr -d '\n')" '<summary>閉じ忘れ</summary><p>中身</p></details>')"
+         "$(contains "$D_HTML" '<summary>閉じ忘れ</summary><p')"
+check_eq "  中身が中に入ったまま閉じる" "yes" "$(contains "$D_HTML" '中身</p></details>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::note 注意\n中身\n:::\n')" > /dev/null
 D_HTML="$(main_html "$P_DETAILS")"
@@ -322,7 +326,7 @@ echo "8. 部分編集の範囲 (data-twp / data-twl)"
 #
 # 本文はファイル経由で入れる。$( ) は末尾の改行を落とすので、引数で渡すと
 # 「改行で終わる本文」を作れず、最後のブロックの範囲だけ 1 バイト短くなる。
-POS_BODY='---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n'
+POS_BODY='---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n\n# 見出し 3\n\n終わり。\n'
 POS_FIXTURE="${MARKDOWN_TEST_SITE}/pos-fixture.txt"
 printf -- "$POS_BODY" | sudo tee "$POS_FIXTURE" > /dev/null
 sudo chown "$SITE_OWNER" "$POS_FIXTURE"
@@ -339,10 +343,16 @@ check_eq "引用"           '> 引用文\n'                             "$(pos_f
 
 # 見出しは「その節の終わりまで」。押した所で粒度が決まるので、見出しを押すと
 # 節まるごと、段落を押すとその段落になる。次の同じ深さ以上の見出しの手前で切る。
-check_eq "見出し 1 (節の終わりまで)" \
-         '# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n' \
-         "$(pos_field "$POS" h1)"
-check_eq "見出し 2 (文書の終わりまで)" '## 見出し 2\n\n節の中身。\n' "$(pos_field "$POS" h2)"
+# 深い見出し (##) は節の中なので、そこでは切らない。切るのは同じ深さ以上。
+check_eq "見出し 1 (次の # の手前まで)" \
+         '# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n' \
+         "$(pos_field "$POS" h1 1)"
+check_eq "見出し 2 (次の # の手前まで)" '## 見出し 2\n\n節の中身。\n' "$(pos_field "$POS" h2)"
+check_eq "見出し 3 (文書の終わりまで)"   '# 見出し 3\n\n終わり。\n'    "$(pos_field "$POS" h1 2)"
+# 節と節のあいだの空行は範囲に入れない。入れると節を保存するたびに 1 つ消える
+# (二重クリックの編集は末尾の改行を 1 つだけ戻すため)
+check_eq "  節の後ろの空行は入らない" "no" \
+         "$(contains "$(pos_field "$POS" h2)" '節の中身。\n\n')"
 
 # 表の行とセルには範囲を持たせない (ライブラリが行番号を持たないため)。
 # 持たせないと決めたものが、うっかり付いていないことを見る。
@@ -359,9 +369,14 @@ check_eq "?option=partial が同じ原文を返す" '段落その 1 です。\n*
 check_eq "画面の HTML に属性が出る" "yes" "$(contains "$(main_html "$P_POS")" 'data-twp=')"
 
 # 折りたたみは独自のブロックなので、描画器が属性を落としていないかを別に見る
-helper write "$P_DETAILS" "$(printf -- ':::details ラベル\n中の段落\n:::\n')" > /dev/null
+DETAILS_FIXTURE="${MARKDOWN_TEST_SITE}/details-fixture.txt"
+printf -- ':::details ラベル\n中の段落\n:::\n' | sudo tee "$DETAILS_FIXTURE" > /dev/null
+sudo chown "$SITE_OWNER" "$DETAILS_FIXTURE"
+helper write-file "$P_DETAILS" "$DETAILS_FIXTURE" > /dev/null
 D_POS="$(helper positions "$P_DETAILS")"
 check_eq "折りたたみ全体" ':::details ラベル\n中の段落\n:::\n' "$(pos_field "$D_POS" details)"
+# 閉じの ::: は囲みのもの。中の段落の範囲に入っていると、その段落を
+# 編集して保存したときに ::: ごと消えて折りたたみが壊れる。
 check_eq "  中の段落"     '中の段落\n'                          "$(pos_field "$D_POS" p)"
 
 # CRLF のページでも合うこと。行→バイトの表を strlen + 1 で作るので \r ごと数える。
@@ -383,7 +398,7 @@ POS="$(helper positions "$P_POS")"
 R="$(helper replace "$P_POS" "$(pos_field "$POS" p 1 3)" "$(pos_field "$POS" p 1 4)" $'差し替えた段落。\n')"
 check_eq "保存できる" "1" "$(value_of "$R" written)"
 check_eq "  段落だけが入れ替わる" \
-         '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n差し替えた段落。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n' \
+         '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n差し替えた段落。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n\n# 見出し 3\n\n終わり。\n' \
          "$(value_of "$R" contents)"
 
 # 見出しを押したときは節ごと入れ替わる
@@ -391,7 +406,7 @@ helper write-file "$P_POS" "$POS_FIXTURE" > /dev/null
 POS="$(helper positions "$P_POS")"
 R="$(helper replace "$P_POS" "$(pos_field "$POS" h2 1 3)" "$(pos_field "$POS" h2 1 4)" $'## 別の節\n\n別の中身。\n')"
 check_eq "節ごと入れ替わる" \
-         '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 別の節\n\n別の中身。\n' \
+         '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 別の節\n\n別の中身。\n\n# 見出し 3\n\n終わり。\n' \
          "$(value_of "$R" contents)"
 
 # 箇条書きの 1 項目だけを差し替えても、隣の項目を巻き込まないこと
