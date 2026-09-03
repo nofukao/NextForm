@@ -25,6 +25,8 @@
 #   6. 種別 wiki の &title{} も同じに揃うこと (消せば題名も消える)
 #   7. 折りたたみ (:::details) — 開閉の書き方、入れ子、コードブロックの中の :::、
 #      折りたたんだ中身が検索と目次に載ること
+#   8. 部分編集の範囲 (data-twp / data-twl) — ブロックごとの切り出しが原文と
+#      1 バイト単位で一致すること。**ここがずれると保存で本文が壊れる**
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -51,6 +53,24 @@ cleanup() {
     fi
 }
 trap cleanup EXIT
+
+# helper positions の出力から 1 件取り出す。
+#   $1 出力  $2 タグ名  $3 何番目 (既定 1)  $4 列 (3=位置 4=長さ 5=切り出し。既定 5)
+pos_field() {
+    printf '%s\n' "$1" \
+        | awk -F'\t' -v tag="$2" -v n="${3:-1}" -v f="${4:-5}" \
+              '$1 == "pos" && $2 == tag { c++; if(c == n) { print $f; exit } }'
+}
+
+# ?option=partial が返す原文を、改行を \n に直して取り出す。
+# ヘルパと同じ形にして比べるため。status は見ない (書き込み権限が無くても
+# source は返る。ここで確かめたいのは範囲であって権限ではない)。
+partial_source() {
+    curl -sk "${MARKDOWN_TEST_URL}/?$1&option=partial&ticket=$2&position=$3&length=$4" \
+        | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+sys.stdout.write(d.get("source", "").replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n"))'
+}
 
 # $1 説明  $2 期待値  $3 実測値
 check_eq() {
@@ -141,6 +161,8 @@ P_HAND="MarkdownTest/Hand"
 P_EMPTY="MarkdownTest/Empty"
 P_WIKI="MarkdownTest/Wiki"
 P_DETAILS="MarkdownTest/Details"
+P_POS="MarkdownTest/Positions"
+P_CRLF="MarkdownTest/Crlf"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -289,6 +311,97 @@ helper write "$P_DETAILS" "$(printf -- ':::details ラベル\n# 中の見出し\
 check_eq "中の見出しは目次に出る" "yes" \
          "$(contains "$(main_html "${P_DETAILS}&option=summary")" '中の見出し')"
 echo
+
+echo "8. 部分編集の範囲 (data-twp / data-twl)"
+# **この節が一番きつい検査**。範囲が 1 バイトずれると、?option=replace が
+# 隣のブロックを巻き込んで保存し、ページが壊れる。だからブロックの種類ごとに
+# 「その範囲を切り出したら原文のこれになる」を全部書き出して突き合わせる。
+#
+# フロントマターを付けてあるのは、行番号の起点がずれていないかを見るため
+# (見出しは 5 行目 = 23 バイト目から始まる)。
+#
+# 本文はファイル経由で入れる。$( ) は末尾の改行を落とすので、引数で渡すと
+# 「改行で終わる本文」を作れず、最後のブロックの範囲だけ 1 バイト短くなる。
+POS_BODY='---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n'
+POS_FIXTURE="${MARKDOWN_TEST_SITE}/pos-fixture.txt"
+printf -- "$POS_BODY" | sudo tee "$POS_FIXTURE" > /dev/null
+sudo chown "$SITE_OWNER" "$POS_FIXTURE"
+helper write-file "$P_POS" "$POS_FIXTURE" > /dev/null
+POS="$(helper positions "$P_POS")"
+
+check_eq "段落"           '段落その 1 です。\n**強調**もある。\n' "$(pos_field "$POS" p)"
+check_eq "箇条書き全体"   '- 項目 A\n- 項目 B\n'                   "$(pos_field "$POS" ul)"
+check_eq "  1 つめの項目" '- 項目 A\n'                             "$(pos_field "$POS" li 1)"
+check_eq "  2 つめの項目" '- 項目 B\n'                             "$(pos_field "$POS" li 2)"
+check_eq "表"             '| a | b |\n|---|---|\n| 1 | 2 |\n'      "$(pos_field "$POS" table)"
+check_eq "コードブロック" '```\nコード\n```\n'                     "$(pos_field "$POS" pre)"
+check_eq "引用"           '> 引用文\n'                             "$(pos_field "$POS" blockquote)"
+
+# 見出しは「その節の終わりまで」。押した所で粒度が決まるので、見出しを押すと
+# 節まるごと、段落を押すとその段落になる。次の同じ深さ以上の見出しの手前で切る。
+check_eq "見出し 1 (節の終わりまで)" \
+         '# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n' \
+         "$(pos_field "$POS" h1)"
+check_eq "見出し 2 (文書の終わりまで)" '## 見出し 2\n\n節の中身。\n' "$(pos_field "$POS" h2)"
+
+# 表の行とセルには範囲を持たせない (ライブラリが行番号を持たないため)。
+# 持たせないと決めたものが、うっかり付いていないことを見る。
+check_eq "表の行には付かない" "" "$(pos_field "$POS" tr)"
+check_eq "見出しの中の強調には付かない" "" "$(pos_field "$POS" strong)"
+
+# ?option=partial は substr するだけだが、**画面が出した属性の値**を
+# そのまま渡して同じものが返ることを、HTTP の経路でも 1 度は見ておく。
+POS_TICKET="$(value_of "$(helper meta "$P_POS" ticket)" value)"
+check_eq "?option=partial が同じ原文を返す" '段落その 1 です。\n**強調**もある。\n' \
+         "$(partial_source "$P_POS" "$POS_TICKET" "$(pos_field "$POS" p 1 3)" "$(pos_field "$POS" p 1 4)")"
+
+# 画面の HTML にも属性が出ていること (ヘルパだけで通って画面で出ない、を防ぐ)
+check_eq "画面の HTML に属性が出る" "yes" "$(contains "$(main_html "$P_POS")" 'data-twp=')"
+
+# 折りたたみは独自のブロックなので、描画器が属性を落としていないかを別に見る
+helper write "$P_DETAILS" "$(printf -- ':::details ラベル\n中の段落\n:::\n')" > /dev/null
+D_POS="$(helper positions "$P_DETAILS")"
+check_eq "折りたたみ全体" ':::details ラベル\n中の段落\n:::\n' "$(pos_field "$D_POS" details)"
+check_eq "  中の段落"     '中の段落\n'                          "$(pos_field "$D_POS" p)"
+
+# CRLF のページでも合うこと。行→バイトの表を strlen + 1 で作るので \r ごと数える。
+# 本文はファイル経由で渡す。$( ) は末尾の改行を落とすので、引数で渡すと
+# 「末尾が改行で終わる CRLF のページ」を作れない。
+CRLF_FIXTURE="${MARKDOWN_TEST_SITE}/crlf-fixture.txt"
+printf -- '# 題\r\n\r\n本文です。\r\n' | sudo tee "$CRLF_FIXTURE" > /dev/null
+sudo chown "$SITE_OWNER" "$CRLF_FIXTURE"
+helper write-file "$P_CRLF" "$CRLF_FIXTURE" > /dev/null
+CRLF_POS="$(helper positions "$P_CRLF")"
+check_eq "CRLF でも段落が合う" '本文です。\r\n' "$(pos_field "$CRLF_POS" p)"
+
+echo
+echo "9. 範囲を差し替えても他が変わらないこと"
+# ここが本番。JavaScript は末尾の改行を外して見せ、送るときに戻すので、
+# テストも同じように末尾の改行を付けて送る。
+helper write-file "$P_POS" "$POS_FIXTURE" > /dev/null
+POS="$(helper positions "$P_POS")"
+R="$(helper replace "$P_POS" "$(pos_field "$POS" p 1 3)" "$(pos_field "$POS" p 1 4)" $'差し替えた段落。\n')"
+check_eq "保存できる" "1" "$(value_of "$R" written)"
+check_eq "  段落だけが入れ替わる" \
+         '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n差し替えた段落。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n' \
+         "$(value_of "$R" contents)"
+
+# 見出しを押したときは節ごと入れ替わる
+helper write-file "$P_POS" "$POS_FIXTURE" > /dev/null
+POS="$(helper positions "$P_POS")"
+R="$(helper replace "$P_POS" "$(pos_field "$POS" h2 1 3)" "$(pos_field "$POS" h2 1 4)" $'## 別の節\n\n別の中身。\n')"
+check_eq "節ごと入れ替わる" \
+         '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n段落その 1 です。\n**強調**もある。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 別の節\n\n別の中身。\n' \
+         "$(value_of "$R" contents)"
+
+# 箇条書きの 1 項目だけを差し替えても、隣の項目を巻き込まないこと
+helper write-file "$P_POS" "$POS_FIXTURE" > /dev/null
+POS="$(helper positions "$P_POS")"
+R="$(helper replace "$P_POS" "$(pos_field "$POS" li 1 3)" "$(pos_field "$POS" li 1 4)" $'- 項目 A を直した\n')"
+check_eq "項目だけ入れ替わる" "yes" \
+         "$(contains "$(value_of "$R" contents)" '- 項目 A を直した\n- 項目 B\n')"
+echo
+
 
 helper cleanup > /dev/null
 
