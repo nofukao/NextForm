@@ -25,6 +25,20 @@ if ! git rev-parse --verify --quiet "${REF}^{commit}" > /dev/null; then
     exit 1
 fi
 
+# **未コミットの編集は配布物に入らない。**
+#
+# git archive は ref (既定は HEAD) の内容を固めるので、作業ツリーで直したまま
+# コミットしていないものは、エラーも警告も出さずに黙って落ちる。「直したはずの
+# ものが配布物に入っていない」は、入れた先のサイトで初めて分かるうえ、
+# 版数が動かない開発中は upgrade の版数ガードにも掛からない (--force なら尚更)。
+DIRTY="$(git status --porcelain -- NextForm docs/upgrade-guide.md)"
+if [[ -n "$DIRTY" ]]; then
+    echo "警告: 配布物に入らない未コミットの変更があります。" >&2
+    printf '%s\n' "$DIRTY" | sed 's/^/    /' >&2
+    echo "      配布物は ${REF} から作ります。コミットしてから作り直してください。" >&2
+    echo >&2
+fi
+
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
