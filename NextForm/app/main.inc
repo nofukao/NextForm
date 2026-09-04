@@ -195,6 +195,34 @@ function head_tags_init() {
     head_tags_add_javascript('resource/script/nextform.js');
 }
 
+/*
+ * 静的ファイルの URL に更新時刻を付ける。
+ *
+ * **付けないと、アップグレードしても古い JavaScript が使われ続ける。**
+ * resource/ の下は web サーバがそのまま返すだけで Cache-Control が付かず、
+ * ブラウザは Last-Modified から勝手に鮮度を見積もって再検証を省く。
+ * 見積もり方はブラウザごとに違うので、「Chrome では新しいのに Firefox では
+ * 古いまま、再読み込みしても直らない」という分かりにくい落ち方をする
+ * (0.9.0 の「保存して編集続行」で実際に起きた)。
+ *
+ * theme/ の生成物には前から同じ手当てがしてある
+ * (theme.inc の trw_theme_url())。resource/ にだけ無かった。
+ *
+ * 更新時刻なので、変わっていなければ URL も変わらない。通常のキャッシュは
+ * 効いたままで、置き換えたときだけ取り直しになる。
+ *
+ * $src はサイトの入口 (index.php) からの相対パスで、web からの要求では
+ * カレントディレクトリがそこになる (index.php が 'app/install.inc' を
+ * 相対で読んでいるのと同じ前提)。CLI のツールから呼ばれたときは
+ * 見つからないので、そのまま何も付けない。
+ */
+function head_tags_asset_url($src) {
+    $mtime = @filemtime($src);
+    if($mtime === false)
+	return $src;
+    return $src . '?t=' . $mtime;
+}
+
 function head_tags_add_javascript($src = '') {
     global $head_tags;
     global $head_tags_added;
@@ -204,7 +232,7 @@ function head_tags_add_javascript($src = '') {
 	if(!empty($head_tags_added[$src]))
 	    return;
 	$head_tags_added[$src] = true;
-	$attributes['src'] = $src;
+	$attributes['src'] = head_tags_asset_url($src);
 	$attributes['charset'] = 'UTF-8';
     }
     $script = dom_append_child($head_tags, 'script', '', $attributes);
@@ -221,7 +249,7 @@ function head_tags_add_css($src, $add_attributes = array()) {
 	if(!empty($head_tags_added[$src]))
 	    return;
 	$head_tags_added[$src] = true;
-	$attributes['href'] = $src;
+	$attributes['href'] = head_tags_asset_url($src);
     }
     $attributes += $add_attributes;
     $link = dom_append_child($head_tags, 'link', '', $attributes);
