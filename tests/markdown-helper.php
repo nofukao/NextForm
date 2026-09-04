@@ -19,9 +19,11 @@
  *   positions <名前>          変換後の DOM に付いた部分編集の範囲。
  *                             1 行 1 要素で pos<TAB>タグ<TAB>位置<TAB>長さ<TAB>原文の切り出し
  *   contents <名前>           保存されている本文 (contents=<改行を \n に直したもの>)
- *   replace <名前> <位置> <長さ> <値>
+ *   ticket <名前>             いまのページのチケット (ticket=...)
+ *   replace <名前> <位置> <長さ> <値> [チケット]
  *                             ?option=replace と同じ経路で範囲を差し替える
- *                             (written=1/0 contents=...)
+ *                             (written=1/0 contents=...)。チケットを省くと
+ *                             いまのページのものを使う
  *   cleanup                   このヘルパが作ったページを消す (removed=...)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -190,6 +192,11 @@ case 'contents':
     printf("contents=%s\n", test_escape(page_get_contents($page)));
     break;
 
+case 'ticket':
+    $page = page_read($rest[0]);
+    printf("ticket=%s\n", default_value($page['meta']['ticket'], ''));
+    break;
+
 case 'replace':
     /* ?option=replace と同じ経路。JavaScript が送るものと同じ引数を作る */
     require_once(APP_DIR_PATH . '/option/replace.inc');
@@ -198,7 +205,8 @@ case 'replace':
 		  'position' => (int)$rest[1],
 		  'length'   => (int)$rest[2],
 		  'value'    => $rest[3],
-		  'ticket'   => default_value($page['meta']['ticket'], ''));
+		  'ticket'   => isset($rest[4]) ? $rest[4]
+				: default_value($page['meta']['ticket'], ''));
     $dom = dom_create_document();
     printf("written=%d\n", replace_write($args, $dom) ? 1 : 0);
     $page = page_read($rest[0]);

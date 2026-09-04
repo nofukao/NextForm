@@ -27,6 +27,8 @@
 #      折りたたんだ中身が検索と目次に載ること
 #   8. 部分編集の範囲 (data-twp / data-twl) — ブロックごとの切り出しが原文と
 #      1 バイト単位で一致すること。**ここがずれると保存で本文が壊れる**
+#   9. 範囲を差し替えても他が変わらないこと
+#  10. 続けて保存できること (「保存して編集続行」がサーバ側で頼っている前提)
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -417,6 +419,35 @@ check_eq "項目だけ入れ替わる" "yes" \
          "$(contains "$(value_of "$R" contents)" '- 項目 A を直した\n- 項目 B\n')"
 echo
 
+
+echo "10. 続けて保存できること (保存して編集続行)"
+# 二重クリックの編集画面の「保存して編集続行」は、保存 → ページを読み直し →
+# 同じ箇所を開き直す、という作りにしてある。サーバ側で起きるのは
+# 「同じ位置への差し替えが 2 回続く」ことなので、そこを固定する。
+#
+# **読み直しが要る理由もここで固定する。** 差し替えるとその箇所の長さが変わるので、
+# 古い長さのまま 2 回目を送ると隣のブロックを巻き込む。画面ごと取り直せば、
+# 範囲もチケットも新しいものになる。
+helper write-file "$P_POS" "$POS_FIXTURE" > /dev/null
+POS="$(helper positions "$P_POS")"
+P_AT="$(pos_field "$POS" p 1 3)"
+P_LEN="$(pos_field "$POS" p 1 4)"
+R="$(helper replace "$P_POS" "$P_AT" "$P_LEN" $'1 回目。\n')"
+check_eq "1 回目が保存できる" "1" "$(value_of "$R" written)"
+
+# 読み直すと、その段落の範囲は**書いた文字ちょうど**になっている。
+# 開き直した編集画面がここを使う。
+POS="$(helper positions "$P_POS")"
+check_eq "読み直すと範囲が新しい本文に合う" '1 回目。\n' "$(pos_field "$POS" p)"
+check_eq "  始まりは動いていない" "$P_AT" "$(pos_field "$POS" p 1 3)"
+check_eq "  長さは変わっている" "no" "$(contains "$(pos_field "$POS" p 1 4)" "$P_LEN")"
+
+R="$(helper replace "$P_POS" "$(pos_field "$POS" p 1 3)" "$(pos_field "$POS" p 1 4)" $'2 回目。\n')"
+check_eq "続けて 2 回目が保存できる" "1" "$(value_of "$R" written)"
+check_eq "  2 回目だけが残り、他は変わらない" \
+         '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n2 回目。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n\n# 見出し 3\n\n終わり。\n' \
+         "$(value_of "$R" contents)"
+echo
 
 helper cleanup > /dev/null
 
