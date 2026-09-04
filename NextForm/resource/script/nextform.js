@@ -254,6 +254,62 @@ function scrollSet() {
     cookieSet('scrolltop', offset.top);
 }
 
+/*
+ * 「保存して編集続行」で開き直す箇所の受け渡し。
+ *
+ * 保存すると、その箇所の**長さ**が変わる (data-twl)。古い範囲のまま
+ * 編集を続けると隣のブロックを巻き込むので、いったんページごと読み直して
+ * から同じ箇所を開き直す。受け渡しは cookie で、スクロール位置を戻す
+ * scrollSet() / scrollSetup() と同じ流儀。
+ *
+ * 覚えるのは**始まりの位置**とタグ名。長さは保存で変わるので使えない。
+ * 始まりのほうは、その箇所より前を書き換えない限り動かない。
+ */
+function partialEditResumeSet(resume) {
+    cookieSet('partial_edit_resume',
+	      encodeURIComponent([resume.page, resume.pagename,
+				  resume.position, resume.tag].join("\t")));
+}
+
+function partialEditResume() {
+    var value = cookieGet('partial_edit_resume');
+    if(!value)
+	return;
+    cookieSet('partial_edit_resume', '');
+
+    var parts = decodeURIComponent(value).split("\t");
+    if(parts.length != 4 || parts[0] != mainPagename)
+	return;
+    var pagename = parts[1];
+    var position = parts[2];
+    var tag = parts[3];
+
+    /*
+     * 同じ始まりを持つ要素は複数あり得る (引用とその中の段落など)。
+     * タグまで合うものを優先し、無ければ最初に見つかったものを開く。
+     * どちらにしても中身はサーバから取り直すので、開いた箇所と
+     * テキストエリアの中身が食い違うことはない。
+     */
+    var found = null;
+    var exact = null;
+    $$('[data-twp][data-twl]').each(function(element) {
+	if(element.getAttribute('data-twp') != position)
+	    return;
+	var owner = element.hasAttribute('data-pagename') ?
+	    element : element.up('[data-pagename]');
+	if(!owner || owner.getAttribute('data-pagename') != pagename)
+	    return;
+	if(found == null)
+	    found = element;
+	if(exact == null && element.tagName == tag)
+	    exact = element;
+    });
+
+    var target = exact ? exact : found;
+    if(target)
+	target.wikiEditStartHandler({'stop': function() {}});
+}
+
 function wikiEditSetup() {
     $$('section.page').each(function(element) {
 	var isWikiPage = element.down('[data-twp]');
@@ -307,6 +363,9 @@ function wikiEditSetup() {
 	    cookieSetLong('partial_edit_info');
 	}
     }
+
+    /* 「保存して編集続行」で保存した直後なら、同じ箇所を開き直す */
+    partialEditResume();
 }
 
 Element.prototype.wikiEditObserve = function() {
@@ -405,12 +464,27 @@ Element.prototype.wikiEditMakeTextarea = function(request) {
     var isSimple = isContainer && ['TD', 'TH', 'TR'].indexOf(this.tagName) != -1;
     var endsLf;
 
+    /*
+     * 開き直す先は、いま編集を始めた要素そのもの。フォームを差し込むと
+     * LI や TD は中身を作り替えてしまうので、**作り替える前に**覚えておく。
+     */
+    var resume = {'page': mainPagename,
+		  'pagename': this.wikiPagename,
+		  'position': this.getAttribute('data-twp'),
+		  'tag': this.tagName};
+
     var form = wikiEditCreateTextForm(hiddens, function(event) {
 	if(endsLf)
 	    form.textarea.value += '\n';
 	scrollSet();
 	editingForm.submit();
-    }, isSimple);
+    }, isSimple, function(event) {
+	if(endsLf)
+	    form.textarea.value += '\n';
+	scrollSet();
+	partialEditResumeSet(resume);
+	editingForm.submit();
+    });
     form.addClassName('partial');
     form.textarea.disable();
 
@@ -1592,7 +1666,7 @@ function wikiEditCreateTextarea() {
     return textarea;
 }
 
-function wikiEditCreateTextForm(hiddens, onsubmit, isSimple) {
+function wikiEditCreateTextForm(hiddens, onsubmit, isSimple, oncontinue) {
     var form = createForm(hiddens);
     form.addClassName('text_edit');
     form.setAttribute('method', 'POST');
@@ -1613,6 +1687,26 @@ function wikiEditCreateTextForm(hiddens, onsubmit, isSimple) {
     save.setAttribute('accesskey', 's');
     li.appendChild(save);
     save.observe('click', function(event) {editingFormIsChange = false; return onsubmit(event);});
+
+    /*
+     * 「保存して編集続行」。ページ全体の編集画面 (text_edit の save_and_edit)
+     * と同じ働きで、こちらは保存したあとページを読み直し、同じ箇所を
+     * 開き直す。呼び出し側が oncontinue を渡したときだけ出す
+     * (参照ページの差し込みフォームには開き直す先が無いので出さない)。
+     */
+    if(oncontinue) {
+	li = document.createElement('li');
+	ul.appendChild(li);
+	var saveAndEdit = document.createElement('button');
+	saveAndEdit.innerHTML = l('Save and edit');
+	saveAndEdit.setAttribute('type', 'button');
+	saveAndEdit.setAttribute('accesskey', 'c');
+	li.appendChild(saveAndEdit);
+	saveAndEdit.observe('click', function(event) {
+	    editingFormIsChange = false;
+	    return oncontinue(event);
+	});
+    }
 
     form.appendChild(ul);
 
@@ -2905,6 +2999,7 @@ var LANGUAGE = {
 	'Yesterday': '昨日', 
 	'Tomorrow': '明日', 
 	'Save': '保存',
+	'Save and edit': '保存して編集続行',
 	'Cancel': 'キャンセル',
 	'Deleted': '削除',
 	'Striked': '打消',
