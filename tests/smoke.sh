@@ -73,6 +73,36 @@ hit "Markdown ページ" "?GoldenMaster/Markdown" 200
 hit "ページの目次"   "?GoldenMaster/Syntax&option=summary" 200
 hit "ページの原本"   "?GoldenMaster/Syntax&action=source" 200
 
+# 配布する JavaScript にキャッシュ避けが付いているか。
+#
+# **アップグレードしても古い JavaScript が使われ続ける**という壊れ方をする。
+# resource/ の静的ファイルには Cache-Control が付かず、ブラウザは
+# Last-Modified から勝手に鮮度を見積もって再検証を省く。実際 0.9.0 の
+# 「保存して編集続行」が、Firefox の一部の環境にだけ出なかった
+# (Chrome では出ていた)。theme/ の生成物には前から ?t=<更新時刻> が
+# 付いていて、resource/ にだけ無かった。
+#
+# 更新時刻そのものを使うので、配信されている Last-Modified と一致するはず。
+# ランダム値ではないこと (= 通常のキャッシュは効いたままであること) も、
+# この一致で示される。
+echo
+echo "=== 静的ファイルのキャッシュ避け ==="
+for js in nextform prototype; do
+    total=$((total + 1))
+    src=$(curl -sk "${BASE_URL}/?GoldenMaster/Top" \
+              | grep -oE "resource/script/${js}\.js\?t=[0-9]+" | head -1)
+    stamp=${src##*t=}
+    modified=$(curl -skI "${BASE_URL}/resource/script/${js}.js" \
+                   | grep -i '^last-modified:' | cut -d' ' -f2-)
+    want=$(date -d "$modified" +%s 2>/dev/null)
+    if [[ -n "$stamp" && -n "$want" && "$stamp" == "$want" ]]; then
+        printf '%-24s %s\n' "${js}.js" "?t=${stamp}"
+    else
+        printf '%-24s FAIL (src=%s Last-Modified=%s)\n' "${js}.js" "${src:-なし}" "${want:-不明}"
+        fail=$((fail + 1))
+    fi
+done
+
 echo
 echo "=== この巡回で出た PHP の警告 ==="
 # エラーログは同じサーバの全サイトが共有している。巡回した先の分だけを見る。
