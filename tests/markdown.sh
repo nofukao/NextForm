@@ -29,6 +29,8 @@
 #      1 バイト単位で一致すること。**ここがずれると保存で本文が壊れる**
 #   9. 範囲を差し替えても他が変わらないこと
 #  10. 続けて保存できること (「保存して編集続行」がサーバ側で頼っている前提)
+#  11. 記法の例 (:::example) — ソースと表示の対、原文をそのまま控えていること、
+#      囲みの記号がソース側に混ざらないこと、例の全体が部分編集の 1 単位になること
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -165,6 +167,7 @@ P_WIKI="MarkdownTest/Wiki"
 P_DETAILS="MarkdownTest/Details"
 P_POS="MarkdownTest/Positions"
 P_CRLF="MarkdownTest/Crlf"
+P_EXAMPLE="MarkdownTest/Example"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -447,6 +450,79 @@ check_eq "続けて 2 回目が保存できる" "1" "$(value_of "$R" written)"
 check_eq "  2 回目だけが残り、他は変わらない" \
          '---\ntitle: 位置の検査\n---\n\n# 見出し 1\n\n2 回目。\n\n- 項目 A\n- 項目 B\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\nコード\n```\n\n> 引用文\n\n## 見出し 2\n\n節の中身。\n\n# 見出し 3\n\n終わり。\n' \
          "$(value_of "$R" contents)"
+echo
+
+echo "11. 記法の例 (:::example)"
+# wiki 記法の &wikiexample{} に当たるもの。ソースと表示を並べて出す。
+# 肝は「CommonMark が囲みの原文を残さない」こと — tryContinue() で 1 行ずつ
+# 控えているので、控え損ねると「ソース」側が空になる。
+#
+# ソース側と表示側は、同じ原文から作られた別物なので分けて見る。
+example_source() { printf '%s' "$1" | sed -n '/<dt>ソース<\/dt>/,/<dt>表示<\/dt>/p'; }
+example_display() { printf '%s' "$1" | sed -n '/<dt>表示<\/dt>/,$p'; }
+
+helper write "$P_EXAMPLE" "$(printf -- ':::example\n**強調**\n\n- 項目\n:::\n')" > /dev/null
+E_HTML="$(main_html "$P_EXAMPLE")"
+E_SRC="$(example_source "$E_HTML")"
+E_DISP="$(example_display "$E_HTML")"
+check_eq "dl.example が出る" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "  ソースの見出しが出る" "yes" "$(contains "$E_HTML" '<dt>ソース</dt>')"
+check_eq "  表示の見出しが出る"   "yes" "$(contains "$E_HTML" '<dt>表示</dt>')"
+check_eq "  ソース側に原文が出る" "yes" "$(contains "$E_SRC" '**強調**')"
+check_eq "  ソース側で記法が効いていない" "no"  "$(contains "$E_SRC" '<strong>')"
+check_eq "  ソース側に閉じの ::: が入らない" "no" "$(contains "$E_SRC" ':::')"
+check_eq "  表示側は変換されている" "yes" "$(contains "$E_DISP" '<strong>強調</strong>')"
+check_eq "  表示側に箇条書きが出る" "yes" "$(contains "$E_DISP" '<li>項目</li>')"
+
+# ここが肝。ライブラリは外側のブロックから順に tryContinue() を呼ぶので、
+# 素直に書くとコードブロックの中の ::: で閉じる (:::details と同じ穴)。
+helper write "$P_EXAMPLE" "$(printf -- ':::example\n```\nコード\n:::\n```\n:::\n')" > /dev/null
+E_HTML="$(main_html "$P_EXAMPLE")"
+check_eq "コードブロックの中の ::: では閉じない" "1" \
+         "$(printf '%s' "$E_HTML" | grep -o '<dl class="example"' | wc -l)"
+check_eq "  ::: が表示側でコードとして残る" "yes" \
+         "$(contains "$(example_display "$E_HTML")" '<code>')"
+
+helper write "$P_EXAMPLE" "$(printf -- '::::example\n:::example\n中身\n:::\n::::\n')" > /dev/null
+check_eq "外側のコロンを増やすと入れ子になる" "2" \
+         "$(printf '%s' "$(main_html "$P_EXAMPLE")" | grep -o '<dl class="example"' | wc -l)"
+
+# 囲みの記号は原文に混ざってはいけない。getRemainder() を使う理由がこれ。
+helper write "$P_EXAMPLE" "$(printf -- '> :::example\n> 引用の中。\n> :::\n')" > /dev/null
+E_HTML="$(main_html "$P_EXAMPLE")"
+check_eq "引用の中でも囲みになる" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "  引用の > がソースに混ざらない" "yes" "$(contains "$E_HTML" '<pre>引用の中。</pre>')"
+
+helper write "$P_EXAMPLE" "$(printf -- '- :::example\n  箇条書きの中。\n  :::\n')" > /dev/null
+E_HTML="$(main_html "$P_EXAMPLE")"
+check_eq "箇条書きの中でも囲みになる" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "  字下げがソースに混ざらない" "yes" "$(contains "$E_HTML" '<pre>箇条書きの中。</pre>')"
+
+helper write "$P_EXAMPLE" "$(printf -- ':::exampleX ラベル\n中身\n:::\n')" > /dev/null
+check_eq "区切りが無ければ反応しない" "no" \
+         "$(contains "$(main_html "$P_EXAMPLE")" '<dl class="example"')"
+
+helper write "$P_EXAMPLE" "$(printf -- ':::sample\n中身\n:::\n')" > /dev/null
+check_eq ":::sample は囲みにならない" "no" \
+         "$(contains "$(main_html "$P_EXAMPLE")" '<dl class="example"')"
+
+helper write "$P_EXAMPLE" "$(printf -- ':::example\n閉じ忘れ\n')" > /dev/null
+E_HTML="$(main_html "$P_EXAMPLE")"
+check_eq "閉じ忘れても文書の終わりで閉じる" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "  中身は入ったまま" "yes" "$(contains "$E_HTML" '<pre>閉じ忘れ</pre>')"
+
+helper write "$P_EXAMPLE" "$(printf -- ':::example\n探したい言葉\n:::\n')" > /dev/null
+check_eq "例の中身も検索の文字に入る" "yes" \
+         "$(contains "$(helper texts "$P_EXAMPLE")" '探したい言葉')"
+
+# 部分編集は例の全体で 1 単位。中のブロックには範囲を振らない。
+# 振ると、同じ原文がソースと表示の 2 箇所に出ているのに押せるのは片方だけ、
+# という妙な形になる。
+helper write "$P_EXAMPLE" "$(printf -- ':::example\n段落。\n:::\n')" > /dev/null
+E_POS="$(helper positions "$P_EXAMPLE")"
+check_eq "例の全体が 1 単位になる" ':::example\n段落。\n:::\n' "$(pos_field "$E_POS" dl)"
+check_eq "  中のブロックには範囲が付かない" "0" \
+         "$(printf '%s\n' "$E_POS" | awk -F'\t' '$1 == "pos" && $2 == "p"' | wc -l)"
 echo
 
 helper cleanup > /dev/null
