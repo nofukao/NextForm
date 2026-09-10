@@ -766,6 +766,7 @@ Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表�
 |[[脚注:../Extra#脚注]]|""本文[^1]"" と ""[^1]: 中身""|
 |[[URLの自動リンク:../Extra#自動リンク]]|URLをそのまま書く|
 |[[折りたたみ:../Extra#折りたたみ]]|"":::details 見出し"" の行と "":::"" の行で囲む|
+|[[記法の例:../Extra#記法の例]]|"":::example"" の行と "":::"" の行で囲む|
 
 *[[リンク・画像・添付:../Link]]
 |目的|記法|h
@@ -979,6 +980,39 @@ URLをそのまま書くとリンクになります．""www."" で始まる語�
 またブラウザの「ページ内検索」は，閉じている中身を見つけられません
 (サイトの検索には中身も載ります)．印刷でも閉じたまま印刷されます．
 
+*記法の例
+コロン3つに続けて ""example"" と書いた行から，コロン3つだけの行までが，
+「ソース」と「表示」を並べた形になります．
+記法の説明を書くときに，同じ原文を2度書かなくて済みます．
+
+ :::example
+ - 項目
+ - 項目
+ :::
+
+「ソース」には書いたとおりの文字が，「表示」にはそれを変換した結果が出ます．
+中身はふつうのMarkdownです．表でもコードブロックでも書けます．
+コードブロックの中にコロン3つを書いても，そこでは閉じません．
+
+入れ子にするときは，外側のコロンを増やします．
+閉じるコロンは，開いたときと同じ数以上でなければなりません．
+閉じ忘れたときは，ページの終わりで閉じられます．
+
+ ::::example
+ :::example
+ 中身
+ :::
+ ::::
+
+折りたたみと違い，""example"" の後ろに文字は書けません．
+""exampleX"" のように続けて書いた場合は，囲みになりません．
+
+引用や箇条書きの中にも書けます．そのときも，
+""> "" や字下げが「ソース」側に混ざることはありません．
+
+この書き方はNextForm独自のもので，Markdownの標準ではありません．
+Wiki記法の[[&&wikiexample:../../Wiki/Function/wikiexample]]に当たります．
+
 *生のHTML
 既定では，Markdownの中に書いたHTMLはHTMLとして解釈されず，そのまま文字として表示されます．
 編集できる人が誰でもスクリプトを埋め込める状態を避けるためです．
@@ -1152,6 +1186,7 @@ For what can and cannot be written, see
 |[[footnote:../Extra#Footnotes]]|""text[^1]"" and ""[^1]: the note""|
 |[[automatic link:../Extra#Automatic links]]|write the URL as it is|
 |[[folding:../Extra#Folding]]|wrap it in a "":::details heading"" line and a "":::"" line|
+|[[notation examples:../Extra#Notation examples]]|wrap it in a "":::example"" line and a "":::"" line|
 
 *[[Links, images and attachments:../Link]]
 |object|notation|h
@@ -1380,6 +1415,39 @@ Pasted into another tool, the colon lines show up as text (the contents remain).
 The browser's own find-in-page cannot find contents that are folded away
 (the site search does index them). Printing keeps them folded as well.
 
+*Notation examples
+A line of three colons followed by ""example"", down to a line of three colons
+alone, becomes a pair of ''Source'' and ''Display''. It saves writing the same
+text twice when you explain a notation.
+
+ :::example
+ - item
+ - item
+ :::
+
+''Source'' shows the characters exactly as written, ''Display'' shows the result of
+converting them. The contents are ordinary Markdown; tables and code blocks work.
+Three colons inside a code block do not close it.
+
+To nest them, add colons to the outer one. The closing colons must be at least as
+many as the opening ones. If you forget to close it, it is closed at the end of
+the page.
+
+ ::::example
+ :::example
+ contents
+ :::
+ ::::
+
+Unlike folding, nothing can be written after ""example"".
+Written as ""exampleX"", it is not treated as a block at all.
+
+It also works inside a quote or a list. The ""> "" and the indent do not leak
+into the ''Source'' side.
+
+This notation is specific to NextForm and is not part of standard Markdown.
+It corresponds to [[&&wikiexample:../../Wiki/Function/wikiexample]] in Wiki notation.
+
 *Raw HTML
 By default, HTML written inside Markdown is not interpreted as HTML and is shown as
 plain characters. This avoids a state in which anyone who can edit can embed a script.
@@ -1505,6 +1573,7 @@ The same promise applies to
 |外部リンク|&[&[表示名:URL&]&]|""[表示名](URL)""|
 |ページの題名|&&title{題名}|フロントマターの ""title:""|
 |表(基本)|&|セル1&|セル2&||&|セル1&|セル2&||
+|記法の例(ソースと表示を並べる)|&&wikiexample{対象}|"":::example"" と "":::"" で囲む|
 
 &[&[ &]&] の中の並びは''逆''です．
 Wiki記法は表示名が先，Markdown記法は対象が先になります．
@@ -1572,6 +1641,7 @@ Each notation is described in [[Markdown notation:../Markdown]] and
 |external link|&[&[display name:URL&]&]|""[display name](URL)""|
 |page title|&&title{title}|""title:"" in the front matter|
 |table (basic)|&|cell1&|cell2&||&|cell1&|cell2&||
+|notation example (source and display side by side)|&&wikiexample{target}|wrap it in "":::example"" and "":::""|
 
 The order inside &[&[ &]&] is ''the other way round''.
 Wiki notation puts the display name first, Markdown notation puts the target first.

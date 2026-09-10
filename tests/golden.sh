@@ -58,6 +58,9 @@ TARGETS=(
     # 見た目は CSS 側で揃える (tests/css-rules.sh)。パーサ側で <p> を剥がす
     # 変更が入っていないことをここで見る。
     "MarkdownList=?GoldenMaster/MarkdownList"
+    # 記法の例 (:::example)。ソースと表示の対・入れ子・コードブロックの中の :::・
+    # 引用と箇条書きの中・example 以外は素通し、をまとめて 1 枚で固定する。
+    "MarkdownExample=?GoldenMaster/MarkdownExample"
 )
 
 # 比較対象を <article class="main"> の中だけに絞り、実行のたびに変わる値を潰す。

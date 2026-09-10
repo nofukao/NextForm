@@ -1,0 +1,116 @@
+<article class="main">
+
+      <h1>記法の例の検証 <small class="actual_title">(<a href="?GoldenMaster" rel="nofollow">GoldenMaster</a>/<a href="?GoldenMaster/MarkdownExample">MarkdownExample</a>)</small></h1>
+      <nav class="page_menu">
+        <ul class="page_tools"><li><a href="?GoldenMaster/MarkdownExample&amp;action=edit" accesskey="e" rel="nofollow">編集(E)</a></li><li><a href="?GoldenMaster/MarkdownExample&amp;option=tag" rel="nofollow">タグ</a></li><li class="summary"><a href="?GoldenMaster/MarkdownExample&amp;option=summary" accesskey="i" rel="nofollow">目次(I)</a></li><li class="disabled">変更点</li><li class="disabled">履歴</li><li class="disabled">ロック</li><li><a href="?GoldenMaster/MarkdownExample&amp;option=delete" rel="nofollow">削除</a></li><li><a href="?GoldenMaster/MarkdownExample&amp;option=rename" rel="nofollow">リネーム</a></li><li><a href="?GoldenMaster/MarkdownExample&amp;option=subpage">子ページ</a></li><li><a href="?GoldenMaster/MarkdownExample&amp;option=attach" rel="nofollow">添付</a></li><li><a href="?GoldenMaster/MarkdownExample&amp;option=meta" rel="nofollow">メタ情報</a></li></ul>      </nav>
+      <ul class="messages"></ul>
+      <section data-pagename="GoldenMaster/MarkdownExample" class="page section" data-ticket="TICKET"><section class="markdown"><p data-twp="38" data-twl="137"><code>:::example</code> の出力を固定するページ。
+ソースと表示を並べて出す。wiki 記法の <code>&amp;wikiexample{}</code> に当たる。</p>
+<h2 data-twp="176" data-twl="67" id="fe193001">基本</h2>
+<dl data-twp="187" data-twl="56" class="example">
+<dt>ソース</dt>
+<dd><pre>**強調**と*斜体*
+
+- 項目
+- 項目</pre></dd>
+<dt>表示</dt>
+<dd>
+<p><strong>強調</strong>と<em>斜体</em></p>
+<ul>
+<li>項目</li>
+<li>項目</li>
+</ul>
+</dd>
+</dl>
+<h2 data-twp="244" data-twl="97" id="k2f32ae3">表も書ける</h2>
+<dl data-twp="264" data-twl="77" class="example">
+<dt>ソース</dt>
+<dd><pre>| 記法 | 出るもの |
+|---|---|
+| `**強調**` | 太字 |</pre></dd>
+<dt>表示</dt>
+<dd>
+<table>
+<thead>
+<tr>
+<th>記法</th>
+<th>出るもの</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>**強調**</code></td>
+<td>太字</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<h2 data-twp="342" data-twl="152" id="ed5dc518">コードブロックの中の :::</h2>
+<p data-twp="381" data-twl="85">閉じフェンスを探すより先に、内側のコードブロックを見る。</p>
+<dl data-twp="467" data-twl="27" class="example">
+<dt>ソース</dt>
+<dd><pre>```
+:::
+```</pre></dd>
+<dt>表示</dt>
+<dd>
+<pre><code>:::
+</code></pre>
+</dd>
+</dl>
+<h2 data-twp="495" data-twl="103" id="ge5d60ee">入れ子</h2>
+<p data-twp="509" data-twl="34">外側のコロンを増やす。</p>
+<dl data-twp="544" data-twl="54" class="example">
+<dt>ソース</dt>
+<dd><pre>:::example
+入れ子の中身。
+:::</pre></dd>
+<dt>表示</dt>
+<dd>
+<dl class="example">
+<dt>ソース</dt>
+<dd><pre>入れ子の中身。</pre></dd>
+<dt>表示</dt>
+<dd>
+<p>入れ子の中身。</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h2 data-twp="599" data-twl="184" id="od4f2b11">引用と箇条書きの中</h2>
+<p data-twp="631" data-twl="58">囲みの記号は「ソース」側に混ざらない。</p>
+<blockquote data-twp="690" data-twl="43">
+<dl data-twp="690" data-twl="43" class="example">
+<dt>ソース</dt>
+<dd><pre>引用の中の例。</pre></dd>
+<dt>表示</dt>
+<dd>
+<p>引用の中の例。</p>
+</dd>
+</dl>
+</blockquote>
+<ul data-twp="734" data-twl="49">
+<li data-twp="734" data-twl="49">
+<dl data-twp="734" data-twl="49" class="example">
+<dt>ソース</dt>
+<dd><pre>箇条書きの中の例。</pre></dd>
+<dt>表示</dt>
+<dd>
+<p>箇条書きの中の例。</p>
+</dd>
+</dl>
+</li>
+</ul>
+<h2 data-twp="784" data-twl="167" id="d02e2f1e">example 以外は素通し</h2>
+<p data-twp="815" data-twl="75">:::exampleX ラベル
+区切りが無いので囲みにならない。
+:::</p>
+<p data-twp="891" data-twl="60">:::sample
+知らない名前は囲みにならない。
+:::</p>
+</section></section>
+      <footer>
+        <dl class="page_tags"><dt>タグ</dt><dd><ul class="tags" data-tags=""><li class="edit_tag"><a href="?GoldenMaster/MarkdownExample&amp;option=tag">編集</a></li></ul></dd></dl>        <dl class="page_info"><dt>ページ種別</dt><dd data-type="markdown" class="type">Markdown</dd><dt>最終更新</dt><dd class="mtime"><time datetime="DATETIME">TIMESTAMP</time></dd><dt>最終更新者</dt><dd class="last_modify_user">USER</dd><dt>作成日時</dt><dd class="btime"><time datetime="DATETIME">TIMESTAMP</time></dd><dt>作成者</dt><dd class="create_user">USER</dd><dt>ページ短縮URL</dt><dd><a href="?&amp;LZWBlWKF" class="page_url">?&amp;LZWBlWKF</a></dd></dl>      </footer>
+
+    </article>

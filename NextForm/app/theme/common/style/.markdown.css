@@ -85,6 +85,31 @@ section.markdown li > *:last-child {
     margin-bottom: 0;
 }
 
+/*
+ * 記法の例 (:::example)。ソースと表示を並べた dl。
+ *
+ * dt (「ソース」「表示」) は本文ではなく札なので、小さく控えめにする。
+ * 中身は wiki 記法の &wikiexample{} と同じ形の dl だが、あちらは class を
+ * 持たないので、この規則は種別 Markdown にだけ効く (design-markdown-example.md §9)。
+ */
+section.markdown dl.example > dt {
+    font-size: 85%;
+    font-weight: bold;
+    opacity: 0.7;
+    margin-top: <?php echo(theme_density_px(8)); ?>px;
+    margin-bottom: <?php echo(theme_density_px(2)); ?>px;
+}
+section.markdown dl.example > dt:first-child {
+    margin-top: 0;
+}
+/* 中身は端では余白を出さない。箇条書きの項目 (上) と同じ考え */
+section.markdown dl.example > dd > *:first-child {
+    margin-top: 0;
+}
+section.markdown dl.example > dd > *:last-child {
+    margin-bottom: 0;
+}
+
 /* タスクリスト。印を消せないブラウザでは丸が残るだけで、読めなくはならない */
 section.markdown li:has(> input[type="checkbox"]) {
     list-style-type: none;
