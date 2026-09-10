@@ -1,0 +1,84 @@
+<article class="main">
+
+      <h1>箇条書きの間隔の検証 <small class="actual_title">(<a href="?GoldenMaster" rel="nofollow">GoldenMaster</a>/<a href="?GoldenMaster/MarkdownList">MarkdownList</a>)</small></h1>
+      <nav class="page_menu">
+        <ul class="page_tools"><li><a href="?GoldenMaster/MarkdownList&amp;action=edit" accesskey="e" rel="nofollow">編集(E)</a></li><li><a href="?GoldenMaster/MarkdownList&amp;option=tag" rel="nofollow">タグ</a></li><li class="summary"><a href="?GoldenMaster/MarkdownList&amp;option=summary" accesskey="i" rel="nofollow">目次(I)</a></li><li class="disabled">変更点</li><li class="disabled">履歴</li><li class="disabled">ロック</li><li><a href="?GoldenMaster/MarkdownList&amp;option=delete" rel="nofollow">削除</a></li><li><a href="?GoldenMaster/MarkdownList&amp;option=rename" rel="nofollow">リネーム</a></li><li><a href="?GoldenMaster/MarkdownList&amp;option=subpage">子ページ</a></li><li><a href="?GoldenMaster/MarkdownList&amp;option=attach" rel="nofollow">添付</a></li><li><a href="?GoldenMaster/MarkdownList&amp;option=meta" rel="nofollow">メタ情報</a></li></ul>      </nav>
+      <ul class="messages"></ul>
+      <section data-pagename="GoldenMaster/MarkdownList" class="page section" data-ticket="TICKET"><section class="markdown"><p data-twp="47" data-twl="81">CommonMark の tight / loose と、その HTML の形を固定するページ。</p>
+<p data-twp="129" data-twl="456">種別 Markdown では、<strong>空行は箇条書きを切らない</strong>。項目のあいだに空行が
+1 つでもあると、そのリスト全体が loose になり、離れた位置にある項目も
+含めて<strong>全項目</strong>の中身が <code>&lt;p&gt;</code> で包まれる。これは仕様どおりで、直すべき
+ものではない。ここではその HTML の形を記録して、うっかりパーサ側で
+<code>&lt;p&gt;</code> を剥がす変更が入らないようにする。</p>
+<p data-twp="586" data-twl="241">見た目の側 — 空行を入れても間隔が変わって見えないようにする方 — は
+<code>common/style/.markdown.css</code> が <code>li &gt; *</code> の上下の余白を打ち消して受け持つ。
+CSS の側は tests/css-rules.sh で見る。</p>
+<h2 data-twp="828" data-twl="70" id="mfb7fa56">空行なし (tight)</h2>
+<ul data-twp="853" data-twl="45">
+<li data-twp="853" data-twl="15">ひとつめ</li>
+<li data-twp="868" data-twl="15">ふたつめ</li>
+<li data-twp="883" data-twl="15">みっつめ</li>
+</ul>
+<h2 data-twp="899" data-twl="86" id="n4edc726">空行あり (loose)</h2>
+<ul data-twp="924" data-twl="61">
+<li data-twp="924" data-twl="15">
+<p data-twp="924" data-twl="15">ひとつめ</p>
+</li>
+<li data-twp="939" data-twl="15">
+<p data-twp="939" data-twl="15">ふたつめ</p>
+</li>
+<li data-twp="955" data-twl="15">
+<p data-twp="955" data-twl="15">みっつめ</p>
+</li>
+<li data-twp="970" data-twl="15">
+<p data-twp="970" data-twl="15">よっつめ</p>
+</li>
+</ul>
+<h2 data-twp="986" data-twl="78" id="me1cf3ee">番号つきでも同じ</h2>
+<ol data-twp="1015" data-twl="49">
+<li data-twp="1015" data-twl="16">
+<p data-twp="1015" data-twl="16">ひとつめ</p>
+</li>
+<li data-twp="1031" data-twl="16">
+<p data-twp="1031" data-twl="16">ふたつめ</p>
+</li>
+<li data-twp="1048" data-twl="16">
+<p data-twp="1048" data-twl="16">みっつめ</p>
+</li>
+</ol>
+<h2 data-twp="1065" data-twl="178" id="gf299c2b">項目の中が複数段落</h2>
+<ul data-twp="1097" data-twl="146">
+<li data-twp="1097" data-twl="127">
+<p data-twp="1097" data-twl="27">ひとつめの段落。</p>
+<p data-twp="1125" data-twl="99">ふたつめの段落。同じ項目の中なので、ここの間は空けたままにする。</p>
+</li>
+<li data-twp="1225" data-twl="18">
+<p data-twp="1225" data-twl="18">次の項目。</p>
+</li>
+</ul>
+<h2 data-twp="1244" data-twl="44" id="ifa798f8">入れ子</h2>
+<ul data-twp="1258" data-twl="30">
+<li data-twp="1258" data-twl="23">
+<p data-twp="1258" data-twl="6">親</p>
+<ul data-twp="1265" data-twl="16">
+<li data-twp="1265" data-twl="8">子</li>
+<li data-twp="1273" data-twl="8">子</li>
+</ul>
+</li>
+<li data-twp="1282" data-twl="6">
+<p data-twp="1282" data-twl="6">親</p>
+</li>
+</ul>
+<h2 data-twp="1289" data-twl="191" id="ic219138">記号を変えるとリストが分かれる</h2>
+<p data-twp="1339" data-twl="79">空行では分かれない。記号を変えると別のリストになる。</p>
+<ul data-twp="1419" data-twl="27">
+<li data-twp="1419" data-twl="27">ハイフンのリスト</li>
+</ul>
+<ul data-twp="1447" data-twl="33">
+<li data-twp="1447" data-twl="33">アスタリスクのリスト</li>
+</ul>
+</section></section>
+      <footer>
+        <dl class="page_tags"><dt>タグ</dt><dd><ul class="tags" data-tags=""><li class="edit_tag"><a href="?GoldenMaster/MarkdownList&amp;option=tag">編集</a></li></ul></dd></dl>        <dl class="page_info"><dt>ページ種別</dt><dd data-type="markdown" class="type">Markdown</dd><dt>最終更新</dt><dd class="mtime"><time datetime="DATETIME">TIMESTAMP</time></dd><dt>最終更新者</dt><dd class="last_modify_user">USER</dd><dt>作成日時</dt><dd class="btime"><time datetime="DATETIME">TIMESTAMP</time></dd><dt>作成者</dt><dd class="create_user">USER</dd><dt>ページ短縮URL</dt><dd><a href="?&amp;MYqTos1X" class="page_url">?&amp;MYqTos1X</a></dd></dl>      </footer>
+
+    </article>

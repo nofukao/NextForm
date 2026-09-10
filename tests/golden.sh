@@ -53,6 +53,11 @@ TARGETS=(
     # 折りたたみ (:::details)。開閉の書き方・入れ子・コードブロックの中の :::・
     # details 以外は素通し、をまとめて 1 枚で固定する。
     "MarkdownDetails=?GoldenMaster/MarkdownDetails"
+    # 箇条書きの tight / loose。項目のあいだに空行があるとリスト全体が loose に
+    # なり、全項目の中身が <p> で包まれる。これは CommonMark の仕様どおりで、
+    # 見た目は CSS 側で揃える (tests/css-rules.sh)。パーサ側で <p> を剥がす
+    # 変更が入っていないことをここで見る。
+    "MarkdownList=?GoldenMaster/MarkdownList"
 )
 
 # 比較対象を <article class="main"> の中だけに絞り、実行のたびに変わる値を潰す。

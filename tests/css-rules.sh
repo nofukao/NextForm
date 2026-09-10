@@ -102,6 +102,20 @@ rules_common() {
     check "Markdown の引用が pre 扱いのままになっていない" \
           "bool(re.search(r'section\.markdown blockquote\s*\{[^}]*white-space:\s*normal', css, re.S))"
 
+    # 箇条書きに空行を入れると間隔が広がる問題。
+    # CommonMark では項目のあいだの空行がリスト全体を loose にし、全項目の中身が
+    # <p> で包まれる (tests/golden/input/GoldenMaster/MarkdownList.md)。素の
+    # p { margin: 8px } が当たるうえ、li { padding: 3px } のせいで li の外へ
+    # 相殺されず、項目の間隔が 6px から 22px に跳ねる。blockquote と同じ手当てを
+    # li にも入れて、項目の上下の端では余白を出さないようにする。
+    check "箇条書きの項目は中身の最初のブロックの上に余白を出さない" \
+          "bool(re.search(r'section\.markdown li\s*>\s*\*:first-child\s*\{[^}]*margin-top:\s*0', css, re.S))"
+    check "箇条書きの項目は中身の最後のブロックの下に余白を出さない" \
+          "bool(re.search(r'section\.markdown li\s*>\s*\*:last-child\s*\{[^}]*margin-bottom:\s*0', css, re.S))"
+    # 打ち消すのは端だけ。項目の中に段落が 2 つあるときの間は残す。
+    check "段落そのものの余白は消していない" \
+          "bool(re.search(r'(^|\})[^{}]*\bp,[^{}]*\{[^}]*margin-top:\s*[1-9]', css, re.S))"
+
     # ブロックごとの &pre(wrap) / &pre(nowrap) は、サイトの既定がどちらでも効く。
     check "ブロック指定 pre.wrap がある" \
           "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"

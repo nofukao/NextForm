@@ -63,6 +63,28 @@ section.markdown li > ol {
     margin-bottom: 0;
 }
 
+/*
+ * 項目の中身は、上下の端では余白を出さない。blockquote (上) と同じ考え。
+ *
+ * CommonMark では項目のあいだの空行はリストを切らない。空行が 1 つでもあると
+ * そのリスト全体が loose になり、離れた位置にある項目まで含めて**全項目**の
+ * 中身が <p> で包まれる。そこに .base.css の p { margin: 8px } が当たり、
+ * さらに li { padding: 3px } のせいで余白が li の外へ相殺されないため、
+ * 項目の間隔が 6px から 22px に跳ねる。原文に空行を入れただけで、離れた項目の
+ * 間隔まで変わって見える。
+ *
+ * 打ち消すのは端だけなので、1 項目に段落が 2 つあるときの間の余白は残る。
+ * p ではなく * を相手にするのは、項目の中身がコードブロックや引用でも同じに
+ * するため。詳細度は (0,2,2) で、下の脚注 (0,2,3) には届かない。脚注の
+ * <li><p> は書く順番によらず自前の余白を保つ。
+ */
+section.markdown li > *:first-child {
+    margin-top: 0;
+}
+section.markdown li > *:last-child {
+    margin-bottom: 0;
+}
+
 /* タスクリスト。印を消せないブラウザでは丸が残るだけで、読めなくはならない */
 section.markdown li:has(> input[type="checkbox"]) {
     list-style-type: none;
