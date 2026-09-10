@@ -48,6 +48,7 @@ function markdown_converter() {
     require_once(APP_DIR_PATH . '/handler/markdown/wikilink.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/image.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/details.inc');
+    require_once(APP_DIR_PATH . '/handler/markdown/example.inc');
 
     $config = array(
 	/*
@@ -78,6 +79,10 @@ function markdown_converter() {
     /* :::details の折りたたみ。CommonMark に折りたたみは無いので独自に足す */
     $environment->addBlockStartParser(new MarkdownDetailsStartParser());
     $environment->addRenderer('MarkdownDetails', new MarkdownDetailsRenderer());
+
+    /* :::example の記法例。wiki 記法の &wikiexample{} に当たる */
+    $environment->addBlockStartParser(new MarkdownExampleStartParser());
+    $environment->addRenderer('MarkdownExample', new MarkdownExampleRenderer());
 
     /* 部分編集の範囲 (data-twp / data-twl)。markdown_set_block_positions() を見よ */
     $environment->addEventListener(League\CommonMark\Event\DocumentParsedEvent::class,
@@ -449,6 +454,14 @@ function markdown_set_block_positions_children($node, &$offsets, $limit) {
 	    if(!is_null($fence_line) && isset($offsets[$fence_line]))
 		$child_limit = min($child_limit, $offsets[$fence_line]);
 	}
+	/*
+	 * 記法の例 (:::example) の中へは降りない。**例の全体で 1 単位**にする。
+	 * 中のブロックに範囲を振ると、同じ原文が「ソース」と「表示」の 2 箇所に
+	 * 出ているのに押せるのは片方だけ、という妙な形になる。
+	 */
+	if($child instanceof MarkdownExample)
+	    continue;
+
 	markdown_set_block_positions_children($child, $offsets, $child_limit);
     }
 }

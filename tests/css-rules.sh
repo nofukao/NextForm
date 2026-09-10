@@ -116,6 +116,11 @@ rules_common() {
     check "段落そのものの余白は消していない" \
           "bool(re.search(r'(^|\})[^{}]*\bp,[^{}]*\{[^}]*margin-top:\s*[1-9]', css, re.S))"
 
+    # 記法の例 (:::example) の札。dt が本文と同じ大きさだと、「ソース」「表示」が
+    # 例の中身と同じ強さで読まれて、どこからが例なのか分からなくなる。
+    check "記法の例の dt が本文より小さい" \
+          "bool(re.search(r'section\.markdown dl\.example\s*>\s*dt\s*\{[^}]*font-size:\s*[0-9]+%', css, re.S))"
+
     # ブロックごとの &pre(wrap) / &pre(nowrap) は、サイトの既定がどちらでも効く。
     check "ブロック指定 pre.wrap がある" \
           "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"

@@ -465,7 +465,7 @@ helper write "$P_EXAMPLE" "$(printf -- ':::example\n**強調**\n\n- 項目\n:::\
 E_HTML="$(main_html "$P_EXAMPLE")"
 E_SRC="$(example_source "$E_HTML")"
 E_DISP="$(example_display "$E_HTML")"
-check_eq "dl.example が出る" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "dl.example が出る" "yes" "$(contains "$E_HTML" 'class="example"')"
 check_eq "  ソースの見出しが出る" "yes" "$(contains "$E_HTML" '<dt>ソース</dt>')"
 check_eq "  表示の見出しが出る"   "yes" "$(contains "$E_HTML" '<dt>表示</dt>')"
 check_eq "  ソース側に原文が出る" "yes" "$(contains "$E_SRC" '**強調**')"
@@ -479,36 +479,36 @@ check_eq "  表示側に箇条書きが出る" "yes" "$(contains "$E_DISP" '<li>
 helper write "$P_EXAMPLE" "$(printf -- ':::example\n```\nコード\n:::\n```\n:::\n')" > /dev/null
 E_HTML="$(main_html "$P_EXAMPLE")"
 check_eq "コードブロックの中の ::: では閉じない" "1" \
-         "$(printf '%s' "$E_HTML" | grep -o '<dl class="example"' | wc -l)"
+         "$(printf '%s' "$E_HTML" | grep -o 'class="example"' | wc -l)"
 check_eq "  ::: が表示側でコードとして残る" "yes" \
          "$(contains "$(example_display "$E_HTML")" '<code>')"
 
 helper write "$P_EXAMPLE" "$(printf -- '::::example\n:::example\n中身\n:::\n::::\n')" > /dev/null
 check_eq "外側のコロンを増やすと入れ子になる" "2" \
-         "$(printf '%s' "$(main_html "$P_EXAMPLE")" | grep -o '<dl class="example"' | wc -l)"
+         "$(printf '%s' "$(main_html "$P_EXAMPLE")" | grep -o 'class="example"' | wc -l)"
 
 # 囲みの記号は原文に混ざってはいけない。getRemainder() を使う理由がこれ。
 helper write "$P_EXAMPLE" "$(printf -- '> :::example\n> 引用の中。\n> :::\n')" > /dev/null
 E_HTML="$(main_html "$P_EXAMPLE")"
-check_eq "引用の中でも囲みになる" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "引用の中でも囲みになる" "yes" "$(contains "$E_HTML" 'class="example"')"
 check_eq "  引用の > がソースに混ざらない" "yes" "$(contains "$E_HTML" '<pre>引用の中。</pre>')"
 
 helper write "$P_EXAMPLE" "$(printf -- '- :::example\n  箇条書きの中。\n  :::\n')" > /dev/null
 E_HTML="$(main_html "$P_EXAMPLE")"
-check_eq "箇条書きの中でも囲みになる" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "箇条書きの中でも囲みになる" "yes" "$(contains "$E_HTML" 'class="example"')"
 check_eq "  字下げがソースに混ざらない" "yes" "$(contains "$E_HTML" '<pre>箇条書きの中。</pre>')"
 
 helper write "$P_EXAMPLE" "$(printf -- ':::exampleX ラベル\n中身\n:::\n')" > /dev/null
 check_eq "区切りが無ければ反応しない" "no" \
-         "$(contains "$(main_html "$P_EXAMPLE")" '<dl class="example"')"
+         "$(contains "$(main_html "$P_EXAMPLE")" 'class="example"')"
 
 helper write "$P_EXAMPLE" "$(printf -- ':::sample\n中身\n:::\n')" > /dev/null
 check_eq ":::sample は囲みにならない" "no" \
-         "$(contains "$(main_html "$P_EXAMPLE")" '<dl class="example"')"
+         "$(contains "$(main_html "$P_EXAMPLE")" 'class="example"')"
 
 helper write "$P_EXAMPLE" "$(printf -- ':::example\n閉じ忘れ\n')" > /dev/null
 E_HTML="$(main_html "$P_EXAMPLE")"
-check_eq "閉じ忘れても文書の終わりで閉じる" "yes" "$(contains "$E_HTML" '<dl class="example"')"
+check_eq "閉じ忘れても文書の終わりで閉じる" "yes" "$(contains "$E_HTML" 'class="example"')"
 check_eq "  中身は入ったまま" "yes" "$(contains "$E_HTML" '<pre>閉じ忘れ</pre>')"
 
 helper write "$P_EXAMPLE" "$(printf -- ':::example\n探したい言葉\n:::\n')" > /dev/null
@@ -518,11 +518,14 @@ check_eq "例の中身も検索の文字に入る" "yes" \
 # 部分編集は例の全体で 1 単位。中のブロックには範囲を振らない。
 # 振ると、同じ原文がソースと表示の 2 箇所に出ているのに押せるのは片方だけ、
 # という妙な形になる。
-helper write "$P_EXAMPLE" "$(printf -- ':::example\n段落。\n:::\n')" > /dev/null
+# 例のあとに段落を置く。$( ) は末尾の改行を落とすので、これが無いと
+# 「閉じの ::: の次の改行まで範囲に入る」ことを確かめられない。
+helper write "$P_EXAMPLE" "$(printf -- ':::example\n中の段落。\n:::\n\n外の段落。\n')" > /dev/null
 E_POS="$(helper positions "$P_EXAMPLE")"
-check_eq "例の全体が 1 単位になる" ':::example\n段落。\n:::\n' "$(pos_field "$E_POS" dl)"
-check_eq "  中のブロックには範囲が付かない" "0" \
+check_eq "例の全体が 1 単位になる" ':::example\n中の段落。\n:::\n' "$(pos_field "$E_POS" dl)"
+check_eq "  範囲を持つ段落は例の外の 1 つだけ" "1" \
          "$(printf '%s\n' "$E_POS" | awk -F'\t' '$1 == "pos" && $2 == "p"' | wc -l)"
+check_eq "  それは例の外の段落" '外の段落。' "$(pos_field "$E_POS" p)"
 echo
 
 helper cleanup > /dev/null

@@ -7,16 +7,30 @@
       <section data-pagename="GoldenMaster/MarkdownExample" class="page section" data-ticket="TICKET"><section class="markdown"><p data-twp="38" data-twl="137"><code>:::example</code> の出力を固定するページ。
 ソースと表示を並べて出す。wiki 記法の <code>&amp;wikiexample{}</code> に当たる。</p>
 <h2 data-twp="176" data-twl="67" id="fe193001">基本</h2>
-<p data-twp="187" data-twl="33">:::example
-<strong>強調</strong>と<em>斜体</em></p>
-<ul data-twp="221" data-twl="22">
-<li data-twp="221" data-twl="9">項目</li>
-<li data-twp="230" data-twl="13">項目
-:::</li>
+<dl data-twp="187" data-twl="56" class="example">
+<dt>ソース</dt>
+<dd><pre>**強調**と*斜体*
+
+- 項目
+- 項目</pre></dd>
+<dt>表示</dt>
+<dd>
+<p><strong>強調</strong>と<em>斜体</em></p>
+<ul>
+<li>項目</li>
+<li>項目</li>
 </ul>
+</dd>
+</dl>
 <h2 data-twp="244" data-twl="97" id="k2f32ae3">表も書ける</h2>
-<p>:::example</p>
-<table data-twp="264" data-twl="77">
+<dl data-twp="264" data-twl="77" class="example">
+<dt>ソース</dt>
+<dd><pre>| 記法 | 出るもの |
+|---|---|
+| `**強調**` | 太字 |</pre></dd>
+<dt>表示</dt>
+<dd>
+<table>
 <thead>
 <tr>
 <th>記法</th>
@@ -28,36 +42,65 @@
 <td><code>**強調**</code></td>
 <td>太字</td>
 </tr>
-<tr>
-<td>:::</td>
-<td></td>
-</tr>
 </tbody>
 </table>
+</dd>
+</dl>
 <h2 data-twp="342" data-twl="152" id="ed5dc518">コードブロックの中の :::</h2>
 <p data-twp="381" data-twl="85">閉じフェンスを探すより先に、内側のコードブロックを見る。</p>
-<p data-twp="467" data-twl="11">:::example</p>
-<pre data-twp="478" data-twl="12"><code>:::
+<dl data-twp="467" data-twl="27" class="example">
+<dt>ソース</dt>
+<dd><pre>```
+:::
+```</pre></dd>
+<dt>表示</dt>
+<dd>
+<pre><code>:::
 </code></pre>
-<p data-twp="490" data-twl="4">:::</p>
+</dd>
+</dl>
 <h2 data-twp="495" data-twl="103" id="ge5d60ee">入れ子</h2>
 <p data-twp="509" data-twl="34">外側のコロンを増やす。</p>
-<p data-twp="544" data-twl="54">::::example
-:::example
+<dl data-twp="544" data-twl="54" class="example">
+<dt>ソース</dt>
+<dd><pre>:::example
 入れ子の中身。
-:::
-::::</p>
+:::</pre></dd>
+<dt>表示</dt>
+<dd>
+<dl class="example">
+<dt>ソース</dt>
+<dd><pre>入れ子の中身。</pre></dd>
+<dt>表示</dt>
+<dd>
+<p>入れ子の中身。</p>
+</dd>
+</dl>
+</dd>
+</dl>
 <h2 data-twp="599" data-twl="184" id="od4f2b11">引用と箇条書きの中</h2>
 <p data-twp="631" data-twl="58">囲みの記号は「ソース」側に混ざらない。</p>
 <blockquote data-twp="690" data-twl="43">
-<p data-twp="690" data-twl="43">:::example
-引用の中の例。
-:::</p>
+<dl data-twp="690" data-twl="43" class="example">
+<dt>ソース</dt>
+<dd><pre>引用の中の例。</pre></dd>
+<dt>表示</dt>
+<dd>
+<p>引用の中の例。</p>
+</dd>
+</dl>
 </blockquote>
 <ul data-twp="734" data-twl="49">
-<li data-twp="734" data-twl="49">:::example
-箇条書きの中の例。
-:::</li>
+<li data-twp="734" data-twl="49">
+<dl data-twp="734" data-twl="49" class="example">
+<dt>ソース</dt>
+<dd><pre>箇条書きの中の例。</pre></dd>
+<dt>表示</dt>
+<dd>
+<p>箇条書きの中の例。</p>
+</dd>
+</dl>
+</li>
 </ul>
 <h2 data-twp="784" data-twl="167" id="d02e2f1e">example 以外は素通し</h2>
 <p data-twp="815" data-twl="75">:::exampleX ラベル
