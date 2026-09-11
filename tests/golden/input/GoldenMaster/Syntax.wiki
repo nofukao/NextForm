@@ -66,3 +66,10 @@ https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaa
 &pre(code, nowrap){{
 function example($argument) { return "test"; }
 }}
+
+**動画サイトの URL を &&include に渡したとき
+動画の埋め込みは v0.9.1 で外した．どのハンドラにも当たらない URL は
+&&include が外部リンクに落とすので，ここはリンクとして出る．
+ページの描画中に外へ取りに行かないことも，この検査で守られる．
+&include(http://www.youtube.com/watch?v=dQw4w9WgXcQ);
+&include(http://www.nicovideo.jp/watch/sm9);
