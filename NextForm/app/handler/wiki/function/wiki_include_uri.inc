@@ -1,4 +1,24 @@
 <?php
+/*
+ * &include(URL) に URL の種類ごとの埋め込みを足す口。
+ *
+ * いま登録しているのは画像だけ。**動画サイト (YouTube / ニコニコ動画) の
+ * 埋め込みは v0.9.1 で外した。**
+ *
+ *   - ニコニコの埋め込み先は http:// 固定で、https のページに出すと
+ *     ブラウザが混在コンテンツとして遮断する。当たる URL も
+ *     http://www.nicovideo.jp/watch/ の形だけで、2015 年の URL 体系のまま
+ *   - YouTube は幅と高さを決めるために oembed を**ページの描画中に同期で**
+ *     取りに行っていた。しかもそこに EXTERNAL_FETCH_TIMEOUT が渡っておらず、
+ *     default_socket_timeout (既定 60 秒) 任せになっていた。YouTube が
+ *     応答しないと、その URL を貼ったページの表示がそのぶん止まる
+ *
+ * 外しても壊れない。どのハンドラにも当たらない URL は wiki_include.inc が
+ * 外部リンクに落とす ($handler_dom === false の分岐)。既に貼ってあるページは
+ * 埋め込みが動画サイトへのリンクに変わるだけで、本文は失われない。
+ *
+ * 経緯は docs/development/project-overview.md §7 の「動画サイトの埋め込み」。
+ */
 $WIKI_OPERATOR_INCLUDE_URI_HANDLERS['image'] = array(
     'regex' => '/\.(jpe?g|png|gif)$/i',
     'function' => 'wiki_operator_include_uri_image');
@@ -46,91 +66,5 @@ function wiki_operator_include_uri_image($dom, $uri, $params) {
 	dom_set_attribute($img, 'height', $height);
 
     return $e;
-}
-
-$WIKI_OPERATOR_INCLUDE_URI_HANDLERS['youtube'] = array(
-    'regex' => '|^https?://(www.)?' . preg_quote('youtube.com/watch?', '|') . '|',
-    'function' => 'wiki_operator_include_uri_youtube');
-function wiki_operator_include_uri_youtube($dom, $uri, $params) {
-    $parsed_url = parse_url($uri);
-    if(empty($parsed_url['query']))
-	return dom_append_link($dom, $uri, $uri);
-
-    parse_str($parsed_url['query'], $query);
-    if(empty($query['v']))
-	return dom_append_link($dom, $uri, $uri);
-
-    $video_id = $query['v'];
-
-    $oembed_url = 'http://www.youtube.com/oembed?url=' . urlencode($uri) . '&format=json';
-    if(($json_text = @file_get_contents($oembed_url)) !== false) {
-	$json = json_decode($json_text, true);
-    }
-    $width = default_value($json['width'], WIKI_INCLUDE_URI_DEFAULT_VIDEO_WIDTH);
-    $height = default_value($json['height'], WIKI_INCLUDE_URI_DEFAULT_VIDEO_HEIGHT);
-    foreach($params as $param) {
-	image_parse_size($param, $width, $height);
-    }
-    $embed_url = '//www.youtube.com/embed/' . urlencode($video_id);
-    $iframe = dom_append_child($dom, 'iframe', 'youtube',
-			       array('width' => $width, 'height' => $height,
-				     'src' => $embed_url,
-				     //'frameborder' => '0',
-				     //'allowfullscreen' => ''
-				   ));
-    dom_append_text($iframe, '');
-    return $iframe;
-}
-$WIKI_OPERATOR_INCLUDE_URI_HANDLERS['nico'] = array(
-    'regex' => '|^' . preg_quote('http://www.nicovideo.jp/watch/', '|') . '|',
-    'function' => 'wiki_operator_include_uri_nico');
-function wiki_operator_include_uri_nico($dom, $uri, $params) {
-    if(!preg_match('|^' . preg_quote('http://www.nicovideo.jp/watch/', '|') . '(\w+)|', $uri, $matches)) {
-	return dom_append_link($dom, $uri, $uri);
-    }
-    $video_id = $matches[1];
-    $width = false;
-    $height = false;
-    /*
-    $info_url = 'http://ext.nicovideo.jp/api/getthumbinfo/' . urlencode($video_id);
-    if(($info_text = @file_get_contents($info_url)) !== false) {
-	$info_xml = new DOMDocument('1.0','UTF-8');
-	if(($info_xml->loadXML($info_text)) !== false) {
-	    $xpath = new DOMXPath($info_xml);
-	}
-    }
-    */
-    if(!empty($params)) {
-	$width = WIKI_INCLUDE_URI_DEFAULT_VIDEO_WIDTH;
-	$height = WIKI_INCLUDE_URI_DEFAULT_VIDEO_HEIGHT;
-	foreach($params as $param) {
-	    image_parse_size($param, $width, $height);
-	}
-    }
-
-    if(!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on' /*&& stripos($_SERVER['HTTP_USER_AGENT'], 'Chrome') !== false*/) {
-	$video_url = 'http://ext.nicovideo.jp/thumb/' . urlencode($video_id);
-	$iframe = dom_append_child($dom, 'iframe');
-	dom_set_attribute($iframe, 'width', '312');
-	dom_set_attribute($iframe, 'height', '176');
-	dom_set_attribute($iframe, 'src', $video_url);
-	dom_set_attribute($iframe, 'scrolling', 'no');
-	dom_set_attribute($iframe, 'style', 'border:solid 1px #CCC;');
-	dom_set_attribute($iframe, 'frameborder', '0');
-	dom_append_text($iframe, '');
-	return $iframe;
-    }
-
-    if($width !== false && $height !== false)
-	$video_url = 'http://ext.nicovideo.jp/thumb_watch/' . urlencode($video_id) . '?w=' . $width . '&h=' . $height;
-    else
-	$video_url = 'http://ext.nicovideo.jp/thumb_watch/' . urlencode($video_id);
-    $script = dom_append_child($dom, 'script', 'nico', 
-			       array('type' => 'text/javascript',
-				     'src' => $video_url));
-    dom_append_text($script, '');
-    $noscript = dom_append_child($dom, 'noscript', 'nico');
-    dom_append_link($noscript, $uri, $uri);
-    return $script;
 }
 ?>
