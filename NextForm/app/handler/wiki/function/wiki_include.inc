@@ -122,11 +122,14 @@ function wiki_operator_include(&$context, $dom, $tree) {
  &include([[ページ名]], 幅x高さ, 拡大率%, open);
  &include(URL , 幅x高さ, 拡大率%, open);
 指定されたページまたはURLの内容を埋め込みます．指定するページはwiki,text,file等どの種別でもかまいません．
-ページ内に画像や動画を埋め込むために使用できます．
+ページ内に画像を埋め込むために使用できます．
 
 画像のURLを指定するとその画像を埋め込むことができます．
-またYouTubeやニコニコ動画のURLを書くとその動画が埋め込まれます．
 ''URLに続いて,(カンマ)を書く場合はスペースを入れて下さい．そうしないとカンマもURLとして認識されます．''
+
+埋め込めるのは画像(jpg, jpeg, png, gif)だけです．それ以外のURLはリンクになります．
+動画サイト(YouTube，ニコニコ動画)の埋め込みはv0.9.1で取りやめました．
+すでに書いてあるものは，動画サイトへのリンクとして表示されます．
 
 添付ファイル(子ページとしてアップロードしたファイル)を埋め込む際は
 編集画面で埋め込む位置にカーソルを移動させ，添付ボタンを押してファイルを選択すると便利です．
@@ -154,7 +157,7 @@ function wiki_operator_include(&$context, $dom, $tree) {
 
  &include([[./some.jpg]], 600x300);
  &include([[./foo.png]], 600x, open) { fooの様子 }
- &include(http://www.youtube.com/watch?v=vdQj2ohqCBk);
+ &include(https://example.com/photo.jpg, 600x300);
 
 */
 
@@ -168,12 +171,15 @@ function wiki_operator_include(&$context, $dom, $tree) {
  &include(URL , widthxheight, percent%, open);
 Embeds the contents of the page or URL named.
 The page named may be of any type: wiki, text, file and so on.
-Use it to embed an image or a video in a page.
+Use it to embed an image in a page.
 
 Naming the URL of an image embeds that image.
-Writing the URL of a YouTube or Niconico video embeds that video.
 ''When you write a , (comma) after a URL, put a space before it.
 Otherwise the comma is read as part of the URL.''
+
+Only images (jpg, jpeg, png, gif) can be embedded. Any other URL becomes a link.
+Embedding from video sites (YouTube, Niconico) was dropped in v0.9.1.
+Anything already written is shown as a link to the video site.
 
 To embed an attached file (a file uploaded as a child page), move the cursor to the
 position on the editing screen where it should go, press the attach button and choose
@@ -205,7 +211,7 @@ When given, it is shown as the caption of the embedded content.
 
  &include([[./some.jpg]], 600x300);
  &include([[./foo.png]], 600x, open) { how foo looks }
- &include(http://www.youtube.com/watch?v=vdQj2ohqCBk);
+ &include(https://example.com/photo.jpg, 600x300);
 
 */
 ?>

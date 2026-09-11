@@ -141,8 +141,6 @@ set_const('FEED_DEFAULT_PAGE_NUM', 20);
 set_const('USER_HISTORY_ENABLE', 'false');
 set_const('USER_HISTORY_UNREAD', 'false');
 
-set_const('WIKI_INCLUDE_URI_DEFAULT_VIDEO_WIDTH', 480);
-set_const('WIKI_INCLUDE_URI_DEFAULT_VIDEO_HEIGHT', 480 * 9 / 16);
 
 set_const('WIKI_TIME_DEFAULT_NEW_HOUR', 24);
 
@@ -295,8 +293,6 @@ function setup_read($name) {
 |{USER_HISTORY_UNREAD|false|未読ページへのリンクにマークをつける(USER_HISTORY_ENABLEをtrueにする必要あり)|}
 |{WIKI_ICON_IMAGE_WIDTH|16|顔文字等のアイコンの幅|}
 |{WIKI_ICON_IMAGE_HEIGHT|16|顔文字等のアイコンの高さ|}
-|{WIKI_INCLUDE_URI_DEFAULT_VIDEO_WIDTH|600|動画サイトの埋め込みの際の標準の幅|}
-|{WIKI_INCLUDE_URI_DEFAULT_VIDEO_HEIGHT|600 * 9 / 16|動画サイトの埋め込みの際の標準の高さ|}
 |{WIKI_TIME_DEFAULT_NEW_HOUR|24|[[&&time:../../Wiki/Function/time]]でNEW!を表示するデフォルトの時間|}
 |{WIKI_SUMMARY_IMAGE_RESIZE|max 100x100|画像ファイルのページが要約されるときの大きさ|}
 |{WIKI_CALENDAR_RULES_DEFAULT|省略(setup.inc参照)|[[&&calendar:../../Wiki/Function/calendar]]で常に表示されるイベント情報|}
@@ -356,8 +352,6 @@ function setup_read($name) {
 |{USER_HISTORY_UNREAD|false|mark links to unread pages (USER_HISTORY_ENABLE has to be true)|}
 |{WIKI_ICON_IMAGE_WIDTH|16|the width of icons such as emoticons|}
 |{WIKI_ICON_IMAGE_HEIGHT|16|the height of icons such as emoticons|}
-|{WIKI_INCLUDE_URI_DEFAULT_VIDEO_WIDTH|600|the standard width when embedding from a video site|}
-|{WIKI_INCLUDE_URI_DEFAULT_VIDEO_HEIGHT|600 * 9 / 16|the standard height when embedding from a video site|}
 |{WIKI_TIME_DEFAULT_NEW_HOUR|24|the default number of hours [[&&time:../../Wiki/Function/time]] shows NEW! for|}
 |{WIKI_SUMMARY_IMAGE_RESIZE|max 100x100|the size at which a page of an image file is summarized|}
 |{WIKI_CALENDAR_RULES_DEFAULT|omitted (see setup.inc)|the event data always shown by [[&&calendar:../../Wiki/Function/calendar]]|}
