@@ -231,6 +231,15 @@ check_eq "他サイトの Origin が付いた POST は 403" "403" \
 check_eq "  ページは消えていない" "1" \
          "$(value_of "$(helper page-exists 'CsrfTest/Target')" exists)"
 
+# Origin: null は sandbox で隔離された文書から来る (添付 HTML を動かすときの
+# 隔離先。tests/file-html.sh)。ブラウザは同じサイトの Referer を付けてくることが
+# あるので、それが付いていても Origin を優先して弾くことを見る。
+check_eq "Origin: null の POST は 403 (同じサイトの Referer 付きでも)" "403" \
+         "$(code -X POST -H "Origin: null" -H "Referer: ${CSRF_TEST_URL}/?CsrfTest/Target" \
+                 -d "option=delete" -d "action=write" "${CSRF_TEST_URL}/?CsrfTest/Target")"
+check_eq "  ページは消えていない" "1" \
+         "$(value_of "$(helper page-exists 'CsrfTest/Target')" exists)"
+
 check_eq "他サイトの Referer だけの POST は 403" "403" \
          "$(code -X POST -H "Referer: ${EVIL}/a.html" -d "option=delete" -d "action=write" \
                  "${CSRF_TEST_URL}/?CsrfTest/Target")"
