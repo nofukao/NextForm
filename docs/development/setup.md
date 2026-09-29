@@ -84,6 +84,10 @@ php -S 0.0.0.0:8080 -t NextForm/
 DEST=/var/www/html/mywiki ./deploy/scripts/deploy.sh --init   # 初回
 ```
 
+ここで配置するサイトを**開発検証サイト**と呼びます。このリポジトリの変更を
+反映するのはこのサイトだけで、開発途中の確認もここで行います。テストの向け先
+(§5 の `BASE_URL` / `NF_SITE`) もこのサイトに揃えます。
+
 `deploy.sh` は rsync です。要点が 2 つあります。
 
 - `storage/` `theme/` `install-info.dat` は**除外**します (インスタンス固有のデータ)

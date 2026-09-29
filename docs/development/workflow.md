@@ -283,6 +283,11 @@ tora2 と nextform に同じ操作をして出力を比較できる。
 
 ## 5. デプロイ
 
+**反映する相手は開発検証サイトだけ**
+(`deploy.sh` の `DEST`、`tests/env.local` の `BASE_URL` / `NF_SITE` が指すサイト)。
+NextForm を更新したら、ここへ反映して確かめる。個々の運用サイトの更新は、
+このリポジトリの作業に含めない。
+
 ```bash
 ./deploy/scripts/deploy.sh
 ```
@@ -299,13 +304,13 @@ tora2 と nextform に同じ操作をして出力を比較できる。
 
 | 場面 | 使うもの | 相手 |
 |---|---|---|
-| コミット前の反復 (数分ごと) | `deploy.sh` | **開発用の 1 サイトだけ** (`DEST`、既定 `/var/www/html/nextform`) |
-| 区切りがついたら | `make-dist.sh` → `app/tool/upgrade` | 検証用・本運用のサイト |
+| コミット前の反復 (数分ごと) | `deploy.sh` | **開発検証サイト** (`DEST`、既定 `/var/www/html/nextform`) |
+| 区切りがついたら | `make-dist.sh` → `app/tool/upgrade` | 開発検証サイト。リリース前は実データの**複製**にも ([upgrade-check.md](upgrade-check.md)) |
 
-本運用のサイトへは `upgrade` を使う。`deploy.sh` は `rsync --delete` で `app/` を
+区切りでは `upgrade` を使う。`deploy.sh` は `rsync --delete` で `app/` を
 同期するだけで、バックアップも PHP 版数の検査も `.htaccess` の手当ても
 所有者の戻しもしない。`upgrade` は利用者が実際に通る経路そのものなので、
-本運用で使ってもらうこと自体が最良の検証になる。
+それで開発検証サイトを上げておくことが最良の検証になる。
 
 **配布物は `git archive` で作る。未コミットの編集は入らない。**
 `make-dist.sh` は該当する変更があれば警告するが、止まりはしない。
@@ -335,7 +340,7 @@ v0.8.0 の配布物を、折りたたみを実装したあとのサイトに入�
 2. `NextForm/app/version.inc` の `NEXTFORM_VERSION` を上げる
 3. `./tests/golden.sh` `./tests/smoke.sh` `./tests/css-rules.sh` `./tests/upgrade.sh`
    `./tests/search-index.sh` が通ることを確認する
-4. 確認用インスタンスで全機能を手動で巡回する
+4. 開発検証サイトで全機能を手動で巡回する
    (GET だけでは踏めない POST 経路 — 編集・添付・ロック・管理画面)
 5. `docs/project-overview.md` のロードマップを更新する
 6. `main` に tag を打つ: `git tag v0.1 && git push origin v0.1`
@@ -348,7 +353,8 @@ v0.8.0 の配布物を、折りたたみを実装したあとのサイトに入�
    → [upgrade-check.md](upgrade-check.md)
    `tests/upgrade.sh` は作業ツリーを使い、ページが 2 枚しかない複製が相手なので、
    件数・サイズ・古い書き方は見ていない。tar.gz を展開して、実データの入った
-   サイトに当てる。何を確かめるかは版ごとに違うので、手順書側に記録を残す
+   サイトの**複製**に当てる (元のサイトは読むだけ)。何を確かめるかは版ごとに
+   違うので、手順書側に記録を残す
 
 ### v0.1 完成後の公開前チェック
 
