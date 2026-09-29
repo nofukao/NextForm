@@ -1046,6 +1046,10 @@ ObsidianやMediaWikiと同じ並びに合わせてあります．
 空白を含む見出しの文字をそのまま書くときは ""[表示名](<#見出し 1>)"" のように囲みます．
 どの見出しにも当たらない ""#"" はそのまま残るので，脚注などへのリンクは変わりません．
 
+表の中でも ""[[ページ名|表示名]]"" はそのまま書けます．
+間の ""|"" が表の区切りとして読まれることはありません
+(Markdownの決まりどおり ""\|"" と書いてもかまいません)．
+
 *外部リンク
 ""[表示名](URL)"" で外部サイトへのリンクになります．
 URLをそのまま書いても[[リンクになります:../Extra#自動リンク]]．
@@ -1496,6 +1500,10 @@ To write the text of a heading that contains spaces as it is, enclose it as in
 ""[display name](<#heading 1>)"".
 A ""#"" that matches no heading is left as it is, so links to footnotes and the like
 do not change.
+
+""[[page name|display name]]"" can be written as it is inside a table as well.
+The ""|"" in it is not read as a cell separator
+(writing ""\|"", as Markdown requires, also works).
 
 *External links
 ""[display name](URL)"" makes a link to an external site.
