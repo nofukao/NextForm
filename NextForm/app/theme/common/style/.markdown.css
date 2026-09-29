@@ -153,11 +153,19 @@ section.markdown > details {
     margin-top: <?php echo(theme_density_px(24)); ?>px;
     margin-bottom: <?php echo(theme_density_px(24)); ?>px;
 }
+/*
+ * 開いたときに、どこまでが中身かを字下げで見せる。
+ *
+ * 字下げは details 自身の padding で付け、summary だけ同じ量を戻す。
+ * 子の margin-left で付けると、ul, ol { margin-left: 24px } (.base.css) を
+ * 足すのではなく置き換えてしまい、中の箇条書きの記号が見出しより左に出る。
+ * padding なら子は自分の余白を保つので、中でも外と同じ段差になる。
+ */
+section.markdown details {
+    padding-left: <?php echo(theme_density_px(12)); ?>px;
+}
 section.markdown details > summary {
     cursor: pointer;
     font-weight: bold;
-}
-/* 開いたときに、どこまでが中身かを字下げで見せる */
-section.markdown details > *:not(summary) {
-    margin-left: <?php echo(theme_density_px(12)); ?>px;
+    margin-left: -<?php echo(theme_density_px(12)); ?>px;
 }
