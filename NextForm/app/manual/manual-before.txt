@@ -119,6 +119,13 @@ To embed an attached image or video in a page, Markdown notation uses
 ""![description](file name)"" ([[Links, images and attachments:./Markdown/Link]])
 and Wiki notation uses [[&&include:./Wiki/Function/include]].
 
+By default, an attached HTML file is downloaded when it is opened.
+Enabling [[FILE_ALLOW_HTML:./Administration/Settings]] in the site settings lets you run
+it in the browser as it is, from ''Open'' on the page of the file.
+The HTML then runs isolated from the wiki, so it cannot operate on the pages or the
+settings of the wiki. Data it saves (localStorage) is not kept, and it cannot submit
+forms or show alert dialogs.
+
 *Backup
 A backup is taken before a page is edited (it is skipped when the edits come close
 together). You can therefore show the contents of a page as it was at some point in
@@ -273,6 +280,12 @@ Wiki記法は[[リンク:./Wiki/Basic#リンク]]を参照してください．}
 添付した画像や動画をページ内に埋め込むには，Markdown記法では ""![説明](ファイル名)""
 ([[リンク・画像・添付:./Markdown/Link]])を，Wiki記法では
 [[&&include:./Wiki/Function/include]]を使用します．
+
+添付したHTMLファイルは，既定では開くとダウンロードになります．
+サイトの設定の[[FILE_ALLOW_HTML:./Administration/Settings]]を有効にすると，
+ファイルのページに出る''開く''から，ブラウザでそのまま動かせます．
+このときHTMLはwikiから隔離して動くので，wikiのページや設定を操作することはできません．
+保存したデータ(localStorage)は残らず，フォームの送信や警告の表示(alert)もできません．
 
 *バックアップ
 ページは編集される前にバックアップがとられます(編集の間隔が短い場合はバックアップをスキップします)．
