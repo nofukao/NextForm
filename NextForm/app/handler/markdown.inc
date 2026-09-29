@@ -516,7 +516,8 @@ function markdown_convert(&$page, $dom, $contents = null) {
 	return false;
     markdown_move_code_positions($section);
     markdown_append_sentence($page, $section);
-    markdown_set_heading_ids($page, $section);
+    $ids = markdown_set_heading_ids($page, $section);
+    markdown_resolve_section_links($section, $ids);
     return true;
 }
 
@@ -609,19 +610,70 @@ function markdown_headings($dom, &$headings) {
  * [[ページ名#見出し]] が種別をまたいで同じアンカーを指す。
  * 同じ文字の見出しが 2 つあるときは先に出たほうだけに振る (wiki と同じ)。
  * サイドページに振らないのも wiki と同じで、本文と id がぶつかるため。
+ *
+ * 振った id を「見出しの文字 => id」で返す (markdown_resolve_section_links() が使う)。
  */
 function markdown_set_heading_ids(&$page, $dom) {
     if(empty($page['is_main']))
-	return;
+	return array();
     $headings = array();
     markdown_headings($dom, $headings);
     $ids = array();
+    $used = array();
     foreach($headings as $heading) {
 	$id = page_get_section_id($page['name'], $heading['text']);
-	if(isset($ids[$id]))
+	if(isset($used[$id]))
 	    continue;
-	$ids[$id] = true;
+	$used[$id] = true;
+	$ids[$heading['text']] = $id;
 	dom_set_attribute($heading['element'], 'id', $id);
+    }
+    return $ids;
+}
+
+/*
+ * GitHub が見出しに付けるアンカーの形。小文字にし、文字・数字・_・- ・空白
+ * 以外を落とし、空白を - にする。VS Code や GitHub で書いた目次はこの形で
+ * 見出しを指している ([概要](#getting-started) など)。
+ */
+function markdown_heading_slug($text) {
+    $slug = mb_strtolower($text, 'UTF-8');
+    $slug = preg_replace('/[^\p{L}\p{M}\p{N}\p{Pc} -]/u', '', $slug);
+    return str_replace(' ', '-', $slug);
+}
+
+/*
+ * ページの中の見出しを指すリンク ([表示名](#見出し)) を、見出しの id に向け直す。
+ *
+ * 見出しの id は page_get_section_id() のハッシュ (hf1b905e など) なので、
+ * #見出し と書いたままでは届かない。見出しの文字と一致するものを先に、
+ * 無ければ GitHub の形 (markdown_heading_slug()) で一致するものを探す。
+ *
+ * **どれにも当たらなければ触らない。** 脚注 (#fn:1) や、id を直に書いた
+ * リンク (#hf1b905e) はそのまま届く。脚注は class で先に外しておく
+ * (脚注の記号と同じ文字の見出しがあっても向け直さないため)。
+ */
+function markdown_resolve_section_links($dom, $ids) {
+    if(empty($ids))
+	return;
+    $slugs = array();
+    foreach($ids as $text => $id) {
+	$slug = markdown_heading_slug((string)$text);
+	if(!isset($slugs[$slug]))
+	    $slugs[$slug] = $id;
+    }
+
+    foreach($dom->getElementsByTagName('a') as $a) {
+	$href = $a->getAttribute('href');
+	if($href === '' || $href[0] !== '#')
+	    continue;
+	if(preg_match('/\bfootnote-(ref|backref)\b/', $a->getAttribute('class')))
+	    continue;
+	$fragment = rawurldecode(substr($href, 1));
+	if(isset($ids[$fragment]))
+	    dom_set_attribute($a, 'href', '#' . $ids[$fragment]);
+	else if(isset($slugs[$fragment]))
+	    dom_set_attribute($a, 'href', '#' . $slugs[$fragment]);
     }
 }
 
