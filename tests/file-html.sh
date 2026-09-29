@@ -139,6 +139,10 @@ fi
 helper write "$P_PARENT" '![遊ぶ](game.html)' > /dev/null
 
 echo "1. 既定ではダウンロードになること"
+# 複製元の設定を引き継ぐので、まず項目を取り除いて既定値が効く状態にする
+# (開発検証サイトで有効にしてあると、ここが「有効」から始まってしまう)。
+out="$(helper unset-setting FILE_ALLOW_HTML)"
+check_eq "設定を既定に戻せる" "1" "$(value_of "$out" saved)"
 fetch_raw
 check_eq "Content-Type は octet-stream"   "application/octet-stream" "$(media_type)"
 check_eq "添付として渡す (attachment)"    "yes" "$(contains "$(header_of Content-Disposition)" attachment)"

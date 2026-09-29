@@ -13,6 +13,8 @@
  *   set-setting <定数名> <値>
  *                           サイトの設定 (storage/setup/site) に書く (saved=1/0)。
  *                           管理画面の「サイトの設定」と同じ保存先
+ *   unset-setting <定数名>  サイトの設定から項目を取り除く (saved=1/0)。
+ *                           既定値 (setup.inc) が効く状態に戻す
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
@@ -68,6 +70,14 @@ case 'set-setting':
     $contents = setup_read('site');
     $values = ($contents === false) ? array() : unserialize($contents);
     $values[$rest[0]] = $rest[1];
+    $contents = serialize($values);
+    printf("saved=%d\n", setup_write('site', $contents) ? 1 : 0);
+    break;
+
+case 'unset-setting':
+    $contents = setup_read('site');
+    $values = ($contents === false) ? array() : unserialize($contents);
+    unset($values[$rest[0]]);
     $contents = serialize($values);
     printf("saved=%d\n", setup_write('site', $contents) ? 1 : 0);
     break;
