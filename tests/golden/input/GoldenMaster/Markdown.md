@@ -37,6 +37,15 @@ function example($argument) { return "test"; }
 | `**強調**` | 太字 |
 | `~~打ち消し~~` | 取り消し線 |
 
+表の中の `[[ページ|表示名]]` は、区切りの `|` を逃がさなくても 1 つのセルに収まる。
+
+| [[GoldenMaster/Top|見出し行のリンク]] | 説明 |
+|---|---|
+| [[GoldenMaster/Syntax|表示名つき]] | 逃がさずに書いたもの |
+| [[GoldenMaster/Syntax\|逃がしたもの]] | これまでどおり |
+| [[../Markdown]] | 表示名の無いもの |
+| リンクの外の | 区切り | は区切りのまま |
+
 ## リンク
 
 [通常のリンク](https://example.com/)、自動リンク https://example.com/auto 、
