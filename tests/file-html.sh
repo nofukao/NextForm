@@ -144,7 +144,7 @@ check_eq "Content-Type は octet-stream"   "application/octet-stream" "$(media_t
 check_eq "添付として渡す (attachment)"    "yes" "$(contains "$(header_of Content-Disposition)" attachment)"
 check_eq "中身は変わらない"               "$BODY" "$(cat "$WORK/body")"
 check_eq "ファイルのページに「開く」は出ない" "no" \
-         "$(contains "$(main_html "$P_FILE")" 'class="open"')"
+         "$(contains "$(main_html "$P_FILE")" 'class="open_html"')"
 echo
 
 echo "2. 有効にすると sandbox 付きの text/html で返ること"
@@ -163,11 +163,11 @@ echo
 
 echo "3. 「開く」リンクが出ること"
 F_HTML="$(main_html "$P_FILE")"
-check_eq "ファイルのページに「開く」が出る" "yes" "$(contains "$F_HTML" 'class="open"')"
+check_eq "ファイルのページに「開く」が出る" "yes" "$(contains "$F_HTML" 'class="open_html"')"
 check_eq "  行き先は実体 (action=raw)" "yes" \
          "$(contains "$F_HTML" "href=\"?${P_FILE}&amp;action=raw\"")"
 check_eq "Markdown の ![..](game.html) にも「開く」が出る" "yes" \
-         "$(contains "$(main_html "$P_PARENT")" 'class="open"')"
+         "$(contains "$(main_html "$P_PARENT")" 'class="open_html"')"
 check_eq "  枠 (iframe) では動かさない" "no" \
          "$(contains "$(main_html "$P_PARENT")" '<iframe')"
 echo

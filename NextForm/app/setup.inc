@@ -50,6 +50,12 @@ $SETUP_CONSTANTS['MARKDOWN_ALLOW_HTML'] = array(
     'type' => 'select',
     'options' => array('false' => 'Escape', 'true' => 'Allow'),
     'note' => 'allowing it lets anyone who can edit run scripts');
+$SETUP_CONSTANTS['FILE_ALLOW_HTML'] = array(
+    'description' => 'Attached HTML files',
+    'default' => 'false',
+    'type' => 'select',
+    'options' => array('false' => 'Download', 'true' => 'Run in a sandbox'),
+    'note' => 'running them lets anyone who can edit show any page under the URL of this site');
 $SETUP_CONSTANTS['GOOGLE_API_KEY'] = array(
     'description' => 'Google API key',
     'type' => 'string',
@@ -263,6 +269,7 @@ function setup_read($name) {
 |{PASSWORD_REMINDER_EMAIL_FROM|(自動)|パスワード再設定メールの送信者メールアドレス|}
 |{MANUAL_PAGENAME|NextFormManual|マニュアルページのページ名|}
 |{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
+|{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか。falseならダウンロードになる。trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
@@ -322,6 +329,7 @@ function setup_read($name) {
 |{PASSWORD_REMINDER_EMAIL_FROM|(automatic)|the sender address of the password reset mail|}
 |{MANUAL_PAGENAME|NextFormManual|the page name of the manual pages|}
 |{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type Markdown. Setting it true lets anyone who can edit embed a script|}
+|{FILE_ALLOW_HTML|false|whether an attached HTML file runs when it is opened. With false it is downloaded. Setting it true runs it isolated from the wiki, but lets anyone who can edit show any page under the URL of this site|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
 |{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
 |{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}
