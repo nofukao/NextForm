@@ -81,6 +81,15 @@ rules_common() {
     # cursor が既定のままだと、畳まれた見出しがただの太字に見えて誰も押さない。
     check "折りたたみの summary に cursor: pointer がある" \
           "bool(re.search(r'section\.markdown\s+details\s*>\s*summary\s*\{[^}]*cursor:\s*pointer', css, re.S))"
+    # 折りたたみの中の字下げは details 自身の padding で付ける。子の margin-left で
+    # 付けると ul, ol { margin-left: 24px } を置き換えてしまい、中の箇条書きの
+    # 記号が見出しより左に出た。
+    check "折りたたみの中の子の margin-left を上書きしていない" \
+          "not re.search(r'section\.markdown\s+details\s*>\s*\*[^{]*\{[^}]*margin-left', css, re.S)"
+    check "折りたたみの中身は details の padding-left で下げる" \
+          "bool(re.search(r'section\.markdown\s+details\s*\{[^}]*padding-left:\s*[1-9]', css, re.S))"
+    check "折りたたみの summary は字下げの分だけ戻す" \
+          "bool(re.search(r'section\.markdown\s+details\s*>\s*summary\s*\{[^}]*margin-left:\s*-[1-9]', css, re.S))"
 
     # 見出しの見え方が種別をまたいで揃っていること。
     #
