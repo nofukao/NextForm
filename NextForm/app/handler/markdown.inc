@@ -48,6 +48,7 @@ function markdown_converter() {
     require_once(APP_DIR_PATH . '/handler/markdown/wikilink.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/image.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/link.inc');
+    require_once(APP_DIR_PATH . '/handler/markdown/table.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/details.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/example.inc');
 
@@ -76,6 +77,12 @@ function markdown_converter() {
      */
     $environment->addInlineParser(new MarkdownWikiLinkParser(), 100);
     $environment->addRenderer('MarkdownWikiLink', new MarkdownWikiLinkRenderer());
+
+    /*
+     * 表の中の [[ページ名|表示名]] の | で、セルが割れないようにする (table.inc)。
+     * GFM の表 (優先度 0) より先に見せ、表はすべてこちらの包みを通す。
+     */
+    $environment->addBlockStartParser(new MarkdownTableStartParser(), 10);
 
     /* :::details の折りたたみ。CommonMark に折りたたみは無いので独自に足す */
     $environment->addBlockStartParser(new MarkdownDetailsStartParser());
