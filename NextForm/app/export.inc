@@ -641,17 +641,25 @@ function export_sanitize_dom($dom) {
     foreach($EXPORT_SANITIZE_ATTRIBUTES as $name) {
 	$dom->removeAttribute($name);
     }
-    
+
+    /*
+     * フォーム (&export のボタンなど) は静的なサイトでは送れないので消す。
+     * 先に集めてから消す。以前は 1 つ消したところで return しており、
+     * 同じ親の 2 つめ以降のフォームと、その後ろの兄弟の属性が残っていた。
+     */
+    $forms = array();
     foreach($dom->childNodes as $child) {
-	if($child instanceof DOMElement) {
-	    if($child->tagName == 'form') {
-		$dom->removeChild($child);
-		dom_remove_empty($dom);
-		return;
-	    }
+	if(!($child instanceof DOMElement))
+	    continue;
+	if($child->tagName == 'form')
+	    $forms[] = $child;
+	else
 	    export_sanitize_dom($child);
-	}
     }
+    foreach($forms as $form)
+	$dom->removeChild($form);
+    if(!empty($forms))
+	dom_remove_empty($dom);
 }
 
 function export_replace_variables(&$page, $argsstring, $src, $is_filepath = false) {
