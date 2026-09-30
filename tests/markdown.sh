@@ -701,8 +701,9 @@ check_eq "  札の文字は Markdown" "yes" \
 check_eq "  札は入力欄より前" "yes" \
          "$(printf '%s' "$MD_EDIT" | python3 -c 'import sys; h = sys.stdin.read(); print("yes" if 0 <= h.find("class=\"notation\"") < h.find("<textarea") else "no")')"
 WIKI_EDIT="$(main_html "${P_WIKI_LINKS}&action=edit")"
-check_eq "Wiki 記法のページの編集画面の札は Wiki記法" "yes" \
-         "$(contains "$WIKI_EDIT" '>Wiki記法</a></p>')"
+# 「Markdown」と表記を揃えて「Wiki」とする (「Wiki記法」ではない)
+check_eq "Wiki 記法のページの編集画面の札は Wiki" "yes" \
+         "$(contains "$WIKI_EDIT" '>Wiki</a></p>')"
 echo
 
 helper cleanup > /dev/null
