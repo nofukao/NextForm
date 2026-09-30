@@ -16,6 +16,7 @@ $PAGE_TYPES_TEXTBASE[] = 'wiki';
 $PAGE_TYPES_PREVIEWABLE[] = 'wiki';
 $PAGE_TYPE_CHEAT_SHEETS['wiki'] = array('page' => '/Wiki/CheatSheet',
 					'label' => 'Wiki Cheat Sheet');
+$PAGE_TYPE_NOTATIONS['wiki'] = 'Wiki notation';
 
 $WIKI_TOKEN_SYMBOLS = array(
     "'''",

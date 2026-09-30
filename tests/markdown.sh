@@ -36,6 +36,7 @@
 #      title: が優先。題名にした # は本文から消す (サイドや &include では消さない)
 #  13. Markdown のページへのリンクに印 (type_markdown) を付けること。wiki のページ・
 #      無いページには付けない (色調で Markdown のページへのリンクの色を変えるため)
+#  14. 編集画面に記法の札 (Markdown / Wiki記法) が出ること
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -686,6 +687,22 @@ check_eq "  無いページへのリンクには付かない" "no" \
 helper write-wiki "$P_WIKI_LINKS" "$LINKS_BODY" > /dev/null
 check_eq "wiki のページからのリンクにも付く" "yes" \
          "$(contains " $(link_class "$(main_html "$P_WIKI_LINKS")" "$P_HEAD") " ' type_markdown ')"
+echo
+
+echo "14. 編集画面に記法の札が出ること"
+# いま書いているのが Wiki 記法か Markdown かを、入力欄の上の札で示す。
+# 色 (入力欄の左の線) に頼らないので、リンクの色を同じにしていても読める。
+# 札は早見表へのリンクを兼ねる。
+MD_EDIT="$(main_html "${P_LINKS}&action=edit")"
+check_eq "Markdown のページの編集画面に札が出る" "yes" \
+         "$(contains "$MD_EDIT" '<p class="notation"><a ')"
+check_eq "  札の文字は Markdown" "yes" \
+         "$(contains "$MD_EDIT" '>Markdown</a></p>')"
+check_eq "  札は入力欄より前" "yes" \
+         "$(printf '%s' "$MD_EDIT" | python3 -c 'import sys; h = sys.stdin.read(); print("yes" if 0 <= h.find("class=\"notation\"") < h.find("<textarea") else "no")')"
+WIKI_EDIT="$(main_html "${P_WIKI_LINKS}&action=edit")"
+check_eq "Wiki 記法のページの編集画面の札は Wiki記法" "yes" \
+         "$(contains "$WIKI_EDIT" '>Wiki記法</a></p>')"
 echo
 
 helper cleanup > /dev/null

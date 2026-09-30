@@ -44,6 +44,7 @@ function text_edit(&$page, $dom, $type = 'text', $contents = null, $ticket = nul
     if(!empty($page['args']['preview']))
 	dom_append_class($form, 'preview');
 
+    text_edit_append_notation($form, $type);
     $textarea = dom_append_child($form, 'textarea', '', array('name' => 'contents', /*'autofocus' => ''*/));
     dom_append_text($textarea, "\n" . $contents);
 
@@ -89,15 +90,48 @@ function text_edit(&$page, $dom, $type = 'text', $contents = null, $ticket = nul
  */
 function text_edit_append_cheat_sheet($ul, $type) {
     global $PAGE_TYPE_CHEAT_SHEETS;
-    if(empty($PAGE_TYPE_CHEAT_SHEETS[$type]))
-	return;
-    $cheat_sheet = $PAGE_TYPE_CHEAT_SHEETS[$type];
-    $manual_page_name = MANUAL_PAGENAME . '/' . LANG . $cheat_sheet['page'];
-    if(!page_is_exists($manual_page_name))
+    $manual_page_name = text_edit_cheat_sheet_pagename($type);
+    if($manual_page_name === false)
 	return;
 
     $li = dom_append_child($ul, 'li');
-    $a = dom_append_link($li, url_make($manual_page_name), l($cheat_sheet['label']));
+    $a = dom_append_link($li, url_make($manual_page_name),
+			 l($PAGE_TYPE_CHEAT_SHEETS[$type]['label']));
+    dom_set_attribute($a, 'target', '_blank');
+}
+
+/* その種別の早見表のページ名。無ければ false */
+function text_edit_cheat_sheet_pagename($type) {
+    global $PAGE_TYPE_CHEAT_SHEETS;
+    if(empty($PAGE_TYPE_CHEAT_SHEETS[$type]))
+	return false;
+    $manual_page_name = MANUAL_PAGENAME . '/' . LANG . $PAGE_TYPE_CHEAT_SHEETS[$type]['page'];
+    if(!page_is_exists($manual_page_name))
+	return false;
+    return $manual_page_name;
+}
+
+/*
+ * 入力欄の上の札。いま書いているのが Wiki 記法か Markdown かを示す
+ * ($PAGE_TYPE_NOTATIONS。ほかの種別には出さない)。
+ *
+ * 入力欄の左の線 (.colors-map.css。その記法のページへのリンクの色) と違って
+ * 色に頼らないので、リンクの色を同じにしていても読める。早見表があれば
+ * そこへのリンクを兼ねる。部分編集の欄には nextform.js が同じ札を出す。
+ */
+function text_edit_append_notation($dom, $type) {
+    global $PAGE_TYPE_NOTATIONS;
+    if(empty($PAGE_TYPE_NOTATIONS[$type]))
+	return;
+
+    $p = dom_append_child($dom, 'p', 'notation');
+    $label = l($PAGE_TYPE_NOTATIONS[$type]);
+    $manual_page_name = text_edit_cheat_sheet_pagename($type);
+    if($manual_page_name === false) {
+	dom_append_text(dom_append_child($p, 'span'), $label);
+	return;
+    }
+    $a = dom_append_link($p, url_make($manual_page_name), $label);
     dom_set_attribute($a, 'target', '_blank');
 }
 

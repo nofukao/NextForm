@@ -507,6 +507,32 @@ function markdownEditWiderElement(event) {
     return (page && page.hasAttribute('data-twp')) ? page : null;
 }
 
+/*
+ * 部分編集の欄にも、いま書いているのが Wiki 記法か Markdown かの札を出し、
+ * 種別のクラスを付ける (入力欄の左の線の色が決まる)。全体の編集画面は
+ * text.inc の text_edit_append_notation() が出す。
+ *
+ * 種別は欄を開いた要素で決める。section.markdown の中なら Markdown
+ * (Markdown のページを &include した wiki のページでも、中は Markdown)。
+ * ページ全体 (section.page) を開いたときは、直下が section.markdown かを見る。
+ * こちらは早見表の場所を知らないので、札は文字だけにする。
+ */
+function wikiEditAppendNotation(form, element) {
+    var isMarkdown = element.match('section.markdown') ||
+	element.up('section.markdown') != null ||
+	element.childElements().any(function(child) {
+	    return child.match('section.markdown');
+	});
+    form.addClassName(isMarkdown ? 'type_markdown' : 'type_wiki');
+
+    var p = $(document.createElement('p'));
+    p.addClassName('notation');
+    var span = document.createElement('span');
+    span.appendChild(document.createTextNode(isMarkdown ? 'Markdown' : l('Wiki notation')));
+    p.appendChild(span);
+    form.insertBefore(p, form.textarea);
+}
+
 Element.prototype.wikiEditMakeTextarea = function(request) {
     var hiddens = {
 	'page': mainPagename,
@@ -545,6 +571,7 @@ Element.prototype.wikiEditMakeTextarea = function(request) {
     });
     form.addClassName('partial');
     form.editElement = this;
+    wikiEditAppendNotation(form, this);
     form.textarea.disable();
 
     if(this.tagName == 'LI') {
@@ -3117,6 +3144,7 @@ var LANGUAGE = {
 	'You have unsaved changes.' : '保存されていない変更箇所があります．',
 	'Can\'t sort rowspaned table.': '縦に連結された表はソートできません．',
 	'You can edit this page by double-clicking, too.': '編集したい部分をダブルクリックしても編集が開始できます．',
+	'Wiki notation': 'Wiki記法',
 
 	'You can click a comment to reply.': '親コメントをクリックで返信になります．',
 	'You can click a parent item.': '親項目をクリックで選択できます．',
