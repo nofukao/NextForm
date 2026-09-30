@@ -25,7 +25,8 @@ h1.pages {
 .background_emphasis,
 label.checked,
 li.selected,
-h1.anchor {
+h1.anchor,
+section.markdown .anchor {
     background-color: <?php trw_color(THEME_COLOR_HIGHLIGHT); ?>;
 }
 li.selected_top,
