@@ -155,6 +155,15 @@ rules_common() {
     check "記法の札は右に寄せる" \
           "bool(re.search(r'form\.text_edit\s*>\s*\.notation\s*\{[^}]*text-align:\s*right', css, re.S))"
 
+    # 設定画面のまとまり (色調の個別設定・見出しの構成) は、項目名と入力欄を
+    # グリッドで並べる。項目名を float で置いていたときは、項目名が 2 行に
+    # 折り返すと、次の入力欄が前の項目名の 2 行目の横に入り込み、そこから下の
+    # 対応がずれた (「未訪問リンクの色 (Markdownのページ)」で起きた)。
+    check "設定画面のまとまりはグリッドで並べる" \
+          "bool(re.search(r'\.setup dl\.group\s*\{[^}]*display:\s*grid', css, re.S))"
+    check "  項目名を float で置いていない" \
+          "not re.search(r'\.setup dl\.group dt\s*\{[^}]*float:', css, re.S)"
+
     # ブロックごとの &pre(wrap) / &pre(nowrap) は、サイトの既定がどちらでも効く。
     check "ブロック指定 pre.wrap がある" \
           "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"
@@ -193,9 +202,22 @@ rules_markdown_link_same() {
           "$LINK_COLOR_OF('a.type_markdown') is not None and $LINK_COLOR_OF('a.type_markdown') == $LINK_COLOR_OF('a:link')"
     check "Markdown 用が空なら訪問済みリンクの色と同じ" \
           "$LINK_COLOR_OF('a.type_markdown:visited') is not None and $LINK_COLOR_OF('a.type_markdown:visited') == $LINK_COLOR_OF('a:visited')"
+    check "外部リンクが空なら未訪問リンクの色と同じ" \
+          "$LINK_COLOR_OF('a.external') is not None and $LINK_COLOR_OF('a.external') == $LINK_COLOR_OF('a:link')"
+    check "訪問済み外部リンクが空なら訪問済みリンクの色と同じ" \
+          "$LINK_COLOR_OF('a.external:visited') is not None and $LINK_COLOR_OF('a.external:visited') == $LINK_COLOR_OF('a:visited')"
 }
 rules_default()   { rules_markdown_link_same; }
 rules_tone_custom() { rules_markdown_link_same; }
+
+# 個別設定でリンクの色だけを決めたサイト。空の色 (Markdown 用・外部リンク) は
+# リンクの色に付いてくる。外部リンクの既定が固定の色だった頃は、リンクの色を
+# 変えても外部リンクだけ元の色のまま残った。
+rules_link_color_only() {
+    rules_markdown_link_same
+    check "外部リンクがリンクの色に付いてくる" \
+          "$LINK_COLOR_OF('a.external') == '#111111' and $LINK_COLOR_OF('a.external:visited') == '#222222'"
+}
 
 rules_markdown_link_color() {
     check "設定した Markdown 用の未訪問リンクの色が出る" \
@@ -293,7 +315,7 @@ done
 # 生成し直さないと確かめられないので、代表して basic で見る。
 # (どのテーマも同じ common/style/ を読むため、テーマごとに回す必要はない)
 
-for pattern in default tone-custom markdown-link-color pre-scroll density-compact density-loose; do
+for pattern in default tone-custom markdown-link-color link-color-only pre-scroll density-compact density-loose; do
     echo "[設定] ${pattern}"
     if ! theme_lib_generate "$site" basic "$pattern" "$work/$pattern"; then
         fail=$((fail + 1))

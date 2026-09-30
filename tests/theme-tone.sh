@@ -18,7 +18,8 @@
 # 消せば戻る。この「隠す」関係と、ファイルの形式が守られることを固定する。
 #
 # 画面は「色調の設定」(?option=admin_setup_tone) 1 枚で、27 色を直接扱う。
-# うち 2 色 (Markdown のページへのリンク) は空にでき、空ならリンクの色と同じ。
+# うち 4 色 (外部リンクと Markdown のページへのリンク) は空にでき、空なら
+# リンクの色と同じ。組み込みの色調はこの 4 色を持たない。
 # 組み込みや保存した色調は「読み込む」で入力欄に流し込んでから調整する。
 #
 # 設定と権限を書き換えるので、必ず複製したサイトに対して実行する。
@@ -287,12 +288,22 @@ check_eq "27 色ある"              "27" \
 check_eq "外観の設定に色が無い"   "0"  \
          "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_theme" \
             | grep -c 'name="const_THEME_CUSTOM_COLOR_')"
+# 見出し「色調の個別設定」の下なので、項目名に「の色」「色」は付けない。
+# 付けていた頃は「未訪問リンクの色 (Markdownのページ)」が 2 行に折り返した
+check_eq "項目名が「色」で終わらない" "0" \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+            | grep -o '<dl class="group">.*' | grep -o '<dt>[^<]*</dt>' | grep -c '色</dt>')"
+check_eq "Markdown 用は (Markdown)" "1" \
+         "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+            | grep -c '<dt>未訪問リンク (Markdown)</dt>')"
 echo
 
 echo "3. 色調を読み込む"
 loaded=$(apply_tone_setup "tone_load=1" "tone_load_id=navy-yellow")
 check_eq "入力欄がその色になる" "#000d40" \
          "$(html_value "$loaded" const_THEME_CUSTOM_COLOR_BACKGROUND)"
+check_eq "  外部リンクは空 (= リンクの色)" "" \
+         "$(html_value "$loaded" const_THEME_CUSTOM_COLOR_EXTERNAL_LINK)"
 check_eq "まだ適用はされない"   "0"       "$(css_has '#000d40')"
 check_eq "保存もされない"       "0"       "$(tone_exists navy-yellow)"
 echo
@@ -302,6 +313,7 @@ echo "4. 読み込んだ色を適用する"
 apply_html_setup "$loaded"
 check_eq "生成された CSS に出る" "1"       "$(css_has '#000d40')"
 check_eq "入力欄にも残る"        "#000d40" "$(rendered_value const_THEME_CUSTOM_COLOR_BACKGROUND)"
+check_eq "外部リンクはリンクの色" "$(css_rule_color 'a:link')" "$(css_rule_color 'a.external')"
 echo
 
 echo "5. 適用は上にもある"
@@ -320,8 +332,9 @@ check_eq "ファイルができる"   "1"          "$(tone_exists testtone)"
 check_eq "表示名が入る"       "テスト色調" "$(tone_value testtone names ja)"
 # Markdown 用の 2 色は空 (= リンクの色と同じ) なので書かない。書くと
 # tone_parse() が空を不正な色として弾き、色調ごと読めなくなる
-check_eq "25 色が入る"        "25"         "$(tone_value testtone colors)"
+check_eq "23 色が入る"        "23"         "$(tone_value testtone colors)"
 check_eq "空の色は書かない"   ""           "$(tone_value testtone colors THEME_COLOR_MARKDOWN_LINK)"
+check_eq "  外部リンクも"     ""           "$(tone_value testtone colors THEME_COLOR_EXTERNAL_LINK)"
 check_eq "入力欄の色が入る"   "#000d40"    "$(tone_value testtone colors THEME_COLOR_BACKGROUND)"
 check_eq "読み込みに出る"     "テスト色調" "$(tone_option_name testtone)"
 # storage は Web から見えてはいけない。色調も storage の下なので同じ扱いになる
@@ -413,7 +426,7 @@ check_eq "  ほかのリンクは変わらない" "yes" \
          "$([[ "$(css_rule_color 'a:link')" != "#abcdef" ]] && echo yes || echo no)"
 apply_tone_setup "tone_save=1" "tone_id=md-tone" "tone_name=Markdown の色" > /dev/null
 check_eq "保存した色調に入る"        "#abcdef" "$(tone_value md-tone colors THEME_COLOR_MARKDOWN_LINK)"
-check_eq "  27 色になる"             "27"      "$(tone_value md-tone colors)"
+check_eq "  25 色になる"             "25"      "$(tone_value md-tone colors)"
 loaded=$(apply_tone_setup "tone_load=1" "tone_load_id=md-tone")
 check_eq "読み込むと戻る"            "#abcdef" \
          "$(html_value "$loaded" const_THEME_CUSTOM_COLOR_MARKDOWN_LINK)"
@@ -424,7 +437,22 @@ check_eq "空に戻すとリンクの色と同じ" "$(css_rule_color 'a:link')" 
          "$(css_rule_color 'a.type_markdown')"
 echo
 
-echo "14. PHP の警告を出さない"
+echo "14. 外部リンクの色"
+# Markdown 用と同じく、空ならリンクの色と同じ。実際は同じにすることが多いので
+# 空を既定にする (組み込みの色調も持たない)。
+apply_tone_setup "const_THEME_CUSTOM_COLOR_EXTERNAL_LINK=#aabbcc" \
+                 "const_THEME_CUSTOM_COLOR_EXTERNAL_LINK_VISITED=#ccbbaa" > /dev/null
+check_eq "設定した色が CSS に出る"   "#aabbcc" "$(css_rule_color 'a.external')"
+check_eq "  訪問済みも"              "#ccbbaa" "$(css_rule_color 'a.external:visited')"
+check_eq "  入力欄が空を受け付ける"  "yes" \
+         "$(case "$(rendered_class const_THEME_CUSTOM_COLOR_EXTERNAL_LINK)" in *required:false*) echo yes;; *) echo no;; esac)"
+apply_tone_setup "const_THEME_CUSTOM_COLOR_EXTERNAL_LINK=" \
+                 "const_THEME_CUSTOM_COLOR_EXTERNAL_LINK_VISITED=" > /dev/null
+check_eq "空に戻すとリンクの色と同じ" "$(css_rule_color 'a:link')" "$(css_rule_color 'a.external')"
+check_eq "  訪問済みも"              "$(css_rule_color 'a:visited')" "$(css_rule_color 'a.external:visited')"
+echo
+
+echo "15. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo
