@@ -110,8 +110,9 @@ function &page_read($pagename) {
     $page = page_create($pagename);
     if(page_is_manual($pagename))
 	manual_page_read($page);
-    else
-	storage_page_read($page);
+    else if(storage_page_read($page))
+	/* 一覧はページを読んでからリンクを作る。読んだ種別を覚えて二度読まない */
+	page_get_link_type($pagename, default_value($page['meta']['type'], ''));
     page_setup($page);
     return $page;
 }
@@ -362,19 +363,19 @@ function page_type_is_text_base($page_type) {
 }
 
 /*
- * リンクの行き先の種別 (meta の type)。無いページ・読めないページは ''。
+ * リンクの行き先の種別 (meta の type)。無いページは ''。
  *
  * ページへのリンク 1 本ごとに呼ばれる (dom_append_empty_page_link())。
- * 読むのはヘッダの数行だけだが、一覧のように同じページへのリンクが並ぶ
- * 画面もあるので、1 回のリクエストで同じページを読むのは 1 度にする。
+ * 読むのはヘッダの先頭の数行だけ (storage_page_read_type()) だが、
+ * 1 回のリクエストで同じページを読むのは 1 度にする。page_read() が
+ * 読んだページは $type で渡されて覚えるので、一覧の画面では読み足さない。
  */
-function page_get_link_type($pagename) {
+function page_get_link_type($pagename, $type = null) {
     static $types = array();
-    if(!isset($types[$pagename])) {
-	$page = page_create($pagename);
-	$types[$pagename] = storage_page_read($page) ?
-	    default_value($page['meta']['type'], '') : '';
-    }
+    if(!is_null($type))
+	$types[$pagename] = $type;
+    else if(!isset($types[$pagename]))
+	$types[$pagename] = (string)storage_page_read_type($pagename);
     return $types[$pagename];
 }
 
