@@ -410,13 +410,16 @@ NextFormではユーザーごとページごとに権限が設定できます．
 一番上の''色調の読み込み''で選んで''読み込む''を押すと，入力欄にその色が入ります．
 この時点ではまだ変わりません．''適用''を押すと使われます．
 
-*Markdownのページへのリンクの色
-''未訪問リンクの色 (Markdownのページ)''と''訪問済みリンクの色 (Markdownのページ)''は，
+*リンクの色
+''未訪問リンク (Markdown)''と''訪問済みリンク (Markdown)''は，
 行き先が種別Markdownのページであるリンクの色です．
 Wiki記法のページへのリンクと色を変えておくと，押す前にどちらの記法のページか分かります．
 
-''空欄''にしておくと，''未訪問リンクの色''・''訪問済みリンクの色''と同じ色になります．
-最初は空欄なので，設定するまで見た目は変わりません．
+この2つと''未訪問外部リンク''・''訪問済み外部リンク''は，''空欄''にしておくと
+''未訪問リンク''・''訪問済みリンク''と同じ色になります．''未訪問リンク''を変えれば一緒に変わります．
+最初は空欄です．
+(外部リンクの色を以前に保存したサイトでは，その色のまま残ります．
+空欄にして''適用''すれば，リンクの色に揃います．)
 
 *色調を保存する
 色を決めたら，''この色調の保存''に識別子と表示名を入れて''保存''を押します．
@@ -462,7 +465,8 @@ JSONです．
 |colors|色．名前は''THEME_COLOR_''で始まり，値は''#rrggbb''形式|
 
 colorsに書かなかった色は使われません．
-ただし''THEME_COLOR_MARKDOWN_LINK''と''THEME_COLOR_MARKDOWN_LINK_VISITED''は，
+ただし''THEME_COLOR_MARKDOWN_LINK''・''THEME_COLOR_MARKDOWN_LINK_VISITED''・
+''THEME_COLOR_EXTERNAL_LINK''・''THEME_COLOR_EXTERNAL_LINK_VISITED''は，
 書かなければリンクの色と同じになります(画面で空欄にして保存すると書かれません)．
 画面から保存すると常に(空欄の色を除く)すべての色が書かれるので，
 手で作るときは保存したファイルを複製して書き換えるのが確実です．
@@ -609,14 +613,17 @@ Choose it in ''Load tone'' at the top and press ''Load'', and those colours are 
 into the input fields. Nothing has changed at this point; they are used once you
 press ''Apply''.
 
-*Colours of links to Markdown pages
+*Colours of links
 ''markdown link color'' and ''markdown link visited color'' are the colours of links
 whose destination is a page of type Markdown.
 Giving them colours different from links to pages in Wiki notation tells you which
 notation a page is written in before you follow the link.
 
-''Leave them empty'' and they are the same as ''link color'' and ''link visited color''.
-They start empty, so nothing looks different until you set them.
+''Leave them empty'', together with ''external link color'' and ''external link visited
+color'', and they are the same as ''link color'' and ''link visited color''; changing
+''link color'' changes them too. They start empty.
+(On a site that saved external link colours before, those colours stay. Empty them
+and press ''Apply'' to follow the link colours.)
 
 *Saving a tone
 Once the colours are decided, enter an identifier and a display name in
@@ -665,7 +672,8 @@ It is JSON.
 |colors|the colours. The names begin with ''THEME_COLOR_'' and the values are in ''#rrggbb'' form|
 
 Colours not written in colors are not used.
-''THEME_COLOR_MARKDOWN_LINK'' and ''THEME_COLOR_MARKDOWN_LINK_VISITED'' are the
+''THEME_COLOR_MARKDOWN_LINK'', ''THEME_COLOR_MARKDOWN_LINK_VISITED'',
+''THEME_COLOR_EXTERNAL_LINK'' and ''THEME_COLOR_EXTERNAL_LINK_VISITED'' are the
 exception: without them they are the same as the link colours (saving them empty from
 the screen leaves them out).
 Saving from the screen always writes all the colours (except the empty ones), so when making one by hand the

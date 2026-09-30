@@ -259,6 +259,9 @@ function tone_custom_color_value($name, $value) {
     if(THEME_TONE === TONE_CUSTOM_ID)
 	return $value;
     $colors = tone_get_colors(THEME_TONE);
+    /* 色調が持っていない空にできる色は空 (上と同じ理由) */
+    if(!isset($colors[$color_name]) && isset($THEME_COLOR_FALLBACKS[$color_name]))
+	return '';
     return default_value($colors[$color_name], $value);
 }
 

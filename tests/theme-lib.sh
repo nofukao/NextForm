@@ -25,6 +25,7 @@ declare -A THEME_PATTERNS=(
   [tone-gray-orange]="THEME_TONE=gray/orange"
   [tone-custom]="THEME_TONE=custom"
   [markdown-link-color]="THEME_TONE=custom THEME_CUSTOM_COLOR_MARKDOWN_LINK=#123456 THEME_CUSTOM_COLOR_MARKDOWN_LINK_VISITED=#654321"
+  [link-color-only]="THEME_TONE=custom THEME_CUSTOM_COLOR_LINK=#111111 THEME_CUSTOM_COLOR_LINK_VISITED=#222222"
   [main-color-override]="THEME_COLOR_MAIN_CUSTOM=#123456"
   [layout-solid]="THEME_LAYOUT=solid"
   [side-right]="THEME_SIDE_PAGE_POSITION=right"
