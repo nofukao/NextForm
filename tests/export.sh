@@ -206,7 +206,11 @@ CHILD_FILE="${CHILD%%	*}"
 check_eq "リンクで辿った Markdown のページも書き出す" "success" "${CHILD##*	}"
 check_eq "  既定のファイル名は .html で終わる" "yes" "$(contains "${CHILD_FILE: -5}" '.html')"
 C="$(exported wiki "$CHILD_FILE")"
-check_eq "  中身も HTML に変換されている"      "yes" "$(contains "$C" '<h1')"
+check_eq "  中身も HTML に変換されている"      "yes" "$(contains "$C" '<p><a ')"
+# 子のページは title: を持たず、先頭の唯一の # が題名になる。ひな形の
+# <h1>$title$</h1> と本文の # で見出しが二重にならないこと
+check_eq "  題名 (先頭の #) がひな形に入る"   "yes" "$(contains "$C" '<title>子のページ</title>')"
+check_eq "  本文に同じ見出しを二重に出さない" "1" "$(printf '%s' "$C" | grep -o '<h1' | wc -l)"
 check_eq "  親のページへのリンクを張り替える"  "yes" "$(contains "$C" 'href="markdown.html"')"
 echo
 

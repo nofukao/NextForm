@@ -221,10 +221,11 @@ function markdown_render_html(&$page, $contents, &$front_matter = null, $is_posi
  * wiki 記法の &title{} は「消しても meta に残る」ままにしてある。
  * あちらは本文の中に埋める記法で、題名を宣言する場所が本文の外に無い。
  */
-function markdown_apply_front_matter(&$page, $front_matter, $is_write = false) {
+function markdown_apply_front_matter(&$page, $front_matter, $is_write = false,
+				     $heading_title = '') {
     if(!is_array($front_matter))
 	$front_matter = array();
-    markdown_set_title($page, $front_matter, $is_write);
+    markdown_set_title($page, $front_matter, $is_write, $heading_title);
     markdown_set_tags($page, $front_matter, $is_write);
 }
 
@@ -233,11 +234,15 @@ function markdown_apply_front_matter(&$page, $front_matter, $is_write = false) {
  * page_write() が meta['title'] に保存し (page.inc)、page_handle() が
  * 次からその題名でページを開く。title_dom はいま描いている画面の題名で、
  * 保存前のプレビューでも新しい題名が出るようにするために立てる。
+ *
+ * フロントマターの title: が無ければ、本文の先頭の # ($heading_title。
+ * markdown_title_heading() を見よ) を使う。
  */
-function markdown_set_title(&$page, $front_matter, $is_clearable = false) {
-    $title = '';
-    if(isset($front_matter['title']) && !is_array($front_matter['title']))
-	$title = trim((string)$front_matter['title']);
+function markdown_set_title(&$page, $front_matter, $is_clearable = false,
+			    $heading_title = '') {
+    $title = markdown_front_matter_title($front_matter);
+    if($title === '')
+	$title = $heading_title;
 
     if($title === '') {
 	if($is_clearable) {
@@ -256,6 +261,57 @@ function markdown_set_title(&$page, $front_matter, $is_clearable = false) {
     $page['title_dom'] = dom_create_document();
     sentence_append($page['title_dom'], $title . ' ', $page);
     title_append_actual($page['title_dom'], dom_pagename($page['name']));
+}
+
+function markdown_front_matter_title($front_matter) {
+    if(is_array($front_matter) && isset($front_matter['title']) &&
+       !is_array($front_matter['title']))
+	return trim((string)$front_matter['title']);
+    return '';
+}
+
+/*
+ * 題名にする見出し。フロントマターに title: が無く、本文が # で始まり、
+ * しかも # がその 1 つだけのとき、その h1 を返す。当たらなければ null。
+ *
+ * よそで書いた Markdown は title: を持たず、1 行目の # が題名を兼ねて
+ * いることが多い (markdownlint の MD025 / MD041 も「# は文書に 1 つで、
+ * それが題名」とする)。# が並んでいる文書では、どれも並列の節の見出しなので、
+ * 最初の 1 つだけを題名に格上げしない。
+ *
+ * $root は変換後の HTML を入れた要素で、**直下だけ**を見る。
+ * 折りたたみ・引用・箇条書きの中の # は文書の # ではない。
+ * 下線 (===) で書いた見出しも h1 なので同じに扱う。
+ */
+function markdown_title_heading($root, $front_matter) {
+    if(markdown_front_matter_title($front_matter) !== '')
+	return null;
+
+    $first = null;
+    $count = 0;
+    foreach($root->childNodes as $child) {
+	if(!($child instanceof DOMElement))
+	    continue;
+	if(is_null($first))
+	    $first = $child;
+	if(strtolower($child->nodeName) === 'h1')
+	    $count++;
+    }
+    if(is_null($first) || strtolower($first->nodeName) !== 'h1' || $count != 1)
+	return null;
+    if(markdown_heading_text($first) === '')
+	return null;
+    return $first;
+}
+
+/*
+ * 見出しの表示の文字。**強調** やリンクは見えるとおりの文字になる。
+ * 下線の見出しは複数行に書けるので、改行を含む空白は 1 つに詰める。
+ */
+function markdown_heading_text($heading) {
+    if(is_null($heading))
+	return '';
+    return trim(preg_replace('/\s+/u', ' ', dom_text($heading)));
 }
 
 /*
@@ -516,11 +572,25 @@ function markdown_convert(&$page, $dom, $contents = null) {
 	markdown_source_append($page, $dom, $contents);
 	return false;
     }
-    markdown_apply_front_matter($page, $front_matter);
-
     $section = dom_append_child($dom, 'section', 'markdown');
-    if(!markdown_append_html($section, $html))
+    if(!markdown_append_html($section, $html)) {
+	markdown_apply_front_matter($page, $front_matter);
 	return false;
+    }
+
+    /*
+     * 題名にした # は本文から消す。ページ見出しに同じ文字が出るので、
+     * 残すと二重になる (wiki 記法の &title{} と同じ見え方)。
+     * 消すのは本文として描くとき (is_main) だけ。サイドや &include には
+     * その上にページ見出しが無く、消すと題名がどこにも出ない。
+     * 見出しの id やページ内リンクの解決より前に外す。
+     */
+    $title_heading = markdown_title_heading($section, $front_matter);
+    markdown_apply_front_matter($page, $front_matter, false,
+				markdown_heading_text($title_heading));
+    if(!is_null($title_heading) && !empty($page['is_main']))
+	$title_heading->parentNode->removeChild($title_heading);
+
     markdown_move_code_positions($section);
     markdown_append_sentence($page, $section);
     $ids = markdown_set_heading_ids($page, $section);
@@ -736,13 +806,19 @@ function markdown_texts(&$page) {
  * 目次から飛べるし、他のページから [[ページ名#見出し]] でも同じ場所に届く。
  */
 function markdown_summary(&$page, $dom) {
-    $html = markdown_render_html($page, page_get_contents($page));
+    $front_matter = array();
+    $html = markdown_render_html($page, page_get_contents($page), $front_matter);
     if($html === false)
 	return;
 
     $converted = dom_create_document();
     if(!markdown_append_html($converted, $html))
 	return;
+
+    /* 題名にした # は本文に無い (markdown_convert)。無い見出しを指さない */
+    $title_heading = markdown_title_heading($converted, $front_matter);
+    if(!is_null($title_heading))
+	$title_heading->parentNode->removeChild($title_heading);
 
     $headings = array();
     markdown_headings($converted, $headings);
@@ -811,8 +887,17 @@ function markdown_summary(&$page, $dom) {
  */
 function markdown_normalize(&$page, $text) {
     $front_matter = array();
-    markdown_render_html($page, $text, $front_matter);
-    markdown_apply_front_matter($page, $front_matter, true);
+    $html = markdown_render_html($page, $text, $front_matter);
+
+    /* 本文の先頭の # も題名になる (markdown_title_heading) */
+    $heading_title = '';
+    if($html !== false) {
+	$converted = dom_create_document();
+	if(markdown_append_html($converted, $html))
+	    $heading_title = markdown_heading_text(
+		markdown_title_heading($converted, $front_matter));
+    }
+    markdown_apply_front_matter($page, $front_matter, true, $heading_title);
     return $text;
 }
 ?>
