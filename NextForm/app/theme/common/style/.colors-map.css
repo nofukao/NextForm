@@ -219,12 +219,10 @@ a.type_markdown:visited {
 }
 
 /*
- * 編集欄の目印。入力欄の左の線と記法の札を、その記法のページへの
- * リンクの色にする (text.inc の text_edit_append_notation() / nextform.js)。
+ * 編集欄の目印 (text.inc の text_edit_append_notation() / nextform.js)。
+ * 記法の札はその記法のページへのリンクの色。入力欄の左の線は Markdown に
+ * だけ付け、線の有無で一目で分かるようにする (Wiki 記法には付けない)。
  */
-form.text_edit.type_wiki > textarea {
-    border-left: solid 4px <?php trw_color(THEME_COLOR_LINK); ?>;
-}
 form.text_edit.type_markdown > textarea {
     border-left: solid 4px <?php trw_color(THEME_COLOR_MARKDOWN_LINK); ?>;
 }

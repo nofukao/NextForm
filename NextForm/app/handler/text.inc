@@ -113,11 +113,13 @@ function text_edit_cheat_sheet_pagename($type) {
 
 /*
  * 入力欄の上の札。いま書いているのが Wiki 記法か Markdown かを示す
- * ($PAGE_TYPE_NOTATIONS。ほかの種別には出さない)。
+ * ($PAGE_TYPE_NOTATIONS。ほかの種別には出さない)。札は「Wiki」「Markdown」で、
+ * 表記を揃えて「Wiki記法」とはしない。
  *
- * 入力欄の左の線 (.colors-map.css。その記法のページへのリンクの色) と違って
- * 色に頼らないので、リンクの色を同じにしていても読める。早見表があれば
- * そこへのリンクを兼ねる。部分編集の欄には nextform.js が同じ札を出す。
+ * Markdown の入力欄には左に線も付く (.colors-map.css。Markdown のページへの
+ * リンクの色)。札は色に頼らないので、リンクの色を同じにしていても読める。
+ * 早見表があればそこへのリンクを兼ねる。部分編集の欄には nextform.js が
+ * 同じ札を出す。
  */
 function text_edit_append_notation($dom, $type) {
     global $PAGE_TYPE_NOTATIONS;

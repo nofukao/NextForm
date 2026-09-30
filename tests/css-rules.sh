@@ -145,11 +145,12 @@ rules_common() {
     check "  未読の下線も同じ色" \
           "bool(re.search(r'a\.type_markdown\.unread\s*\{[^}]*border-bottom-color:\s*#[0-9a-f]{6}', css, re.S))"
 
-    # 編集欄の目印。いま書いているのが Wiki 記法か Markdown かを、入力欄の左の線
-    # (その記法のページへのリンクの色) と、上の札 (text_edit_append_notation() /
-    # nextform.js) で示す。部分編集の欄も同じ form.text_edit なので同じ規則が当たる。
-    check "Wiki 記法の編集欄の左に線がある" \
-          "bool(re.search(r'form\.text_edit\.type_wiki\s*>\s*textarea\s*\{[^}]*border-left:\s*solid\s+[1-9][0-9]*px\s+#[0-9a-f]{6}', css, re.S))"
+    # 編集欄の目印。いま書いているのが Wiki 記法か Markdown かを、上の札
+    # (text_edit_append_notation() / nextform.js) と、Markdown だけに付ける入力欄の
+    # 左の線 (Markdown のページへのリンクの色) で示す。線の有無で一目で分かるように、
+    # Wiki 記法には線を付けない。部分編集の欄も同じ form.text_edit なので同じ規則が当たる。
+    check "Wiki 記法の編集欄には左の線を付けない" \
+          "not re.search(r'form\.text_edit\.type_wiki\s*>\s*textarea\s*\{[^}]*border-left', css, re.S)"
     check "Markdown の編集欄の左に線がある" \
           "bool(re.search(r'form\.text_edit\.type_markdown\s*>\s*textarea\s*\{[^}]*border-left:\s*solid\s+[1-9][0-9]*px\s+#[0-9a-f]{6}', css, re.S))"
     check "記法の札は右に寄せる" \
@@ -194,8 +195,6 @@ LINK_COLOR_OF='(lambda sel: (lambda m: m.group(1) if m else None)(re.search(r"(?
 # 編集欄の左の線の色
 EDIT_LINE_OF='(lambda t: (lambda m: m.group(1) if m else None)(re.search(r"form\.text_edit\.type_" + t + r"\s*>\s*textarea\s*\{[^}]*border-left:\s*solid\s+[0-9]+px\s+(#[0-9a-f]{6})", css, re.S)))'
 rules_markdown_link_same() {
-    check "編集欄の左の線は、Wiki 記法ならリンクの色" \
-          "$EDIT_LINE_OF('wiki') is not None and $EDIT_LINE_OF('wiki') == $LINK_COLOR_OF('a:link')"
     check "編集欄の左の線は、Markdown なら Markdown 用 (空ならリンクの色)" \
           "$EDIT_LINE_OF('markdown') is not None and $EDIT_LINE_OF('markdown') == $LINK_COLOR_OF('a.type_markdown')"
     check "Markdown 用が空なら未訪問リンクの色と同じ" \
