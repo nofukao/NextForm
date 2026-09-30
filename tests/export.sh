@@ -128,10 +128,17 @@ echo
 sudo rm -rf "$EXPORT_TEST_SITE"
 sudo cp -a "$NF_SITE" "$EXPORT_TEST_SITE"
 SITE_OWNER=$(sudo stat -c '%U' "${EXPORT_TEST_SITE}/index.php")
-# 書き出し先は EXPORT_DIR_PATH の既定 (./export)。複製元の書き出しが
-# 混ざらないように空にしておく。
+# 書き出し先は複製の中に置く。複製元の index.php が EXPORT_DIR_PATH を
+# 別の場所 (公開しているディレクトリなど) に向けていても、そこへは書かない。
+# 複製した index.php からその定義を消し、複製の中を指す定義を足す。
 EXPORT_ROOT="${EXPORT_TEST_SITE}/export"
 sudo rm -rf "$EXPORT_ROOT"
+sudo sed -i "/define('EXPORT_DIR_PATH'/d" "${EXPORT_TEST_SITE}/index.php"
+sudo sed -i "0,/^<?php/s##<?php\ndefine('EXPORT_DIR_PATH', '${EXPORT_ROOT}');#" "${EXPORT_TEST_SITE}/index.php"
+if ! sudo grep -q "define('EXPORT_DIR_PATH', '${EXPORT_ROOT}')" "${EXPORT_TEST_SITE}/index.php"; then
+    echo "複製した index.php の書き出し先を向け直せませんでした。" >&2
+    exit 1
+fi
 
 # 複製元に配置済みのコードではなく、リポジトリの作業ツリーを検証する
 sudo rsync -a --delete "${REPO_ROOT}/NextForm/app/"      "${EXPORT_TEST_SITE}/app/"
@@ -167,6 +174,9 @@ check_eq "添付の画像を埋め込む"           "yes" "$(contains "$W" '<img
 check_eq "リンクと画像がすべて書き出したファイルを指す" "" "$(broken_links wiki wiki.html)"
 check_eq "編集用の属性 (data-twp) が残らない"  "no" "$(contains "$W" 'data-twp=')"
 check_eq "  data-link-pagename も残らない"     "no" "$(contains "$W" 'data-link-pagename=')"
+# 書き出しのボタン (&export) は静的なサイトでは押せないので消す。
+# 同じ段落に 2 つ並べたとき、以前は 1 つめしか消えなかった
+check_eq "書き出しのボタン (フォーム) が残らない" "no" "$(contains "$W" '<form')"
 echo
 
 echo "2. 種別 Markdown のページ"
