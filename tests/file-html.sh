@@ -176,7 +176,32 @@ check_eq "  枠 (iframe) では動かさない" "no" \
          "$(contains "$(main_html "$P_PARENT")" '<iframe')"
 echo
 
-echo "4. 有効にしても他の種類は変わらないこと"
+echo "4. HTML が書いている文字コードで返すこと"
+# PHP は text/html に default_charset (UTF-8) を付ける。HTTP の charset は
+# HTML の中の <meta charset> より強いので、Shift_JIS などで書いた HTML が
+# 文字化けする。<meta> で宣言していればそれを HTTP にも出す。
+charset_of() {
+    header_of Content-Type | sed -n 's/.*charset=//p' | tr 'A-Z' 'a-z'
+}
+write_html() {
+    printf '%s' "$2" | sudo tee "${FILE_HTML_TEST_SITE}/charset-fixture.html" > /dev/null
+    sudo chown "$SITE_OWNER" "${FILE_HTML_TEST_SITE}/charset-fixture.html"
+    helper write-file "$1" "${FILE_HTML_TEST_SITE}/charset-fixture.html" text/html > /dev/null
+    curl -sk -D "$WORK/headers" -o "$WORK/body" "${FILE_HTML_TEST_URL}/?$1&action=raw"
+}
+write_html "FileHtmlTest/sjis.html" '<!doctype html><meta charset="Shift_JIS"><p>x</p>'
+check_eq "<meta charset> の宣言を出す"      "shift_jis" "$(charset_of)"
+check_eq "  sandbox は付いたまま"           "sandbox allow-scripts" "$(header_of Content-Security-Policy)"
+write_html "FileHtmlTest/eucjp.html" \
+    '<html><head><meta http-equiv="Content-Type" content="text/html; charset=EUC-JP"></head></html>'
+check_eq "http-equiv の宣言も読む"          "euc-jp" "$(charset_of)"
+write_html "FileHtmlTest/plain.html" '<!doctype html><p>宣言なし</p>'
+check_eq "宣言が無ければ UTF-8"            "utf-8" "$(charset_of)"
+write_html "FileHtmlTest/evil.html" $'<meta charset="utf-8\r\nX-Evil: 1">'
+check_eq "宣言に余計な文字があっても見出しを増やさない" "" "$(header_of X-Evil)"
+echo
+
+echo "5. 有効にしても他の種類は変わらないこと"
 TEXT_FIXTURE="${FILE_HTML_TEST_SITE}/text-fixture.txt"
 printf '%s' 'ただの文字' | sudo tee "$TEXT_FIXTURE" > /dev/null
 sudo chown "$SITE_OWNER" "$TEXT_FIXTURE"
