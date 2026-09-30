@@ -145,6 +145,16 @@ rules_common() {
     check "  未読の下線も同じ色" \
           "bool(re.search(r'a\.type_markdown\.unread\s*\{[^}]*border-bottom-color:\s*#[0-9a-f]{6}', css, re.S))"
 
+    # 編集欄の目印。いま書いているのが Wiki 記法か Markdown かを、入力欄の左の線
+    # (その記法のページへのリンクの色) と、上の札 (text_edit_append_notation() /
+    # nextform.js) で示す。部分編集の欄も同じ form.text_edit なので同じ規則が当たる。
+    check "Wiki 記法の編集欄の左に線がある" \
+          "bool(re.search(r'form\.text_edit\.type_wiki\s*>\s*textarea\s*\{[^}]*border-left:\s*solid\s+[1-9][0-9]*px\s+#[0-9a-f]{6}', css, re.S))"
+    check "Markdown の編集欄の左に線がある" \
+          "bool(re.search(r'form\.text_edit\.type_markdown\s*>\s*textarea\s*\{[^}]*border-left:\s*solid\s+[1-9][0-9]*px\s+#[0-9a-f]{6}', css, re.S))"
+    check "記法の札は右に寄せる" \
+          "bool(re.search(r'form\.text_edit\s*>\s*\.notation\s*\{[^}]*text-align:\s*right', css, re.S))"
+
     # ブロックごとの &pre(wrap) / &pre(nowrap) は、サイトの既定がどちらでも効く。
     check "ブロック指定 pre.wrap がある" \
           "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"
@@ -172,7 +182,13 @@ rules_density_compact() {
 # 個別設定のサイトは新しい色の値を持っていないので、ここが崩れると
 # 更新しただけでリンクの色が固定の既定色 (ベージュ/グリーンの緑) に変わる。
 LINK_COLOR_OF='(lambda sel: (lambda m: m.group(1) if m else None)(re.search(r"(?:^|[},])\s*(?:[^{}]*,\s*)?" + re.escape(sel) + r"\s*[,{][^}]*?(?<![-\w])color:\s*(#[0-9a-f]{6})", css, re.S)))'
+# 編集欄の左の線の色
+EDIT_LINE_OF='(lambda t: (lambda m: m.group(1) if m else None)(re.search(r"form\.text_edit\.type_" + t + r"\s*>\s*textarea\s*\{[^}]*border-left:\s*solid\s+[0-9]+px\s+(#[0-9a-f]{6})", css, re.S)))'
 rules_markdown_link_same() {
+    check "編集欄の左の線は、Wiki 記法ならリンクの色" \
+          "$EDIT_LINE_OF('wiki') is not None and $EDIT_LINE_OF('wiki') == $LINK_COLOR_OF('a:link')"
+    check "編集欄の左の線は、Markdown なら Markdown 用 (空ならリンクの色)" \
+          "$EDIT_LINE_OF('markdown') is not None and $EDIT_LINE_OF('markdown') == $LINK_COLOR_OF('a.type_markdown')"
     check "Markdown 用が空なら未訪問リンクの色と同じ" \
           "$LINK_COLOR_OF('a.type_markdown') is not None and $LINK_COLOR_OF('a.type_markdown') == $LINK_COLOR_OF('a:link')"
     check "Markdown 用が空なら訪問済みリンクの色と同じ" \
@@ -188,6 +204,8 @@ rules_markdown_link_color() {
           "$LINK_COLOR_OF('a.type_markdown:visited') == '#654321'"
     check "ほかのリンクの色は変わらない" \
           "$LINK_COLOR_OF('a:link') not in ('#123456', '#654321')"
+    check "Markdown の編集欄の左の線もその色" \
+          "$EDIT_LINE_OF('markdown') == '#123456'"
 }
 
 rules_density_loose() {
