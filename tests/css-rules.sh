@@ -91,6 +91,12 @@ rules_common() {
     check "折りたたみの summary は字下げの分だけ戻す" \
           "bool(re.search(r'section\.markdown\s+details\s*>\s*summary\s*\{[^}]*margin-left:\s*-[1-9]', css, re.S))"
 
+    # リンクで見出しに飛んだときの点滅 (nextform.js の anchorUpdate() が .anchor を
+    # 付け外しする)。wiki は節の h1 に付くが、Markdown は h1〜h6 に直接付く。
+    # h1.anchor だけだと、Markdown の ## 以下の見出しでは何も光らない。
+    check "Markdown の見出しにも飛び先の強調が当たる" \
+          "bool(re.search(r'section\.markdown\s+\.anchor[^{]*\{[^}]*background-color', css, re.S))"
+
     # 見出しの見え方が種別をまたいで揃っていること。
     #
     # 種別 wiki は深さを section.section の入れ子で表し要素は常に h1、
