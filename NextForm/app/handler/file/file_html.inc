@@ -39,10 +39,33 @@ function file_html_embed(&$page, $dom, $params = null) {
 }
 
 /*
+ * HTML の中で宣言した文字コード (<meta charset> / http-equiv の charset)。
+ * 無ければ false。
+ *
+ * PHP は text/html に default_charset (UTF-8) を付けて送る。HTTP の charset は
+ * <meta> より強いので、Shift_JIS などで書いた HTML が文字化けする。
+ * ブラウザと同じく先頭の 1024 バイトだけを見る。値は文字コード名に使える
+ * 文字だけを拾うので、改行などで見出しを増やされることはない。
+ */
+function file_html_charset(&$page) {
+    $fp = page_open_contents($page);
+    if($fp === false)
+	return false;
+    $head = fread($fp, 1024);
+    fclose($fp);
+    if(is_string($head) &&
+       preg_match('/<meta[^>]*charset\s*=\s*["\']?\s*([A-Za-z0-9_.:-]+)/i', $head, $matches))
+	return $matches[1];
+    return false;
+}
+
+/*
  * Content-type / nosniff / inline は file_raw() が出している。
- * ここでは隔離の指定を足してから中身を出す。
+ * ここでは宣言された文字コードと隔離の指定を足してから中身を出す。
  */
 function file_html_raw(&$page) {
+    if(($charset = file_html_charset($page)) !== false)
+	header('Content-type: text/html; charset=' . $charset);
     header('Content-Security-Policy: sandbox allow-scripts');
     page_output_contents($page);
 }
