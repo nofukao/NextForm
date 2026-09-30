@@ -1,0 +1,9 @@
+&title{wiki の書き出し}
+*wiki の見出し
+''強調''の文。
+-項目 1
+-項目 2
+
+[[Markdown のページ>../Markdown]]
+
+&include([[./figure.png]]);
