@@ -2543,7 +2543,11 @@ function anchorUpdate() {
 	var target = $(id);
 	if(!target)
 	    return;
-	var anchorElement = target.down('h1');
+	/*
+	 * wiki は id を節 (section) に振り、見出しはその中の h1。
+	 * Markdown は id を見出し (h1〜h6) そのものに振る。
+	 */
+	var anchorElement = /^H[1-6]$/.test(target.tagName) ? target : target.down('h1');
 	if(anchorElement) {
 	    anchorElement.addClassName('anchor');
 	    setTimeout(function() { anchorElement.removeClassName('anchor'); }, 500);
@@ -2553,6 +2557,12 @@ function anchorUpdate() {
 	    while(section) {
 		section.optionalToggle('show');
 		section = section.up('section.optional');
+	    }
+	    /* Markdown の折りたたみ (:::details) の中にあれば、外側まで開く */
+	    var details = anchorElement.up('details');
+	    while(details) {
+		details.open = true;
+		details = details.up('details');
 	    }
 	    location.href = location.href;
 	}
