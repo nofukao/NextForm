@@ -2529,8 +2529,21 @@ function anchorUpdate() {
 
     anchorLastUpdateUrl = location.href;
     if(location.href.match(/\#([^&]*)/)) {
-	var id = decodeURI(RegExp.$1);
-	var anchorElement = $(id).down('h1');
+	/*
+	 * 飛び先が無いこともある (見出しの名前を変えたあとの古いリンクなど)。
+	 * 確かめずに .down() を呼ぶと例外になり、ページを開いたときなら
+	 * main() の残り (検索欄の準備など) が走らなくなる。
+	 */
+	var id;
+	try {
+	    id = decodeURI(RegExp.$1);
+	} catch(e) {
+	    return;
+	}
+	var target = $(id);
+	if(!target)
+	    return;
+	var anchorElement = target.down('h1');
 	if(anchorElement) {
 	    anchorElement.addClassName('anchor');
 	    setTimeout(function() { anchorElement.removeClassName('anchor'); }, 500);
