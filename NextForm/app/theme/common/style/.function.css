@@ -186,6 +186,25 @@ form.text_edit > ul > li {
     margin: 0 4px;
 }
 
+/*
+ * 記法の札 (text.inc の text_edit_append_notation() / nextform.js)。
+ * 入力欄の右上に小さく。部分編集の欄の右上の閉じるボタンとは、
+ * .text_edit.partial の padding-right の分だけ離れる。
+ */
+form.text_edit > .notation {
+    margin: 0 0 4px 0;
+    text-align: right;
+    font-size: 85%;
+    line-height: 1.4;
+}
+form.text_edit > .notation > * {
+    display: inline-block;
+    padding: 0 6px;
+    border: solid 1px;
+    border-radius: 3px;
+    text-decoration: none;
+}
+
 form.text_edit > textarea {
     width: 100%;
     /* .form.css で左パディングを入れるため、width: 100% と両立させる */
