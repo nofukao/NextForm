@@ -225,9 +225,46 @@ $WIKI_ALIASES['direct'] = '&link(raw,<PARAMS>){<TARGET>}';
  [[./some-image.png]] //通常のリンク
  &direct([[./some-image.png]]) //画像へ直接リンク
  &direct([[./some-archive.zip]]) //直接ダウンロードのできるリンク
+ &direct([[./game.html]]){遊ぶ} //添付したHTMLを動かすリンク(サイトの設定が要る)
+
+添付したHTMLを動かす設定は[[HTMLファイルの直接実行:../../../HtmlFile]]にあります．
 
 *エイリアス
 &&directは以下のように定義されたエイリアスです．
+ `$WIKI_ALIASES['direct']`
+
+*/
+
+/**
+@manual $manualpage$/en/Wiki/Function/direct
+
+&title &&direct
+
+*Overview
+ &direct([[page name]]){ what the link shows }
+Makes a link straight to an image or a file. A normal link with &[&[ and &]&] also
+leads to a screen that shows the image or file, but that screen shows various
+information at the same time, so that it can be edited, deleted and so on.
+Use &&direct when you want to link straight to the image alone, or to the download
+of the file, instead of that screen.
+
+*Parameters
+:&[&[page name&]&]|the name of the page the link points at.
+
+*Target
+Write what the link shows. Left out, it is the page name.
+
+*Example
+ [[./some-image.png]] //a normal link
+ &direct([[./some-image.png]]) //a link straight to the image
+ &direct([[./some-archive.zip]]) //a link that downloads the file directly
+ &direct([[./game.html]]){Play} //a link that runs an attached HTML file (needs a site setting)
+
+The setting for running attached HTML files is described in
+[[Running HTML files directly:../../../HtmlFile]].
+
+*Alias
+&&direct is an alias defined as follows.
  `$WIKI_ALIASES['direct']`
 
 */
