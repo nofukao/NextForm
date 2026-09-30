@@ -737,6 +737,8 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 ''本文の一部をダブルクリックすると，そこだけを編集できます．''
 編集できる単位は段落・見出し・箇条書きの項目・表・コードブロック・引用・折りたたみです．
 見出しをダブルクリックすると''その節ぜんぶ''(次の同じ深さ以上の見出しの手前まで)を編集します．
+編集中の欄をもう一度ダブルクリックすると，範囲が外側へ一段ずつ広がります
+(段落→その節→上の節→ページ全体．Wiki記法のページと同じです)．
 ダブルクリックの代わりにAltキー+クリックでも編集が開始できます．
 
 Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表の1行だけ，といった単位では編集できません．
@@ -1174,6 +1176,9 @@ The units you can edit are paragraphs, headings, list items, tables, code blocks
 quotes and folds.
 Double clicking a heading edits ''the whole section'' (up to the next heading of the
 same or a shallower level).
+Double clicking the edit box again widens the range one step outwards
+(paragraph, its section, the enclosing section, then the whole page), as on a page
+in Wiki notation.
 Alt and click works instead of a double click.
 
 Unlike Wiki notation, you cannot edit a part of a line (emphasis or strikethrough on
