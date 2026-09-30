@@ -509,7 +509,7 @@ function markdownEditWiderElement(event) {
 
 /*
  * 部分編集の欄にも、いま書いているのが Wiki 記法か Markdown かの札を出し、
- * 種別のクラスを付ける (入力欄の左の線の色が決まる)。全体の編集画面は
+ * 種別のクラスを付ける (Markdown なら入力欄の左に線が付く)。全体の編集画面は
  * text.inc の text_edit_append_notation() が出す。
  *
  * 種別は欄を開いた要素で決める。section.markdown の中なら Markdown
@@ -528,7 +528,7 @@ function wikiEditAppendNotation(form, element) {
     var p = $(document.createElement('p'));
     p.addClassName('notation');
     var span = document.createElement('span');
-    span.appendChild(document.createTextNode(isMarkdown ? 'Markdown' : l('Wiki notation')));
+    span.appendChild(document.createTextNode(isMarkdown ? 'Markdown' : 'Wiki'));
     p.appendChild(span);
     form.insertBefore(p, form.textarea);
 }
@@ -3144,7 +3144,6 @@ var LANGUAGE = {
 	'You have unsaved changes.' : '保存されていない変更箇所があります．',
 	'Can\'t sort rowspaned table.': '縦に連結された表はソートできません．',
 	'You can edit this page by double-clicking, too.': '編集したい部分をダブルクリックしても編集が開始できます．',
-	'Wiki notation': 'Wiki記法',
 
 	'You can click a comment to reply.': '親コメントをクリックで返信になります．',
 	'You can click a parent item.': '親項目をクリックで選択できます．',

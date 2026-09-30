@@ -461,7 +461,6 @@ $LANGUAGE['ja'] = array(
     'official site' => '公式サイト',
     'Wiki Cheat Sheet' => 'Wiki記法早見表',
     'Markdown Cheat Sheet' => 'Markdown記法早見表',
-    'Wiki notation' => 'Wiki記法',
     'This page is a built-in manual and cannot be changed.' => 'このページは組み込みのマニュアルなので変更できません．',
     'The manual is built in now. Generating is no longer needed. See $pagename$.' => 'マニュアルは組み込みになりました．生成の操作は要りません．$pagename$ を開いてください．',
 
