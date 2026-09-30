@@ -34,6 +34,8 @@
 #      囲みの記号がソース側に混ざらないこと、例の全体が部分編集の 1 単位になること
 #  12. 本文の先頭の # を題名にすること — # がその 1 つだけのときに限る。
 #      title: が優先。題名にした # は本文から消す (サイドや &include では消さない)
+#  13. Markdown のページへのリンクに印 (type_markdown) を付けること。wiki のページ・
+#      無いページには付けない (色調で Markdown のページへのリンクの色を変えるため)
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -128,6 +130,18 @@ value_of() {
     printf '%s\n' "$1" | sed -n "s/^$2=//p" | head -1
 }
 
+# 画面の HTML $1 の中で、$2 へのリンク (data-link-pagename) の class
+link_class() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+for tag in re.findall(r"<a\b[^>]*>", sys.stdin.read()):
+    if ("data-link-pagename=\"%s\"" % sys.argv[1]) in tag:
+        m = re.search(r"class=\"([^\"]*)\"", tag)
+        print(m.group(1) if m else "")
+        break
+' "$2"
+}
+
 # 文字列が含まれるか (yes/no)。
 #
 # `curl | grep -q ...` と書いてはいけない。grep -q は見つけた時点で終わるので
@@ -202,6 +216,8 @@ P_EXAMPLE="MarkdownTest/Example"
 P_TABLE="MarkdownTest/Table"
 P_WIDEN="MarkdownTest/Widen"
 P_HEAD="MarkdownTest/Heading"
+P_LINKS="MarkdownTest/Links"
+P_WIKI_LINKS="MarkdownTest/WikiLinks"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -652,6 +668,24 @@ check_eq "折りたたみの中の # は数えない" "外の題名" \
 
 helper write "$P_HEAD" "$(printf -- '本文だけ。\n')" > /dev/null
 check_eq "# を消して保存すると題名も消える" "0" "$(value_of "$(helper meta "$P_HEAD" title)" isset)"
+echo
+
+echo "13. Markdown のページへのリンクに印を付けること"
+# 行き先が種別 Markdown のページなら a に type_markdown を付ける。色調の
+# 「Markdown のページ」用のリンクの色はこれに当たる。wiki のページと無いページには
+# 付けない (wiki のリンクは今までどおりの出力のまま)。リンク元の種別には依らない。
+LINKS_BODY="$(printf -- '[[%s]] と [[%s]] と [[MarkdownTest/Nothing]]\n' "$P_HEAD" "$P_WIKI")"
+helper write "$P_LINKS" "$LINKS_BODY" > /dev/null
+L_HTML="$(main_html "$P_LINKS")"
+check_eq "Markdown のページへのリンクに付く" "yes" \
+         "$(contains " $(link_class "$L_HTML" "$P_HEAD") " ' type_markdown ')"
+check_eq "  wiki のページへのリンクには付かない" "no" \
+         "$(contains "$(link_class "$L_HTML" "$P_WIKI")" 'type_markdown')"
+check_eq "  無いページへのリンクには付かない" "no" \
+         "$(contains "$(link_class "$L_HTML" MarkdownTest/Nothing)" 'type_markdown')"
+helper write-wiki "$P_WIKI_LINKS" "$LINKS_BODY" > /dev/null
+check_eq "wiki のページからのリンクにも付く" "yes" \
+         "$(contains " $(link_class "$(main_html "$P_WIKI_LINKS")" "$P_HEAD") " ' type_markdown ')"
 echo
 
 helper cleanup > /dev/null
