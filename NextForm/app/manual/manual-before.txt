@@ -794,7 +794,7 @@ Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表�
 
 *[[フロントマター:../FrontMatter]]
 |目的|記法|h
-|[[題名:../FrontMatter#題名]]|文書の先頭の ""---"" の囲みに ""title: 題名""|
+|[[題名:../FrontMatter#題名]]|文書の先頭の ""---"" の囲みに ""title: 題名""．無ければ先頭の唯一の ""# 題名""|
 |[[タグ:../FrontMatter#タグ]]|同じ囲みに ""tags: [タグ1, タグ2]""|
 */
 
@@ -1119,6 +1119,19 @@ NextFormが読むのは ""title:"" と ""tags:"" です．
 ""title:"" を書くと，それがそのページの題名になります．
 Wiki記法の &&title{} と同じで，ページ名とは別に表示される名前です．
 
+""title:"" が無いときは，''本文の先頭の # 見出し''が題名になります．
+ほかの見出しが ## 以下で，''# がその1つだけ''のときに限ります．
+よそで書いた文章を貼り付けると，たいていこの形になっています．
+
+ # 会議メモ        ← 題名になる
+ ## 議題
+ ## 決まったこと
+
+# が2つ以上ある文書では，どれも並列の節の見出しとみなし，題名にはしません
+(ページ名がそのまま出ます)．
+題名にした # 見出しはページの上の見出しに出るので，''本文からは消えます''
+(二重に出さないため．目次にも出ません)．
+
 *タグ
 ""tags:"" を書くと，それがそのページのタグになります．
 ''タグ''の画面で付けるものと同じもので，タグ一覧にも出ます．
@@ -1135,8 +1148,9 @@ Wiki記法の &&title{} と同じで，ページ名とは別に表示される�
 「議事録 2026」と書くと2個のタグになります．
 
 *書いていないものは消えます
-題名とタグは，''フロントマターに書いてあるとおり''になります．
-""title:"" を消して保存すれば題名も消え，""tags:"" を消して保存すればタグも消えます．
+題名とタグは，''ソースに書いてあるとおり''になります．
+""title:"" (と，その代わりになる先頭の # 見出し) を消して保存すれば題名も消え，
+""tags:"" を消して保存すればタグも消えます．
 ''メタ情報''や''タグ''の画面で付けた値も，次に本文を保存したときに置き換わります．
 ソースを見ればページの状態が分かるようにするためです．
 
@@ -1236,7 +1250,7 @@ For what can and cannot be written, see
 
 *[[Front matter:../FrontMatter]]
 |object|notation|h
-|[[title:../FrontMatter#Title]]|""title: the title"" inside the ""---"" fence at the very top|
+|[[title:../FrontMatter#Title]]|""title: the title"" inside the ""---"" fence at the very top; otherwise the only ""# the title"" at the top|
 |[[tags:../FrontMatter#Tags]]|""tags: [tag1, tag2]"" inside the same fence|
 */
 
@@ -1583,6 +1597,20 @@ Other entries do no harm; they simply stay in the source.
 Writing ""title:"" makes it the title of the page.
 It works like &&title{} in Wiki notation: a name shown separately from the page name.
 
+Without ""title:"", ''the # heading at the top of the text'' becomes the title,
+as long as ''it is the only #'' and the other headings are ## or deeper.
+Text written in another tool usually has this shape.
+
+ # Meeting notes   <- becomes the title
+ ## Agenda
+ ## Decisions
+
+In a text with two or more # headings they are all taken as sections side by side,
+and none of them becomes the title (the page name is shown as it is).
+The # heading used as the title is shown in the heading at the top of the page, so
+''it is removed from the text'' (so that it does not appear twice; it is not in the
+table of contents either).
+
 *Tags
 Writing ""tags:"" makes them the tags of the page.
 They are the same tags you set from the ''Tag'' screen, and they appear in the tag list.
@@ -1599,8 +1627,9 @@ Tags are saved separated by spaces, so ''a tag cannot contain a space''.
 Writing "minutes 2026" gives two tags.
 
 *What is not written is removed
-The title and the tags become ''exactly what the front matter says''.
-Remove ""title:"" and save, and the title is removed too;
+The title and the tags become ''exactly what the source says''.
+Remove ""title:"" (and the # heading at the top that stands in for it) and save,
+and the title is removed too;
 remove ""tags:"" and save, and the tags are removed.
 Values set from the ''Meta information'' or ''Tag'' screens are replaced the next time
 the text is saved.
@@ -1633,7 +1662,7 @@ The same promise applies to
 |区切り線|&=&=&=&=|""---""|
 |ページへのリンク|&[&[表示名:ページ名&]&]|&[&[ページ名&|表示名&]&]|
 |外部リンク|&[&[表示名:URL&]&]|""[表示名](URL)""|
-|ページの題名|&&title{題名}|フロントマターの ""title:""|
+|ページの題名|&&title{題名}|フロントマターの ""title:""．無ければ本文の先頭の唯一の ""#"" 見出し|
 |表(基本)|&|セル1&|セル2&||&|セル1&|セル2&||
 |記法の例(ソースと表示を並べる)|&&wikiexample{対象}|"":::example"" と "":::"" で囲む|
 
@@ -1701,7 +1730,7 @@ Each notation is described in [[Markdown notation:../Markdown]] and
 |horizontal rule|&=&=&=&=|""---""|
 |link to a page|&[&[display name:page name&]&]|&[&[page name&|display name&]&]|
 |external link|&[&[display name:URL&]&]|""[display name](URL)""|
-|page title|&&title{title}|""title:"" in the front matter|
+|page title|&&title{title}|""title:"" in the front matter; otherwise the only ""#"" heading at the top of the text|
 |table (basic)|&|cell1&|cell2&||&|cell1&|cell2&||
 |notation example (source and display side by side)|&&wikiexample{target}|wrap it in "":::example"" and "":::""|
 
