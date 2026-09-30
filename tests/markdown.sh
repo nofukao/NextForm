@@ -32,6 +32,8 @@
 #  10. 続けて保存できること (「保存して編集続行」がサーバ側で頼っている前提)
 #  11. 記法の例 (:::example) — ソースと表示の対、原文をそのまま控えていること、
 #      囲みの記号がソース側に混ざらないこと、例の全体が部分編集の 1 単位になること
+#  12. 本文の先頭の # を題名にすること — # がその 1 つだけのときに限る。
+#      title: が優先。題名にした # は本文から消す (サイドや &include では消さない)
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -199,6 +201,7 @@ P_CRLF="MarkdownTest/Crlf"
 P_EXAMPLE="MarkdownTest/Example"
 P_TABLE="MarkdownTest/Table"
 P_WIDEN="MarkdownTest/Widen"
+P_HEAD="MarkdownTest/Heading"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -448,8 +451,10 @@ check_eq "  後の段落"               '後の段落\n' "$(pos_field "$T_POS" p
 # nextform.js が**範囲の入れ子**で選ぶ。ここではその入れ子が見出しの深さどおりに
 # なっていることを固定する (JavaScript そのものはブラウザで確かめる)。
 # 項目が 1 つだけの箇条書きは、項目と同じ範囲なので飛ばす。
+# # を 2 つ置いてあるのは、先頭の # が題名になって本文から消えないようにするため
+# (12. を見よ)。ここで見たいのは # まで含めた入れ子。
 WIDEN_FIXTURE="${MARKDOWN_TEST_SITE}/widen-fixture.txt"
-printf -- '# 章\n\n前書き。\n\n## 節\n\n- 項目 A\n- 項目 B\n\n### 小節\n\n段落です。\n\n## 次の節\n\n- ひとつだけ\n' \
+printf -- '# 章\n\n前書き。\n\n## 節\n\n- 項目 A\n- 項目 B\n\n### 小節\n\n段落です。\n\n## 次の節\n\n- ひとつだけ\n\n# 次の章\n\n終わり。\n' \
     | sudo tee "$WIDEN_FIXTURE" > /dev/null
 sudo chown "$SITE_OWNER" "$WIDEN_FIXTURE"
 helper write-file "$P_WIDEN" "$WIDEN_FIXTURE" > /dev/null
@@ -592,6 +597,61 @@ check_eq "例の全体が 1 単位になる" ':::example\n中の段落。\n:::\n
 check_eq "  範囲を持つ段落は例の外の 1 つだけ" "1" \
          "$(printf '%s\n' "$E_POS" | awk -F'\t' '$1 == "pos" && $2 == "p"' | wc -l)"
 check_eq "  それは例の外の段落" '外の段落。' "$(pos_field "$E_POS" p)"
+echo
+
+echo "12. 本文の先頭の # を題名にすること"
+# よそで書いた Markdown は title: を持たず、1 行目の # が題名を兼ねていることが
+# 多い。題名にするのは、本文が # で始まり、しかも # がその 1 つだけのとき。
+# # が並んでいる文書では、どれも並列の節の見出しなので題名にしない。
+# 題名にした # は本文から消す (ページ見出しと二重に出さない。&title{} と同じ見え方)。
+helper write "$P_HEAD" "$(printf -- '# 見出しの題名\n\n本文。\n\n## 節\n')" > /dev/null
+check_eq "先頭の唯一の # が題名になる" "見出しの題名" \
+         "$(value_of "$(helper meta "$P_HEAD" title)" value)"
+check_eq "  ページ見出しに出る" "yes" \
+         "$(contains "$(main_html "$P_HEAD")" '<h1>見出しの題名 <small class="actual_title">')"
+check_eq "  本文からは消える" "h2:節" \
+         "$(value_of "$(helper headings "$P_HEAD" main)" headings)"
+# サイドや &include には、その上にページ見出しが無い。消すと題名がどこにも出ない
+check_eq "  サイドとして描くときは消さない" "h1:見出しの題名 h2:節" \
+         "$(value_of "$(helper headings "$P_HEAD" side)" headings)"
+H_SUMMARY="$(main_html "${P_HEAD}&option=summary" | grep -o 'class="summary">.*')"
+check_eq "  目次にも出さない (本文に無い見出しを指さない)" "no" \
+         "$(contains "$H_SUMMARY" '見出しの題名')"
+check_eq "  目次に節は出る" "yes" "$(contains "$H_SUMMARY" '>節</a>')"
+
+helper write "$P_HEAD" "$(printf -- '# 前の章\n\n本文。\n\n# 後の章\n\n本文。\n')" > /dev/null
+check_eq "# が 2 つあれば題名にしない" "0" "$(value_of "$(helper meta "$P_HEAD" title)" isset)"
+check_eq "  どちらも本文に残る" "h1:前の章 h1:後の章" \
+         "$(value_of "$(helper headings "$P_HEAD" main)" headings)"
+
+helper write "$P_HEAD" "$(printf -- '前置きの段落。\n\n# 後から来る見出し\n')" > /dev/null
+check_eq "段落が先なら題名にしない" "0" "$(value_of "$(helper meta "$P_HEAD" title)" isset)"
+
+helper write "$P_HEAD" "$(printf -- '---\ntitle: 宣言した題名\n---\n\n# 本文の見出し\n\n本文。\n')" > /dev/null
+check_eq "title: があればそちらが題名" "宣言した題名" \
+         "$(value_of "$(helper meta "$P_HEAD" title)" value)"
+check_eq "  そのとき # は本文に残る" "h1:本文の見出し" \
+         "$(value_of "$(helper headings "$P_HEAD" main)" headings)"
+
+helper write "$P_HEAD" "$(printf -- '---\ntags: [theta]\n---\n\n# タグだけの見出し\n')" > /dev/null
+check_eq "tags: だけなら # が題名" "タグだけの見出し" \
+         "$(value_of "$(helper meta "$P_HEAD" title)" value)"
+
+helper write "$P_HEAD" "$(printf -- '下線の題名\n===\n\n本文。\n')" > /dev/null
+check_eq "下線 (===) の見出しも題名になる" "下線の題名" \
+         "$(value_of "$(helper meta "$P_HEAD" title)" value)"
+
+helper write "$P_HEAD" "$(printf -- '# **強調**と`コード`\n\n本文。\n')" > /dev/null
+check_eq "題名は見出しの表示の文字" "強調とコード" \
+         "$(value_of "$(helper meta "$P_HEAD" title)" value)"
+
+# 折りたたみの中の # は文書の # ではない (直下の見出しだけを数える)
+helper write "$P_HEAD" "$(printf -- '# 外の題名\n\n:::details 開く\n# 中の見出し\n:::\n')" > /dev/null
+check_eq "折りたたみの中の # は数えない" "外の題名" \
+         "$(value_of "$(helper meta "$P_HEAD" title)" value)"
+
+helper write "$P_HEAD" "$(printf -- '本文だけ。\n')" > /dev/null
+check_eq "# を消して保存すると題名も消える" "0" "$(value_of "$(helper meta "$P_HEAD" title)" isset)"
 echo
 
 helper cleanup > /dev/null

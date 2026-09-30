@@ -18,6 +18,9 @@
  *                             メタ情報画面と同じ経路で題名を付ける (written=1/0)
  *   positions <名前>          変換後の DOM に付いた部分編集の範囲。
  *                             1 行 1 要素で pos<TAB>タグ<TAB>位置<TAB>長さ<TAB>原文の切り出し
+ *   headings <名前> <main|side>
+ *                             変換後の本文に残る見出し (headings=h2:節 ..) と題名
+ *                             (title=...)。main は本文、side はサイドとして描く
  *   contents <名前>           保存されている本文 (contents=<改行を \n に直したもの>)
  *   ticket <名前>             いまのページのチケット (ticket=...)
  *   replace <名前> <位置> <長さ> <値> [チケット]
@@ -185,6 +188,25 @@ case 'positions':
 	       $element->nodeName, $position, $length,
 	       test_escape(substr($contents, $position, $length)));
     }
+    break;
+
+case 'headings':
+    /*
+     * 変換後の本文に残る見出し (headings=h2:節 h3:小節) と、そのとき立つ題名。
+     * main は本文として描いたとき、side はサイドや &include として
+     * 描いたとき (is_main が立たない)。題名にした # を本文から消すのは
+     * 前者だけなので、両方で見る。
+     */
+    $page = page_read($rest[0]);
+    $page['is_main'] = ($rest[1] === 'main');
+    $dom = dom_create_document();
+    markdown_convert($page, $dom);
+    $headings = array();
+    $xpath = new DOMXPath(dom_owner($dom));
+    foreach($xpath->query('//h1|//h2|//h3|//h4|//h5|//h6') as $heading)
+	$headings[] = $heading->nodeName . ':' . trim($heading->textContent);
+    printf("headings=%s\ntitle=%s\n", implode(' ', $headings),
+	   isset($page['title']) ? $page['title'] : '');
     break;
 
 case 'contents':
