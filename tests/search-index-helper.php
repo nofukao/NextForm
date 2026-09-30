@@ -75,11 +75,36 @@ function test_write($pagename, $contents, $extra = array()) {
     return page_write($page, $contents, $ticket, $error);
 }
 
-/* 一番大きい索引ファイルを選ぶ。壊したときの影響が見えやすい */
-function biggest_bucket_key() {
+/*
+ * save-one-page が保存する本文と、その本文の文字 (索引に入る形)。
+ * corrupt-bucket は、この文字が当たる索引ファイルの中から壊すものを選ぶ。
+ * 当たらないファイルを壊すと、保存しても索引の更新がそのファイルを読みに
+ * 行かないので、「読めなかったことをログに残す」を確かめられない。
+ * 一番大きいファイルはサイトのデータで変わる (空白で始まる語のファイルが
+ * 一番大きくなり、この本文には空白が無いので当たらなかったことがある)。
+ */
+define('AFTER_CORRUPT_CONTENTS', "* 保存\n設定と確認とサーバの語を含む段落です。\n");
+$AFTER_CORRUPT_TEXTS = array('保存', '設定と確認とサーバの語を含む段落です。');
+
+/*
+ * 一番大きい索引ファイルを選ぶ。壊したときの影響が見えやすい。
+ * $texts を渡すと、その文字が当たるファイルの中から選ぶ。
+ */
+function biggest_bucket_key($texts = null) {
+    $keys = null;
+    if(!is_null($texts)) {
+	$ngrams = search_texts_to_ngrams($texts);
+	$group = array();
+	search_ngrams_group_by_key($ngrams, $group);
+	$keys = array();
+	foreach(array_keys($group) as $key)
+	    $keys[SEARCH_INDEX_KEY_PREFIX . $key] = true;
+    }
     $biggest = false;
     $biggest_size = -1;
     foreach(cache_get_keys_prefix('', SEARCH_INDEX_KEY_PREFIX) as $cachekey) {
+	if(!is_null($keys) && !isset($keys[$cachekey]))
+	    continue;
 	$filepath = cache_get_as_filepath('', $cachekey);
 	if($filepath === false)
 	    continue;
@@ -221,7 +246,7 @@ case 'delete-residue':
  * ディスクフルや書き込み中断で実際に起こりうる状態を作っている。
  */
 case 'corrupt-bucket':
-    $cachekey = biggest_bucket_key();
+    $cachekey = biggest_bucket_key($AFTER_CORRUPT_TEXTS);
     if($cachekey === false) {
 	printf("bucket=none\n");
 	exit(1);
@@ -235,8 +260,7 @@ case 'corrupt-bucket':
     break;
 
 case 'save-one-page':
-    $ok = test_write(TEST_PAGE_PREFIX . '/AfterCorrupt',
-		     "* 保存\n設定と確認とサーバの語を含む段落です。\n");
+    $ok = test_write(TEST_PAGE_PREFIX . '/AfterCorrupt', AFTER_CORRUPT_CONTENTS);
     printf("saved=%s\n", $ok ? 'yes' : 'no');
     break;
 
