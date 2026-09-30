@@ -4,7 +4,7 @@
       <nav class="page_menu">
         <ul class="page_tools"><li><a href="?GoldenMaster/Markdown&amp;action=edit" accesskey="e" rel="nofollow">編集(E)</a></li><li><a href="?GoldenMaster/Markdown&amp;option=tag" rel="nofollow">タグ</a></li><li class="summary"><a href="?GoldenMaster/Markdown&amp;option=summary" accesskey="i" rel="nofollow">目次(I)</a></li><li class="disabled">変更点</li><li class="disabled">履歴</li><li class="disabled">ロック</li><li><a href="?GoldenMaster/Markdown&amp;option=delete" rel="nofollow">削除</a></li><li><a href="?GoldenMaster/Markdown&amp;option=rename" rel="nofollow">リネーム</a></li><li><a href="?GoldenMaster/Markdown&amp;option=subpage">子ページ</a></li><li><a href="?GoldenMaster/Markdown&amp;option=attach" rel="nofollow">添付</a></li><li><a href="?GoldenMaster/Markdown&amp;option=meta" rel="nofollow">メタ情報</a></li></ul>      </nav>
       <ul class="messages"></ul>
-      <section data-pagename="GoldenMaster/Markdown" class="page section" data-ticket="TICKET"><section class="markdown"><h1 data-twp="108" data-twl="2734" id="hf1b905e">Markdown のゴールデンマスター</h1>
+      <section data-pagename="GoldenMaster/Markdown" class="page section" data-ticket="TICKET"><section class="markdown"><h1 data-twp="108" data-twl="3177" id="hf1b905e">Markdown のゴールデンマスター</h1>
 <p data-twp="151" data-twl="169">CommonMark の基本と、採用した拡張がすべて出るようにしてある。
 <strong>強調</strong>と<em>斜体</em>と<code>インラインコード</code>、それに<del>打ち消し</del>。</p>
 <h2 data-twp="321" data-twl="144" id="c6f6932a">箇条書き</h2>
@@ -31,7 +31,7 @@
 </code></pre>
 <pre data-twp="578" data-twl="50"><code>インデントによるコードブロック
 </code></pre>
-<h2 data-twp="629" data-twl="111" id="i640ca17">表</h2>
+<h2 data-twp="629" data-twl="554" id="i640ca17">表</h2>
 <table data-twp="637" data-twl="103">
 <thead>
 <tr>
@@ -50,38 +50,65 @@
 </tr>
 </tbody>
 </table>
-<h2 data-twp="741" data-twl="885" id="be2b9fe5">リンク</h2>
-<p data-twp="755" data-twl="390"><a href="https://example.com/">通常のリンク</a>、自動リンク <a href="https://example.com/auto">https://example.com/auto</a> 、
+<p data-twp="741" data-twl="117">表の中の <code>[[ページ|表示名]]</code> は、区切りの <code>|</code> を逃がさなくても 1 つのセルに収まる。</p>
+<table data-twp="859" data-twl="324">
+<thead>
+<tr>
+<th><a class="page" data-link-pagename="GoldenMaster/Top" href="?GoldenMaster/Top">見出し行のリンク</a></th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="page" data-link-pagename="GoldenMaster/Syntax" href="?GoldenMaster/Syntax">表示名つき</a></td>
+<td>逃がさずに書いたもの</td>
+</tr>
+<tr>
+<td><a class="page" data-link-pagename="GoldenMaster/Syntax" href="?GoldenMaster/Syntax">逃がしたもの</a></td>
+<td>これまでどおり</td>
+</tr>
+<tr>
+<td><a class="page self" data-link-pagename="GoldenMaster/Markdown" href="?GoldenMaster/Markdown">../Markdown</a></td>
+<td>表示名の無いもの</td>
+</tr>
+<tr>
+<td>リンクの外の</td>
+<td>区切り</td>
+</tr>
+</tbody>
+</table>
+<h2 data-twp="1184" data-twl="885" id="be2b9fe5">リンク</h2>
+<p data-twp="1198" data-twl="390"><a href="https://example.com/">通常のリンク</a>、自動リンク <a href="https://example.com/auto">https://example.com/auto</a> 、
 それから <a class="page" data-link-pagename="GoldenMaster/Top" href="?GoldenMaster/Top">GoldenMaster/Top</a> と <a class="page" data-link-pagename="GoldenMaster/Syntax" href="?GoldenMaster/Syntax">表示名つき</a>、
 相対指定の <a class="page self" data-link-pagename="GoldenMaster/Markdown" href="?GoldenMaster/Markdown">../Markdown</a>、存在しない <a class="page not_exists" data-link-pagename="GoldenMaster/NoSuchPage" rel="nofollow" href="?GoldenMaster/NoSuchPage">GoldenMaster/NoSuchPage</a>、
 見出しを指す <a class="page" data-link-pagename="GoldenMaster/Syntax" data-link-section="nfc319a0" href="?GoldenMaster/Syntax#nfc319a0">GoldenMaster/Syntax#その他の記法</a>。
 コードの中の <code>[[GoldenMaster/Top]]</code> はリンクにならない。</p>
-<p data-twp="1146" data-twl="355">ページの中の見出しへ: <a href="#c6f6932a">文字で書く</a>、<a href="#g2944515">空白入り</a>、
+<p data-twp="1589" data-twl="355">ページの中の見出しへ: <a href="#c6f6932a">文字で書く</a>、<a href="#g2944515">空白入り</a>、
 <a href="#g2944515">符号化した空白</a>、<a href="#g2944515">GitHub 式</a>、
 <a href="#hf1b905e">英字は小文字で</a>、
 <a href="#eaae513c">重なった見出しは先のほう</a>、<a href="#no-such-heading">無い見出しはそのまま</a>。</p>
-<p data-twp="1502" data-twl="124">長い URL が折り返されること: <a href="https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</a></p>
-<h2 data-twp="1627" data-twl="714" id="i4beb0c4">画像と添付</h2>
-<p data-twp="1647" data-twl="73">子ページの画像を埋め込む: <a href="?GoldenMaster/Markdown/portforward01.png&amp;action=raw" data-link-pagename="GoldenMaster/Markdown/portforward01.png"><img src="?GoldenMaster/Markdown/portforward01.png&amp;action=raw&amp;width=32&amp;height=32" alt="GoldenMaster/Markdown/portforward01.png" data-link-pagename="GoldenMaster/Markdown/portforward01.png" width="32" height="32"/></a></p>
-<p data-twp="1721" data-twl="74">外部の画像はそのまま: <img src="https://example.com/nosuch.png" alt="外部"/></p>
-<p data-twp="1796" data-twl="82">まだ無い添付はリンクになる: <a class="page not_exists" data-link-pagename="nosuchattachment.png" rel="nofollow" href="?nosuchattachment.png">未作成の図</a></p>
-<p data-twp="1879" data-twl="210">添付へのリンク: <a class="page child offspring" data-link-pagename="GoldenMaster/Markdown/portforward01.png" href="?GoldenMaster/Markdown/portforward01.png">相対で書く</a>、<a class="page child offspring" data-link-pagename="GoldenMaster/Markdown/portforward01.png" href="?GoldenMaster/Markdown/portforward01.png">名前だけ書く</a>、
+<p data-twp="1945" data-twl="124">長い URL が折り返されること: <a href="https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</a></p>
+<h2 data-twp="2070" data-twl="714" id="i4beb0c4">画像と添付</h2>
+<p data-twp="2090" data-twl="73">子ページの画像を埋め込む: <a href="?GoldenMaster/Markdown/portforward01.png&amp;action=raw" data-link-pagename="GoldenMaster/Markdown/portforward01.png"><img src="?GoldenMaster/Markdown/portforward01.png&amp;action=raw&amp;width=32&amp;height=32" alt="GoldenMaster/Markdown/portforward01.png" data-link-pagename="GoldenMaster/Markdown/portforward01.png" width="32" height="32"/></a></p>
+<p data-twp="2164" data-twl="74">外部の画像はそのまま: <img src="https://example.com/nosuch.png" alt="外部"/></p>
+<p data-twp="2239" data-twl="82">まだ無い添付はリンクになる: <a class="page not_exists" data-link-pagename="nosuchattachment.png" rel="nofollow" href="?nosuchattachment.png">未作成の図</a></p>
+<p data-twp="2322" data-twl="210">添付へのリンク: <a class="page child offspring" data-link-pagename="GoldenMaster/Markdown/portforward01.png" href="?GoldenMaster/Markdown/portforward01.png">相対で書く</a>、<a class="page child offspring" data-link-pagename="GoldenMaster/Markdown/portforward01.png" href="?GoldenMaster/Markdown/portforward01.png">名前だけ書く</a>、
 <a class="page child offspring not_exists" data-link-pagename="GoldenMaster/Markdown/nosuchattachment.png" rel="nofollow" href="?GoldenMaster/Markdown/nosuchattachment.png">未作成の添付</a>、<a class="page child offspring" data-link-pagename="GoldenMaster/Markdown/portforward01.png" href="?GoldenMaster/Markdown/portforward01.png" title="題">装飾つき <strong>太字</strong></a>。</p>
-<p data-twp="2090" data-twl="105">ページへのリンク: <a class="page" data-link-pagename="GoldenMaster/Top" href="?GoldenMaster/Top">隣のページ</a>、<a class="page" data-link-pagename="GoldenMaster/Syntax" data-link-section="nfc319a0" href="?GoldenMaster/Syntax#nfc319a0">見出しつき</a>。</p>
-<p data-twp="2196" data-twl="145">そのまま残るもの: <a href="?GoldenMaster/Top">ページの URL</a>、<a href="index.php?GoldenMaster/Top">スクリプトの URL</a>、<a href="/">サイトの根</a>。</p>
-<h2 data-twp="2342" data-twl="37" id="hf0bb4ac">脚注</h2>
-<p data-twp="2353" data-twl="26">脚注つきの文<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" role="doc-noteref">1</a></sup>。</p>
-<h2 data-twp="2415" data-twl="74" id="g2944515">生 HTML</h2>
+<p data-twp="2533" data-twl="105">ページへのリンク: <a class="page" data-link-pagename="GoldenMaster/Top" href="?GoldenMaster/Top">隣のページ</a>、<a class="page" data-link-pagename="GoldenMaster/Syntax" data-link-section="nfc319a0" href="?GoldenMaster/Syntax#nfc319a0">見出しつき</a>。</p>
+<p data-twp="2639" data-twl="145">そのまま残るもの: <a href="?GoldenMaster/Top">ページの URL</a>、<a href="index.php?GoldenMaster/Top">スクリプトの URL</a>、<a href="/">サイトの根</a>。</p>
+<h2 data-twp="2785" data-twl="37" id="hf0bb4ac">脚注</h2>
+<p data-twp="2796" data-twl="26">脚注つきの文<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" role="doc-noteref">1</a></sup>。</p>
+<h2 data-twp="2858" data-twl="74" id="g2944515">生 HTML</h2>
 &lt;script&gt;alert(1)&lt;/script&gt;
-<p data-twp="2455" data-twl="34">&lt;b&gt;太字のつもりの HTML&lt;/b&gt;</p>
-<h2 data-twp="2490" data-twl="18" id="e136887f">水平線</h2>
-<hr data-twp="2504" data-twl="4"/>
-<h2 data-twp="2509" data-twl="243" id="eaae513c">同じ文字の見出し</h2>
-<p data-twp="2538" data-twl="114">見出しの文字が重なったとき、id は先に出たほうにだけ振られる (wiki 記法と同じ)。</p>
-<h4 data-twp="2653" data-twl="99" id="b3937fce">深さが飛んだ見出し</h4>
-<p data-twp="2687" data-twl="65">h2 の次が h4 でも、目次では 1 段だけ深くなる。</p>
-<h2 data-twp="2753" data-twl="89">同じ文字の見出し</h2>
-<p data-twp="2782" data-twl="60">2 つめ。目次には出るが、id は振られない。</p>
+<p data-twp="2898" data-twl="34">&lt;b&gt;太字のつもりの HTML&lt;/b&gt;</p>
+<h2 data-twp="2933" data-twl="18" id="e136887f">水平線</h2>
+<hr data-twp="2947" data-twl="4"/>
+<h2 data-twp="2952" data-twl="243" id="eaae513c">同じ文字の見出し</h2>
+<p data-twp="2981" data-twl="114">見出しの文字が重なったとき、id は先に出たほうにだけ振られる (wiki 記法と同じ)。</p>
+<h4 data-twp="3096" data-twl="99" id="b3937fce">深さが飛んだ見出し</h4>
+<p data-twp="3130" data-twl="65">h2 の次が h4 でも、目次では 1 段だけ深くなる。</p>
+<h2 data-twp="3196" data-twl="89">同じ文字の見出し</h2>
+<p data-twp="3225" data-twl="60">2 つめ。目次には出るが、id は振られない。</p>
 <div class="footnotes" role="doc-endnotes"><hr/><ol><li class="footnote" id="fn:1" role="doc-endnote"><p>これが脚注の中身。 <a class="footnote-backref" rev="footnote" href="#fnref:1" role="doc-backlink">↩</a></p></li></ol></div>
 </section></section>
       <footer>

@@ -34,9 +34,11 @@ class MarkdownWikiLink extends League\CommonMark\Node\Inline\AbstractInline {
 }
 
 class MarkdownWikiLinkParser implements League\CommonMark\Parser\Inline\InlineParserInterface {
+    /* 改行と入れ子は許さない。[[ の直後から ]] まで。表 (table.inc) も同じものを見る */
+    const PATTERN = '\[\[([^\[\]\r\n]+)\]\]';
+
     public function getMatchDefinition(): League\CommonMark\Parser\Inline\InlineParserMatch {
-	/* 改行と入れ子は許さない。[[ の直後から ]] まで */
-	return League\CommonMark\Parser\Inline\InlineParserMatch::regex('\[\[([^\[\]\r\n]+)\]\]');
+	return League\CommonMark\Parser\Inline\InlineParserMatch::regex(self::PATTERN);
     }
 
     public function parse(League\CommonMark\Parser\InlineParserContext $inlineContext): bool {

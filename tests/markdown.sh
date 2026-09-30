@@ -168,6 +168,7 @@ P_DETAILS="MarkdownTest/Details"
 P_POS="MarkdownTest/Positions"
 P_CRLF="MarkdownTest/Crlf"
 P_EXAMPLE="MarkdownTest/Example"
+P_TABLE="MarkdownTest/Table"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -393,6 +394,24 @@ sudo chown "$SITE_OWNER" "$CRLF_FIXTURE"
 helper write-file "$P_CRLF" "$CRLF_FIXTURE" > /dev/null
 CRLF_POS="$(helper positions "$P_CRLF")"
 check_eq "CRLF でも段落が合う" '本文です。\r\n' "$(pos_field "$CRLF_POS" p)"
+
+# 表の中の [[ページ|表示名]] は、表の解析器を包み、行の中の | を逃がしてから
+# 渡している (handler/markdown/table.inc)。ライブラリに渡す行を書き換えるので、
+# 範囲が原文のままであること、前後の段落を巻き込まないことを見る。
+#
+# 段落と表のあいだには空行を置く。空行なしで段落のすぐ次の行から表を書くと、
+# **同梱ライブラリ自身が**表の開始行を段落の開始行にし、段落の終わりを 0 行目に
+# する (包む前から同じ)。それはこの検査の対象ではない。
+TABLE_FIXTURE="${MARKDOWN_TEST_SITE}/table-fixture.txt"
+printf -- '前の段落\n\n| [[P|見出し]] | b |\n|---|---|\n| [[Q|表示名]] | 2 |\n\n後の段落\n' \
+    | sudo tee "$TABLE_FIXTURE" > /dev/null
+sudo chown "$SITE_OWNER" "$TABLE_FIXTURE"
+helper write-file "$P_TABLE" "$TABLE_FIXTURE" > /dev/null
+T_POS="$(helper positions "$P_TABLE")"
+check_eq "表の中の [[ページ|表示名]]" '| [[P|見出し]] | b |\n|---|---|\n| [[Q|表示名]] | 2 |\n' \
+         "$(pos_field "$T_POS" table)"
+check_eq "  前の段落は表に入らない" '前の段落\n' "$(pos_field "$T_POS" p 1)"
+check_eq "  後の段落"               '後の段落\n' "$(pos_field "$T_POS" p 2)"
 
 echo
 echo "9. 範囲を差し替えても他が変わらないこと"
