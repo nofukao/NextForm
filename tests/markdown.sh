@@ -26,7 +26,8 @@
 #   7. 折りたたみ (:::details) — 開閉の書き方、入れ子、コードブロックの中の :::、
 #      折りたたんだ中身が検索と目次に載ること
 #   8. 部分編集の範囲 (data-twp / data-twl) — ブロックごとの切り出しが原文と
-#      1 バイト単位で一致すること。**ここがずれると保存で本文が壊れる**
+#      1 バイト単位で一致すること。**ここがずれると保存で本文が壊れる**。
+#      見出しの範囲が深さどおりに入れ子になること (ダブルクリックで広げる順)
 #   9. 範囲を差し替えても他が変わらないこと
 #  10. 続けて保存できること (「保存して編集続行」がサーバ側で頼っている前提)
 #  11. 記法の例 (:::example) — ソースと表示の対、原文をそのまま控えていること、
@@ -64,6 +65,34 @@ pos_field() {
     printf '%s\n' "$1" \
         | awk -F'\t' -v tag="$2" -v n="${3:-1}" -v f="${4:-5}" \
               '$1 == "pos" && $2 == tag { c++; if(c == n) { print $f; exit } }'
+}
+
+# helper positions の出力で、ある要素を編集している欄をダブルクリックし続けた
+# ときに開く要素のタグを順に並べる。nextform.js の markdownEditWiderElement()
+# と同じ規則 (いまの範囲を含み、それより長いものの中でいちばん短いもの。
+# 同じ長さなら文書順で先のもの) を繰り返す。最後のページ全体は数えない。
+#   $1 出力  $2 タグ名  $3 何番目 (既定 1)
+widen_chain() {
+    printf '%s\n' "$1" | python3 -c 'import sys
+tag, n = sys.argv[1], int(sys.argv[2])
+items = []
+for line in sys.stdin:
+    f = line.rstrip("\n").split("\t")
+    if len(f) >= 4 and f[0] == "pos":
+        items.append((f[1], int(f[2]), int(f[3])))
+current = [x for x in items if x[0] == tag][n - 1]
+chain = []
+while True:
+    wider = None
+    for x in items:
+        if x[1] <= current[1] and current[1] + current[2] <= x[1] + x[2] \
+           and x[2] > current[2] and (wider is None or x[2] < wider[2]):
+            wider = x
+    if wider is None:
+        break
+    chain.append(wider[0])
+    current = wider
+print(" ".join(chain))' "$2" "${3:-1}"
 }
 
 # ?option=partial が返す原文を、改行を \n に直して取り出す。
@@ -169,6 +198,7 @@ P_POS="MarkdownTest/Positions"
 P_CRLF="MarkdownTest/Crlf"
 P_EXAMPLE="MarkdownTest/Example"
 P_TABLE="MarkdownTest/Table"
+P_WIDEN="MarkdownTest/Widen"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -412,6 +442,23 @@ check_eq "表の中の [[ページ|表示名]]" '| [[P|見出し]] | b |\n|---|-
          "$(pos_field "$T_POS" table)"
 check_eq "  前の段落は表に入らない" '前の段落\n' "$(pos_field "$T_POS" p 1)"
 check_eq "  後の段落"               '後の段落\n' "$(pos_field "$T_POS" p 2)"
+
+# 編集中の欄をもう一度ダブルクリックすると、範囲が外側へ一段ずつ広がる。
+# Markdown の見出しは節を包む要素を持たないので、次にどれを開くかは
+# nextform.js が**範囲の入れ子**で選ぶ。ここではその入れ子が見出しの深さどおりに
+# なっていることを固定する (JavaScript そのものはブラウザで確かめる)。
+# 項目が 1 つだけの箇条書きは、項目と同じ範囲なので飛ばす。
+WIDEN_FIXTURE="${MARKDOWN_TEST_SITE}/widen-fixture.txt"
+printf -- '# 章\n\n前書き。\n\n## 節\n\n- 項目 A\n- 項目 B\n\n### 小節\n\n段落です。\n\n## 次の節\n\n- ひとつだけ\n' \
+    | sudo tee "$WIDEN_FIXTURE" > /dev/null
+sudo chown "$SITE_OWNER" "$WIDEN_FIXTURE"
+helper write-file "$P_WIDEN" "$WIDEN_FIXTURE" > /dev/null
+W_POS="$(helper positions "$P_WIDEN")"
+check_eq "広げる順: ### の下の段落" "h3 h2 h1" "$(widen_chain "$W_POS" p 2)"
+check_eq "広げる順: 箇条書きの項目" "ul h2 h1" "$(widen_chain "$W_POS" li 1)"
+check_eq "広げる順: # の直下の段落" "h1"       "$(widen_chain "$W_POS" p 1)"
+check_eq "広げる順: 1 項目だけの箇条書き (同じ範囲は飛ばす)" "h2 h1" \
+         "$(widen_chain "$W_POS" li 3)"
 
 echo
 echo "9. 範囲を差し替えても他が変わらないこと"

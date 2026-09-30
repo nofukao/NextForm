@@ -388,6 +388,9 @@ Element.prototype.wikiEditStartHandler = function(event, isForceText) {
     if(this.avoidEdit) {
 	return true;
     }
+    var wider = markdownEditWiderElement(event);
+    if(wider && wider != this)
+	return wider.wikiEditStartHandler(event, isForceText);
     event.stop();
     editingFormIsLoading = true;
 
@@ -449,6 +452,61 @@ Element.prototype.wikiEditCoveredElements = function() {
     return elements;
 }
 
+/*
+ * 種別 Markdown で、編集中の欄をもう一度ダブルクリックしたときに開く要素。
+ *
+ * 種別 wiki は section.section が節を入れ子に包んでいるので、欄の中の
+ * ダブルクリックが親の要素へ伝わるだけで「内容 → 節 → 上の節 → 全体」と
+ * 一段ずつ広がる。Markdown の見出しは節を包まず section.markdown の中に
+ * 平たく並ぶので、そのままでは欄の親の section.page (ページ全体) まで
+ * 一気に飛ぶ。
+ *
+ * そこで次の範囲は DOM ではなく**範囲の入れ子**で選ぶ。見出しは「その節の
+ * 終わりまで」を範囲に持つ (markdown.inc の markdown_heading_range())。
+ * いまの範囲を含み、それより長いものの中でいちばん短いものが次の一段。
+ * 同じ長さなら文書順で先 (外側) のもの。いまと同じ範囲の要素は選ばない
+ * (項目が 1 つだけの箇条書きで、見た目の変わらない一段を踏ませない)。
+ * 無ければページ全体。
+ *
+ * 欄の外のダブルクリック (別の箇所の編集を始める) と種別 wiki では null を
+ * 返し、今まで通り DOM を伝わってきた要素が開く。
+ */
+function markdownEditWiderElement(event) {
+    if(!editingForm || !editingForm.editElement || !event || !event.target)
+	return null;
+    if(!editingForm.contains(event.target))
+	return null;
+    var markdown = editingForm.up('section.markdown');
+    if(!markdown)
+	return null;
+
+    var edited = editingForm.editElement;
+    var position = parseInt(edited.getAttribute('data-twp'));
+    var length = parseInt(edited.getAttribute('data-twl'));
+    if(isNaN(position) || isNaN(length) || length < 0)
+	return null;
+
+    var wider = null;
+    var widerLength = 0;
+    markdown.select('[data-twp][data-twl]').each(function(element) {
+	var p = parseInt(element.getAttribute('data-twp'));
+	var l = parseInt(element.getAttribute('data-twl'));
+	if(isNaN(p) || isNaN(l) || l <= length)
+	    return;
+	if(p > position || p + l < position + length)
+	    return;
+	if(wider == null || l < widerLength) {
+	    wider = element;
+	    widerLength = l;
+	}
+    });
+    if(wider)
+	return wider;
+
+    var page = markdown.up('[data-pagename]');
+    return (page && page.hasAttribute('data-twp')) ? page : null;
+}
+
 Element.prototype.wikiEditMakeTextarea = function(request) {
     var hiddens = {
 	'page': mainPagename,
@@ -486,6 +544,7 @@ Element.prototype.wikiEditMakeTextarea = function(request) {
 	editingForm.submit();
     });
     form.addClassName('partial');
+    form.editElement = this;
     form.textarea.disable();
 
     if(this.tagName == 'LI') {
