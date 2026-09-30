@@ -770,7 +770,8 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 編集中の欄をもう一度ダブルクリックすると，範囲が外側へ一段ずつ広がります
 (段落→その節→上の節→ページ全体．Wiki記法のページと同じです)．
 ダブルクリックの代わりにAltキー+クリックでも編集が開始できます．
-編集欄の右上には，いま書いている記法の札(''Markdown''または''Wiki記法'')が出ます(ページ全体の編集画面では，押すとその記法の早見表が開きます)．
+編集欄の右上には，いま書いている記法の札(''Markdown''または''Wiki'')が出ます(ページ全体の編集画面では，押すとその記法の早見表が開きます)．
+Markdownの編集欄には，左に太い線も付きます．
 
 Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表の1行だけ，といった単位では編集できません．
 表は表ぜんぶが1つの単位になります．
@@ -1225,7 +1226,8 @@ Double clicking the edit box again widens the range one step outwards
 (paragraph, its section, the enclosing section, then the whole page), as on a page
 in Wiki notation.
 Alt and click works instead of a double click.
-The label at the top right of the edit box (''Markdown'' or ''Wiki notation'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
+The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
+The edit box for Markdown also has a thick line on its left.
 
 Unlike Wiki notation, you cannot edit a part of a line (emphasis or strikethrough on
 its own) or a single row of a table. A table is one unit as a whole.
@@ -1833,7 +1835,8 @@ NextFormのWiki記法は以下のように大分できます．
 箇条書きの場合はダブルクリックをすると箇条書きの項目を削除や打ち消しにできる
 表示に切り替わります．各項目をさらにダブルクリックするとソースの編集ができます．
 ダブルクリックの代わりにAltキー+クリックでも編集が開始できます．
-編集欄の右上には，いま書いている記法の札(''Markdown''または''Wiki記法'')が出ます(ページ全体の編集画面では，押すとその記法の早見表が開きます)．
+編集欄の右上には，いま書いている記法の札(''Markdown''または''Wiki'')が出ます(ページ全体の編集画面では，押すとその記法の早見表が開きます)．
+Markdownの編集欄には，左に太い線も付きます．
 
 別の方法として''ページメニュー''内の''編集''のリンクをクリックするとページ全体のソースを編集できます．
 
@@ -1981,7 +1984,8 @@ Double clicking replaces just that part with its source and lets you edit it.
 For a list, double clicking switches to a display in which items can be removed or
 struck out. Double clicking an item again lets you edit its source.
 Alt and click works instead of a double click.
-The label at the top right of the edit box (''Markdown'' or ''Wiki notation'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
+The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
+The edit box for Markdown also has a thick line on its left.
 
 Another way is to click ''Edit'' in the ''page menu'', which lets you edit the source
 of the whole page.
