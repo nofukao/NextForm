@@ -245,10 +245,17 @@ function tone_get_colors($id) {
  */
 function tone_custom_color_value($name, $value) {
     global $TONE_LOADED_COLORS;
+    global $THEME_COLOR_FALLBACKS;
 
     $color_name = str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $name);
     if(isset($TONE_LOADED_COLORS[$color_name]))
 	return $TONE_LOADED_COLORS[$color_name];
+    /*
+     * 読み込んだ色調に無い色は空 (= 別の色と同じ。$THEME_COLOR_FALLBACKS)。
+     * いまの値を残すと、読み込んだはずの色調と違う色が混ざる。
+     */
+    if(is_array($TONE_LOADED_COLORS) && isset($THEME_COLOR_FALLBACKS[$color_name]))
+	return '';
     if(THEME_TONE === TONE_CUSTOM_ID)
 	return $value;
     $colors = tone_get_colors(THEME_TONE);

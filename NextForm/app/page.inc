@@ -362,6 +362,23 @@ function page_type_is_text_base($page_type) {
 }
 
 /*
+ * リンクの行き先の種別 (meta の type)。無いページ・読めないページは ''。
+ *
+ * ページへのリンク 1 本ごとに呼ばれる (dom_append_empty_page_link())。
+ * 読むのはヘッダの数行だけだが、一覧のように同じページへのリンクが並ぶ
+ * 画面もあるので、1 回のリクエストで同じページを読むのは 1 度にする。
+ */
+function page_get_link_type($pagename) {
+    static $types = array();
+    if(!isset($types[$pagename])) {
+	$page = page_create($pagename);
+	$types[$pagename] = storage_page_read($page) ?
+	    default_value($page['meta']['type'], '') : '';
+    }
+    return $types[$pagename];
+}
+
+/*
  * 画面に出す種別の表示名。登録が無ければ種別名をそのまま返す。
  * 保存されている種別名 ('markdown') と表示 ('Markdown') を分けるためのもので、
  * 絞り込みや並べ替えに使う値には通さない。

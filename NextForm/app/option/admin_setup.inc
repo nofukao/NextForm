@@ -190,6 +190,12 @@ function admin_setup_tone_colors(&$args) {
 	$value = default_value($args['const_' . $custom_name], $default_color);
 	if(!color_is_valid($value))
 	    $value = $default_color;
+	/*
+	 * 空の色 (= 別の色と同じ。$THEME_COLOR_FALLBACKS) は書かない。
+	 * 書くと tone_parse() が不正な色として色調ごと捨てる。
+	 */
+	if($value === '')
+	    continue;
 	$colors[$name] = $value;
     }
     return $colors;
@@ -613,7 +619,11 @@ function admin_setup(&$args, $dom, $target_categories, $note = '',
 	    if(empty($setup_constant['allowempty']))
 		$attributes['required'] = '';
 	    
-	    $append_element = dom_append_child($dd, 'input', 'color {hash:true,caps:false,adjust:false}', $attributes);
+	    /* 空にできる色は、色の選択器にも空を許させる (既定では空を拒む) */
+	    $picker = empty($setup_constant['allowempty']) ?
+		'color {hash:true,caps:false,adjust:false}' :
+		'color {hash:true,caps:false,adjust:false,required:false}';
+	    $append_element = dom_append_child($dd, 'input', $picker, $attributes);
 	    head_tags_add_javascript('resource/script/jscolor/jscolor.js');
 	    break;
 	case 'theme_file_image':

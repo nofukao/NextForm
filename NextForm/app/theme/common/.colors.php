@@ -19,9 +19,23 @@ if(THEME_TONE !== TONE_CUSTOM_ID) {
 } else {
     global $THEME_CUSTOM_COLORS;
     foreach($THEME_CUSTOM_COLORS as $custom_color_name => $custom_color_value) {
+	/* 空は「別の色と同じ」。下で埋める */
+	if(constant($custom_color_name) === '')
+	    continue;
 	define(str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $custom_color_name), constant($custom_color_name));
     }
     define('THEME_COLOR_MAIN', THEME_COLOR_MAIN_DEFAULT);
+}
+
+/*
+ * 色調・個別設定が持っていない色を埋める ($THEME_COLOR_FALLBACKS、.setup.php)。
+ * Markdown のページへのリンクの色は後から足したので、既存の色調のファイルにも
+ * 個別設定のサイトにも無い。無ければリンクの色と同じにする。
+ */
+global $THEME_COLOR_FALLBACKS;
+foreach($THEME_COLOR_FALLBACKS as $color_name => $fallback) {
+    if(!defined($color_name))
+	define($color_name, constant($fallback['color']));
 }
 
 $THEME_IMAGE_BACKGROUND_HEADER_WIDTH = false;
