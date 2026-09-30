@@ -1040,6 +1040,12 @@ ObsidianやMediaWikiと同じ並びに合わせてあります．
 見出しの位置の決め方は種別をまたいで同じなので，
 種別wikiのページの見出しにも ""[[ページ名#見出し]]"" で届きます．
 
+同じページの中の見出しへは ""[表示名](#見出し)"" でも届きます．
+見出しの文字をそのまま書くほか，GitHubの形(英字を小文字にし，空白を ""-"" にしたもの．
+""[概要](#getting-started)"" など)でも見つけます．
+空白を含む見出しの文字をそのまま書くときは ""[表示名](<#見出し 1>)"" のように囲みます．
+どの見出しにも当たらない ""#"" はそのまま残るので，脚注などへのリンクは変わりません．
+
 *外部リンク
 ""[表示名](URL)"" で外部サイトへのリンクになります．
 URLをそのまま書いても[[リンクになります:../Extra#自動リンク]]．
@@ -1482,6 +1488,14 @@ A link to a page that does not exist is shown in a different colour,
 just as in Wiki notation.
 Positions of headings are decided the same way whatever the type of the page, so
 ""[[page name#heading]]"" reaches headings in pages of type wiki as well.
+
+A heading in the same page can also be reached with ""[display name](#heading)"".
+Besides the text of the heading as it is, the GitHub form (letters in lower case and
+spaces turned into ""-"", as in ""[Overview](#getting-started)"") is found as well.
+To write the text of a heading that contains spaces as it is, enclose it as in
+""[display name](<#heading 1>)"".
+A ""#"" that matches no heading is left as it is, so links to footnotes and the like
+do not change.
 
 *External links
 ""[display name](URL)"" makes a link to an external site.

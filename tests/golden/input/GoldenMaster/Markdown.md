@@ -45,6 +45,11 @@ function example($argument) { return "test"; }
 見出しを指す [[GoldenMaster/Syntax#その他の記法]]。
 コードの中の `[[GoldenMaster/Top]]` はリンクにならない。
 
+ページの中の見出しへ: [文字で書く](#箇条書き)、[空白入り](<#生 HTML>)、
+[符号化した空白](#生%20HTML)、[GitHub 式](#生-html)、
+[英字は小文字で](#markdown-のゴールデンマスター)、
+[重なった見出しは先のほう](#同じ文字の見出し)、[無い見出しはそのまま](#no-such-heading)。
+
 長い URL が折り返されること: https://example.com/very/long/path/without/any/space/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 ## 画像と添付
