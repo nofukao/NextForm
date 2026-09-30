@@ -1,6 +1,6 @@
 <?php
 /*
- * 色調 (トーン)。THEME_COLOR_* 25 色の組を JSON ファイル 1 つで表す。
+ * 色調 (トーン)。THEME_COLOR_* 27 色の組を JSON ファイル 1 つで表す。
  *
  *   app/tone/<識別子>.json       配布物。組み込みの色調。書き換えない
  *   storage/tone/<識別子>.json   そのサイトが保存した色調
@@ -222,7 +222,7 @@ function tone_get_name($tone) {
 }
 
 /*
- * 色調の 25 色。読めなければ組み込みの既定に落とす。
+ * 色調の 27 色。読めなければ組み込みの既定に落とす。
  * 色調のファイルが消えても、色が 1 つも決まらない状態にはしない。
  */
 function tone_get_colors($id) {
@@ -245,10 +245,17 @@ function tone_get_colors($id) {
  */
 function tone_custom_color_value($name, $value) {
     global $TONE_LOADED_COLORS;
+    global $THEME_COLOR_FALLBACKS;
 
     $color_name = str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $name);
     if(isset($TONE_LOADED_COLORS[$color_name]))
 	return $TONE_LOADED_COLORS[$color_name];
+    /*
+     * 読み込んだ色調に無い色は空 (= 別の色と同じ。$THEME_COLOR_FALLBACKS)。
+     * いまの値を残すと、読み込んだはずの色調と違う色が混ざる。
+     */
+    if(is_array($TONE_LOADED_COLORS) && isset($THEME_COLOR_FALLBACKS[$color_name]))
+	return '';
     if(THEME_TONE === TONE_CUSTOM_ID)
 	return $value;
     $colors = tone_get_colors(THEME_TONE);

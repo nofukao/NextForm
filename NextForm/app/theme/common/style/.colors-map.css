@@ -201,6 +201,22 @@ a.external {
 a.external:visited {
     color: <?php trw_color(THEME_COLOR_EXTERNAL_LINK_VISITED); ?>;
 }
+/*
+ * Markdown のページへのリンク (dom_append_empty_page_link() が type_markdown を
+ * 付ける)。色が空なら .colors.php がリンクの色と同じにする。
+ * 並びは上の a / a.unread / a:visited と同じ順 (訪問済みの未読は訪問済みの色)。
+ */
+a.type_markdown,
+a.type_markdown:link {
+    color: <?php trw_color(THEME_COLOR_MARKDOWN_LINK); ?>;
+}
+a.type_markdown.unread {
+    color: <?php trw_color(THEME_COLOR_MARKDOWN_LINK); ?>;
+    border-bottom-color: <?php trw_color(THEME_COLOR_MARKDOWN_LINK); ?>;
+}
+a.type_markdown:visited {
+    color: <?php trw_color(THEME_COLOR_MARKDOWN_LINK_VISITED); ?>;
+}
 
 /* base color modify */
 <?php

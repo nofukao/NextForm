@@ -136,6 +136,15 @@ rules_common() {
     check "記法の例の dt が本文より小さい" \
           "bool(re.search(r'section\.markdown dl\.example\s*>\s*dt\s*\{[^}]*font-size:\s*[0-9]+%', css, re.S))"
 
+    # Markdown のページへのリンク (dom_append_empty_page_link() が type_markdown を
+    # 付ける) には、色調の「Markdown のページ」用の色を当てる。訪問済み・未読も。
+    check "Markdown のページへのリンクに色がある" \
+          "bool(re.search(r'(^|[},])\s*a\.type_markdown\s*[,{][^}]*\bcolor:\s*#[0-9a-f]{6}', css, re.S))"
+    check "  訪問済みにも色がある" \
+          "bool(re.search(r'a\.type_markdown:visited\s*[,{][^}]*\bcolor:\s*#[0-9a-f]{6}', css, re.S))"
+    check "  未読の下線も同じ色" \
+          "bool(re.search(r'a\.type_markdown\.unread\s*\{[^}]*border-bottom-color:\s*#[0-9a-f]{6}', css, re.S))"
+
     # ブロックごとの &pre(wrap) / &pre(nowrap) は、サイトの既定がどちらでも効く。
     check "ブロック指定 pre.wrap がある" \
           "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"
@@ -157,6 +166,28 @@ rules_density_compact() {
           "bool(re.search(r'margin-top:\s*20px', css))"
     check "詰めても余白が消えていない" \
           "not re.search(r'margin-top:\s*0px;\s*margin-bottom:\s*0px', css)"
+}
+
+# Markdown のページへのリンクの色は、空 (既定) なら未訪問・訪問済みリンクの色と同じ。
+# 個別設定のサイトは新しい色の値を持っていないので、ここが崩れると
+# 更新しただけでリンクの色が固定の既定色 (ベージュ/グリーンの緑) に変わる。
+LINK_COLOR_OF='(lambda sel: (lambda m: m.group(1) if m else None)(re.search(r"(?:^|[},])\s*(?:[^{}]*,\s*)?" + re.escape(sel) + r"\s*[,{][^}]*?(?<![-\w])color:\s*(#[0-9a-f]{6})", css, re.S)))'
+rules_markdown_link_same() {
+    check "Markdown 用が空なら未訪問リンクの色と同じ" \
+          "$LINK_COLOR_OF('a.type_markdown') is not None and $LINK_COLOR_OF('a.type_markdown') == $LINK_COLOR_OF('a:link')"
+    check "Markdown 用が空なら訪問済みリンクの色と同じ" \
+          "$LINK_COLOR_OF('a.type_markdown:visited') is not None and $LINK_COLOR_OF('a.type_markdown:visited') == $LINK_COLOR_OF('a:visited')"
+}
+rules_default()   { rules_markdown_link_same; }
+rules_tone_custom() { rules_markdown_link_same; }
+
+rules_markdown_link_color() {
+    check "設定した Markdown 用の未訪問リンクの色が出る" \
+          "$LINK_COLOR_OF('a.type_markdown') == '#123456'"
+    check "設定した Markdown 用の訪問済みリンクの色が出る" \
+          "$LINK_COLOR_OF('a.type_markdown:visited') == '#654321'"
+    check "ほかのリンクの色は変わらない" \
+          "$LINK_COLOR_OF('a:link') not in ('#123456', '#654321')"
 }
 
 rules_density_loose() {
@@ -244,7 +275,7 @@ done
 # 生成し直さないと確かめられないので、代表して basic で見る。
 # (どのテーマも同じ common/style/ を読むため、テーマごとに回す必要はない)
 
-for pattern in pre-scroll density-compact density-loose; do
+for pattern in default tone-custom markdown-link-color pre-scroll density-compact density-loose; do
     echo "[設定] ${pattern}"
     if ! theme_lib_generate "$site" basic "$pattern" "$work/$pattern"; then
         fail=$((fail + 1))

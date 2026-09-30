@@ -231,17 +231,29 @@ function dom_append_empty_page_link($dom, $pagename, $id = '', $uri = '') {
     if(!page_is_exists($pagename)) {
 	dom_append_class($a, 'not_exists');
 	dom_set_attribute($a, 'rel', 'nofollow');
-    } else if(USER_HISTORY_ENABLE == 'true' && USER_HISTORY_UNREAD == 'true' &&
-	      $USER_HISTORY_IS_LOADED &&
-	      auth_has_permission($pagename, 'read')) {
-	$page = page_read($pagename);
+    } else {
+	if(USER_HISTORY_ENABLE == 'true' && USER_HISTORY_UNREAD == 'true' &&
+	   $USER_HISTORY_IS_LOADED &&
+	   auth_has_permission($pagename, 'read')) {
+	    $page = page_read($pagename);
 
-	if(!empty($page['mtime'])) {
-	    if(($time = user_history_get_page_view($pagename)) === false ||
+	    if(!empty($page['mtime'])) {
+		if(($time = user_history_get_page_view($pagename)) === false ||
 		   $page['mtime'] > $time) {
-		    dom_append_class($a, 'unread');		    
-	    }	
+		    dom_append_class($a, 'unread');
+		}
+	    }
 	}
+	/*
+	 * 行き先が種別 Markdown なら印を付ける。色調の「Markdown のページ」用の
+	 * リンクの色がこれに当たる (.colors-map.css)。wiki には何も付けない
+	 * (出力を増やさない)。読めないページの種別は見せない。マニュアルは
+	 * storage に実体が無く、中身は wiki 記法。
+	 */
+	if(!page_is_manual($pagename) &&
+	   auth_has_permission($pagename, 'read') &&
+	   page_get_link_type($pagename) === 'markdown')
+	    dom_append_class($a, 'type_markdown');
     }
     if($uri === '') {
 	$uri = url_make($pagename);

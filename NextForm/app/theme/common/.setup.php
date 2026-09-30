@@ -75,7 +75,7 @@ $SETUP_CONSTANTS['THEME_IMAGE_ICON'] = array(
     'note' => '.ico format recommended');
 
 /*
- * 色調は「色調の設定」(admin_setup_tone) で決める。あの画面は 25 色を
+ * 色調は「色調の設定」(admin_setup_tone) で決める。あの画面は 27 色を
  * 直接扱うので、色調を 1 つ選ぶ段はもう無い。定数は残す ('custom' 以外の値は
  * 上流から引き継いだサイトが持っている) が、画面には出さない。
  */
@@ -108,6 +108,8 @@ $THEME_CUSTOM_COLORS = array(
     'THEME_CUSTOM_COLOR_TEXT' =>              	   '#2a2f32',
     'THEME_CUSTOM_COLOR_LINK' =>              	   '#6ea157',
     'THEME_CUSTOM_COLOR_LINK_VISITED' =>      	   '#4b6e3b',
+    'THEME_CUSTOM_COLOR_MARKDOWN_LINK' =>          '',
+    'THEME_CUSTOM_COLOR_MARKDOWN_LINK_VISITED' =>  '',
     'THEME_CUSTOM_COLOR_EXTERNAL_LINK' =>          '#6ea157',
     'THEME_CUSTOM_COLOR_EXTERNAL_LINK_VISITED' =>  '#4b6e3b',
     'THEME_CUSTOM_COLOR_EDIT' =>              	   '#fae9c3',
@@ -127,6 +129,28 @@ $THEME_CUSTOM_COLORS = array(
     'THEME_CUSTOM_COLOR_ACTION_BACKGROUND' =>      '#2a2f32',
     'THEME_CUSTOM_COLOR_ACTION_TEXT' =>            '#ffffff',
     );
+
+/*
+ * 空にできる色と、空のときに代わりに使う色。
+ *
+ * Markdown のページへのリンクの色は後から足したもので、組み込みの色調・
+ * 保存済みの色調・個別設定のサイトのどれも値を持っていない。空を「同じ」と
+ * 読まないと、更新しただけでリンクの色が上の固定の既定 (ベージュ/グリーンの緑に
+ * 相当する値) に変わってしまう。空のままなら今までと同じ見た目になる。
+ *
+ * 色調のファイルには空の色を書かない (tone_parse() が不正な色として弾く)。
+ * 無い色は .colors.php がここに従って埋める。
+ */
+global $THEME_COLOR_FALLBACKS;
+$THEME_COLOR_FALLBACKS = array(
+    'THEME_COLOR_MARKDOWN_LINK' => array(
+	'color' => 'THEME_COLOR_LINK',
+	'note' => 'if empty, the same as the link color'),
+    'THEME_COLOR_MARKDOWN_LINK_VISITED' => array(
+	'color' => 'THEME_COLOR_LINK_VISITED',
+	'note' => 'if empty, the same as the link visited color'),
+    );
+
 foreach($THEME_CUSTOM_COLORS as $custom_color_name => $custom_color_value) {
     $SETUP_CONSTANTS[$custom_color_name] = array(
 	'category' => 'tone',
@@ -136,6 +160,11 @@ foreach($THEME_CUSTOM_COLORS as $custom_color_name => $custom_color_value) {
 	/* 画面に出す色は tone.inc が決める (読み込んだ色調・いまの色調) */
 	'value_function' => 'tone_custom_color_value',
 	'type' => 'color');
+    $color_name = str_replace('THEME_CUSTOM_COLOR_', 'THEME_COLOR_', $custom_color_name);
+    if(isset($THEME_COLOR_FALLBACKS[$color_name])) {
+	$SETUP_CONSTANTS[$custom_color_name]['allowempty'] = true;
+	$SETUP_CONSTANTS[$custom_color_name]['note'] = $THEME_COLOR_FALLBACKS[$color_name]['note'];
+    }
 }
 
 $SETUP_CONSTANTS['THEME_HEADER_HEIGHT'] = array(
@@ -269,6 +298,10 @@ $LANGUAGE['ja']['outside color']              	= '外側の色';
 $LANGUAGE['ja']['text color']                 	= '文字色';
 $LANGUAGE['ja']['link color']                 	= '未訪問リンクの色';
 $LANGUAGE['ja']['link visited color']         	= '訪問済みリンクの色';
+$LANGUAGE['ja']['markdown link color']        	= '未訪問リンクの色 (Markdownのページ)';
+$LANGUAGE['ja']['markdown link visited color']	= '訪問済みリンクの色 (Markdownのページ)';
+$LANGUAGE['ja']['if empty, the same as the link color'] = '空欄なら「未訪問リンクの色」と同じ';
+$LANGUAGE['ja']['if empty, the same as the link visited color'] = '空欄なら「訪問済みリンクの色」と同じ';
 $LANGUAGE['ja']['external link color']        	= '未訪問外部リンクの色';
 $LANGUAGE['ja']['external link visited color']	= '訪問済み外部リンクの色';
 $LANGUAGE['ja']['edit color']                 	= '編集時の色';

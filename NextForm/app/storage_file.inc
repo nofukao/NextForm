@@ -98,6 +98,32 @@ function storage_page_read(&$page) {
     return storage_page_read_meta($page);
 }
 
+/*
+ * ページの種別 (meta の type) だけを読む。無いページは false。
+ *
+ * リンクの印付けがリンク 1 本ごとに呼ぶので、storage_page_read_meta() より
+ * 軽くしてある: type の行が見つかった所で読むのをやめ (保存時に先頭へ
+ * 書かれることが多い)、ファイルの大きさや更新時刻も取らない。
+ */
+function storage_page_read_type($pagename) {
+    $fp = @fopen(storage_page_get_filepath($pagename), 'rb');
+    if(!$fp)
+	return false;
+    $type = '';
+    while(($line = fgets($fp)) !== false) {
+	if($line === '' || $line == "\n")
+	    break;
+	$meta = array();
+	storage_page_decode_meta_line($meta, rtrim($line));
+	if(isset($meta['type'])) {
+	    $type = $meta['type'];
+	    break;
+	}
+    }
+    fclose($fp);
+    return $type;
+}
+
 function storage_page_read_backup(&$page, $backuptime) {
     $page['storage_filepath'] = storage_page_get_filepath($page['name'], $backuptime);
     return storage_page_read_meta($page);

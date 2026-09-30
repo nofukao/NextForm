@@ -105,7 +105,7 @@ function admin_setup_theme(&$args, $dom) {
 /*
  * 色調の設定。
  *
- * 画面で扱うのは 25 色そのもので、「色調を 1 つ選ぶ」段は無い。組み込みや
+ * 画面で扱うのは 27 色そのもので、「色調を 1 つ選ぶ」段は無い。組み込みや
  * 保存した色調は「読み込む」で入力欄に流し込んでから調整する。
  */
 function admin_setup_tone(&$args, $dom) {
@@ -146,7 +146,7 @@ function admin_setup_tone(&$args, $dom) {
 	    unset($args['apply']);
     }
 
-    /* この画面で決めた 25 色をそのまま使う */
+    /* この画面で決めた 27 色をそのまま使う */
     $args['const_THEME_TONE'] = TONE_CUSTOM_ID;
 
     if(admin_setup($args, $dom, array('tone' => true), l('Need to refresh browser applying changes'),
@@ -175,7 +175,7 @@ function admin_setup_tone_load(&$args) {
     return true;
 }
 
-/* いま入力欄にある 25 色 */
+/* いま入力欄にある 27 色 */
 function admin_setup_tone_colors(&$args) {
     global $THEME_CUSTOM_COLORS;
     global $TONE_LOADED_COLORS;
@@ -190,6 +190,12 @@ function admin_setup_tone_colors(&$args) {
 	$value = default_value($args['const_' . $custom_name], $default_color);
 	if(!color_is_valid($value))
 	    $value = $default_color;
+	/*
+	 * 空の色 (= 別の色と同じ。$THEME_COLOR_FALLBACKS) は書かない。
+	 * 書くと tone_parse() が不正な色として色調ごと捨てる。
+	 */
+	if($value === '')
+	    continue;
 	$colors[$name] = $value;
     }
     return $colors;
@@ -232,7 +238,7 @@ function admin_setup_tone_delete(&$args) {
  */
 /*
  * 入力欄の前: 適用と、色調の読み込み。
- * 25 色は縦に長いので、上の方を直したときに一番下まで送らずに済むよう
+ * 27 色は縦に長いので、上の方を直したときに一番下まで送らずに済むよう
  * 適用を上にも置く (下の適用と同じもの)。
  */
 function admin_setup_tone_form_head($form) {
@@ -613,7 +619,11 @@ function admin_setup(&$args, $dom, $target_categories, $note = '',
 	    if(empty($setup_constant['allowempty']))
 		$attributes['required'] = '';
 	    
-	    $append_element = dom_append_child($dd, 'input', 'color {hash:true,caps:false,adjust:false}', $attributes);
+	    /* 空にできる色は、色の選択器にも空を許させる (既定では空を拒む) */
+	    $picker = empty($setup_constant['allowempty']) ?
+		'color {hash:true,caps:false,adjust:false}' :
+		'color {hash:true,caps:false,adjust:false,required:false}';
+	    $append_element = dom_append_child($dd, 'input', $picker, $attributes);
 	    head_tags_add_javascript('resource/script/jscolor/jscolor.js');
 	    break;
 	case 'theme_file_image':

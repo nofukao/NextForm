@@ -17,7 +17,8 @@
 # 同じ識別子なら storage が app を隠す。組み込みを上書きでき、storage 側を
 # 消せば戻る。この「隠す」関係と、ファイルの形式が守られることを固定する。
 #
-# 画面は「色調の設定」(?option=admin_setup_tone) 1 枚で、25 色を直接扱う。
+# 画面は「色調の設定」(?option=admin_setup_tone) 1 枚で、27 色を直接扱う。
+# うち 2 色 (Markdown のページへのリンク) は空にでき、空ならリンクの色と同じ。
 # 組み込みや保存した色調は「読み込む」で入力欄に流し込んでから調整する。
 #
 # 設定と権限を書き換えるので、必ず複製したサイトに対して実行する。
@@ -193,6 +194,27 @@ print(tone if not isinstance(tone, dict) else len(tone))
 ' "${@:2}"
 }
 
+# 生成された CSS で、セレクタ $1 を並びに含む規則の color (小文字)
+css_rule_color() {
+    sudo cat "$theme_css" | python3 -c '
+import re, sys
+css = re.sub(r"/\*.*?\*/", "", sys.stdin.read(), flags=re.S)
+for selectors, body in re.findall(r"([^{}]+)\{([^}]*)\}", css):
+    if sys.argv[1] in [s.strip() for s in selectors.split(",")]:
+        m = re.search(r"(?<![-\w])color:\s*(#[0-9a-fA-F]{6})", body)
+        if m:
+            print(m.group(1).lower())
+            break
+' "$1"
+}
+
+# 入力欄 $1 の class (jscolor の指定が入る)
+rendered_class() {
+    curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
+        | grep -o "<input[^>]*name=\"$1\"[^>]*>" \
+        | sed -E 's/.*class="([^"]*)".*/\1/' | head -1
+}
+
 # 設定画面の「色調」の選択肢に出ている表示名
 tone_option_name() {
     curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
@@ -255,11 +277,11 @@ check_eq "読み込みに出る" "ベージュ/グリーン" "$(tone_option_name
 check_eq "storage には無い" "0"               "$(tone_exists beige-green)"
 echo
 
-echo "2. 色調の設定は最初から 25 色を出す"
+echo "2. 色調の設定は最初から 27 色を出す"
 check_eq "色調を選ぶ欄が無い"     "0"  \
          "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
             | grep -c 'name="const_THEME_TONE"')"
-check_eq "25 色ある"              "25" \
+check_eq "27 色ある"              "27" \
          "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
             | grep -o 'name="const_THEME_CUSTOM_COLOR_[A-Z_]*"' | sort -u | wc -l)"
 check_eq "外観の設定に色が無い"   "0"  \
@@ -283,7 +305,7 @@ check_eq "入力欄にも残る"        "#000d40" "$(rendered_value const_THEME_
 echo
 
 echo "5. 適用は上にもある"
-# 25 色は縦に長い。上の方を直したときに一番下まで送らずに済むようにする。
+# 27 色は縦に長い。上の方を直したときに一番下まで送らずに済むようにする。
 check_eq "適用ボタンが 2 つある" "2" \
          "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
             | grep -o 'value="適用"' | wc -l)"
@@ -296,7 +318,10 @@ echo "6. いまの色を名前を付けて保存する"
 apply_tone_setup "tone_save=1" "tone_id=testtone" "tone_name=テスト色調" > /dev/null
 check_eq "ファイルができる"   "1"          "$(tone_exists testtone)"
 check_eq "表示名が入る"       "テスト色調" "$(tone_value testtone names ja)"
+# Markdown 用の 2 色は空 (= リンクの色と同じ) なので書かない。書くと
+# tone_parse() が空を不正な色として弾き、色調ごと読めなくなる
 check_eq "25 色が入る"        "25"         "$(tone_value testtone colors)"
+check_eq "空の色は書かない"   ""           "$(tone_value testtone colors THEME_COLOR_MARKDOWN_LINK)"
 check_eq "入力欄の色が入る"   "#000d40"    "$(tone_value testtone colors THEME_COLOR_BACKGROUND)"
 check_eq "読み込みに出る"     "テスト色調" "$(tone_option_name testtone)"
 # storage は Web から見えてはいけない。色調も storage の下なので同じ扱いになる
@@ -363,7 +388,43 @@ code "${THEME_TEST_URL}/?option=admin_setup_tone&apply=theme" > /dev/null
 check_eq "作り直すと既定に落ちる" "1" "$(css_has '#fbf6ea')"
 echo
 
-echo "13. PHP の警告を出さない"
+echo "13. Markdown のページへのリンクの色"
+# 既定は空 = 未訪問 (訪問済み) リンクの色と同じ。更新しても見た目を変えないため。
+# 個別設定のサイトは新しい色の値を持っていないので、空を「同じ」と読まないと
+# 固定の既定色 (ベージュ/グリーンの緑) が出てしまう。
+check_eq "既定は空"               ""  "$(rendered_value const_THEME_CUSTOM_COLOR_MARKDOWN_LINK)"
+check_eq "  訪問済みも空"         ""  "$(rendered_value const_THEME_CUSTOM_COLOR_MARKDOWN_LINK_VISITED)"
+check_eq "  入力欄が空を受け付ける" "yes" \
+         "$(case "$(rendered_class const_THEME_CUSTOM_COLOR_MARKDOWN_LINK)" in *required:false*) echo yes;; *) echo no;; esac)"
+apply_tone_setup > /dev/null
+check_eq "空のまま適用するとリンクの色と同じ" "$(css_rule_color 'a:link')" \
+         "$(css_rule_color 'a.type_markdown')"
+check_eq "  訪問済みも同じ" "$(css_rule_color 'a:visited')" \
+         "$(css_rule_color 'a.type_markdown:visited')"
+# 組み込みの色調は Markdown 用の色を持たない (= 同じ)。読み込むと空になる
+loaded=$(apply_tone_setup "tone_load=1" "tone_load_id=white-blue")
+check_eq "色を持たない色調を読み込むと空" "" \
+         "$(html_value "$loaded" const_THEME_CUSTOM_COLOR_MARKDOWN_LINK)"
+apply_tone_setup "const_THEME_CUSTOM_COLOR_MARKDOWN_LINK=#abcdef" \
+                 "const_THEME_CUSTOM_COLOR_MARKDOWN_LINK_VISITED=#fedcba" > /dev/null
+check_eq "設定した色が CSS に出る"   "#abcdef" "$(css_rule_color 'a.type_markdown')"
+check_eq "  訪問済みも"              "#fedcba" "$(css_rule_color 'a.type_markdown:visited')"
+check_eq "  ほかのリンクは変わらない" "yes" \
+         "$([[ "$(css_rule_color 'a:link')" != "#abcdef" ]] && echo yes || echo no)"
+apply_tone_setup "tone_save=1" "tone_id=md-tone" "tone_name=Markdown の色" > /dev/null
+check_eq "保存した色調に入る"        "#abcdef" "$(tone_value md-tone colors THEME_COLOR_MARKDOWN_LINK)"
+check_eq "  27 色になる"             "27"      "$(tone_value md-tone colors)"
+loaded=$(apply_tone_setup "tone_load=1" "tone_load_id=md-tone")
+check_eq "読み込むと戻る"            "#abcdef" \
+         "$(html_value "$loaded" const_THEME_CUSTOM_COLOR_MARKDOWN_LINK)"
+# 空に戻せば、またリンクの色に揃う
+apply_tone_setup "const_THEME_CUSTOM_COLOR_MARKDOWN_LINK=" \
+                 "const_THEME_CUSTOM_COLOR_MARKDOWN_LINK_VISITED=" > /dev/null
+check_eq "空に戻すとリンクの色と同じ" "$(css_rule_color 'a:link')" \
+         "$(css_rule_color 'a.type_markdown')"
+echo
+
+echo "14. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

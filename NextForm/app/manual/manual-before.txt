@@ -398,17 +398,25 @@ NextFormではユーザーごとページごとに権限が設定できます．
 &title 色調(トーン)
 
 *色調とは
-色調は画面で使う25色の組です．
+色調は画面で使う27色の組です．
 テーマ(配置や余白の作り)とは別の軸なので，どのテーマを選んでも同じ色調が使えます．
 ''サイトメニュー'' > ''管理ツール'' > ''色調の設定'' で決めます．
 
 *色を決める
-''色調の設定''では，25色をそのまま並べています．
+''色調の設定''では，27色をそのまま並べています．
 変えたい色だけを書き換えて，一番下の''適用''を押して下さい．
 
 はじめから入っている色調や，保存した色調から始めることもできます．
 一番上の''色調の読み込み''で選んで''読み込む''を押すと，入力欄にその色が入ります．
 この時点ではまだ変わりません．''適用''を押すと使われます．
+
+*Markdownのページへのリンクの色
+''未訪問リンクの色 (Markdownのページ)''と''訪問済みリンクの色 (Markdownのページ)''は，
+行き先が種別Markdownのページであるリンクの色です．
+Wiki記法のページへのリンクと色を変えておくと，押す前にどちらの記法のページか分かります．
+
+''空欄''にしておくと，''未訪問リンクの色''・''訪問済みリンクの色''と同じ色になります．
+最初は空欄なので，設定するまで見た目は変わりません．
 
 *色調を保存する
 色を決めたら，''この色調の保存''に識別子と表示名を入れて''保存''を押します．
@@ -454,7 +462,9 @@ JSONです．
 |colors|色．名前は''THEME_COLOR_''で始まり，値は''#rrggbb''形式|
 
 colorsに書かなかった色は使われません．
-画面から保存すると常に25色すべてが書かれるので，
+ただし''THEME_COLOR_MARKDOWN_LINK''と''THEME_COLOR_MARKDOWN_LINK_VISITED''は，
+書かなければリンクの色と同じになります(画面で空欄にして保存すると書かれません)．
+画面から保存すると常に(空欄の色を除く)すべての色が書かれるので，
 手で作るときは保存したファイルを複製して書き換えるのが確実です．
 */
 
@@ -585,19 +595,28 @@ For access analysis
 &title Tones
 
 *What a tone is
-A tone is a set of the 25 colours used on the screen.
+A tone is a set of the 27 colours used on the screen.
 It is a separate axis from the theme (which makes the layout and the spacing), so the
 same tone can be used whichever theme you choose.
 It is decided at ''site menu'' > ''Admin tools'' > ''Tone setup''.
 
 *Choosing the colours
-''Tone setup'' simply lays out the 25 colours.
+''Tone setup'' simply lays out the 27 colours.
 Rewrite only the colours you want to change and press ''Apply'' at the bottom.
 
 You can also start from a tone that came with NextForm or from one you saved.
 Choose it in ''Load tone'' at the top and press ''Load'', and those colours are put
 into the input fields. Nothing has changed at this point; they are used once you
 press ''Apply''.
+
+*Colours of links to Markdown pages
+''markdown link color'' and ''markdown link visited color'' are the colours of links
+whose destination is a page of type Markdown.
+Giving them colours different from links to pages in Wiki notation tells you which
+notation a page is written in before you follow the link.
+
+''Leave them empty'' and they are the same as ''link color'' and ''link visited color''.
+They start empty, so nothing looks different until you set them.
 
 *Saving a tone
 Once the colours are decided, enter an identifier and a display name in
@@ -646,7 +665,10 @@ It is JSON.
 |colors|the colours. The names begin with ''THEME_COLOR_'' and the values are in ''#rrggbb'' form|
 
 Colours not written in colors are not used.
-Saving from the screen always writes all 25 colours, so when making one by hand the
+''THEME_COLOR_MARKDOWN_LINK'' and ''THEME_COLOR_MARKDOWN_LINK_VISITED'' are the
+exception: without them they are the same as the link colours (saving them empty from
+the screen leaves them out).
+Saving from the screen always writes all the colours (except the empty ones), so when making one by hand the
 sure way is to copy a saved file and rewrite it.
 */
 
