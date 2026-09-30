@@ -593,14 +593,20 @@ input.color {
     margin-top: 20px;
 }
 
+/*
+ * まとまり (色調の個別設定・見出しの構成) は項目名と入力欄を 2 列のグリッドで
+ * 並べる。行の高さは項目名と入力欄の高い方に揃うので、項目名が折り返しても
+ * 次の行とずれない。項目名を float で置いていた頃は、2 行に折り返した項目名の
+ * 2 行目の横に次の入力欄が入り込み、そこから下の対応がずれていた。
+ */
 .setup dl.group {
     margin-top: -4px;
+    display: grid;
+    grid-template-columns: 16em minmax(0, 1fr);
 }
 .setup dl.group dt {
-    clear: left;
-    float: left;
     margin: 0;
-    width: 16em;
+    padding: 4px 8px 4px 0;
 }
 .setup dl.group dd {
     margin: 0;
