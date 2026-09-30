@@ -120,11 +120,8 @@ To embed an attached image or video in a page, Markdown notation uses
 and Wiki notation uses [[&&include:./Wiki/Function/include]].
 
 By default, an attached HTML file is downloaded when it is opened.
-Enabling [[FILE_ALLOW_HTML:./Administration/Settings]] in the site settings lets you run
-it in the browser as it is, from ''Open'' on the page of the file.
-The HTML then runs isolated from the wiki, so it cannot operate on the pages or the
-settings of the wiki. Data it saves (localStorage) is not kept, and it cannot submit
-forms or show alert dialogs.
+Enabling it in the site settings lets you run it in the browser as it is
+([[Running HTML files directly:./HtmlFile]]).
 
 *Backup
 A backup is taken before a page is edited (it is skipped when the edits come close
@@ -166,6 +163,10 @@ For administering the site, see the page below.
 *Export function
 For the export function, see below.
 -[[Export function:./Export]]
+
+*Running HTML files directly
+For running an attached HTML file in the browser, see below.
+-[[Running HTML files directly:./HtmlFile]]
 */
 
 /**
@@ -282,10 +283,8 @@ Wiki記法は[[リンク:./Wiki/Basic#リンク]]を参照してください．}
 [[&&include:./Wiki/Function/include]]を使用します．
 
 添付したHTMLファイルは，既定では開くとダウンロードになります．
-サイトの設定の[[FILE_ALLOW_HTML:./Administration/Settings]]を有効にすると，
-ファイルのページに出る''開く''から，ブラウザでそのまま動かせます．
-このときHTMLはwikiから隔離して動くので，wikiのページや設定を操作することはできません．
-保存したデータ(localStorage)は残らず，フォームの送信や警告の表示(alert)もできません．
+サイトの設定で有効にすると，ブラウザでそのまま動かせます
+([[HTMLファイルの直接実行:./HtmlFile]])．
 
 *バックアップ
 ページは編集される前にバックアップがとられます(編集の間隔が短い場合はバックアップをスキップします)．
@@ -321,6 +320,10 @@ Wiki記法だけで，「動くページ」を作れるのが持ち味です．
 *エクスポート機能
 エクスポート機能については以下を参照して下さい．
 -[[エクスポート機能:./Export]]
+
+*HTMLファイルの直接実行
+添付したHTMLファイルをブラウザで動かす方法は以下を参照して下さい．
+-[[HTMLファイルの直接実行:./HtmlFile]]
 
 */
 
@@ -1084,6 +1087,9 @@ URLをそのまま書いても[[リンクになります:../Extra#自動リン�
 
 URLを書けば外部の画像もそのまま表示します．
 
+添付したHTMLファイルを動かす設定のサイトでは，""![表示名](ファイル名.html)"" は
+押すとそのHTMLが動くリンクになります([[HTMLファイルの直接実行:../../HtmlFile]])．
+
 ""[表示名](ファイル名)"" と書くと，埋め込まずに添付へのリンクになります．
 行き先の探し方は ""![説明](ファイル名)"" と同じです．
 ""[表示名](../隣のページ)"" や ""[表示名](../隣のページ#見出し)"" のように，
@@ -1540,6 +1546,9 @@ a name from the top).
 Pointing at a file that does not exist yet makes a link, so that it can be created.
 
 Writing a URL shows an external image as it is.
+
+On a site set up to run attached HTML files, ""![display name](file name.html)"" becomes
+a link that runs the HTML when pressed ([[Running HTML files directly:../../HtmlFile]]).
 
 Writing ""[display name](file name)"" makes a link to the attachment instead of
 embedding it. The target is looked up in the same way as for ""![description](file name)"".
@@ -2866,6 +2875,60 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
 */
 
 /**
+@manual $manualpage$/ja/HtmlFile
+&title HTMLファイルの直接実行
+
+HTMLで作ったゲームやちょっとした道具をページに添付しておき，
+ブラウザでそのまま動かすことができます．
+
+*有効にする
+この機能は''既定では無効''です．無効のあいだは，添付したHTMLファイルを開くと
+ダウンロードになります．
+
+有効にするには，管理権限を持つユーザーでログインして，
+''サイトメニュー'' > ''管理ツール'' > ''サイト設定'' を開き，
+''添付したHTMLファイル''を''隔離して動かす''にして保存します．
+(設定の名前は[[FILE_ALLOW_HTML:../Administration/Settings]]です．)
+
+有効にすると，編集できる人なら誰でも，このサイトのURLの下に好きな画面
+(たとえばログイン画面に似せたもの)を出せるようになります．
+自分だけ，または信頼できる人だけが編集するサイトで有効にしてください．
+
+*動かし方
+HTMLファイルを[[添付:..#添付ファイル]]してから，ファイルのページに出る''開く''を押します．
+ページからは，次のように書くと押すだけで動くリンクになります．
+
+|記法|書き方|h
+|Markdown記法|""![落ちものパズル](./ochimono.html)""|
+|Wiki記法|&&direct(&[&[./ochimono.html&]&]){落ちものパズル}|
+
+Markdown記法では，""![ ]"" の中に書いた文字がリンクの表示になります．
+何も書かなければ''開く''になります．
+""[落ちものパズル](./ochimono.html)"" と書いた場合は，動かすのではなく
+ファイルのページへのリンクになります．
+
+Wiki記法の[[&&direct:../Wiki/Function/direct]]は，ファイルへ直接リンクを張る記法です．
+""{ }"" の中がリンクの表示になります．
+
+どちらも，ファイル名は[[相対ページ名:..#相対ページ名]]で書けます．
+''./'' はそのページの添付，''../'' は親のページの添付を指します
+(''game/wiki-page'' から ''../ochimono.html'' と書けば ''game/ochimono.html'')．
+
+*動くときの制限
+HTMLはwikiから隔離して動きます．開いた人の権限でwikiのページや設定を
+書き換えることはできません．そのかわり，次のこともできません．
+-保存したデータ(localStorage)を残すこと．ゲームの最高点などは，開き直すと消えます
+-フォームの送信
+-警告や確認の表示(alert，confirm，prompt)
+-新しいウィンドウを開くこと
+
+外部のサーバーから部品(フォントや画像など)を読み込むことはできます．
+
+HTMLの中で文字コードを宣言していれば(""<meta charset=Shift_JIS>"" など)，
+その文字コードで開きます．宣言が無ければUTF-8として開きます．
+*/
+
+/**
 @manual $manualpage$/en/Export
 &title Export function
 
@@ -3082,4 +3145,60 @@ This prepares directories for a test environment and a live environment (test an
 and makes a button for each.
 You can use it to check the result of an export in the test environment before
 reflecting it in the live one.
+*/
+
+/**
+@manual $manualpage$/en/HtmlFile
+&title Running HTML files directly
+
+You can attach a game or a small tool made in HTML to a page and run it in the
+browser as it is.
+
+*Enabling it
+This function is ''disabled by default''. While it is disabled, opening an attached
+HTML file downloads it.
+
+To enable it, log in as a user with administrator rights, choose
+''site menu'' > ''Admin tools'' > ''Site setup'', set ''Attached HTML files'' to
+''Run in a sandbox'' and save.
+(The name of the setting is [[FILE_ALLOW_HTML:../Administration/Settings]].)
+
+Once it is enabled, anyone who can edit can show any page they like under the URL of
+this site (for example, one made to look like a login screen).
+Enable it only on a site that you alone, or people you trust, edit.
+
+*Running a file
+[[Attach:..#Attached files]] the HTML file, then press ''Open'' on the page of the file.
+From a page, writing the following makes a link that runs the file when pressed.
+
+|notation|how to write it|h
+|Markdown notation|""![Falling blocks](./ochimono.html)""|
+|Wiki notation|&&direct(&[&[./ochimono.html&]&]){Falling blocks}|
+
+In Markdown notation, the words written inside ""![ ]"" become the text of the link.
+If nothing is written there, it is ''Open''.
+Writing ""[Falling blocks](./ochimono.html)"" instead makes a link to the page of the
+file, not one that runs it.
+
+In Wiki notation, [[&&direct:../Wiki/Function/direct]] makes a link straight to the
+file. What is inside ""{ }"" becomes the text of the link.
+
+In both, the file name can be a [[relative page name:..#Relative page names]].
+''./'' points at an attachment of the page itself, and ''../'' at an attachment of the
+parent page (from ''game/wiki-page'', ''../ochimono.html'' is ''game/ochimono.html'').
+
+*Limits while it runs
+The HTML runs isolated from the wiki. It cannot rewrite the pages or the settings of
+the wiki with the permissions of the person who opened it. In exchange, it cannot do
+the following.
+-Keep data it saves (localStorage). The best score of a game and the like disappear
+when it is opened again
+-Submit forms
+-Show alerts or confirmations (alert, confirm, prompt)
+-Open new windows
+
+It can load parts (fonts, images and so on) from outside servers.
+
+If the HTML declares its character encoding (""<meta charset=Shift_JIS>"" and so on),
+it is opened with that encoding. Without a declaration it is opened as UTF-8.
 */

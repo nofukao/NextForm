@@ -166,14 +166,22 @@ check_eq "中身は変わらない"               "$BODY" "$(cat "$WORK/body")"
 echo
 
 echo "3. 「開く」リンクが出ること"
+# 「開く」リンクの表示だけを取り出す
+open_label() {
+    printf '%s' "$1" | grep -o '<a[^>]*class="open_html"[^>]*>[^<]*</a>' | head -1 \
+        | sed -e 's/<[^>]*>//g'
+}
 F_HTML="$(main_html "$P_FILE")"
-check_eq "ファイルのページに「開く」が出る" "yes" "$(contains "$F_HTML" 'class="open_html"')"
+check_eq "ファイルのページに「開く」が出る" "開く" "$(open_label "$F_HTML")"
 check_eq "  行き先は実体 (action=raw)" "yes" \
          "$(contains "$F_HTML" "href=\"?${P_FILE}&amp;action=raw\"")"
-check_eq "Markdown の ![..](game.html) にも「開く」が出る" "yes" \
-         "$(contains "$(main_html "$P_PARENT")" 'class="open_html"')"
+# ![説明](x.html) の説明がリンクの表示になる。wiki の &direct(){表示} に当たる
+check_eq "Markdown の ![遊ぶ](game.html) は「遊ぶ」で出る" "遊ぶ" \
+         "$(open_label "$(main_html "$P_PARENT")")"
 check_eq "  枠 (iframe) では動かさない" "no" \
          "$(contains "$(main_html "$P_PARENT")" '<iframe')"
+helper write "FileHtmlTest/NoAlt" '![](../game.html)' > /dev/null
+check_eq "説明が空なら「開く」" "開く" "$(open_label "$(main_html "FileHtmlTest/NoAlt")")"
 echo
 
 echo "4. HTML が書いている文字コードで返すこと"

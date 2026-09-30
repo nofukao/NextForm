@@ -75,7 +75,16 @@ function markdown_image_html($url, $alt, $title) {
 	    $content_type_handler = &file_get_content_type_handler($page);
 	    if(!empty($content_type_handler['embed']) &&
 	       function_exists($content_type_handler['embed'])) {
-		$content_type_handler['embed']($page, $document, array());
+		/*
+		 * 埋め込みが文字のリンクになる種類 (添付 HTML の「開く」) は、
+		 * 説明をリンクの表示にする。印 (embed_label) のある種類にだけ
+		 * 名前つきで渡す。画像などに並びの引数で渡すと、240x240 や open の
+		 * ような大きさ・開き方の指定として読まれてしまう。
+		 */
+		$params = array();
+		if(!empty($content_type_handler['embed_label']) && $alt !== '')
+		    $params['label'] = $alt;
+		$content_type_handler['embed']($page, $document, $params);
 		return dom_save_html($document);
 	    }
 	}

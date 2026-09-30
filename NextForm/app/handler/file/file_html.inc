@@ -24,16 +24,24 @@ if(defined('FILE_ALLOW_HTML') && FILE_ALLOW_HTML === 'true') {
     $FILE_CONTENT_TYPE_HANDLER_HTML = array(
 	'embed' => 'file_html_embed',
 	'raw' => 'file_html_raw',
+	/* Markdown の ![説明](x.html) の説明を、リンクの表示として受け取る */
+	'embed_label' => true,
 	);
     $FILE_CONTENT_TYPE_HANDLERS['text/html'] = &$FILE_CONTENT_TYPE_HANDLER_HTML;
 }
 
+/*
+ * 表示は $params['label'] (Markdown の ![説明](x.html) の説明)。無ければ「開く」。
+ * 並びの引数は見ない。ページの要約 (file_summary) が画像の大きさを並びで渡してくる。
+ */
 function file_html_embed(&$page, $dom, $params = null) {
     $queries = array('action' => 'raw');
     if(!empty($page['backuptime']))
 	$queries['backuptime'] = $page['backuptime'];
 
-    $a = dom_append_link($dom, url_make($page['name'], $queries), l('Open'), 'open_html');
+    $label = (is_array($params) && isset($params['label']) && $params['label'] !== '')
+	? $params['label'] : l('Open');
+    $a = dom_append_link($dom, url_make($page['name'], $queries), $label, 'open_html');
     dom_set_attribute($a, 'data-link-pagename', $page['name']);
     return $a;
 }
