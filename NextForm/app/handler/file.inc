@@ -13,6 +13,7 @@ require_once(APP_DIR_PATH . '/handler/file/file_binary.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_image.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_video.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_audio.inc');
+require_once(APP_DIR_PATH . '/handler/file/file_html.inc');
 
 function file_get_content_type(&$page) {
     global $FILE_CONTENT_TYPE_HANDLERS;
