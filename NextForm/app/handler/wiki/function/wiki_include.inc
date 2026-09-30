@@ -128,7 +128,7 @@ function wiki_operator_include(&$context, $dom, $tree) {
 ''URLに続いて,(カンマ)を書く場合はスペースを入れて下さい．そうしないとカンマもURLとして認識されます．''
 
 埋め込めるのは画像(jpg, jpeg, png, gif)だけです．それ以外のURLはリンクになります．
-動画サイト(YouTube，ニコニコ動画)の埋め込みはv0.9.1で取りやめました．
+動画サイト(YouTube，ニコニコ動画)の埋め込みはv0.10.0で取りやめました．
 すでに書いてあるものは，動画サイトへのリンクとして表示されます．
 
 添付ファイル(子ページとしてアップロードしたファイル)を埋め込む際は
@@ -178,7 +178,7 @@ Naming the URL of an image embeds that image.
 Otherwise the comma is read as part of the URL.''
 
 Only images (jpg, jpeg, png, gif) can be embedded. Any other URL becomes a link.
-Embedding from video sites (YouTube, Niconico) was dropped in v0.9.1.
+Embedding from video sites (YouTube, Niconico) was dropped in v0.10.0.
 Anything already written is shown as a link to the video site.
 
 To embed an attached file (a file uploaded as a child page), move the cursor to the
