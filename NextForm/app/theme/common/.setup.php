@@ -110,8 +110,8 @@ $THEME_CUSTOM_COLORS = array(
     'THEME_CUSTOM_COLOR_LINK_VISITED' =>      	   '#4b6e3b',
     'THEME_CUSTOM_COLOR_MARKDOWN_LINK' =>          '',
     'THEME_CUSTOM_COLOR_MARKDOWN_LINK_VISITED' =>  '',
-    'THEME_CUSTOM_COLOR_EXTERNAL_LINK' =>          '#6ea157',
-    'THEME_CUSTOM_COLOR_EXTERNAL_LINK_VISITED' =>  '#4b6e3b',
+    'THEME_CUSTOM_COLOR_EXTERNAL_LINK' =>          '',
+    'THEME_CUSTOM_COLOR_EXTERNAL_LINK_VISITED' =>  '',
     'THEME_CUSTOM_COLOR_EDIT' =>              	   '#fae9c3',
     'THEME_CUSTOM_COLOR_PAGE_INFO' =>        	   '#ecc274',
     'THEME_CUSTOM_COLOR_HIGHLIGHT' =>        	   '#ecc274',
@@ -138,6 +138,9 @@ $THEME_CUSTOM_COLORS = array(
  * 読まないと、更新しただけでリンクの色が上の固定の既定 (ベージュ/グリーンの緑に
  * 相当する値) に変わってしまう。空のままなら今までと同じ見た目になる。
  *
+ * 外部リンクの色も、実際はリンクの色と同じにすることが多いので空を既定にした
+ * (組み込みの色調も持たない)。既に値を保存しているサイトはその値のまま。
+ *
  * 色調のファイルには空の色を書かない (tone_parse() が不正な色として弾く)。
  * 無い色は .colors.php がここに従って埋める。
  */
@@ -147,6 +150,12 @@ $THEME_COLOR_FALLBACKS = array(
 	'color' => 'THEME_COLOR_LINK',
 	'note' => 'if empty, the same as the link color'),
     'THEME_COLOR_MARKDOWN_LINK_VISITED' => array(
+	'color' => 'THEME_COLOR_LINK_VISITED',
+	'note' => 'if empty, the same as the link visited color'),
+    'THEME_COLOR_EXTERNAL_LINK' => array(
+	'color' => 'THEME_COLOR_LINK',
+	'note' => 'if empty, the same as the link color'),
+    'THEME_COLOR_EXTERNAL_LINK_VISITED' => array(
 	'color' => 'THEME_COLOR_LINK_VISITED',
 	'note' => 'if empty, the same as the link visited color'),
     );

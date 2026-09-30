@@ -12,8 +12,6 @@
         "THEME_COLOR_TEXT": "#422524",
         "THEME_COLOR_LINK": "#f48b85",
         "THEME_COLOR_LINK_VISITED": "#a8605d",
-        "THEME_COLOR_EXTERNAL_LINK": "#f48b85",
-        "THEME_COLOR_EXTERNAL_LINK_VISITED": "#a8605d",
         "THEME_COLOR_EDIT": "#d6d4b4",
         "THEME_COLOR_PAGE_INFO": "#fcd6d4",
         "THEME_COLOR_HIGHLIGHT": "#fcd6d4",
