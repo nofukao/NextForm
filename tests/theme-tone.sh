@@ -305,7 +305,7 @@ check_eq "入力欄にも残る"        "#000d40" "$(rendered_value const_THEME_
 echo
 
 echo "5. 適用は上にもある"
-# 25 色は縦に長い。上の方を直したときに一番下まで送らずに済むようにする。
+# 27 色は縦に長い。上の方を直したときに一番下まで送らずに済むようにする。
 check_eq "適用ボタンが 2 つある" "2" \
          "$(curl -sk "${THEME_TEST_URL}/?option=admin_setup_tone" \
             | grep -o 'value="適用"' | wc -l)"

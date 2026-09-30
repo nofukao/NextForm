@@ -75,7 +75,7 @@ $SETUP_CONSTANTS['THEME_IMAGE_ICON'] = array(
     'note' => '.ico format recommended');
 
 /*
- * 色調は「色調の設定」(admin_setup_tone) で決める。あの画面は 25 色を
+ * 色調は「色調の設定」(admin_setup_tone) で決める。あの画面は 27 色を
  * 直接扱うので、色調を 1 つ選ぶ段はもう無い。定数は残す ('custom' 以外の値は
  * 上流から引き継いだサイトが持っている) が、画面には出さない。
  */
