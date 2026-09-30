@@ -173,6 +173,8 @@ echo "2. 種別 Markdown のページ"
 M="$(exported wiki markdown.html)"
 check_eq "設定表のファイル名で書き出す" "markdown.html	success" "$(output_of "$OUT" ExportTest/Markdown)"
 check_eq "題名 (フロントマター) がひな形に入る" "yes" "$(contains "$M" '<title>Markdown の書き出し')"
+# 画面の題名は後ろに空白を付けて組み立てる (sentence_append)。書き出しには要らない
+check_eq "  題名の後ろに空白が残らない"   "yes" "$(contains "$M" '<title>Markdown の書き出し</title>')"
 check_eq "本文が HTML に変換されている"   "yes" "$(contains "$M" '<strong>強調</strong>')"
 check_eq "  原文の記号が残らない"         "no"  "$(contains "$M" '**強調**')"
 check_eq "  フロントマターが本文に出ない" "no"  "$(contains "$M" 'title: Markdown')"
