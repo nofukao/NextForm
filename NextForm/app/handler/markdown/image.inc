@@ -29,9 +29,30 @@ function markdown_image_is_external($url) {
     return preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $url) === 1 || substr($url, 0, 2) === '//';
 }
 
-function markdown_image_html($url, $alt, $title) {
+/*
+ * 画像やリンクに書かれた行き先 (URL の符号化を解いたもの) をページ名にする。
+ * リンク (link.inc) も同じ規則で解決する。
+ *
+ * 添付は子ページなので、裸の名前は**まず子ページとして**探す。
+ *
+ * page_path_to_pagename() は ./ や ../ で始まらない名前を絶対 (トップ階層)
+ * として扱う。Wiki 記法ではそれでよいが、Markdown を書く人は
+ * ![図](image.png) と書いて隣に置いた添付を指すつもりでいる。
+ * 子ページに無ければ、これまでどおり絶対として解決する。
+ */
+function markdown_resolve_pagename($path) {
     global $MARKDOWN_CURRENT_PAGENAME;
 
+    $base = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
+    if($base !== '' && strpos($path, './') !== 0 && strpos($path, '../') !== 0) {
+	$child = page_path_to_pagename('./' . $path, $base);
+	if(page_is_exists($child))
+	    return $child;
+    }
+    return page_path_to_pagename($path, $base);
+}
+
+function markdown_image_html($url, $alt, $title) {
     if($url === '')
 	return '';
 
@@ -44,25 +65,7 @@ function markdown_image_html($url, $alt, $title) {
 	return dom_save_html($document);
     }
 
-    $base = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
-    $path = rawurldecode($url);
-
-    /*
-     * 添付は子ページなので、裸の名前は**まず子ページとして**探す。
-     *
-     * page_path_to_pagename() は ./ や ../ で始まらない名前を絶対 (トップ階層)
-     * として扱う。Wiki 記法ではそれでよいが、Markdown を書く人は
-     * ![図](image.png) と書いて隣に置いた添付を指すつもりでいる。
-     * 子ページに無ければ、これまでどおり絶対として解決する。
-     */
-    $pagename = '';
-    if($base !== '' && strpos($path, './') !== 0 && strpos($path, '../') !== 0) {
-	$child = page_path_to_pagename('./' . $path, $base);
-	if(page_is_exists($child))
-	    $pagename = $child;
-    }
-    if($pagename === '')
-	$pagename = page_path_to_pagename($path, $base);
+    $pagename = markdown_resolve_pagename(rawurldecode($url));
 
     $document = dom_create_document();
 

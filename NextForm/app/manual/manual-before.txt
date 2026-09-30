@@ -1060,6 +1060,12 @@ URLをそのまま書いても[[リンクになります:../Extra#自動リン�
 まだ無いファイルを指した場合は，作りに行けるようリンクになります．
 
 URLを書けば外部の画像もそのまま表示します．
+
+""[表示名](ファイル名)"" と書くと，埋め込まずに添付へのリンクになります．
+行き先の探し方は ""![説明](ファイル名)"" と同じです．
+""[表示名](../隣のページ)"" や ""[表示名](../隣のページ#見出し)"" のように，
+ページへのリンクにも使えます．
+""?"" ""/"" ""#"" で始まるものと ""?"" を含むものは，URLとしてそのまま扱います．
 */
 
 /**
@@ -1499,6 +1505,13 @@ a name from the top).
 Pointing at a file that does not exist yet makes a link, so that it can be created.
 
 Writing a URL shows an external image as it is.
+
+Writing ""[display name](file name)"" makes a link to the attachment instead of
+embedding it. The target is looked up in the same way as for ""![description](file name)"".
+It also links to pages, as in ""[display name](../the next page)"" or
+""[display name](../the next page#heading)"".
+Anything that starts with ""?"", ""/"" or ""#"", or that contains ""?"", is treated
+as a URL as it is.
 */
 
 /**

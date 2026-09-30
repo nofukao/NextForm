@@ -47,6 +47,7 @@ function markdown_converter() {
     require_once(APP_DIR_PATH . '/handler/markdown/front_matter.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/wikilink.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/image.inc');
+    require_once(APP_DIR_PATH . '/handler/markdown/link.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/details.inc');
     require_once(APP_DIR_PATH . '/handler/markdown/example.inc');
 
@@ -91,6 +92,10 @@ function markdown_converter() {
     /* ![説明](子ページ) を添付の埋め込みにする。標準の描画より先に見せる */
     $environment->addRenderer(League\CommonMark\Extension\CommonMark\Node\Inline\Image::class,
 			      new MarkdownImageRenderer(), 10);
+
+    /* [表示名](子ページ) を添付やページへのリンクにする。外部などは標準の描画に回す */
+    $environment->addRenderer(League\CommonMark\Extension\CommonMark\Node\Inline\Link::class,
+			      new MarkdownLinkRenderer(), 10);
 
     $converter = new League\CommonMark\MarkdownConverter($environment);
     return $converter;
