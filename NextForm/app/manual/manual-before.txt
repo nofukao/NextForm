@@ -2719,8 +2719,12 @@ NextFormにはNextFormで作成したページをhtmlファイル,画像ファ�
  |[[スタイルシート]]|css/style.css|
 のように書きます．ヘッダ行(上記の例では1行目)は無視されますので省略しても，お好みのヘッダにしても構いません．
 
+設定表は[[Markdown記法の表:../Markdown/Extra#表]]で書いても構いません．
+そのときは1列目のページへのリンクを ""[[ページ名]]"" で書きます．
+
 設定表を書いたら，表でリンクにしたページを作成しておいて下さい．
-htmlファイルにしたいページは種別wikiのページで，その他のページは種別textか種別fileのページで作成するのがおすすめです．
+htmlファイルにしたいページは種別wikiか種別Markdownのページで，その他のページは種別textか種別fileのページで作成するのがおすすめです．
+種別wikiと種別Markdownのページは，画面に表示するときと同じようにHTMLに変換して書き出されます．
 
 次にこの設定にしたがって実際にファイルの書き出しを行うためのボタンを作成します．
 このボタンを作成するには
@@ -2773,7 +2777,7 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
 上記の$title$や$contents$のようにテンプレート内で特定のキーワードを書けば別の内容に置き換わります．
 キーワードには以下のようなものがあります．
 
-:$title$|ページ名または[[&&title:../Wiki/Function/title]]で設定されたタイトル
+:$title$|ページ名または[[&&title:../Wiki/Function/title]]で設定されたタイトル(種別Markdownのページでは[[フロントマター:../Markdown/FrontMatter]]の ""title:"")
 :$contents$|ページの内容
 :{$&[&[ページ名&]&]$|ページ名で指定したページの内容に置き換えます．
 ページ名はテンプレートのページから見た[[相対的な名前:..#相対ページ名]]でも構いません．
@@ -2965,9 +2969,14 @@ In Wiki notation, write something like
 The header row (the first row above) is ignored, so you may leave it out or make it
 whatever you like.
 
+The setup table may also be written as a [[table in Markdown notation:../Markdown/Extra#Tables]].
+Write the links to the pages in its first column as ""[[page name]]"".
+
 Once the setup table is written, create the pages you made into links in the table.
-We recommend making the pages you want as HTML files pages of type wiki, and the
-other pages of type text or type file.
+We recommend making the pages you want as HTML files pages of type wiki or type
+Markdown, and the other pages of type text or type file.
+Pages of type wiki and type Markdown are converted to HTML, just as they are when shown
+on the screen.
 
 Next, make a button that actually writes the files out following this setup.
 To make this button, write
@@ -3028,7 +3037,7 @@ Write a particular keyword in the template, such as the $title$ and $contents$ a
 and it is replaced by something else.
 The keywords are as follows.
 
-:$title$|the page name, or the title set by [[&&title:../Wiki/Function/title]]
+:$title$|the page name, or the title set by [[&&title:../Wiki/Function/title]] (for a page of type Markdown, ""title:"" in the [[front matter:../Markdown/FrontMatter]])
 :$contents$|the contents of the page
 :{$&[&[page name&]&]$|replaced by the contents of the page named.
 The page name may be a [[relative name:..#Relative page names]] seen from the template

@@ -201,7 +201,8 @@ function export_set_data($pagename, $argsstring) {
 	if(isset($output['filepath'])) {
 	    $filepath = $output['filepath'];
 	} else {
-	    if($type == 'wiki')
+	    /* HTML に変換して書き出す種別 (export_convert_get_contents()) */
+	    if($type == 'wiki' || $type == 'markdown')
 		$filepath = '$shortid$.html';
 	    else if($type == 'file')
 		$filepath = '$shortid$$extension$';
@@ -514,8 +515,16 @@ function export_convert_get_contents(&$output, &$page, $argsstring, $path) {
     } else {
 	$result = array();
 	switch(page_get_type($page)) {
+	/*
+	 * 種別 markdown も wiki と同じく、表示と同じ変換を通して HTML にする。
+	 * 以前は default に落ち、原文がそのまま HTML の枠に流し込まれていた
+	 * (記号が残り、生の HTML もエスケープされずに出ていた)。
+	 * リンクや添付の埋め込みは同じ data-link-pagename を持つので、
+	 * 張り替えもそのまま効く。
+	 */
 	case 'wiki':
-	    $result = export_convert_get_contents_wiki($output, $page, $argsstring, $path);
+	case 'markdown':
+	    $result = export_convert_get_contents_rendered($output, $page, $argsstring, $path);
 	    break;
 	default:
 	    $contents = page_get_contents($page);
@@ -526,7 +535,12 @@ function export_convert_get_contents(&$output, &$page, $argsstring, $path) {
     }
 }
 
-function export_convert_get_contents_wiki(&$output, &$page, $argsstring, $path) {
+/*
+ * ページを表示と同じ経路 (handle の show) で HTML にし、ページへのリンク
+ * (data-link-pagename) を書き出したファイルへのリンクに張り替える。
+ * 種別には依存しない (wiki と markdown が通る)。
+ */
+function export_convert_get_contents_rendered(&$output, &$page, $argsstring, $path) {
     global $export_configs;
     global $export_data;
 
@@ -545,7 +559,8 @@ function export_convert_get_contents_wiki(&$output, &$page, $argsstring, $path) 
     if(isset($page['title_dom'])) {
 	$export_title_dom = $page['title_dom'];
 	title_remove_actual($export_title_dom);
-	$title = $export_title_dom->textContent;
+	/* 画面用の題名は後ろに空白を付けて組み立てる (sentence_append) */
+	$title = trim($export_title_dom->textContent);
     }
     if($title == '')
 	$title = page_get_simplename($page['name']);
@@ -626,17 +641,25 @@ function export_sanitize_dom($dom) {
     foreach($EXPORT_SANITIZE_ATTRIBUTES as $name) {
 	$dom->removeAttribute($name);
     }
-    
+
+    /*
+     * フォーム (&export のボタンなど) は静的なサイトでは送れないので消す。
+     * 先に集めてから消す。以前は 1 つ消したところで return しており、
+     * 同じ親の 2 つめ以降のフォームと、その後ろの兄弟の属性が残っていた。
+     */
+    $forms = array();
     foreach($dom->childNodes as $child) {
-	if($child instanceof DOMElement) {
-	    if($child->tagName == 'form') {
-		$dom->removeChild($child);
-		dom_remove_empty($dom);
-		return;
-	    }
+	if(!($child instanceof DOMElement))
+	    continue;
+	if($child->tagName == 'form')
+	    $forms[] = $child;
+	else
 	    export_sanitize_dom($child);
-	}
     }
+    foreach($forms as $form)
+	$dom->removeChild($form);
+    if(!empty($forms))
+	dom_remove_empty($dom);
 }
 
 function export_replace_variables(&$page, $argsstring, $src, $is_filepath = false) {
