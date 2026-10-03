@@ -6,12 +6,66 @@ function execution_time() {
 }
 
 function args_get() {
-    $args = $_GET + $_POST;
+    $args = $_GET + post_args_get();
     foreach($args as $key => &$val) {
 	if(is_string($val))
 	    $val = normalize_string($val);
     }
     return $args;
+}
+
+/*
+ * POST の値。ブラウザが Base64 に包んで送ってきたものは戻す。
+ *
+ * 共用サーバーの WAF (ConoHa WING の SiteGuard Lite など) は、本文の `'--` や
+ * `<script>` を攻撃とみなし、PHP に届く前に要求を遮断する。wiki の本文には
+ * コード例としてそういう文字列が普通に入る。そこで nextform.js が送る直前に
+ * 値をすべて包み、印として post_encoding=base64 を足す (formdata イベント)。
+ * 包まない POST (JavaScript が無効なときなど) はこれまでどおり受け付ける。
+ *
+ * 戻すのは印が POST にあるときだけ。GET の値は包まれないので戻さない。
+ * MAX_FILE_SIZE は PHP がファイルを受け取る途中で自分で読むので、包まずに
+ * 送られてくる (包むと上限の指定が効かなくなる)。
+ *
+ * 戻せない値が 1 つでもあれば、要求ごと断る。空として扱うと、本文が空の
+ * 保存 = ページの削除になってしまう。
+ */
+function post_args_get() {
+    if(!isset($_POST['post_encoding']) || $_POST['post_encoding'] !== 'base64')
+	return $_POST;
+
+    $args = $_POST;
+    unset($args['post_encoding']);
+    foreach($args as $key => &$val) {
+	if($key === 'MAX_FILE_SIZE')
+	    continue;
+	$val = post_args_decode($val);
+	if($val === false)
+	    post_args_reject();
+    }
+    return $args;
+}
+
+function post_args_decode($value) {
+    if(!is_array($value))
+	return base64_decode($value, true);
+    foreach($value as &$val) {
+	$val = post_args_decode($val);
+	if($val === false)
+	    return false;
+    }
+    return $value;
+}
+
+/*
+ * 画面を組む前 (main() の最初) に呼ばれるので、csrf_reject() のような
+ * テーマの画面は出せない。ブラウザが作る値では起きないので、文字だけで返す。
+ */
+function post_args_reject() {
+    header('HTTP/1.1 400 Bad Request');
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo l('The request could not be read. Go back and send it again.') . "\n";
+    exit(0);
 }
 
 function normalize_string($binary) {

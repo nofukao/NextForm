@@ -136,6 +136,8 @@ $LANGUAGE['ja'] = array(
     'このサイトから送られた要求ではありません．',
     'If you reached this page from a bookmark or a link, open the page and use the button on it.' =>
     'ブックマークやリンクからここに来た場合は，対象のページを開いて，そのページ上のボタンから操作してください．',
+    'The request could not be read. Go back and send it again.' =>
+    '送られた内容を読み取れませんでした．前の画面に戻って，もう一度送ってください．',
 
     '($start$-$end$)' => '($start$〜$end$件目)',
     'Logging in may widen what you can search.' =>
