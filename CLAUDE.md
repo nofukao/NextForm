@@ -80,6 +80,7 @@
 ./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
 ./tests/search-cache.sh     # 検索のテキストキャッシュ (複製サイトを作る。要 sudo)
 ./tests/csrf.sh             # CSRF 対策 (複製サイトを作る。要 sudo)
+./tests/post-encoding.sh    # Base64 に包んだ POST を戻す (WAF 対策。複製サイトを作る。要 sudo)
 ./tests/dispatch.sh         # 不正な action で 500 にならないか (複製サイトを作る。要 sudo)
 ./tests/syntax-survey.sh    # wiki 記法の棚卸しツール (複製サイトを作る。要 sudo)
 ```
