@@ -25,7 +25,8 @@
 #   7. フォームの送り方を Base64 にしたサイトでも、包んだ要求で返ること
 #
 # 見出しの行の「全部を選ぶ」チェックボックスは JavaScript が差し込むので、
-# ブラウザで確かめる。ここでは見出しの先頭の欄が空で出ることだけを見る。
+# ブラウザで確かめる。ここでは見出しの先頭の欄が空で、並べ替えの対象から
+# 外れている (nosort) ことだけを見る。
 #
 # 権限を書き換えるので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。root で実行する必要がある。
@@ -274,6 +275,10 @@ for r in p.rows: print("row\t" + "\t".join(r))
 ')
 check_eq "表の見出しは「(空) | 添付ファイル名 | 保存日時 | サイズ」" "yes" \
          "$(printf '%s\n' "$table_info" | grep -qE $'^head\t\t(添付ファイル名|Attached file name)\t(保存日時|Saved at)\t(サイズ|Size)$' && echo yes || echo no)"
+# 見出しの先頭の欄には JavaScript が「全部を選ぶ」チェックボックスを差し込む。
+# この欄を押しても並べ替えないよう nosort を付ける (nextform.js の tableSortSetup())。
+check_eq "  見出しの先頭の欄は並べ替えの対象にしない (nosort)" "yes" \
+         "$(printf '%s' "$attach_html" | grep -q '<thead><tr><th class="nosort"></th><th>' && echo yes || echo no)"
 expected_rows=""
 for name in a.txt image.png "$JA_NAME"; do
     case "$name" in
