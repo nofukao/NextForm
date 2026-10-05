@@ -132,6 +132,7 @@ The ''Attach'' function in the ''page menu'' makes this easy.
 NextForm can also attach several files at once.
 
 Attached files can be downloaded together from the ''Attachment files'' list on the ''Attach'' page.
+The list is a table of check boxes, attached file names, the times they were saved and their sizes (in bytes). Pressing a heading sorts the table by that column.
 Choose them with the check boxes in front of the files (''Select all'' chooses all of them) and press ''Download''.
 When you choose one file, that file is downloaded; when you choose two or more, they are put together into one ZIP file.
 Either way the files are as they were attached (images are not shrunk either).
@@ -316,6 +317,7 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 また，NextFormでは複数のファイルを同時に添付することができます．
 
 添付したファイルは，''添付''の画面の''添付ファイル''の一覧からまとめてダウンロードできます．
+一覧は，チェックボックス・添付ファイル名・保存日時・サイズ(バイト数)の表です．見出しを押すと，その列で並べ替えられます．
 ファイルの前のチェックボックスで選び(''すべて選択''で全部選べます)，''ダウンロード''を押します．
 1つだけ選んだときはそのファイルを，2つ以上選んだときはZIPファイル1つにまとめてダウンロードします．
 どちらも添付したときのファイルのままです(画像も縮小しません)．
