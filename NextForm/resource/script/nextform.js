@@ -89,6 +89,7 @@ function main() {
     calendarHelperSetup();
     tableSortSetup();
     checkboxLabelSetup();
+    attachDownloadSetup();
     anchorSetup();
     anchorUpdate();
     searchSetup();
@@ -2656,6 +2657,31 @@ function checkboxLabelSetup() {
     });
 }
 
+/*
+ * 添付画面の「すべて選択」。一覧のチェックボックスを全部入れる
+ * (attach.inc の attach_show())。JavaScript が無いと働かないボタンなので、
+ * サーバーは出さず、ここで「ダウンロード」の前に差し込む。
+ * チェックを入れただけでは change が来ないので、見た目 (label.checked) も
+ * ここで合わせる。
+ */
+function attachDownloadSetup() {
+    $$('form.attach_download').each(function(form) {
+	var submit = form.down('input[type="submit"]');
+	if(!submit)
+	    return;
+	var button = new Element('button', {'type': 'button'}).update(l('Select all'));
+	submit.parentNode.insertBefore(button, submit);
+	submit.parentNode.insertBefore(document.createTextNode(' '), submit);
+	button.observe('click', function(event) {
+	    form.select('input[type="checkbox"][name="download[]"]').each(function(checkbox) {
+		checkbox.checked = true;
+		if(checkbox.parentCheckboxLabel)
+		    checkbox.updateCheckboxLabel();
+	    });
+	});
+    });
+}
+
 Element.prototype.updateCheckboxLabel = function() {
     if(this.checked)
 	this.parentCheckboxLabel.addClassName('checked');
@@ -3174,6 +3200,7 @@ var DAYOFWEEKS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 var LANGUAGE = {
     'ja' : {
+	'Select all': 'すべて選択',
 	'Sun': '日',
 	'Mon': '月',
 	'Tue': '火',
