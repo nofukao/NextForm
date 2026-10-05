@@ -8,6 +8,7 @@
  *   guest-write       ログインしていない利用者に write 権限を与える
  *   exists <名前>     ページがあるか (exists=1/0)
  *   body <名前>       ページの本文を base64 で 1 行に (body=...。無ければ body=(none))
+ *   set-encoding <値> サイト設定の POST_ENCODING を書き換える (空なら消して既定に戻す)
  *   cleanup           このヘルパの対象のページを消す
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -60,6 +61,21 @@ case 'body':
     }
     $page = page_read($rest[0]);
     printf("body=%s\n", base64_encode((string)page_get_contents($page)));
+    break;
+
+case 'set-encoding':
+    /*
+     * サイト設定の画面と同じ保存先 (storage の setup/site) を直接書き換える。
+     * 設定は要求のたびにここから読まれるので、次の HTTP から効く。
+     */
+    $contents = setup_read('site');
+    $values = ($contents === false) ? array() : unserialize($contents);
+    if($rest[0] === '')
+	unset($values['POST_ENCODING']);
+    else
+	$values['POST_ENCODING'] = $rest[0];
+    $contents = serialize($values);
+    printf("saved=%d\n", setup_write('site', $contents) ? 1 : 0);
     break;
 
 case 'cleanup':

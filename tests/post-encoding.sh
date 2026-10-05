@@ -17,18 +17,27 @@
 # source_contents として送るので、一度そういう文字列が入ったページは
 # 消して保存し直すことすらできない。
 #
-# そこでブラウザは POST の値を Base64 に包んで送り (nextform.js の formdata)、
-# サーバーは args_get() で戻す。ここで固定するのは次のとおり:
+# そこでサイト設定の POST_ENCODING を base64 にすると、ブラウザは POST の
+# 値を Base64 に包んで送り (nextform.js の formdata)、サーバーは args_get() で
+# 戻す。既定 (none) は改修前と同じで、包みも戻しもしない。
+# ここで固定するのは次のとおり:
 #
-#   1. 包まない POST (JavaScript が無効なときなど) がこれまでどおり通ること
-#   2. 包んだ POST の保存結果が、包まない場合と 1 バイトも変わらないこと
-#   3. 全体の編集画面と同じ項目 (ticket・source_contents・押したボタン) を
+#   既定 (none)
+#   1. 包まない POST がこれまでどおり通ること
+#   2. 有効の印 (<meta name="nextform-post-encoding">) を出さないこと
+#   3. 包んだ POST は戻さずに 400 で断ること (戻すと、設定に関係なく
+#      誰でも包んで WAF を素通りできる。戻さずに保存すると Base64 のまま残る)
+#
+#   有効 (base64)
+#   4. 有効の印を出すこと。包まない POST (JavaScript が無効なとき) も通ること
+#   5. 包んだ POST の保存結果が、包まない場合と 1 バイトも変わらないこと
+#   6. 全体の編集画面と同じ項目 (ticket・source_contents・押したボタン) を
 #      包んでも上書きできること
-#   4. 包んでも CSRF の検査は効くこと
-#   5. 印が GET にあるだけでは戻さないこと
-#   6. 戻せない値があれば 400 で断り、ページを変えないこと
+#   7. 包んでも CSRF の検査は効くこと
+#   8. 印が GET にあるだけでは戻さないこと
+#   9. 戻せない値があれば 400 で断り、ページを変えないこと
 #      (空として扱うと「本文が空 = ページの削除」になる)
-#   7. 添付 (multipart) で、MAX_FILE_SIZE だけ包まずに送れば受け付けること
+#  10. 添付 (multipart) で、MAX_FILE_SIZE だけ包まずに送れば受け付けること
 #
 # WAF そのものはこの環境に無い。ここで見るのは「包んだものを正しく戻せるか」で、
 # ブラウザが包んで送ることはブラウザの開発者ツールで確かめる。
@@ -169,6 +178,8 @@ log_before=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 log_before="${log_before:-0}"
 
 P_RAW="PostEncodingTest/Raw"
+P_OFF="PostEncodingTest/Off"
+P_RAW_ON="PostEncodingTest/RawOn"
 P_ENC="PostEncodingTest/Encoded"
 P_CSRF="PostEncodingTest/NoOrigin"
 P_GET="PostEncodingTest/GetMarker"
@@ -180,6 +191,23 @@ printf '# 見出し\r\n'"'"'--aa'"'"'\r\n<script>alert(1)</script>\r\nSELECT * F
     > "$WORK/text"
 TEXT_B64=$(base64 -w0 < "$WORK/text")
 
+# 有効の印 (<meta name="nextform-post-encoding" content="base64">) が出ているか (yes/no)。
+# `curl | grep -q` にしない (tests/markdown.sh の main_html() の注記と同じ理由)。
+marker_meta() {
+    local html
+    html=$(curl -sk "${URL}/?$1")
+    if [[ "$html" == *'name="nextform-post-encoding"'* ]]; then
+        echo yes
+    else
+        echo no
+    fi
+}
+
+# 複製元に値が入っていても、既定 (値が無い状態) から始める
+helper set-encoding '' > /dev/null
+
+echo "== 既定 (そのまま送る) =="
+echo
 echo "1. 包まない POST がこれまでどおり通ること"
 post "$P_RAW" -H "Origin: ${ORIGIN}" -d "action=write" \
      --data-urlencode "contents@${WORK}/text" > /dev/null
@@ -187,7 +215,31 @@ check_eq "保存できる" "1" "$(exists_of "$P_RAW")"
 check_eq "  本文に '--aa' が入っている" "yes" "$(body_has "$P_RAW" "'--aa'")"
 echo
 
-echo "2. 包んだ POST の保存結果が、包まない場合と同じになること"
+echo "2. 有効の印を出さないこと"
+check_eq "ページに有効の印が無い" "no" "$(marker_meta "$P_RAW")"
+echo
+
+echo "3. 包んだ POST は戻さずに 400 で断ること"
+code=$(post "$P_OFF" -H "Origin: ${ORIGIN}" \
+            --data-urlencode "action=$(b64 write)" \
+            --data-urlencode "contents=${TEXT_B64}" \
+            -d "post_encoding=base64")
+check_eq "応答は 400" "400" "$code"
+check_eq "  ページはできていない" "0" "$(exists_of "$P_OFF")"
+echo
+
+check_eq "(準備) 設定を base64 にする" "1" "$(value_of "$(helper set-encoding base64)" saved)"
+echo
+echo "== 有効 (Base64 に包んで送る) =="
+echo
+echo "4. 有効の印を出し、包まない POST も通ること"
+check_eq "ページに有効の印がある" "yes" "$(marker_meta "$P_RAW")"
+post "$P_RAW_ON" -H "Origin: ${ORIGIN}" -d "action=write" \
+     --data-urlencode "contents@${WORK}/text" > /dev/null
+check_eq "包まない POST で保存できる (JavaScript が無効なとき)" "$(body_of "$P_RAW")" "$(body_of "$P_RAW_ON")"
+echo
+
+echo "5. 包んだ POST の保存結果が、包まない場合と同じになること"
 code=$(post "$P_ENC" -H "Origin: ${ORIGIN}" \
             --data-urlencode "action=$(b64 write)" \
             --data-urlencode "contents=${TEXT_B64}" \
@@ -201,7 +253,7 @@ check_eq "  CR は落ちている" "no" "$(body_has "$P_ENC" $'\r')"
 check_eq "  制御文字は落ちている" "no" "$(body_has "$P_ENC" $'\001')"
 echo
 
-echo "3. 全体の編集画面と同じ項目を包んでも上書きできること"
+echo "6. 全体の編集画面と同じ項目を包んでも上書きできること"
 old_text=$(body_of "$P_ENC" | base64 -d)
 new_text="書き換えた本文
 '--bb'
@@ -219,7 +271,7 @@ check_eq "応答は保存後の移動 (302)" "302" "$code"
 check_eq "  本文が書き換わっている" "$(b64 "$new_text")" "$(body_of "$P_ENC")"
 echo
 
-echo "4. 包んでも CSRF の検査は効くこと"
+echo "7. 包んでも CSRF の検査は効くこと"
 code=$(post "$P_CSRF" --data-urlencode "action=$(b64 write)" \
             --data-urlencode "contents=$(b64 'Origin の無い要求')" \
             -d "post_encoding=base64")
@@ -227,7 +279,7 @@ check_eq "Origin の無い POST は 403" "403" "$code"
 check_eq "  ページはできていない" "0" "$(exists_of "$P_CSRF")"
 echo
 
-echo "5. 印が GET にあるだけでは戻さないこと"
+echo "8. 印が GET にあるだけでは戻さないこと"
 code=$(curl -sk -o /dev/null -w '%{http_code}' -X POST -H "Origin: ${ORIGIN}" \
             -d "action=write" --data-urlencode "contents=${TEXT_B64}" \
             "${URL}/?${P_GET}&post_encoding=base64")
@@ -235,7 +287,7 @@ check_eq "保存できる" "1" "$(exists_of "$P_GET")"
 check_eq "  本文は送った Base64 の文字列のまま" "$(b64 "$TEXT_B64")" "$(body_of "$P_GET")"
 echo
 
-echo "6. 戻せない値があれば 400 で断り、ページを変えないこと"
+echo "9. 戻せない値があれば 400 で断り、ページを変えないこと"
 before=$(body_of "$P_ENC")
 code=$(post "$P_ENC" -H "Origin: ${ORIGIN}" \
             --data-urlencode "action=$(b64 write)" \
@@ -247,7 +299,7 @@ check_eq "  ページは消えていない" "1" "$(exists_of "$P_ENC")"
 check_eq "  本文は変わっていない" "$before" "$(body_of "$P_ENC")"
 echo
 
-echo "7. 添付 (multipart) は MAX_FILE_SIZE だけ包まずに受け付けること"
+echo "10. 添付 (multipart) は MAX_FILE_SIZE だけ包まずに受け付けること"
 printf "添付の中身 '--cc'\n" > "$WORK/sample.txt"
 code=$(post "$P_RAW" -H "Origin: ${ORIGIN}" \
             -F "MAX_FILE_SIZE=2097152" \
@@ -262,7 +314,7 @@ check_eq "応答は 200" "200" "$code"
 check_eq "  添付ファイルのページができている" "1" "$(exists_of "${P_RAW}/sample.txt")"
 echo
 
-echo "8. PHP の警告が出ていないこと"
+echo "11. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null | grep -F "$SITE" || true)
 check_eq "この検証サイトの警告が増えていない" "" "$log_new"
 echo
