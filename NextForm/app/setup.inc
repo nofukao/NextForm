@@ -56,6 +56,20 @@ $SETUP_CONSTANTS['FILE_ALLOW_HTML'] = array(
     'type' => 'select',
     'options' => array('false' => 'Download', 'true' => 'Run in a sandbox'),
     'note' => 'running them lets anyone who can edit show any page under the URL of this site');
+/*
+ * フォームの送り方 (util.inc の post_args_get()、nextform.js の postEncodingSetup())。
+ *
+ * ConoHa WING などの共用サーバーの WAF は、本文の `'--` や `<script>` を攻撃と
+ * みなして保存を遮断する。base64 にすると、ブラウザが POST の値を包んで送り、
+ * サーバーが戻すので WAF に当たらない。代わりに、この wiki に送る内容を
+ * WAF が検査しなくなるので、要るサイトだけが選ぶ。既定は改修前と同じ。
+ */
+$SETUP_CONSTANTS['POST_ENCODING'] = array(
+    'description' => 'How forms are sent',
+    'default' => 'none',
+    'type' => 'select',
+    'options' => array('none' => 'Send as is', 'base64' => 'Wrap in Base64 (for a WAF)'),
+    'note' => 'choose wrapping on a shared server with a WAF, such as ConoHa WING, where saving a page with \'-- or <script> in it stops at "Forbidden access". The WAF then no longer inspects what is sent to this wiki');
 $SETUP_CONSTANTS['GOOGLE_API_KEY'] = array(
     'description' => 'Google API key',
     'type' => 'string',
@@ -270,6 +284,7 @@ function setup_read($name) {
 |{MANUAL_PAGENAME|NextFormManual|マニュアルページのページ名|}
 |{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
 |{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか。falseならダウンロードになる。trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
+|{POST_ENCODING|none|フォームの送り方。ConoHa WINGなど，WAFのある共用サーバーで，本文に""'--""や""<script>""を書くと保存が「閲覧できません (Forbidden access)」で止まる場合はbase64にする。サイト設定の「フォームの送り方」でも選べる。詳しくは[[サイトの管理:..]]|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
@@ -330,6 +345,7 @@ function setup_read($name) {
 |{MANUAL_PAGENAME|NextFormManual|the page name of the manual pages|}
 |{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type Markdown. Setting it true lets anyone who can edit embed a script|}
 |{FILE_ALLOW_HTML|false|whether an attached HTML file runs when it is opened. With false it is downloaded. Setting it true runs it isolated from the wiki, but lets anyone who can edit show any page under the URL of this site|}
+|{POST_ENCODING|none|how forms are sent. On a shared server with a WAF, such as ConoHa WING, where saving a page with ""'--"" or ""<script>"" in it stops at "Forbidden access", set it to base64. It can also be chosen as "How forms are sent" in the site settings. See [[Site administration:..]] for details|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
 |{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
 |{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}

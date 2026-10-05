@@ -191,6 +191,15 @@ function head_tags_init() {
 			 'name' => 'application-name',
 			 'content' => 'NextForm'
 			 ));
+    /*
+     * POST を包む送り方にしてあることを nextform.js に伝える
+     * (util.inc の post_args_get())。既定では出さないので、HTML は変わらない。
+     */
+    if(post_encoding_is_enabled())
+	dom_append_child($head_tags, 'meta', '', array(
+			     'name' => 'nextform-post-encoding',
+			     'content' => 'base64'
+			     ));
     head_tags_add_javascript('resource/script/prototype.js');
     head_tags_add_javascript('resource/script/nextform.js');
 }

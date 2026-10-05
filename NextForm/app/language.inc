@@ -42,6 +42,11 @@ $LANGUAGE['ja'] = array(
     'Attached HTML files' => '添付したHTMLファイル',
     'Run in a sandbox' => '隔離して動かす',
     'running them lets anyone who can edit show any page under the URL of this site' => '動かすと、編集できる人は誰でもこのサイトのURLの下に好きな画面を出せます (wikiのページや設定には届きません)',
+    'How forms are sent' => 'フォームの送り方',
+    'Send as is' => 'そのまま送る',
+    'Wrap in Base64 (for a WAF)' => 'Base64に包んで送る (WAF対策)',
+    'choose wrapping on a shared server with a WAF, such as ConoHa WING, where saving a page with \'-- or <script> in it stops at "Forbidden access". The WAF then no longer inspects what is sent to this wiki' =>
+    'ConoHa WINGなど、WAFのある共用サーバーで、本文に \'-- や <script> を書くと保存が「閲覧できません (Forbidden access)」で止まる場合に選びます。包むと、このwikiに送る内容をWAFが検査しなくなります',
     'Open' => '開く',
     'Details' => '詳細',
     'Markdown library is missing. Showing the source instead.' => 'Markdownの変換に必要なファイル (app/vendor/) がありません。原文を表示します。',
@@ -136,6 +141,8 @@ $LANGUAGE['ja'] = array(
     'このサイトから送られた要求ではありません．',
     'If you reached this page from a bookmark or a link, open the page and use the button on it.' =>
     'ブックマークやリンクからここに来た場合は，対象のページを開いて，そのページ上のボタンから操作してください．',
+    'The request could not be read. Copy what you entered, reload the page and send it again.' =>
+    '送られた内容を読み取れませんでした．入力した内容を控えてから，画面を読み込み直して，もう一度送ってください．',
 
     '($start$-$end$)' => '($start$〜$end$件目)',
     'Logging in may widen what you can search.' =>

@@ -82,6 +82,7 @@ function main() {
     tagEditSetup();
     urlCopySetup();
     revertWarningSetup();
+    postEncodingSetup();
     listAddSetup();
     templateInputSetup();
     formsHelperSetup();
@@ -1975,6 +1976,83 @@ function revertWarningSetup() {
     else if(window.attachEvent)
         return window.attachEvent('onbeforeunload', revertWarning);
     return false;
+}
+
+/*
+ * このサイトへの POST の値を、送る直前に Base64 に包む。サイト設定の
+ * 「フォームの送り方」(POST_ENCODING) を包む側にしたときだけで、そのときは
+ * サーバーが <meta name="nextform-post-encoding" content="base64"> を出す。
+ *
+ * ConoHa WING などの共用サーバーの WAF (SiteGuard Lite など) は、本文の `'--` や
+ * `<script>` を攻撃とみなし、PHP に届く前に要求を遮断する。wiki の本文には
+ * コード例としてそういう文字列が普通に入る。Base64 には引用符も `-` も `<` も
+ * 空白も現れないので、包めば当たらない。サーバーは印の post_encoding=base64 を
+ * 見て戻す (util.inc の post_args_get())。
+ *
+ * formdata イベントは、送信ボタンで送るときにも form.submit() で送るときにも、
+ * 送る内容を組み立てた直後に来る。部分編集や一覧の編集は form.submit() で
+ * 送るので、submit イベントでは捕まえられない。イベントが無い古いブラウザでは
+ * 何もせず、これまでどおり包まずに送る (サーバーはどちらも受け付ける)。
+ *
+ * GET (検索など) は URL に出るので包まない。ファイルはそのまま送る。
+ * MAX_FILE_SIZE は PHP がファイルを受け取る途中で自分で読むので包まない。
+ */
+function postEncodingSetup() {
+    var meta = document.querySelector('meta[name="nextform-post-encoding"]');
+    if(!meta || meta.getAttribute('content') != 'base64')
+	return;
+    if(!window.TextEncoder || !window.URL || !document.addEventListener)
+	return;
+    document.addEventListener('formdata', function(event) {
+	if(!postEncodingIsTarget(event.target))
+	    return;
+	var formData = event.formData;
+	var entries = [];
+	formData.forEach(function(value, name) {
+	    entries.push([name, value]);
+	});
+	// 同じ名前が並ぶもの (files[] など) と並び順を保つため、全部消してから入れ直す
+	for(var i = 0; i < entries.length; i++)
+	    formData.delete(entries[i][0]);
+	for(var i = 0; i < entries.length; i++) {
+	    var name = entries[i][0];
+	    var value = entries[i][1];
+	    if(typeof value == 'string' && name != 'MAX_FILE_SIZE')
+		value = postEncodingEncode(value);
+	    formData.append(name, value);
+	}
+	formData.append('post_encoding', 'base64');
+    }, true);
+}
+
+/*
+ * 包む相手か。このサイトへの POST だけを包む (ページの中に、よそへ送る
+ * フォームがあることもある)。form.method と form.action は、同じ名前の
+ * 入力欄があるとその要素を返す (このサイトのフォームは action という名前の
+ * hidden を持つ) ので、属性から読む。
+ *
+ * サイトの比べ方は csrf.inc に合わせてホスト部だけにする。同じホストの別の
+ * 置き場所へ送るフォームは包まない。
+ */
+function postEncodingIsTarget(form) {
+    var method = form.getAttribute('method');
+    if(!method || method.toLowerCase() != 'post')
+	return false;
+    var url = new URL(form.getAttribute('action') || '', document.baseURI);
+    var directory = function(pathname) {
+	return pathname.replace(/[^\/]*$/, '');
+    };
+    return url.host == location.host &&
+	directory(url.pathname) == directory(location.pathname);
+}
+
+/* UTF-8 のバイト列をそのまま Base64 にする。ブラウザが包まずに送るときと同じバイト列 */
+function postEncodingEncode(value) {
+    var bytes = new TextEncoder().encode(value);
+    var binary = '';
+    for(var i = 0; i < bytes.length; i += 0x8000)
+	binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return window.btoa(binary);
 }
 
 Element.prototype.revertWarningSetup = function() {

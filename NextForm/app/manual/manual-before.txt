@@ -359,6 +359,28 @@ Wiki記法だけで，「動くページ」を作れるのが持ち味です．
 
 -[[設定項目:./Settings]]
 
+*WAFに保存を止められるとき(ConoHa WINGなど)
+ConoHa WINGなどの共用サーバーには，攻撃に見える文字列を含む送信を遮断する仕組み(WAF)があります．
+本文に""'--""や""<script>""のような，プログラムのコード例によく出る文字列を書いて保存すると，
+WAFがそれを攻撃とみなし，「閲覧できません (Forbidden access)」の画面(Powered by SiteGuard Lite)になって保存できないことがあります．
+NextFormに届く前に止められているので，NextFormの側には何も記録が残りません．
+
+この場合は''サイトメニュー'' > ''管理ツール'' > ''サイト設定''の''フォームの送り方''を
+''Base64に包んで送る (WAF対策)''にして下さい．
+ブラウザが送る内容をBase64に包んで送り，NextFormが元に戻すので，WAFに当たらなくなります．
+index.phpに次のように書いても同じです．
+ define('POST_ENCODING', 'base64');
+
+包んで送るようにすると，次のようになります．
+-このwikiに送る内容をWAFが検査しなくなります．NextFormはデータベースを使わず，表示するときに自分で無害化しているので，WAFに頼っている守りはありませんが，必要なサイトだけで選んで下さい．
+-ページの本文などの文字は約4/3倍の大きさで送られます．添付ファイルは包まずに送るので，添付のサイズ上限は変わりません．
+-JavaScriptを無効にしているブラウザでは包まずに送ります(WAFに止められることがあります)．
+-検索語は包みません(URLに出るため)．検索語に""'--""などを入れると止められることがあります．
+-自作のプラグインが送られた値をargs_get()を通さずに読んでいる場合は，Base64のまま受け取ります．
+-設定を切り替える前に開いていた画面から送ると，「送られた内容を読み取れませんでした」と出ます．入力した内容を控えてから，画面を読み込み直して下さい．
+
+コントロールパネルのWAFの除外設定で対処することもできますが，止められる文字列の種類ごとに除外を足すことになり，同じドメインのほかのアプリからもその検査が外れます．
+
 *ユーザー
 NextFormではユーザーごとページごとに権限が設定できます．
 ユーザーの設定をするには''サイトメニュー'' > ''管理ツール'' > ''ユーザーの管理'' を選択して下さい．
@@ -555,6 +577,28 @@ in httpd.conf or .htaccess.
 For the constants that can be set, see the page below.
 
 -[[Settings:./Settings]]
+
+*When a WAF stops saving (ConoHa WING and others)
+Shared servers such as ConoHa WING have a mechanism (a WAF) that blocks requests containing strings that look like attacks.
+When you save a page whose text contains strings common in program code examples, such as ""'--"" or ""<script>"",
+the WAF may take it as an attack and show a "Forbidden access" page (Powered by SiteGuard Lite) instead of saving.
+The request is stopped before it reaches NextForm, so nothing is recorded on the NextForm side.
+
+In that case, choose ''site menu'' > ''Admin tools'' > ''Site setup'' and set
+''How forms are sent'' to ''Wrap in Base64 (for a WAF)''.
+The browser wraps what it sends in Base64 and NextForm unwraps it, so the WAF no longer reacts.
+Writing the following in index.php does the same.
+ define('POST_ENCODING', 'base64');
+
+When forms are wrapped:
+-The WAF no longer inspects what is sent to this wiki. NextForm uses no database and makes the output safe itself when showing it, so no protection relies on the WAF, but choose it only on sites that need it.
+-Text such as the page body is sent at about 4/3 of its size. Attached files are sent unwrapped, so the size limit for attachments does not change.
+-A browser with JavaScript turned off sends without wrapping (the WAF may stop it).
+-Search words are not wrapped (they appear in the URL). Search words containing ""'--"" and the like may be stopped.
+-A plugin of your own that reads the sent values without going through args_get() receives them still in Base64.
+-Sending from a page that was opened before the setting was changed shows "The request could not be read". Copy what you entered, then reload the page.
+
+The WAF exclusion settings in the control panel can also deal with this, but you have to add an exclusion for each kind of string that is stopped, and the exclusion also removes that check from the other applications on the same domain.
 
 *Users
 NextForm can set rights per user and per page.
