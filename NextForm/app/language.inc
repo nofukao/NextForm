@@ -290,6 +290,9 @@ $LANGUAGE['ja'] = array(
     'Upload failed.' => 'アップロードに失敗しました．',
     'Upload $filename$.' => '$filename$ をアップロードしました．',
     'Upload $filename$ failed.' => '$filename$ のアップロードに失敗しました．',
+    'Select the files to download.' => 'ダウンロードするファイルを選んでください．',
+    'The selected file was not found.' => '選んだファイルが見つかりません．',
+    'The selected files cannot be put into one ZIP file.' => '選んだファイルは1つのZIPにまとめられません(数が多すぎるか，大きすぎます)．',
 
     'Download' => 'ダウンロード',
     'Original file name' => 'アップロード時のファイル名',
