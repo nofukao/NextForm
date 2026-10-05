@@ -2658,27 +2658,47 @@ function checkboxLabelSetup() {
 }
 
 /*
- * 添付画面の「すべて選択」。一覧のチェックボックスを全部入れる
- * (attach.inc の attach_show())。JavaScript が無いと働かないボタンなので、
- * サーバーは出さず、ここで「ダウンロード」の前に差し込む。
+ * 添付画面の一覧の見出しのチェックボックス (attach.inc の attach_show())。
+ * 押すたびに、一覧のチェックボックスを全部入れるか全部外すかを切り替える。
+ * JavaScript が無いと働かないので、サーバーは見出しの先頭の欄を空で出し、
+ * ここで差し込む。一覧のほうを 1 つずつ変えたときは、全部入っているかどうかに
+ * 見出しを合わせる。
+ * 見出しを押すと並べ替える (tableSortSetup()) ので、このチェックボックスの
+ * クリックは見出しまで届かないようにする。
  * チェックを入れただけでは change が来ないので、見た目 (label.checked) も
  * ここで合わせる。
  */
 function attachDownloadSetup() {
     $$('form.attach_download').each(function(form) {
-	var submit = form.down('input[type="submit"]');
-	if(!submit)
+	var cell = form.down('thead th');
+	if(!cell)
 	    return;
-	var button = new Element('button', {'type': 'button'}).update(l('Select all'));
-	submit.parentNode.insertBefore(button, submit);
-	submit.parentNode.insertBefore(document.createTextNode(' '), submit);
-	button.observe('click', function(event) {
-	    form.select('input[type="checkbox"][name="download[]"]').each(function(checkbox) {
-		checkbox.checked = true;
+	var checkboxes = form.select('tbody input[type="checkbox"][name="download[]"]');
+	var label = new Element('label', {'title': l('Select all')});
+	var all = new Element('input', {'type': 'checkbox', 'aria-label': l('Select all')});
+	label.appendChild(all);
+	cell.insertBefore(label, cell.firstChild);
+	all.setupParentCheckboxLabel();
+	label.observe('click', function(event) {
+	    event.stopPropagation();
+	});
+
+	var update = function() {
+	    all.checked = checkboxes.length > 0 &&
+		checkboxes.all(function(checkbox) { return checkbox.checked; });
+	    all.updateCheckboxLabel();
+	};
+	all.observe('change', function(event) {
+	    checkboxes.each(function(checkbox) {
+		checkbox.checked = all.checked;
 		if(checkbox.parentCheckboxLabel)
 		    checkbox.updateCheckboxLabel();
 	    });
 	});
+	checkboxes.each(function(checkbox) {
+	    checkbox.observe('change', update);
+	});
+	update();
     });
 }
 

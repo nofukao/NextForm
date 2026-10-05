@@ -60,8 +60,8 @@ function attach_show(&$args, $dom) {
 	dom_append_text($h, l('Attachment files'));
 	/*
 	 * チェックしたものをまとめてダウンロードする (attach_download())。
-	 * 「すべて選択」のボタンは JavaScript が無いと働かないので、
-	 * nextform.js の attachDownloadSetup() が差し込む。
+	 * 全部を選ぶ見出しのチェックボックスは JavaScript が無いと働かないので、
+	 * 見出しの先頭の欄は空で出し、nextform.js の attachDownloadSetup() が差し込む。
 	 */
 	$form = dom_append_page_form($page, $section,
 				     array('option' => 'attach', 'action' => 'download'),
