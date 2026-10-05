@@ -15,13 +15,20 @@ function args_get() {
 }
 
 /*
- * POST の値。ブラウザが Base64 に包んで送ってきたものは戻す。
+ * POST の値。サイト設定で包む送り方にしてあれば、ブラウザが Base64 に
+ * 包んで送ってきたものを戻す。
  *
- * 共用サーバーの WAF (ConoHa WING の SiteGuard Lite など) は、本文の `'--` や
- * `<script>` を攻撃とみなし、PHP に届く前に要求を遮断する。wiki の本文には
- * コード例としてそういう文字列が普通に入る。そこで nextform.js が送る直前に
- * 値をすべて包み、印として post_encoding=base64 を足す (formdata イベント)。
- * 包まない POST (JavaScript が無効なときなど) はこれまでどおり受け付ける。
+ * ConoHa WING などの共用サーバーの WAF (SiteGuard Lite など) は、本文の
+ * `'--` や `<script>` を攻撃とみなし、PHP に届く前に要求を遮断する。wiki の
+ * 本文にはコード例としてそういう文字列が普通に入る。POST_ENCODING を base64 に
+ * すると、nextform.js が送る直前に値をすべて包み、印として post_encoding=base64 を
+ * 足す (formdata イベント)。包まない POST (JavaScript が無効なときなど) は
+ * どちらの設定でも受け付ける。
+ *
+ * 既定 (none) では戻さない。戻す処理が常に動いていると、設定に関係なく誰でも
+ * 包んで WAF を素通りできてしまう。既定のサイトに印つきの POST が来たら
+ * (設定を戻す前に開いた画面から送られたときなど) 断る。戻さずに保存すると、
+ * 本文が Base64 の文字列のまま残る。
  *
  * 戻すのは印が POST にあるときだけ。GET の値は包まれないので戻さない。
  * MAX_FILE_SIZE は PHP がファイルを受け取る途中で自分で読むので、包まずに
@@ -31,8 +38,10 @@ function args_get() {
  * 保存 = ページの削除になってしまう。
  */
 function post_args_get() {
-    if(!isset($_POST['post_encoding']) || $_POST['post_encoding'] !== 'base64')
+    if(!isset($_POST['post_encoding']))
 	return $_POST;
+    if($_POST['post_encoding'] !== 'base64' || !post_encoding_is_enabled())
+	post_args_reject();
 
     $args = $_POST;
     unset($args['post_encoding']);
@@ -44,6 +53,14 @@ function post_args_get() {
 	    post_args_reject();
     }
     return $args;
+}
+
+/*
+ * 包む送り方にしてあるか。インストーラや CLI のツールでは設定がまだ
+ * 読まれていないことがあるので、定義されているかから見る。
+ */
+function post_encoding_is_enabled() {
+    return defined('POST_ENCODING') && POST_ENCODING === 'base64';
 }
 
 function post_args_decode($value) {
@@ -59,12 +76,14 @@ function post_args_decode($value) {
 
 /*
  * 画面を組む前 (main() の最初) に呼ばれるので、csrf_reject() のような
- * テーマの画面は出せない。ブラウザが作る値では起きないので、文字だけで返す。
+ * テーマの画面は出せない。ふだんは起きないので、文字だけで返す。
+ * 起きるのは設定を切り替える前に開いた画面から送ったときで、同じ画面から
+ * 送り直してもまた断られる。読み込み直すよう案内する。
  */
 function post_args_reject() {
     header('HTTP/1.1 400 Bad Request');
     header('Content-Type: text/plain; charset=UTF-8');
-    echo l('The request could not be read. Go back and send it again.') . "\n";
+    echo l('The request could not be read. Copy what you entered, reload the page and send it again.') . "\n";
     exit(0);
 }
 

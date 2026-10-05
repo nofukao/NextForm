@@ -56,6 +56,20 @@ $SETUP_CONSTANTS['FILE_ALLOW_HTML'] = array(
     'type' => 'select',
     'options' => array('false' => 'Download', 'true' => 'Run in a sandbox'),
     'note' => 'running them lets anyone who can edit show any page under the URL of this site');
+/*
+ * フォームの送り方 (util.inc の post_args_get()、nextform.js の postEncodingSetup())。
+ *
+ * ConoHa WING などの共用サーバーの WAF は、本文の `'--` や `<script>` を攻撃と
+ * みなして保存を遮断する。base64 にすると、ブラウザが POST の値を包んで送り、
+ * サーバーが戻すので WAF に当たらない。代わりに、この wiki に送る内容を
+ * WAF が検査しなくなるので、要るサイトだけが選ぶ。既定は改修前と同じ。
+ */
+$SETUP_CONSTANTS['POST_ENCODING'] = array(
+    'description' => 'How forms are sent',
+    'default' => 'none',
+    'type' => 'select',
+    'options' => array('none' => 'Send as is', 'base64' => 'Wrap in Base64 (for a WAF)'),
+    'note' => 'choose wrapping on a shared server with a WAF, such as ConoHa WING, where saving a page with \'-- or <script> in it stops at "Forbidden access". The WAF then no longer inspects what is sent to this wiki');
 $SETUP_CONSTANTS['GOOGLE_API_KEY'] = array(
     'description' => 'Google API key',
     'type' => 'string',

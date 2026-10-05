@@ -1979,9 +1979,11 @@ function revertWarningSetup() {
 }
 
 /*
- * このサイトへの POST の値を、送る直前に Base64 に包む。
+ * このサイトへの POST の値を、送る直前に Base64 に包む。サイト設定の
+ * 「フォームの送り方」(POST_ENCODING) を包む側にしたときだけで、そのときは
+ * サーバーが <meta name="nextform-post-encoding" content="base64"> を出す。
  *
- * 共用サーバーの WAF (ConoHa WING の SiteGuard Lite など) は、本文の `'--` や
+ * ConoHa WING などの共用サーバーの WAF (SiteGuard Lite など) は、本文の `'--` や
  * `<script>` を攻撃とみなし、PHP に届く前に要求を遮断する。wiki の本文には
  * コード例としてそういう文字列が普通に入る。Base64 には引用符も `-` も `<` も
  * 空白も現れないので、包めば当たらない。サーバーは印の post_encoding=base64 を
@@ -1996,6 +1998,9 @@ function revertWarningSetup() {
  * MAX_FILE_SIZE は PHP がファイルを受け取る途中で自分で読むので包まない。
  */
 function postEncodingSetup() {
+    var meta = document.querySelector('meta[name="nextform-post-encoding"]');
+    if(!meta || meta.getAttribute('content') != 'base64')
+	return;
     if(!window.TextEncoder || !window.URL || !document.addEventListener)
 	return;
     document.addEventListener('formdata', function(event) {
