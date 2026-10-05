@@ -227,10 +227,17 @@ function attach_list(&$args, $dom) {
     $attach_pages = page_find($page['name'], array('type' => 'file', 'is_children_only' => true));
     foreach($attach_pages as &$attach_page) {
 	$relativename = preg_replace('|^' . preg_quote($page['name'], '|') . '|', '.', $attach_page['name']);
-	$response['pages'][] = array(
+	$entry = array(
 	    'name' => $attach_page['name'],
 	    'relativename' => $relativename
 	    );
+	/*
+	 * 大きさも返す。他のサイトがこのページをクローンするとき、転送する前に
+	 * 自分の上限を超えないかを確かめられる (option/clone.inc)。
+	 */
+	if(isset($attach_page['contents_size']))
+	    $entry['size'] = (int)$attach_page['contents_size'];
+	$response['pages'][] = $entry;
     }
     $json_text = json_encode($response);
     header("Content-Type: application/json; charset=utf-8");

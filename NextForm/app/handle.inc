@@ -109,6 +109,15 @@ function handle(&$page, $dom, $action = '') {
 		 */
 		if(empty($args['newpage_type']))
 		    $type = NEWPAGE_DEFAULT_TYPE;
+		/*
+		 * 「他のNextFormページのクローン」は種別ではなく、クローンの画面
+		 * (option/clone.inc) への入口。新規ページの画面から来ても、
+		 * この画面の「ページ種別」で選んでも、ここで移る。
+		 */
+		if($type === 'clone') {
+		    header('Location: ' . url_make($page['name'], array('option' => 'clone')));
+		    exit(0);
+		}
 		$action = 'edit';
 
 		$form = dom_append_form($dom, array('page' => $page['name']), 'newpage_type', 'GET');
@@ -118,6 +127,7 @@ function handle(&$page, $dom, $action = '') {
 		foreach($HANDLERS as $htype => &$handler) {
 		    $options[$htype] = page_type_label($htype);
 		}
+		$options['clone'] = l('Clone of another NextForm page');
 		dom_append_selector($label, 'newpage_type', $options, $type);
 		$submit = dom_append_child($form, 'input', 'redundant',
 					   array('type' => 'submit', 'value' => l('Change')));

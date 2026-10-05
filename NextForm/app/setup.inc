@@ -70,6 +70,17 @@ $SETUP_CONSTANTS['POST_ENCODING'] = array(
     'type' => 'select',
     'options' => array('none' => 'Send as is', 'base64' => 'Wrap in Base64 (for a WAF)'),
     'note' => 'choose wrapping on a shared server with a WAF, such as ConoHa WING, where saving a page with \'-- or <script> in it stops at "Forbidden access". The WAF then no longer inspects what is sent to this wiki');
+/*
+ * クローン元として許すホスト (option/clone.inc、app/remote.inc)。
+ * 既定では公開のアドレスのホストからしか取らない。開発用のサイトや自宅 LAN の
+ * サイトのような、プライベートなネットワークのホストはここに書く。
+ */
+$SETUP_CONSTANTS['CLONE_ALLOWED_HOSTS'] = array(
+    'description' => 'Hosts allowed as clone sources',
+    'type' => 'multilinestring',
+    'allowempty' => true,
+    'default' => '',
+    'note' => 'one host name per line. A host on a private network (such as a LAN) can be cloned from only when it is written here');
 $SETUP_CONSTANTS['GOOGLE_API_KEY'] = array(
     'description' => 'Google API key',
     'type' => 'string',

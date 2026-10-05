@@ -37,6 +37,8 @@ function newpage_dom_append_form($dom, $default_name = '') {
     foreach($HANDLERS as $type => &$handler) {
 	$options[$type] = page_type_label($type);
     }
+    /* 種別ではないが、ここから選べるようにする (option/clone.inc) */
+    $options['clone'] = l('Clone of another NextForm page');
     
     $label = dom_append_child($form, 'label');
     dom_append_text($label, l('Type'));
