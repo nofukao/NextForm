@@ -170,6 +170,14 @@ rules_common() {
           "bool(re.search(r'pre\.wrap\s*\{[^}]*white-space:\s*pre-wrap', css, re.S))"
     check "ブロック指定 pre.nowrap がある" \
           "bool(re.search(r'pre\.nowrap\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
+
+    # 添付画面 (option/attach.inc)。アップロードの行と「添付ファイル」の見出しが
+    # 詰まっていると、どこまでがアップロードなのか分からない。見出しの前を
+    # 1 行ほど空け、添付ファイルの表 (とダウンロードのボタン) を右に下げる。
+    check "添付画面の「添付ファイル」の前を空ける" \
+          "bool(re.search(r'form\.attach\s*\+\s*section\s*\{[^}]*margin-top:\s*[1-9][0-9]*px', css, re.S))"
+    check "添付ファイルの表を右に下げる" \
+          "bool(re.search(r'form\.attach_download\s*\{[^}]*margin-left:\s*[1-9][0-9]*px', css, re.S))"
 }
 
 # 設定を既定から動かしたときだけ見る項目。

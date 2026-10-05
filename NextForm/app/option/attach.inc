@@ -60,14 +60,17 @@ function attach_show(&$args, $dom) {
 	dom_append_text($h, l('Attachment files'));
 	/*
 	 * チェックしたものをまとめてダウンロードする (attach_download())。
-	 * 「すべて選択」のボタンは JavaScript が無いと働かないので、
-	 * nextform.js の attachDownloadSetup() が差し込む。
+	 * 全部を選ぶ見出しのチェックボックスは JavaScript が無いと働かないので、
+	 * 見出しの先頭の欄は空で出し、nextform.js の attachDownloadSetup() が差し込む。
 	 */
 	$form = dom_append_page_form($page, $section,
 				     array('option' => 'attach', 'action' => 'download'),
 				     'attach_download');
-	pagelist_append($form, $file_subpages, array('fields' => '[[basename]]'));
-	attach_append_download_checkboxes($form, $page);
+	pagelist_append($form, $file_subpages, array(
+			    'show' => 'table',
+			    'fields' => "'[[basename@" . l('Attached file name') . "]]' " .
+			    "'mtime@" . l('Saved at') . "' 'size@" . l('Size') . "'"));
+	attach_append_download_columns($form, $page);
 	$p = dom_append_child($form, 'p');
 	dom_append_child($p, 'input', '',
 			 array('type' => 'submit', 'name' => 'download_files',
@@ -78,19 +81,40 @@ function attach_show(&$args, $dom) {
 }
 
 /*
- * 一覧の各ファイルの前にチェックボックスを差し込む。一覧そのものは
- * pagelist_append() が作ったまま (読めないファイルはそこで落ちる)。
- * 値はページ名の末尾で、どのページの添付かは送り先のページで決まる。
- * <label> で包むのは、ほかの画面のチェックボックスと見た目を揃えるため
+ * 一覧の表 (チェックボックス | 添付ファイル名 | 保存日時 | サイズ) の仕上げ。
+ * 表そのものは pagelist_append() が作ったまま (読めないファイルはそこで落ちる)。
+ * 先頭にチェックボックスの列を差し込み、サイズを桁区切りにする。
+ *
+ * チェックボックスの値はページ名の末尾で、どのページの添付かは送り先のページで
+ * 決まる。<label> で包むのは、ほかの画面のチェックボックスと見た目を揃えるため
  * (nextform.js の checkboxLabelSetup())。
+ *
+ * 見出しの先頭の欄は空で出し、nextform.js の attachDownloadSetup() が
+ * 「全部を選ぶ」チェックボックスを差し込む。この欄は押しても並べ替えない
+ * よう nosort を付ける (tableSortSetup())。
+ *
+ * サイズは pagelist_append() だとバイト数のまま出る。ファイルのページの
+ * 「ファイルサイズ」と同じく桁区切りにする。見出しで並べ替えるとき、
+ * nextform.js の tableSortSetup() はカンマを除いて数として比べるので、
+ * 大きさの順に並ぶ。列の並びは attach_show() の fields で決めたとおりで、
+ * サイズは最後の列。
  */
-function attach_append_download_checkboxes($form, &$page) {
+function attach_append_download_columns($form, &$page) {
     $prefix = $page['name'] . '/';
-    foreach(iterator_to_array($form->getElementsByTagName('li')) as $li) {
-	$pagename = $li->getAttribute('data-pagename');
+    foreach(iterator_to_array($form->getElementsByTagName('tr')) as $tr) {
+	if($tr->parentNode->nodeName === 'thead') {
+	    dom_insert_child($tr, 'th', 'nosort');
+	    continue;
+	}
+	$pagename = $tr->getAttribute('data-pagename');
 	if(strpos($pagename, $prefix) !== 0)
 	    continue;
-	$label = dom_insert_child($li, 'label');
+	$cells = $tr->getElementsByTagName('td');
+	$size_cell = $cells->item($cells->length - 1);
+	$size_cell->textContent = number_format((int)$size_cell->textContent);
+
+	$td = dom_insert_child($tr, 'td');
+	$label = dom_append_child($td, 'label');
 	dom_append_child($label, 'input', '',
 			 array('type' => 'checkbox', 'name' => 'download[]',
 			       'value' => substr($pagename, strlen($prefix))));

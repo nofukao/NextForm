@@ -15,7 +15,8 @@
 # ZIP 1 つにまとめて返す。ZIP は zip 拡張を使わずに NextForm が組み立てる
 # (project-overview.md §7)。ここで固定するのは次のとおり:
 #
-#   1. 一覧の各ファイルにチェックボックスが付き、読めないファイルは出ないこと
+#   1. 一覧は「チェックボックス | 添付ファイル名 | 保存日時 | サイズ」の表で、
+#      読めないファイルは出ないこと
 #   2. 2 つ以上なら ZIP になり、名前 (日本語を含む) と中身が元のファイルと一致すること
 #   3. 1 つならそのファイルが元のバイト列のまま返ること (画像も縮小しない)
 #   4. 何も選ばないとき、このページの添付でないものを選んだときは返さないこと
@@ -23,7 +24,9 @@
 #   6. GET では返さないこと (CSRF 対策の対象)
 #   7. フォームの送り方を Base64 にしたサイトでも、包んだ要求で返ること
 #
-# 「すべて選択」のボタンは JavaScript が差し込むので、ブラウザで確かめる。
+# 見出しの行の「全部を選ぶ」チェックボックスは JavaScript が差し込むので、
+# ブラウザで確かめる。ここでは見出しの先頭の欄が空で、並べ替えの対象から
+# 外れている (nosort) ことだけを見る。
 #
 # 権限を書き換えるので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。root で実行する必要がある。
@@ -230,6 +233,65 @@ for f in p.forms:
 ')
 check_eq "チェックボックスはダウンロードのフォームの中にあり、POST で送る" \
          "method=POST option=attach action=download submit=download_files" "$form_info"
+
+# ダウンロードのフォームの中の表を「見出し」と「行ごとのセル」に分けて出す。
+# 1 列目はチェックボックスの値、2 列目はリンクの文字、ほかはセルの文字。
+table_info=$(printf '%s' "$attach_html" | python3 -c '
+import sys
+from html.parser import HTMLParser
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.form = False; self.table = False; self.cell = None
+        self.heads = []; self.rows = []
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "form" and "attach_download" in (a.get("class") or "").split():
+            self.form = True
+        elif self.form and tag == "table":
+            self.table = True
+        elif self.table and tag == "tr":
+            self.row = []
+        elif self.table and tag in ("th", "td"):
+            self.cell = ""
+        elif self.cell is not None and tag == "input" and a.get("type") == "checkbox":
+            self.cell += "[x:%s]" % a.get("value")
+        elif self.cell is not None and tag == "a":
+            self.cell += "[a:"
+    def handle_endtag(self, tag):
+        if tag == "form": self.form = False
+        elif tag == "table": self.table = False
+        elif self.cell is not None and tag == "a":
+            self.cell += "]"
+        elif self.cell is not None and tag in ("th", "td"):
+            self.row.append(self.cell.strip()); self.cell = None
+        elif self.table and tag == "tr":
+            (self.heads if not self.rows and not any(c.startswith("[x:") for c in self.row) and not self.heads else self.rows).append(self.row)
+    def handle_data(self, data):
+        if self.cell is not None: self.cell += data
+p = P(); p.feed(sys.stdin.read())
+for h in p.heads: print("head\t" + "\t".join(h))
+for r in p.rows: print("row\t" + "\t".join(r))
+')
+check_eq "表の見出しは「(空) | 添付ファイル名 | 保存日時 | サイズ」" "yes" \
+         "$(printf '%s\n' "$table_info" | grep -qE $'^head\t\t(添付ファイル名|Attached file name)\t(保存日時|Saved at)\t(サイズ|Size)$' && echo yes || echo no)"
+# 見出しの先頭の欄には JavaScript が「全部を選ぶ」チェックボックスを差し込む。
+# この欄を押しても並べ替えないよう nosort を付ける (nextform.js の tableSortSetup())。
+check_eq "  見出しの先頭の欄は並べ替えの対象にしない (nosort)" "yes" \
+         "$(printf '%s' "$attach_html" | grep -q '<thead><tr><th class="nosort"></th><th>' && echo yes || echo no)"
+expected_rows=""
+for name in a.txt image.png "$JA_NAME"; do
+    case "$name" in
+        a.txt)     size=$(stat -c %s "$WORK/a.txt") ;;
+        image.png) size=$(stat -c %s "$WORK/image.png") ;;
+        *)         size=$(stat -c %s "$WORK/ja.txt") ;;
+    esac
+    mtime=$(value_of "$(helper mtime-text "${P_PAGE}/${name}")" mtime)
+    expected_rows+=$(printf 'row\t[x:%s]\t[a:%s]\t%s\t%s\n' "$name" "$name" "$mtime" "$(python3 -c 'import sys; print("{:,}".format(int(sys.argv[1])))' "$size")")
+    expected_rows+=$'\n'
+done
+check_eq "各行はチェックボックス・ファイル名 (リンク)・保存日時・バイト数 (桁区切り)" \
+         "$(printf '%s' "$expected_rows" | sort)" "$(printf '%s\n' "$table_info" | grep '^row' | sort)"
 echo
 
 echo "2. 2 つ以上なら ZIP になり、名前と中身が元のファイルと一致すること"

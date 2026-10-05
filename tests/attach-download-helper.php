@@ -11,6 +11,8 @@
  *   set-encoding <値> サイト設定の POST_ENCODING を書き換える (空なら消して既定に戻す)
  *   zip-length <ページ名> <ファイル名..>
  *                     そのページの添付を ZIP にしたときの大きさ (zip_prepare() の値。length=...)
+ *   mtime-text <ページ名>
+ *                     そのページの保存日時を、サイトの日時の書式 (TIME_FORMAT) で出す (mtime=...)
  *   cleanup           このヘルパの対象のページを消す
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -83,6 +85,11 @@ case 'zip-length':
     }
     $length = zip_prepare($entries);
     printf("length=%s\n", $length === false ? 'false' : $length);
+    break;
+
+case 'mtime-text':
+    $page = page_read($rest[0]);
+    printf("mtime=%s\n", nf_date(TIME_FORMAT, $page['mtime']));
     break;
 
 case 'cleanup':
