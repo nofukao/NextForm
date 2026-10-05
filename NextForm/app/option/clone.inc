@@ -100,6 +100,11 @@ function clone_append_form($dom, &$page, $source_url, $source_user, $notice_exis
     dom_append_child($label, 'input', '',
 		     array('type' => 'url', 'name' => 'source_url', 'value' => $source_url,
 			   'required' => 'required', 'size' => '60'));
+    /* ボタンは URL の欄の右に置く。ユーザー名とパスワードは要るときだけ入れる添え物 */
+    $submit = dom_append_child($form, 'input', '',
+			       array('type' => 'submit', 'value' => l('Clone')));
+    if(!$has_permission)
+	dom_set_attribute($submit, 'disabled', 'disabled');
 
     /*
      * クローン元のログインに使う。ブラウザにこのサイトのパスワードとして
@@ -121,11 +126,6 @@ function clone_append_form($dom, &$page, $source_url, $source_user, $notice_exis
     dom_append_child($label, 'input', '',
 		     array('type' => 'password', 'name' => 'source_password', 'value' => '',
 			   'autocomplete' => 'new-password'));
-
-    $submit = dom_append_child($form, 'input', '',
-			       array('type' => 'submit', 'value' => l('Clone')));
-    if(!$has_permission)
-	dom_set_attribute($submit, 'disabled', 'disabled');
 
     $ul = dom_append_child($dom, 'ul');
     foreach(array(
