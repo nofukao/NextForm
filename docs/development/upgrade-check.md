@@ -172,8 +172,27 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php
       sudo wc -l /var/log/php-fpm/www-error.log     # 巡回の前後で比べる
       ```
       置き場所は環境による (PHP-FPM の既定。mod_php なら Apache のログ)
-- [ ] `storage/` が変わっていない — ツールは触らないと言っているので確かめる。
-      例外は「焼き付けた古いマニュアルの削除」だけ (実行後の案内に件数が出る)
+- [ ] `storage/` のページ・添付・設定が変わっていない — ツールは触らないと
+      言っているので確かめる。変わってよいのは次の 2 つだけ
+      - 焼き付けた古いマニュアルの削除 (論理削除。実行後の案内に件数が出る)
+      - `storage/cache/` の中。工程 3 で古いマニュアルを片付けるときに組み込みの
+        マニュアルを読むので、版 (か元のファイルの更新時刻) が変わっていれば、
+        マニュアルの一覧のキャッシュ (`manual_pages` / `manual_index`) を作り直し、
+        **検索の索引のうちマニュアルの分を差し替える**。編集の入力補助の
+        キャッシュ (`wiki-helper-info*`) を落とし、古いマニュアルを消したときは
+        ページ一覧のキャッシュ (`page_find_*`) も落とす
+        (`manual.inc` の `manual_get_pages()` / `manual_cleanup_generated()`)
+
+      実行の前後で一覧を取って比べる。`cache/` の外に差が出てよいのは、
+      古いマニュアルを消したときのそのページの分だけ
+      ```bash
+      sudo find /var/www/html/mywiki/storage -type f -printf '%P %s %T@\n' | sort > before.txt
+      # (アップグレードを実行する)
+      sudo find /var/www/html/mywiki/storage -type f -printf '%P %s %T@\n' | sort > after.txt
+      diff before.txt after.txt | grep '^[<>]' | grep -v '^[<>] cache/'
+      ```
+      cache の中の名前は `-` + 名前の 16 進なので、`grep` では読めない。
+      巡回するとアクセスでキャッシュが増えるので、**巡回の前に**取る
 - [ ] 所有者とパーミッションが元に戻っている
       ```bash
       ls -l /var/www/html/mywiki/app | head
@@ -696,10 +715,13 @@ WAF のあるサイトでの保存) は利用者が確かめる。
 #### 見つけたこと
 
 - **`storage/` は `cache/` の中だけ変わる。5.1 の「例外は焼き付けた古いマニュアルの
-  削除だけ」は書き漏れ。** 上げたあとに初めてマニュアルを読むとき、組み込みの
-  マニュアルの一覧のキャッシュ (`manual_pages` / `manual_index`) を作り、
-  マニュアルのページを検索の索引に足す (0.7.0 からの作り。`manual.inc` の
-  `manual_index_update()`)。ページ・添付・設定には触らない。この版の変更ではない
+  削除だけ」は書き漏れだった (2026-10-05 に 5.1 を直した)。** ツールの工程 3 で
+  古いマニュアルを片付けるときに組み込みのマニュアルを読むので、版 (か元のファイルの
+  更新時刻) が変わっていれば、マニュアルの一覧のキャッシュ (`manual_pages` /
+  `manual_index`) を作り直し、検索の索引のマニュアルの分を差し替える
+  (0.7.0 からの作り。`manual.inc` の `manual_get_pages()` → `manual_index_update()`)。
+  索引は語ごとに 256 個のファイルに分かれているので、差し替えるとほぼ全部の
+  ファイルが変わる。ページ・添付・設定には触らない。この版の変更ではない
 - **サイト設定を保存すると、まだ値の無かった設定も既定の値で保存される。**
   今回は `MARKDOWN_ALLOW_HTML` `FILE_ALLOW_HTML` (どちらも `false`) と
   `CLONE_ALLOWED_HOSTS` (空) が増えた。値は既定と同じなので見え方は変わらないが、
