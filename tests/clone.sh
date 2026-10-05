@@ -19,7 +19,7 @@
 #
 #   1. 新規ページの種別に選択肢が出て、選ぶとクローンの画面になること
 #   2. 既定ではプライベートなネットワークのホストから取らず、
-#      「クローン元として許すホスト」に書けば取れること
+#      「クローン元として許すホスト」に書けば取れること (URL でもホスト名でも)
 #   3. 種別ごと (Markdown / wiki / text / file) に、本文と添付が 1 バイトも
 #      変わらずにクローンされること。添付以外の子ページや、ほかのページの添付は
 #      写さないこと
@@ -233,7 +233,10 @@ code=$(clone_to Dst/Md "${CLONE_SRC_URL}/?CloneTest/Md")
 check_eq "画面に戻る (200)" "200" "$code"
 check_eq "  理由が出る" "yes" "$(said 'プライベートなネットワーク|private network')"
 check_eq "  何も書かない" "0" "$(value_of "$(dst exists Dst/Md)" exists)"
-check_eq "(準備) 許すホストに書く" "1" "$(value_of "$(dst set-allowed-hosts "$SRC_HOST")" saved)"
+# 許すホストには、ホスト名だけでなく URL も書ける (サイトの URL を貼る人が多い)。
+# URL はホストの部分だけを見る。ほかの行があっても、パスが付いていてもよい。
+check_eq "(準備) 許すホストに URL で書く" "1" \
+         "$(value_of "$(dst set-allowed-hosts "$(printf 'https://other.example.invalid/nm/\n%s/nf-clone-src/' "$SRC_ROOT")")" saved)"
 echo
 
 echo "3. 種別ごとに、本文と添付が変わらずにクローンされること"
@@ -268,6 +271,9 @@ check_eq "  種別は file" "file" "$(value_of "$(dst meta Dst/File.bin type)" m
 echo
 
 echo "4. URL の書き方を問わないこと"
+check_eq "(準備) 許すホストをホスト名だけで書く" "1" "$(value_of "$(dst set-allowed-hosts "$SRC_HOST")" saved)"
+code=$(clone_to Dst/TextBareHost "${CLONE_SRC_URL}/?CloneTest/Text")
+check_eq "許すホストをホスト名だけで書いても取れる" "$(src_sha_of_body CloneTest/Text)" "$(sha_of_body Dst/TextBareHost)"
 http_url=$(printf '%s' "$CLONE_SRC_URL" | sed -E 's#^https://#http://#')
 code=$(clone_to Dst/TextHttp "${http_url}/?CloneTest/Text")
 check_eq "http から https への転送をたどる" "$(src_sha_of_body CloneTest/Text)" "$(sha_of_body Dst/TextHttp)"
