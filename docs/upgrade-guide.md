@@ -18,10 +18,12 @@ NextForm は ToraToraWiki 1.3.10 (rev.1285) の fork です。v0.1 の目的は
 | | 内容 |
 |---|---|
 | **置き換わる** | `app/` (wiki のロジック全部)、`resource/`、`license.txt` |
-| **再生成される** | `theme/` (配信される静的な CSS / JavaScript / 画像) |
-| **触らない** | `index.php`、`install-info.dat`、`storage/`、`.htaccess` |
+| **再生成される** | `theme/` (配信される静的な CSS / JavaScript / 画像)、`storage/cache/` の中の組み込みのマニュアルの分 |
+| **触らない** | `index.php`、`install-info.dat`、`storage/` (キャッシュを除く)、`.htaccess` |
 
 - **ページも添付ファイルも設定もそのまま**です。保存形式は上流から変えていません。
+- `storage/cache/` は、消しても作り直せるキャッシュの置き場です。版が変わると、
+  組み込みのマニュアルの一覧を作り直し、検索の索引のうちマニュアルの分を差し替えます。
 - `index.php` には認証設定 (`$AUTH_DIGESTS` など) が入っているので触りません。
 - `app/` の中に置いたご自分のもの — `app/plugin/` のプラグイン、
   `app/theme/<独自テーマ>/` — は**そのまま残します**。
@@ -412,8 +414,13 @@ sudo rm -rf /var/www/html/mywiki/app /var/www/html/mywiki/resource /var/www/html
 sudo cp -a "$B"/app "$B"/resource "$B"/theme "$B"/license.txt /var/www/html/mywiki/
 ```
 
-`storage/` は触っていないので、そのままです。
+ページ・添付ファイル・設定は書き換えていないので、`storage/` はそのままで構いません。
 実行後の画面に、この 2 行がそのまま貼れる形で表示されます。
+
+検索の索引には、新しい版のマニュアルの分が入ったままになります。
+戻した版に組み込みのマニュアルがあれば (0.7.0 以降)、次にマニュアルを読むときに
+その版の分へ差し替わります。0.7.0 より前の版に戻したときは
+`?option=search_index` で索引を作り直してください。
 
 **`--full-backup` で控えた場合**は、入れ替えるだけです。
 

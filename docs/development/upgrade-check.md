@@ -108,10 +108,10 @@ php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --dry-run
     1. バックアップ → /var/www/html/mywiki.backup-YYYYMMDD-HHMMSS
        必要 2.9 MB / 空き 5.8 GB
     2. app/ resource/ license.txt を新しいものに置き換える
-    3. 静的テーマ (theme/) を再生成する
+    3. 静的テーマ (theme/) と、組み込みのマニュアルのキャッシュ (storage/cache/) を作り直す
     4. 所有者とパーミッションを元に戻す
 
-  触らないもの: index.php  install-info.dat  storage/  .htaccess
+  触らないもの: index.php  install-info.dat  storage/ (キャッシュを除く)  .htaccess
 ```
 
 読むところは 4 つ。
@@ -125,7 +125,8 @@ php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --dry-run
   ツールは消さないので残るが、読まれないだけで害はない。
   **身に覚えのないものがあれば、先に中身を見る**
 - **バックアップの必要容量と空き** — 足りているか
-- **触らないもの** — `storage/` が入っていること
+- **触らないもの** — `storage/` (キャッシュを除く) が入っていること。
+  キャッシュで何が変わるかは 5.1 の `storage/` の項目にある
 
 ---
 
