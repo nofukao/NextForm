@@ -119,7 +119,7 @@ The title and the tags are written in the text, so they are copied with it.
 It is the server of this wiki that fetches the page to clone.
 By default it fetches only from sites published on the internet.
 To clone from a site on a private network, such as a site for development or a site on your home LAN,
-write its host name in ''Hosts allowed as clone sources'' in the ''Site setup''.
+write its host name or the URL of the site in ''Hosts allowed as clone sources'' in the ''Site setup'' (only the host part of a URL is used).
 
 *Attached files
 What other wiki engines offer as attached files is done in NextForm by creating child
@@ -304,7 +304,7 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 クローン元を取りに行くのは，このwikiのサーバーです．
 既定では，インターネットに公開されているサイトからしか取りません．
 開発用のサイトや自宅のLANのサイトのような，プライベートなネットワークにあるサイトから取るには，
-''サイト設定''の''クローン元として許すホスト''にそのホスト名を書いて下さい．
+''サイト設定''の''クローン元として許すホスト''に，そのホスト名かサイトのURLを書いて下さい(URLはホストの部分だけを見ます)．
 
 *添付ファイル
 他のWikiエンジンで添付ファイルに相当する機能はNextFormでは種別fileの子ページを作ることで実現できます．

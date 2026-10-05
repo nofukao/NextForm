@@ -183,12 +183,20 @@ function clone_remote_url(&$source, $pagename, $queries) {
     return $source['base'] . '?' . $path . '&' . http_build_query($queries);
 }
 
-/* サイト設定の「クローン元として許すホスト」(1 行に 1 つ) */
+/*
+ * サイト設定の「クローン元として許すホスト」(1 行に 1 つ)。
+ * ホスト名でも URL でもよい。サイトの URL をそのまま貼る人が多いので、
+ * URL ならホストの部分だけを取る (https://example.com/wiki/ → example.com)。
+ * ポートやパスは見ないので、許すのはそのホスト全体。
+ */
 function clone_allowed_hosts() {
     $hosts = array();
-    foreach(preg_split('/[\s,]+/', strtolower(CLONE_ALLOWED_HOSTS)) as $host) {
-	if($host !== '')
-	    $hosts[] = $host;
+    foreach(preg_split('/[\s,]+/', CLONE_ALLOWED_HOSTS, -1, PREG_SPLIT_NO_EMPTY) as $entry) {
+	if(strpos($entry, '://') === false)
+	    $entry = '//' . $entry;
+	$host = @parse_url($entry, PHP_URL_HOST);
+	if(is_string($host) && $host !== '')
+	    $hosts[] = strtolower(trim($host, '[]'));
     }
     return $hosts;
 }

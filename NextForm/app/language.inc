@@ -331,8 +331,8 @@ $LANGUAGE['ja'] = array(
     '添付ファイル $filename$ ($size$B) がこのサイトのサイズ上限($limit$B)を超えています．',
     'Saving failed. The pages made so far were deleted.' => '保存の途中で失敗しました．作ったページは削除しました．',
     'Hosts allowed as clone sources' => 'クローン元として許すホスト',
-    'one host name per line. A host on a private network (such as a LAN) can be cloned from only when it is written here' =>
-    '1行に1つホスト名を書きます．プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできます',
+    'one host name or URL per line (only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here' =>
+    '1行に1つ，ホスト名かサイトのURLを書きます(URLはホストの部分だけを見ます)．プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできます',
 
     'Download' => 'ダウンロード',
     'Original file name' => 'アップロード時のファイル名',
