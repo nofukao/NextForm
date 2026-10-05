@@ -70,6 +70,17 @@ $SETUP_CONSTANTS['POST_ENCODING'] = array(
     'type' => 'select',
     'options' => array('none' => 'Send as is', 'base64' => 'Wrap in Base64 (for a WAF)'),
     'note' => 'choose wrapping on a shared server with a WAF, such as ConoHa WING, where saving a page with \'-- or <script> in it stops at "Forbidden access". The WAF then no longer inspects what is sent to this wiki');
+/*
+ * クローン元として許すホスト (option/clone.inc、app/remote.inc)。
+ * 既定では公開のアドレスのホストからしか取らない。開発用のサイトや自宅 LAN の
+ * サイトのような、プライベートなネットワークのホストはここに書く。
+ */
+$SETUP_CONSTANTS['CLONE_ALLOWED_HOSTS'] = array(
+    'description' => 'Hosts allowed as clone sources',
+    'type' => 'multilinestring',
+    'allowempty' => true,
+    'default' => '',
+    'note' => 'one host name or URL per line (only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here');
 $SETUP_CONSTANTS['GOOGLE_API_KEY'] = array(
     'description' => 'Google API key',
     'type' => 'string',
@@ -285,6 +296,7 @@ function setup_read($name) {
 |{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
 |{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか。falseならダウンロードになる。trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
 |{POST_ENCODING|none|フォームの送り方。ConoHa WINGなど，WAFのある共用サーバーで，本文に""'--""や""<script>""を書くと保存が「閲覧できません (Forbidden access)」で止まる場合はbase64にする。サイト設定の「フォームの送り方」でも選べる。詳しくは[[サイトの管理:..]]|}
+|{CLONE_ALLOWED_HOSTS||クローン元として許すホスト(1行に1つ。ホスト名かサイトのURLで，URLはホストの部分だけを見る)。プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできる。サイト設定でも書ける。詳しくは[[他のNextFormのページをクローンする:../..#他のNextFormのページをクローンする]]|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
@@ -346,6 +358,7 @@ function setup_read($name) {
 |{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type Markdown. Setting it true lets anyone who can edit embed a script|}
 |{FILE_ALLOW_HTML|false|whether an attached HTML file runs when it is opened. With false it is downloaded. Setting it true runs it isolated from the wiki, but lets anyone who can edit show any page under the URL of this site|}
 |{POST_ENCODING|none|how forms are sent. On a shared server with a WAF, such as ConoHa WING, where saving a page with ""'--"" or ""<script>"" in it stops at "Forbidden access", set it to base64. It can also be chosen as "How forms are sent" in the site settings. See [[Site administration:..]] for details|}
+|{CLONE_ALLOWED_HOSTS||hosts allowed as clone sources (one per line, as a host name or the URL of the site; only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here. It can also be written in the site settings. See [[Cloning a page of another NextForm:../..#Cloning a page of another NextForm]] for details|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
 |{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
 |{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}

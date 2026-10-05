@@ -105,6 +105,22 @@ How to write one differs between the notations, so see
 [[Links, images and attachments:./Markdown/Link#Links to pages]] for Markdown notation
 and [[Link:./Wiki/Basic#Link]] for Wiki notation.}
 
+**Cloning a page of another NextForm
+Choose ''Clone of another NextForm page'' as the page type and press ''Create'';
+a screen to enter the URL of the page to clone appears.
+Enter the URL and press ''Clone'', and a new page is made by copying the text and the attached files of that page with the same type (Markdown, wiki, text or file).
+The title and the tags are written in the text, so they are copied with it.
+-Only the attached files directly under the page (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
+-History, lock, permissions and the descriptions of the page and its files are not copied.
+-A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown.
+-Each attached file must be within the size limit of this site (the value shown on the ''Attach'' page).
+-When the page cannot be copied, nothing is made and the reason is shown.
+
+It is the server of this wiki that fetches the page to clone.
+By default it fetches only from sites published on the internet.
+To clone from a site on a private network, such as a site for development or a site on your home LAN,
+write its host name or the URL of the site in ''Hosts allowed as clone sources'' in the ''Site setup'' (only the host part of a URL is used).
+
 *Attached files
 What other wiki engines offer as attached files is done in NextForm by creating child
 pages of type file.
@@ -273,6 +289,22 @@ Topページやサイドページ内に
 表示名の付け方は記法によって違うので，Markdown記法は
 [[リンク・画像・添付:./Markdown/Link#ページへのリンク]]を，
 Wiki記法は[[リンク:./Wiki/Basic#リンク]]を参照してください．}
+
+**他のNextFormのページをクローンする
+ページの種別で''他のNextFormページのクローン''を選んで''作成''を押すと，
+クローン元のページのURLを入れる画面になります．
+URLを入れて''クローン''を押すと，そのページの本文と添付ファイルを同じ種別(Markdown，wiki，text，file)で写して，新しいページを作ります．
+題名とタグは本文に書いてあるので，一緒に写ります．
+-写す添付ファイルは，そのページの直下のもの(""./画像.png""で参照するもの)だけです．ほかのページの添付ファイル(""../画像.png""など)は写しません．本文は書き換えないので，それへのリンクはリンク切れになります(このサイトに同じ名前のページがあれば，そちらを指します)．
+-履歴・ロック・権限と，ページや添付ファイルの説明は写しません．
+-ログインが必要なページは，URLの下の欄にそのサイトのユーザー名とパスワードを入れればクローンできます．要らなければ空欄のままでかまいません．入れたものは保存せず，そのクローンにだけ使います．対応しているのはNextFormのログイン(ダイジェスト認証)だけで，パスワードそのものはクローン元に送りません．この画面がhttpsでないときは，ブラウザからこのサイトまでパスワードが暗号化されずに送られるので，注意書きが出ます．
+-添付ファイルは1つずつ，このサイトのサイズ上限(''添付''の画面に出る値)に収まる必要があります．
+-写せないときは，何も作らずに理由を出します．
+
+クローン元を取りに行くのは，このwikiのサーバーです．
+既定では，インターネットに公開されているサイトからしか取りません．
+開発用のサイトや自宅のLANのサイトのような，プライベートなネットワークにあるサイトから取るには，
+''サイト設定''の''クローン元として許すホスト''に，そのホスト名かサイトのURLを書いて下さい(URLはホストの部分だけを見ます)．
 
 *添付ファイル
 他のWikiエンジンで添付ファイルに相当する機能はNextFormでは種別fileの子ページを作ることで実現できます．

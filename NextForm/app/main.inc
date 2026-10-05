@@ -22,6 +22,7 @@ require_once(APP_DIR_PATH . '/lock.inc');
 require_once(APP_DIR_PATH . '/search.inc');
 require_once(APP_DIR_PATH . '/export.inc');
 require_once(APP_DIR_PATH . '/zip.inc');
+require_once(APP_DIR_PATH . '/remote.inc');
 require_once(APP_DIR_PATH . '/manual.inc');
 require_once(APP_DIR_PATH . '/theme.inc');
 require_once(APP_DIR_PATH . '/tone.inc');

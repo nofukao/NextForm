@@ -293,6 +293,53 @@ $LANGUAGE['ja'] = array(
     'Select the files to download.' => 'ダウンロードするファイルを選んでください．',
     'The selected file was not found.' => '選んだファイルが見つかりません．',
     'The selected files cannot be put into one ZIP file.' => '選んだファイルは1つのZIPにまとめられません(数が多すぎるか，大きすぎます)．',
+    'Clone of another NextForm page' => '他のNextFormページのクローン',
+    'Create $pagename$ by cloning another NextForm page' => '他のNextFormページをクローンして $pagename$ を作成',
+    'Enter the URL of the NextForm page to clone. Its text and attached files are copied with the same type.' =>
+    'クローン元のNextFormのページのURLを入れてください．本文と添付ファイルを，同じ種別で写します．',
+    'URL of the page to clone' => 'クローン元のページのURL',
+    'Clone' => 'クローン',
+    'Only the attached files directly under the page are copied. Attached files of other pages (such as ../image.png) are not, so links to them may be broken.' =>
+    '写す添付ファイルは，そのページの直下のものだけです．ほかのページの添付ファイル(../画像.png など)は写さないので，それへのリンクはリンク切れになることがあります．',
+    'History, lock, permissions and the descriptions of the page and its files are not copied.' =>
+    '履歴・ロック・権限と，ページや添付ファイルの説明は写しません．',
+    'Each attached file must be within the size limit of this site ($limit$B).' =>
+    '添付ファイルは1つずつ，このサイトのサイズ上限($limit$B)に収まる必要があります．',
+    'Enter the URL of a NextForm page.' => 'NextFormのページのURLを入力してください．',
+    'Fetching from other servers is turned off on this server (allow_url_fopen).' =>
+    'このサーバーでは，ほかのサーバーから取ってくることができません(allow_url_fopen が無効です)．',
+    '$host$ is a host on a private network. To clone from it, write it in "Hosts allowed as clone sources" in the site settings.' =>
+    '$host$ はプライベートなネットワークのホストです．クローンするには，サイト設定の「クローン元として許すホスト」に書いてください．',
+    'Could not connect to $host$.' => '$host$ に接続できませんでした．',
+    'The URL is not a page of NextForm.' => 'NextFormのページではありません．',
+    'The page to clone is too large.' => 'クローン元のページが大きすぎます．',
+    'The page to clone was not found.' => 'クローン元のページが見つかりません．',
+    'Pages of type $type$ cannot be cloned.' => '種別 $type$ のページはクローンできません．',
+    'Could not get the list of attached files.' => '添付ファイルの一覧を取得できませんでした．',
+    'There are too many attached files ($num$). Up to $max$ files can be cloned.' =>
+    '添付ファイルが多すぎます($num$個)．クローンできるのは$max$個までです．',
+    '$pagename$ already exists.' => '$pagename$ は既に存在します．',
+    'You have no permission to write $pagename$.' => '$pagename$ に書き込む権限がありません．',
+    'Could not make a temporary file.' => '一時ファイルを作れませんでした．',
+    'Could not get the attached file $filename$.' => '添付ファイル $filename$ を取得できませんでした．',
+    'The attached file $filename$ exceeds the size limit of this site ($limit$B).' =>
+    '添付ファイル $filename$ がこのサイトのサイズ上限($limit$B)を超えています．',
+    'The attached file $filename$ ($size$B) exceeds the size limit of this site ($limit$B).' =>
+    '添付ファイル $filename$ ($size$B) がこのサイトのサイズ上限($limit$B)を超えています．',
+    'Saving failed. The pages made so far were deleted.' => '保存の途中で失敗しました．作ったページは削除しました．',
+    'Enter the user name and password of that site only when the page to clone requires login. Leave them empty if not needed. They are not saved and are used only for this clone.' =>
+    'クローン元のページがログインを必要とするときだけ，そのサイトのユーザー名とパスワードを入れてください．不要なら空欄のままでかまいません．入れたものは保存せず，このクローンにだけ使います．',
+    'This page is not encrypted (not https), so the password is sent as it is.' =>
+    'この画面は暗号化されていない(https でない)ので，パスワードはそのまま送られます．',
+    'The login method of the site to clone is not supported (only the login of NextForm is).' =>
+    'クローン元のサイトのログインの方式には対応していません(対応しているのはNextFormのログインだけです)．',
+    'The user name or password for the site to clone is wrong.' => 'クローン元のユーザー名かパスワードが違います．',
+    'The user $user$ has no permission to read the page to clone.' => 'ユーザー $user$ にはクローン元のページを読む権限がありません．',
+    'The page to clone requires login. Enter the user name and password of that site.' =>
+    'クローン元のページはログインが必要です．そのサイトのユーザー名とパスワードを入れてください．',
+    'Hosts allowed as clone sources' => 'クローン元として許すホスト',
+    'one host name or URL per line (only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here' =>
+    '1行に1つ，ホスト名かサイトのURLを書きます(URLはホストの部分だけを見ます)．プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできます',
 
     'Download' => 'ダウンロード',
     'Original file name' => 'アップロード時のファイル名',
