@@ -27,7 +27,9 @@
 #   5. 写せないとき (URL の誤り、NextForm でない、ページが無い、ログインが要る、
 #      添付が大きすぎる、同じ名前のページがある、書く権限が無い、GET) は
 #      何も書かないこと
-#   6. クローン元が古い版 (添付の一覧に大きさが無い) でも写せ、大きすぎる添付は
+#   6. ログインが必要なページは、そのサイトのユーザー名とパスワードを入れれば
+#      写せること (ダイジェスト認証)。違えば断ること。パスワードを残さないこと
+#   7. クローン元が古い版 (添付の一覧に大きさが無い) でも写せ、大きすぎる添付は
 #      転送の途中で打ち切って断ること
 #
 # クローン先には添付の大きさの上限を 1MB にする .user.ini を置く
@@ -102,10 +104,12 @@ src_sha_of_body() {
 
 # クローン先でクローンを実行する。応答の本文を $WORK/body、ヘッダを $WORK/headers に置き、
 # 応答コードを返す。$1 クローン先のページ名  $2 クローン元の URL
+# $3 $4 クローン元のユーザー名とパスワード (省略すると空欄で送る)
 clone_to() {
     curl -sk -o "$WORK/body" -D "$WORK/headers" -w '%{http_code}' -X POST \
          -H "Origin: ${DST_ORIGIN}" \
          -d "option=clone" -d "action=write" --data-urlencode "source_url=$2" \
+         --data-urlencode "source_user=${3:-}" --data-urlencode "source_password=${4:-}" \
          "${CLONE_DST_URL}/?$1"
 }
 
@@ -208,7 +212,13 @@ src make-file CloneTest/File.bin "${FIX}/file.bin" application/octet-stream > /d
 src make-text CloneTest/Big markdown "${FIX}/big.txt" > /dev/null
 src make-file CloneTest/Big/big.bin "${FIX}/big.bin" application/octet-stream > /dev/null
 src make-text CloneTest/Secret markdown "${FIX}/secret.txt" > /dev/null
-src guest read CloneTest/Secret > /dev/null
+src make-file CloneTest/Secret/a.txt "${FIX}/a.txt" text/plain > /dev/null
+src make-file CloneTest/Secret/img.png "${FIX}/img.png" image/png > /dev/null
+src guest read CloneTest/Secret 'CloneTest/Secret/*' > /dev/null
+# ログインしてクローンするための利用者。パスワードは実行のたびに作る使い捨て
+PASS=$(python3 -c 'import secrets; print(secrets.token_hex(12))')
+src set-user clonereader "$PASS" read > /dev/null
+src set-user clonenoread "$PASS" read CloneTest/Secret 'CloneTest/Secret/*' > /dev/null
 dst guest write > /dev/null
 dst set-allowed-hosts '' > /dev/null
 
@@ -323,7 +333,39 @@ check_eq "  何も書かない" "0|" "$(value_of "$(dst exists Dst/NoPermission)
 dst guest write > /dev/null
 echo
 
-echo "6. クローン元が古い版 (${OLD_REF}) でも写せること"
+echo "6. ログインが必要なページは、ユーザー名とパスワードを入れれば写せること"
+html=$(curl -sk "${CLONE_DST_URL}/?Dst/New&option=clone")
+check_eq "クローンの画面にユーザー名とパスワードの欄がある" "yes|yes" \
+         "$([[ "$html" == *'name="source_user"'* ]] && echo yes || echo no)|$([[ "$html" =~ type=\"password\"[^\>]*name=\"source_password\"|name=\"source_password\"[^\>]*type=\"password\" ]] && echo yes || echo no)"
+check_eq "  https の画面では暗号化の注意を出さない" "no" \
+         "$([[ "$html" == *'https でない'* || "$html" == *'not https'* ]] && echo yes || echo no)"
+
+code=$(clone_to Dst/Secret "${CLONE_SRC_URL}/?CloneTest/Secret" clonereader "$PASS")
+check_eq "正しいユーザー名とパスワード: 保存後の移動 (302)" "302" "$code"
+check_eq "  本文が同じ" "$(src_sha_of_body CloneTest/Secret)" "$(sha_of_body Dst/Secret)"
+check_eq "  添付もログインして取る" \
+         "$(sha256sum < "$WORK/a.txt" | cut -d' ' -f1)|$(sha256sum < "$WORK/img.png" | cut -d' ' -f1)" \
+         "$(sha_of_body Dst/Secret/a.txt)|$(sha_of_body Dst/Secret/img.png)"
+
+code=$(clone_to Dst/SecretWrong "${CLONE_SRC_URL}/?CloneTest/Secret" clonereader "wrong-${PASS}")
+check_eq "パスワードが違う: 画面に戻る (200)" "200" "$code"
+check_eq "  理由が出る" "yes" "$(said 'ユーザー名かパスワードが違います|user name or password .*wrong')"
+check_eq "  何も書かない" "0|" "$(value_of "$(dst exists Dst/SecretWrong)" exists)|$(children_of Dst/SecretWrong)"
+check_eq "  画面に戻ったとき、ユーザー名は残し、パスワードは残さない" "yes|no" \
+         "$(grep -q 'value="clonereader"' "$WORK/body" && echo yes || echo no)|$(grep -qF "$PASS" "$WORK/body" && echo yes || echo no)"
+
+code=$(clone_to Dst/SecretNoRead "${CLONE_SRC_URL}/?CloneTest/Secret" clonenoread "$PASS")
+check_eq "読む権限の無いユーザー: 理由が出る" "yes" "$(said '読む権限がありません|no permission to read')"
+check_eq "  何も書かない" "0|" "$(value_of "$(dst exists Dst/SecretNoRead)" exists)|$(children_of Dst/SecretNoRead)"
+
+code=$(clone_to Dst/TextWithLogin "${CLONE_SRC_URL}/?CloneTest/Text" clonereader "$PASS")
+check_eq "ログインが要らないページに入れても写せる" "$(src_sha_of_body CloneTest/Text)" "$(sha_of_body Dst/TextWithLogin)"
+
+check_eq "クローン先の storage にパスワードが残っていない" "" \
+         "$(sudo grep -rlF "$PASS" "${CLONE_DST_SITE}/storage" 2>/dev/null)"
+echo
+
+echo "7. クローン元が古い版 (${OLD_REF}) でも写せること"
 git -C "$REPO_ROOT" archive "$OLD_REF" NextForm/app NextForm/resource | tar -x -C "$WORK"
 install_code "$CLONE_SRC_SITE" "${WORK}/NextForm"
 wait_opcache
@@ -335,17 +377,23 @@ check_eq "Markdown: 保存後の移動 (302)" "302" "$code"
 check_eq "  本文が同じ" "$(src_sha_of_body CloneTest/Md)" "$(sha_of_body Dst/OldMd)"
 check_eq "  添付が同じ" "$(sha256sum < "$WORK/img.png" | cut -d' ' -f1)" "$(sha_of_body Dst/OldMd/img.png)"
 refuse "大きすぎる添付は転送の途中で打ち切る" Dst/OldBig "${CLONE_SRC_URL}/?CloneTest/Big" 'big\.bin (が|exceeds)'
+code=$(clone_to Dst/OldSecret "${CLONE_SRC_URL}/?CloneTest/Secret" clonereader "$PASS")
+check_eq "ログインが必要なページも、ユーザー名とパスワードで写せる" \
+         "$(src_sha_of_body CloneTest/Secret)|$(sha256sum < "$WORK/a.txt" | cut -d' ' -f1)" \
+         "$(sha_of_body Dst/OldSecret)|$(sha_of_body Dst/OldSecret/a.txt)"
 echo
 
-echo "7. 一時ファイルを残さないこと"
+echo "8. 一時ファイルを残さないこと"
 check_eq "クローン先の storage/cache/ に clone-* が無い" "0" \
          "$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-*' | wc -l)"
 echo
 
-echo "8. PHP の警告が出ていないこと"
+echo "9. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F -e "$CLONE_SRC_SITE" -e "$CLONE_DST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"
+check_eq "PHP のエラーログにパスワードが出ていない" "" \
+         "$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null | grep -F "$PASS" || true)"
 echo
 
 if [[ $fail -eq 0 ]]; then

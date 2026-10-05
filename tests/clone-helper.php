@@ -9,6 +9,9 @@
  *   guest <権限> [読めないページ..]
  *                     ログインしていない利用者の権限を決める (read / write)。
  *                     ページ名を並べると、そのページだけ読めなくする (keepout)
+ *   set-user <名前> <パスワード> <権限> [読めないページ..]
+ *                     ダイジェスト認証でログインできる利用者を作る。パスワードは
+ *                     テストが毎回作る使い捨て (リポジトリには置かない)
  *   set-allowed-hosts <ホスト>
  *                     サイト設定の CLONE_ALLOWED_HOSTS を書き換える (空なら消して既定に戻す)
  *   make-text <名前> <種別> <ファイル>
@@ -68,6 +71,20 @@ case 'guest':
     $permission['*'] = $rest[0];
     $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = count($rest) == 1 ? $rest[0] : $permission;
     printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
+    break;
+
+case 'set-user':
+    /* 保存するのは上流の password 画面と同じ HA1 (md5(利用者:realm:パスワード)) */
+    global $AUTH_PERMISSIONS;
+    $username = $rest[0];
+    $permission = array();
+    foreach(array_slice($rest, 3) as $pagename)
+	$permission[$pagename] = 'keepout';
+    $permission['*'] = $rest[2];
+    $AUTH_PERMISSIONS[$username] = count($rest) == 3 ? $rest[2] : $permission;
+    $digest = md5($username . ':' . auth_digest_realm() . ':' . $rest[1]);
+    printf("saved=%d\n",
+	   setup_write('auth_digest_' . $username, $digest) && auth_save_permissions() ? 1 : 0);
     break;
 
 case 'set-allowed-hosts':
