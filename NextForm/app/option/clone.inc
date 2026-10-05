@@ -15,6 +15,11 @@
  *          古い版には無いので、転送しながら数え、上限で打ち切る
  *   中身   ?ページ/ファイル&action=raw。大きさを指定しなければ元のバイト列
  *
+ * ログインが必要なページは、画面で入れたクローン元のユーザー名とパスワードで
+ * ダイジェスト認証をして取る (app/remote.inc)。入れたものは保存しない。
+ * この要求のあいだメモリに置くだけで、ページ・ログ・メッセージにも書かず、
+ * 失敗して画面に戻るときもパスワードは入れ直してもらう。
+ *
  * 写すのは、本文 (題名とタグは本文にある) と、直下の添付 (中身、名前、
  * Content-type) だけ。履歴・ロック・権限・メタ情報の説明、添付以外の子ページ、
  * ほかのページの添付 (../画像.png など) は写さない。本文は書き換えないので、
@@ -42,7 +47,7 @@ define('CLONE_MAX_LIST_BYTES', 1024 * 1024);
 
 function clone_show(&$args, $dom) {
     $page = &main_page();
-    clone_append_form($dom, $page, '', true);
+    clone_append_form($dom, $page, '', '', true);
     return false;
 }
 
@@ -50,25 +55,34 @@ function clone_write(&$args, $dom) {
     $page = &main_page();
     auth_check($page['name'], 'write');
 
-    $source_url = default_value($args['source_url'], '');
-    $source_url = is_string($source_url) ? trim($source_url) : '';
+    $source_url = clone_arg_string($args, 'source_url');
+    $source_url = trim($source_url);
+    $source_user = trim(clone_arg_string($args, 'source_user'));
+    $auth = remote_auth_create($source_url, $source_user, clone_arg_string($args, 'source_password'));
 
     $errors = array();
-    if(clone_page($page['name'], $source_url, $errors)) {
+    $result = clone_page($page['name'], $source_url, $auth, $errors);
+    unset($auth);
+    if($result) {
 	header('Location: ' . url_make($page['name']));
 	exit(0);
     }
     foreach($errors as $error)
 	message_error($error);
-    clone_append_form($dom, $page, $source_url, false);
+    clone_append_form($dom, $page, $source_url, $source_user, false);
     return false;
+}
+
+function clone_arg_string(&$args, $name) {
+    $value = default_value($args[$name], '');
+    return is_string($value) ? $value : '';
 }
 
 /*
  * クローンの画面。同じ名前のページがあるときは作れないので、フォームを出さない
  * ($notice_exists は、書けなかった理由として既に出しているときに false)。
  */
-function clone_append_form($dom, &$page, $source_url, $notice_exists) {
+function clone_append_form($dom, &$page, $source_url, $source_user, $notice_exists) {
     title_set_pagename('Create $pagename$ by cloning another NextForm page', $page['name']);
     if(!empty($page['is_exists'])) {
 	if($notice_exists)
@@ -86,6 +100,28 @@ function clone_append_form($dom, &$page, $source_url, $notice_exists) {
     dom_append_child($label, 'input', '',
 		     array('type' => 'url', 'name' => 'source_url', 'value' => $source_url,
 			   'required' => 'required', 'size' => '60'));
+
+    /*
+     * クローン元のログインに使う。ブラウザにこのサイトのパスワードとして
+     * 覚えさせないよう、自動入力を切る。パスワードは画面に戻すときも入れない。
+     */
+    $p = dom_append_child($form, 'p', 'clone_login');
+    dom_append_text($p, l('Enter the user name and password of that site only when the page to clone requires login. Leave them empty if not needed. They are not saved and are used only for this clone.'));
+    if(!clone_request_is_https()) {
+	$p = dom_append_child($form, 'p', 'clone_login');
+	dom_append_text($p, l('This page is not encrypted (not https), so the password is sent as it is.'));
+    }
+    $label = dom_append_child($form, 'label');
+    dom_append_text($label, l('User name'));
+    dom_append_child($label, 'input', '',
+		     array('type' => 'text', 'name' => 'source_user', 'value' => $source_user,
+			   'autocomplete' => 'off'));
+    $label = dom_append_child($form, 'label');
+    dom_append_text($label, l('Password'));
+    dom_append_child($label, 'input', '',
+		     array('type' => 'password', 'name' => 'source_password', 'value' => '',
+			   'autocomplete' => 'new-password'));
+
     $submit = dom_append_child($form, 'input', '',
 			       array('type' => 'submit', 'value' => l('Clone')));
     if(!$has_permission)
@@ -95,7 +131,6 @@ function clone_append_form($dom, &$page, $source_url, $notice_exists) {
     foreach(array(
 		'Only the attached files directly under the page are copied. Attached files of other pages (such as ../image.png) are not, so links to them may be broken.',
 		'History, lock, permissions and the descriptions of the page and its files are not copied.',
-		'Pages that require login cannot be cloned.',
 		'Each attached file must be within the size limit of this site ($limit$B).')
 	    as $note) {
 	$li = dom_append_child($ul, 'li');
@@ -104,10 +139,23 @@ function clone_append_form($dom, &$page, $source_url, $notice_exists) {
 }
 
 /*
- * クローンする。書けたら true。書けなかったら理由を $errors に入れて false
- * (何も書かない)。
+ * この画面が https で開かれているか。リバースプロキシの後ろでは $_SERVER['HTTPS'] が
+ * 立たないことがあるので、BASE_URI と X-Forwarded-Proto も見る。迷ったら
+ * 注意を出す側に倒れる (出しても害は無い)。
  */
-function clone_page($pagename, $source_url, &$errors) {
+function clone_request_is_https() {
+    if(!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off')
+	return true;
+    if(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+	return true;
+    return BASE_URI !== '' && stripos(BASE_URI, 'https://') === 0;
+}
+
+/*
+ * クローンする。書けたら true。書けなかったら理由を $errors に入れて false
+ * (何も書かない)。$auth はクローン元の資格情報 (remote_auth_create())。
+ */
+function clone_page($pagename, $source_url, &$auth, &$errors) {
     if(page_is_exists($pagename)) {
 	$errors[] = l('Page already exists.');
 	return false;
@@ -120,6 +168,7 @@ function clone_page($pagename, $source_url, &$errors) {
 
     $temp_files = array();
     try {
+	$source['auth'] = &$auth;
 	$remote = clone_fetch_source($source, $errors);
 	if($remote === false)
 	    return false;
@@ -202,8 +251,10 @@ function clone_allowed_hosts() {
 }
 
 function clone_fetch(&$source, $pagename, $queries, $max_bytes, $to_file = null) {
-    return remote_fetch(clone_remote_url($source, $pagename, $queries), $max_bytes, $to_file,
-			clone_allowed_hosts());
+    $response = remote_fetch(clone_remote_url($source, $pagename, $queries), $max_bytes, $to_file,
+			     clone_allowed_hosts(), $source['auth']);
+    $response['auth'] = $source['auth'];
+    return $response;
 }
 
 /*
@@ -233,7 +284,15 @@ function clone_check_response(&$response, $too_large_message, &$errors) {
 	return false;
     }
     if($response['status'] == 401 || $response['status'] == 403) {
-	$errors[] = l('The page to clone requires login. Pages that require login cannot be cloned.');
+	$auth = &$response['auth'];
+	if(!empty($auth['unsupported']))
+	    $errors[] = l('The login method of the site to clone is not supported (only the login of NextForm is).');
+	else if(!empty($auth['failed']))
+	    $errors[] = l('The user name or password for the site to clone is wrong.');
+	else if($response['status'] == 403 && $auth['user'] !== '')
+	    $errors[] = lf('The user $user$ has no permission to read the page to clone.', array('user' => $auth['user']));
+	else
+	    $errors[] = l('The page to clone requires login. Enter the user name and password of that site.');
 	return false;
     }
     if($response['status'] != 200) {

@@ -17,6 +17,14 @@
  *
  * 待ち時間の上限は EXTERNAL_FETCH_TIMEOUT。受け取る大きさの上限は呼び出し側が
  * 決め、超えた時点で打ち切る (Content-Length が来ていれば受け取る前に断る)。
+ *
+ * ログインが必要な相手には、呼び出し側が渡したユーザー名とパスワードで
+ * ダイジェスト認証をする (NextForm のログインの方式)。パスワードそのものは
+ * 送らない。資格情報は remote_auth_create() で作る配列に入れて持ち回し、
+ * 最初の URL のホストにだけ使う (転送でほかのホストに移ったら使わない)。
+ * 一度 401 で受け取った nonce は、番号 (nc) を 1 つずつ上げて使い回す
+ * (相手は nonce ごとに番号が増えることを確かめる)。相手が stale を返したら
+ * 新しい nonce でやり直す。Basic 認証は扱わない (パスワードがそのまま流れる)。
  */
 
 define('REMOTE_MAX_REDIRECTS', 3);
@@ -26,6 +34,10 @@ define('REMOTE_MAX_REDIRECTS', 3);
  *
  * 成功: array('status' => 応答コード, 'headers' => 小文字の名前 => 値,
  *             'body' => 本文, 'size' => バイト数)
+ * $auth を渡すと、401 のときにダイジェスト認証をする。認証に失敗したら
+ * 401 の応答をそのまま返し、$auth['failed'] (資格情報が違う) か
+ * $auth['unsupported'] (ダイジェスト認証でない) を立てる。
+ *
  * 失敗: array('error' => 理由, 'host' => ホスト名)。理由は
  *       disabled   allow_url_fopen が無効
  *       url        http / https の URL でない
@@ -35,7 +47,7 @@ define('REMOTE_MAX_REDIRECTS', 3);
  *       too_large  $max_bytes を超える
  *       redirect   転送が多すぎる
  */
-function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array()) {
+function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(), &$auth = null) {
     if(!ini_get('allow_url_fopen'))
 	return array('error' => 'disabled', 'host' => '');
 
@@ -43,13 +55,35 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
 	$target = remote_target($url, $allowed_hosts);
 	if(isset($target['error']))
 	    return $target;
+	$use_auth = is_array($auth) && $auth['user'] !== '' && $target['host'] === $auth['host'];
 
-	$fp = @fopen($target['connect_url'], 'rb', false, stream_context_create($target['context']));
-	if($fp === false)
-	    return array('error' => 'connect', 'host' => $target['host']);
-	stream_set_timeout($fp, EXTERNAL_FETCH_TIMEOUT);
-	$meta = stream_get_meta_data($fp);
-	list($status, $headers) = remote_parse_headers(default_value($meta['wrapper_data'], array()));
+	/* 401 を受けたら、新しい nonce で 1 回だけ (stale ならもう 1 回) 送り直す */
+	for($tries = 0; ; $tries++) {
+	    $context = $target['context'];
+	    $sent_auth = $use_auth && !empty($auth['nonce']);
+	    if($sent_auth)
+		$context['http']['header'] .= remote_digest_header($auth, $target['request_uri']);
+	    $fp = @fopen($target['connect_url'], 'rb', false, stream_context_create($context));
+	    if($fp === false)
+		return array('error' => 'connect', 'host' => $target['host']);
+	    stream_set_timeout($fp, EXTERNAL_FETCH_TIMEOUT);
+	    $meta = stream_get_meta_data($fp);
+	    list($status, $headers) = remote_parse_headers(default_value($meta['wrapper_data'], array()));
+	    if($status != 401 || !$use_auth || $tries >= 2)
+		break;
+
+	    $challenge = remote_digest_challenge(default_value($headers['www-authenticate'], ''));
+	    if($challenge === false) {
+		$auth['unsupported'] = true;
+		break;
+	    }
+	    if($sent_auth && empty($challenge['stale'])) {
+		$auth['failed'] = true;
+		break;
+	    }
+	    fclose($fp);
+	    $auth = array_merge($auth, $challenge, array('nc' => 0));
+	}
 
 	if($status >= 300 && $status < 400 && isset($headers['location'])) {
 	    fclose($fp);
@@ -160,8 +194,66 @@ function remote_target($url, $allowed_hosts) {
 	$connect_host = '[' . $connect_host . ']';
     return array(
 	'host' => $host,
+	'request_uri' => $path,
 	'connect_url' => $scheme . '://' . $connect_host . ':' . $port . $path,
 	'context' => $context);
+}
+
+/*
+ * ダイジェスト認証の資格情報。$url のホストにだけ使う。
+ * ユーザー名が空なら資格情報を使わない (ログインが要らない相手)。
+ */
+function remote_auth_create($url, $user, $password) {
+    $host = @parse_url($url, PHP_URL_HOST);
+    return array('host' => is_string($host) ? strtolower(trim($host, '[]')) : '',
+		 'user' => (string)$user, 'password' => (string)$password);
+}
+
+/*
+ * WWW-Authenticate からダイジェスト認証の値を取り出す。ダイジェスト認証で
+ * ない (Basic など) か、MD5 でないときは false。
+ */
+function remote_digest_challenge($value) {
+    if(!preg_match('/^\s*Digest\s+(.*)$/is', $value, $matches))
+	return false;
+    $params = array();
+    preg_match_all('/(\w+)\s*=\s*(?:"((?:[^"\\\\]|\\\\.)*)"|([^\s,]+))/', $matches[1], $pairs, PREG_SET_ORDER);
+    foreach($pairs as $pair)
+	$params[strtolower($pair[1])] = isset($pair[3]) && $pair[3] !== '' ? $pair[3] : stripslashes($pair[2]);
+    if(!isset($params['nonce']) || !isset($params['realm']))
+	return false;
+    if(isset($params['algorithm']) && strtoupper($params['algorithm']) !== 'MD5')
+	return false;
+    $qops = isset($params['qop']) ? array_map('trim', explode(',', strtolower($params['qop']))) : array();
+    if(!empty($qops) && !in_array('auth', $qops, true))
+	return false;
+    return array(
+	'realm' => $params['realm'],
+	'nonce' => $params['nonce'],
+	'opaque' => isset($params['opaque']) ? $params['opaque'] : null,
+	'qop' => in_array('auth', $qops, true) ? 'auth' : '',
+	'stale' => isset($params['stale']) && strtolower($params['stale']) === 'true');
+}
+
+/* ダイジェスト認証の Authorization ヘッダ (RFC 2617)。送るたびに nc を 1 つ上げる */
+function remote_digest_header(&$auth, $uri) {
+    $auth['nc']++;
+    $nc = sprintf('%08x', $auth['nc']);
+    $cnonce = bin2hex(random_bytes(8));
+    $ha1 = md5($auth['user'] . ':' . $auth['realm'] . ':' . $auth['password']);
+    $ha2 = md5('GET:' . $uri);
+    if($auth['qop'] === 'auth')
+	$response = md5($ha1 . ':' . $auth['nonce'] . ':' . $nc . ':' . $cnonce . ':auth:' . $ha2);
+    else
+	$response = md5($ha1 . ':' . $auth['nonce'] . ':' . $ha2);
+
+    $header = 'Authorization: Digest username="' . $auth['user'] . '", realm="' . $auth['realm'] .
+	'", nonce="' . $auth['nonce'] . '", uri="' . $uri . '", response="' . $response . '"';
+    if($auth['qop'] === 'auth')
+	$header .= ', qop=auth, nc=' . $nc . ', cnonce="' . $cnonce . '"';
+    if(!is_null($auth['opaque']))
+	$header .= ', opaque="' . $auth['opaque'] . '"';
+    return $header . "\r\n";
 }
 
 /* 名前を引く。IPv4 を先に並べる (IPv6 で外に出られないサーバーがあるため) */
