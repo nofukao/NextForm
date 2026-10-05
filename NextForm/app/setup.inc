@@ -345,7 +345,7 @@ function setup_read($name) {
 |{MANUAL_PAGENAME|NextFormManual|the page name of the manual pages|}
 |{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type Markdown. Setting it true lets anyone who can edit embed a script|}
 |{FILE_ALLOW_HTML|false|whether an attached HTML file runs when it is opened. With false it is downloaded. Setting it true runs it isolated from the wiki, but lets anyone who can edit show any page under the URL of this site|}
-|{POST_ENCODING|none|how forms are sent. On a shared server with a WAF, such as ConoHa WING, where saving a page with ""'--"" or ""<script>"" in it stops at "Forbidden access", set it to base64. It can also be chosen as "How forms are sent" in the site settings|}
+|{POST_ENCODING|none|how forms are sent. On a shared server with a WAF, such as ConoHa WING, where saving a page with ""'--"" or ""<script>"" in it stops at "Forbidden access", set it to base64. It can also be chosen as "How forms are sent" in the site settings. See [[Site administration:..]] for details|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
 |{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
 |{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}
