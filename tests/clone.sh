@@ -337,6 +337,25 @@ echo "6. ログインが必要なページは、ユーザー名とパスワー�
 html=$(curl -sk "${CLONE_DST_URL}/?Dst/New&option=clone")
 check_eq "クローンの画面にユーザー名とパスワードの欄がある" "yes|yes" \
          "$([[ "$html" == *'name="source_user"'* ]] && echo yes || echo no)|$([[ "$html" =~ type=\"password\"[^\>]*name=\"source_password\"|name=\"source_password\"[^\>]*type=\"password\" ]] && echo yes || echo no)"
+# クローンのフォームの入力欄を、出てくる順に並べる (hidden は除く)
+form_order=$(printf '%s' "$html" | python3 -c '
+import sys
+from html.parser import HTMLParser
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.inside = False; self.items = []
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "form" and "clone" in (a.get("class") or "").split():
+            self.inside = True
+        elif tag == "input" and self.inside and a.get("type") != "hidden":
+            self.items.append(a.get("name") or a.get("type"))
+    def handle_endtag(self, tag):
+        if tag == "form": self.inside = False
+p = P(); p.feed(sys.stdin.read()); print(",".join(p.items))
+')
+check_eq "  「クローン」ボタンは URL の入力欄のすぐ後ろ (ユーザー名・パスワードより前)" \
+         "source_url,submit,source_user,source_password" "$form_order"
 check_eq "  https の画面では暗号化の注意を出さない" "no" \
          "$([[ "$html" == *'https でない'* || "$html" == *'not https'* ]] && echo yes || echo no)"
 
