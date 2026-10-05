@@ -89,6 +89,10 @@ function attach_show(&$args, $dom) {
  * 決まる。<label> で包むのは、ほかの画面のチェックボックスと見た目を揃えるため
  * (nextform.js の checkboxLabelSetup())。
  *
+ * 見出しの先頭の欄は空で出し、nextform.js の attachDownloadSetup() が
+ * 「全部を選ぶ」チェックボックスを差し込む。この欄は押しても並べ替えない
+ * よう nosort を付ける (tableSortSetup())。
+ *
  * サイズは pagelist_append() だとバイト数のまま出る。ファイルのページの
  * 「ファイルサイズ」と同じく桁区切りにする。見出しで並べ替えるとき、
  * nextform.js の tableSortSetup() はカンマを除いて数として比べるので、
@@ -99,7 +103,7 @@ function attach_append_download_columns($form, &$page) {
     $prefix = $page['name'] . '/';
     foreach(iterator_to_array($form->getElementsByTagName('tr')) as $tr) {
 	if($tr->parentNode->nodeName === 'thead') {
-	    dom_insert_child($tr, 'th');
+	    dom_insert_child($tr, 'th', 'nosort');
 	    continue;
 	}
 	$pagename = $tr->getAttribute('data-pagename');

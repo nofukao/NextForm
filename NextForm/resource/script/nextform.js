@@ -2540,9 +2540,15 @@ Element.prototype.tableSortSetup = function() {
 	rows.each(function(tr) { tbody.appendChild(tr); });
     };
 
+    /* 見出しの欄に nosort があれば、その列は押しても並べ替えない */
+    var noSortCells = [];
     var i = 1;
     headCells.each(function(cell) {
 	(function(i) {
+	    if(cell.hasClassName('nosort')) {
+		noSortCells.push(i);
+		return;
+	    }
 	    cell.observe('click', function(event) {
 		if(event.altKey || event.ctrlKey  || cell.down('form'))
 		    return false;
@@ -2576,6 +2582,7 @@ Element.prototype.tableSortSetup = function() {
     var cookieSort = cookieGet(headkey);
     if(cookieSort) {
 	sortCells = cookieSort.split(',').map(function(str) { return parseInt(str); });
+	sortCells = sortCells.filter(function(c) { return noSortCells.indexOf(Math.abs(c)) == -1; });
 	sortPrepare();
 	sortUpdate();
     }
@@ -2663,8 +2670,7 @@ function checkboxLabelSetup() {
  * JavaScript が無いと働かないので、サーバーは見出しの先頭の欄を空で出し、
  * ここで差し込む。一覧のほうを 1 つずつ変えたときは、全部入っているかどうかに
  * 見出しを合わせる。
- * 見出しを押すと並べ替える (tableSortSetup()) ので、このチェックボックスの
- * クリックは見出しまで届かないようにする。
+ * 見出しのこの欄は、押しても並べ替えない (attach.inc が nosort を付ける)。
  * チェックを入れただけでは change が来ないので、見た目 (label.checked) も
  * ここで合わせる。
  */
@@ -2679,9 +2685,6 @@ function attachDownloadSetup() {
 	label.appendChild(all);
 	cell.insertBefore(label, cell.firstChild);
 	all.setupParentCheckboxLabel();
-	label.observe('click', function(event) {
-	    event.stopPropagation();
-	});
 
 	var update = function() {
 	    all.checked = checkboxes.length > 0 &&
