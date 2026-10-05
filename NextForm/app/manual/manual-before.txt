@@ -347,7 +347,7 @@ Wiki記法だけで，「動くページ」を作れるのが持ち味です．
 管理権限を持つユーザーでログインして，
 ''サイトメニュー'' > ''管理ツール'' > ''サイト設定'' を選択して下さい．
 
-**(optional)サイトの高度な設定
+**サイトの高度な設定
 サイトの高度な設定はindex.phpの中に定数の定義を追記してくことで行うことができます．
 定数の定義は以下の形式で行います．
  define('定数名', '定数の値');
@@ -564,7 +564,7 @@ NextFormではWebサーバーのアクセスログを集計することで，
 To make the basic settings of the site, log in as a user with administrator rights
 and choose ''site menu'' > ''Admin tools'' > ''Site setup''.
 
-**(optional)Advanced site settings
+**Advanced site settings
 Advanced site settings are made by adding constant definitions to index.php.
 A constant is defined in the following form.
  define('constant name', 'value of the constant');
