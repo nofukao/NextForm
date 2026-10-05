@@ -17,7 +17,11 @@
  * 方針:
  *
  *   - 利用者のものには触らない。
- *     index.php (認証設定が入っている) / install-info.dat / storage/ は読まない。
+ *     index.php (認証設定が入っている) / install-info.dat / storage/ の
+ *     ページ・添付・設定は書き換えない。例外は 2 つで、どちらも工程 3 で起きる。
+ *     焼き付けた古いマニュアルの片付け (論理削除) と、storage/cache/ の作り直し
+ *     (組み込みのマニュアルを読むので、版が変わっていればマニュアルの
+ *     キャッシュを作り、検索の索引のマニュアルの分を差し替える)。
  *   - 消さない。
  *     配布物に無いファイルが app/ にあっても削除せず、報告するだけにする。
  *     利用者が置いたプラグインや独自テーマを巻き添えにしないため。
@@ -37,7 +41,8 @@ define('UPGRADE_TARGET_FILES', 'license.txt');
 /*
  * 既定でバックアップするもの = このツールが書き換える範囲 + サイトの設定。
  *
- * storage/ (ページと添付ファイル) はこのツールが一切触らないのでコピーしない。
+ * storage/ (ページと添付ファイル) はこのツールが書き換えないのでコピーしない。
+ * cache/ の中は作り直すが、捨てても作り直せる派生物なので控えない。
  * 業務 wiki の実測では storage/ が 7.4 GB で、書き換える範囲は 2 MB だった。
  * 触らないもののためにディスクを倍使い、数分間止まったように見え、
  * 無関係な場所にある異物で失敗する — 割に合わない。
@@ -481,17 +486,17 @@ upgrade_out("    1. %s %s",
 if($up_backup_path !== null) {
     if(!$up_full_backup) {
 	upgrade_out("       対象 %s", implode(' ', $up_backup_items));
-	upgrade_out("       storage/ は書き換えないのでコピーしません (全体を控えるなら --full-backup)");
+	upgrade_out("       storage/ のページ・添付・設定は書き換えないのでコピーしません (全体を控えるなら --full-backup)");
     }
     upgrade_out("       必要 %s / 空き %s",
 		upgrade_format_size($up_backup_size), upgrade_format_size($up_backup_free));
 }
 upgrade_out("    2. %s を新しいものに置き換える (余分なファイルは残す)",
 	    str_replace(',', '/ ', UPGRADE_TARGET_DIRS) . '/ ' . str_replace(',', ' ', UPGRADE_TARGET_FILES));
-upgrade_out("    3. 静的テーマ (theme/) を再生成する");
+upgrade_out("    3. 静的テーマ (theme/) と、組み込みのマニュアルのキャッシュ (storage/cache/) を作り直す");
 upgrade_out("    4. 所有者とパーミッションを元に戻す");
 upgrade_out("");
-upgrade_out("  触らないもの: index.php  install-info.dat  storage/  .htaccess");
+upgrade_out("  触らないもの: index.php  install-info.dat  storage/ (キャッシュを除く)  .htaccess");
 upgrade_out("");
 
 if($up_backup_path !== null && $up_backup_free > 0 && $up_backup_size >= $up_backup_free)

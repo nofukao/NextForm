@@ -201,6 +201,14 @@ sed 's/^/  | /' "${DIST}/dryrun.log"
 check_eq "--dry-run が正常終了する" "0" "$rc"
 check_eq "--dry-run でサイトが1バイトも変わらない" "$BEFORE_ALL" "$(fingerprint "$TEST_SITE")"
 check_cmd "--dry-run でバックアップを作らない" "! ls -d ${TEST_SITE}.backup-* 2>/dev/null | grep -q ."
+# 工程 3 は組み込みのマニュアルを読むので、storage/cache/ (マニュアルのキャッシュと
+# 検索の索引のマニュアルの分) は作り直す ([5] の指紋もそこを除いている)。
+# 「storage/ には触らない」とだけ言うと実際とずれるので、案内と手順書の表が
+# 同じく「キャッシュを除く」と言っていることを見る (手順書と 1 対 1)。
+check_cmd "--dry-run の「触らないもの」は storage/ のキャッシュを除くと言う" \
+          "grep -q '触らないもの: .*storage/ (キャッシュを除く)' '${DIST}/dryrun.log'"
+check_cmd "  手順書の「触らない」の行も同じことを言う" \
+          "grep -q '^| \*\*触らない\*\* |.*\`storage/\` (キャッシュを除く)' '${REPO_ROOT}/docs/upgrade-guide.md'"
 echo
 
 # --- 本番実行 ---------------------------------------------------------------
