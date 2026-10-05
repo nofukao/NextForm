@@ -558,6 +558,19 @@ ul.tags li.edit_tag a:after {
     content: ']';
 }
 
+/*
+ * attach (option/attach.inc)
+ * アップロードの行と「添付ファイル」の見出しのあいだを 1 行ほど空け、
+ * 添付ファイルの表とダウンロードのボタンを右に下げて、別のまとまりだと分かるようにする。
+ * 見出し (h1) の margin-top (.base.css) はこの margin と相殺されるので、ここで全体の間隔を決める。
+ */
+form.attach + section {
+    margin-top: <?php echo(theme_density_px(32)); ?>px;
+}
+form.attach_download {
+    margin-left: 24px;
+}
+
 /* table sort */
 .sort_order {
     float: right;
