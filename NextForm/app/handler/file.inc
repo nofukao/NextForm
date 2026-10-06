@@ -5,7 +5,8 @@ $HANDLERS['file'] = array(
     'summary' => 'file_summary',
     'raw'  => 'file_raw',
     'edit' => 'file_edit',
-    'write' => 'file_write');
+    'write' => 'file_write',
+    'view' => 'file_view');
 
 $FILE_CONTENT_TYPE_HANDLERS = array();
 
@@ -14,6 +15,7 @@ require_once(APP_DIR_PATH . '/handler/file/file_image.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_video.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_audio.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_html.inc');
+require_once(APP_DIR_PATH . '/handler/file/file_markdown.inc');
 
 function file_get_content_type(&$page) {
     global $FILE_CONTENT_TYPE_HANDLERS;
@@ -23,9 +25,16 @@ function file_get_content_type(&$page) {
     return 'application/octet-stream';
 }
 
+/*
+ * md は種類ではなく拡張子で見分けるので、登録された種類より先に見る
+ * (file_markdown.inc)。text/plain で送られてきた .md も md として扱う。
+ */
 function &file_get_content_type_handler(&$page) {
     global $FILE_CONTENT_TYPE_HANDLERS;
     global $FILE_CONTENT_TYPE_HANDLER_BINARY;
+    global $FILE_CONTENT_TYPE_HANDLER_MARKDOWN;
+    if(file_is_markdown($page))
+	return $FILE_CONTENT_TYPE_HANDLER_MARKDOWN;
     if(!empty($page['meta']['Content-type']) &&
        !empty($FILE_CONTENT_TYPE_HANDLERS[$page['meta']['Content-type']]))
 	return $FILE_CONTENT_TYPE_HANDLERS[$page['meta']['Content-type']];
@@ -64,6 +73,18 @@ function file_show(&$page, $dom) {
 
     if(!empty($content_type_handler['show']) && function_exists($content_type_handler['show']))
 	$content_type_handler['show']($page, $dl);
+}
+
+/*
+ * 開いた画面 (action=view)。md は wiki の画面の中に描画する (file_markdown.inc)。
+ * 描画する種類でなければ、ファイルのページを出す。
+ */
+function file_view(&$page, $dom) {
+    $content_type_handler = &file_get_content_type_handler($page);
+    if(!empty($content_type_handler['view']) && function_exists($content_type_handler['view']))
+	$content_type_handler['view']($page, $dom);
+    else
+	file_show($page, $dom);
 }
 
 function file_summary(&$page, $dom) {
