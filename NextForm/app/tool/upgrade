@@ -769,6 +769,21 @@ upgrade_out("    状態を変える操作は POST かつ Origin ヘッダ付き�
 upgrade_out("    例: curl -X POST -H 'Origin: https://example.com' -d 'action=write' ...");
 upgrade_out("    ブラウザからの操作は変わりません (画面のフォームは元から POST です)");
 
+/*
+ * 0.13.0 で Markdown のリンク・画像の行き先の決め方を変えた。名前だけは
+ * そのページの子、/ で始まるものはトップ階層 (handler/markdown/image.inc)。
+ * 行き先が変わったリンクを直すのは利用者なので、ページには触らず調べ方を
+ * 知らせるだけにする。Markdown のページが無い ToraToraWiki からは知らせない。
+ * docs/upgrade-guide.md の「Markdown のリンクの行き先を確かめる」と 1 対 1。
+ */
+if($up_old_version !== null && version_compare($up_old_version, '0.13.0', '<')) {
+    upgrade_out("");
+    upgrade_out("  Markdown のリンクの行き先を確かめてください (0.13.0):");
+    upgrade_out("    名前だけの行き先はそのページの子 (添付) を、/ で始まる行き先はトップ階層を指します");
+    upgrade_out("    直す必要のあるリンクは次で一覧できます (ページは書き換えません):");
+    upgrade_out("      php %s/app/tool/markdown_link_check %s --user 管理者名", $up_site, $up_index_real);
+}
+
 if($up_backup_path !== null) {
     upgrade_out("");
     upgrade_out("  問題があれば戻せます:");

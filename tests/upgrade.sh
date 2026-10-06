@@ -256,6 +256,9 @@ check_cmd "  ToraToraWikiManual は残すと言う" \
           "grep -q 'ToraToraWikiManual 以下 1 件は普通のページとして残っています' '${DIST}/upgrade.log'"
 check_cmd "見覚えのないファイルが実行ログで報告される" \
           "grep -q 'upgrade_test_note.txt' '${DIST}/upgrade.log'"
+# ToraToraWiki に Markdown のページは無いので、行き先の変わるリンクも無い ([17])
+check_cmd "ToraToraWiki からは Markdown のリンクの案内を出さない" \
+          "! grep -q 'Markdown のリンクの行き先' '${DIST}/upgrade.log'"
 echo
 
 # --- 新しいコードが入ったこと -----------------------------------------------
@@ -517,6 +520,33 @@ C_BAD=$(sudo find "${SITE_C}/app" \! -user "${C_OWNER%%:*}" -printf '%P\n' 2>/de
 check_eq "  失敗しても所有者は元のまま (${C_OWNER})" "" "$C_BAD"
 check_cmd "  バックアップから戻す手順を出す" \
           "grep -q 'cp -a' '${DIST}/themefail.log'"
+echo
+
+# --- 0.13.0 より前の NextForm から: Markdown のリンクの行き先 ---------------
+# 0.13.0 で Markdown のリンクの行き先の決め方を変えた。直すのは利用者なので、
+# ツールは調べ方を知らせるだけ。docs/upgrade-guide.md の
+# 「Markdown のリンクの行き先を確かめる」と 1 対 1。
+#
+# 上げ終えたサイトを 0.12.0 に見せかけて、もう一度上げる。開発中は配布物も
+# 同じ版数のことがあるので --force を付ける (版数のガードは [12] で見ている)。
+echo "[17] 0.13.0 より前の NextForm から: Markdown のリンクの行き先"
+sudo sed -i "s/define('NEXTFORM_VERSION', *'[^']*')/define('NEXTFORM_VERSION', '0.12.0')/" \
+     "${TEST_SITE}/app/version.inc"
+sudo php "${DIST}/NextForm/app/tool/upgrade" "${TEST_SITE}/index.php" --yes --force \
+     > "${DIST}/from-0.12.log" 2>&1
+check_eq  "0.12.0 からのアップグレードが正常終了する" "0" "$?"
+check_cmd "Markdown のリンクの行き先を確かめるよう知らせる" \
+          "grep -q 'Markdown のリンクの行き先を確かめてください (0.13.0)' '${DIST}/from-0.12.log'"
+check_cmd "  調べるコマンドを出す" \
+          "grep -q 'php .*/app/tool/markdown_link_check .*/index.php --user 管理者名' '${DIST}/from-0.12.log'"
+check_cmd "  手順書にも同じコマンドがある" \
+          "grep -q '^php app/tool/markdown_link_check /path/to/wiki/index.php --user 管理者名$' '${REPO_ROOT}/docs/upgrade-guide.md'"
+# 手順書のコマンドを実走する。tora2 の複製に Markdown のページは無い
+LINK_CHECK=$(sudo php "${TEST_SITE}/app/tool/markdown_link_check" "${TEST_SITE}/index.php" --user admin 2>&1)
+check_eq  "  そのコマンドが動く (直すものが無ければ終了コード 0)" "0" "$?"
+check_cmd "  直すものが無いと言う" "grep -q '問題なし' <<< \"\$LINK_CHECK\""
+BAD_STORAGE=$(sudo find "${TEST_SITE}/storage" \! -user "${SITE_OWNER%%:*}" -printf '%P\n' 2>/dev/null | head -5)
+check_eq  "  root で流しても storage/ に root の持ち物を残さない" "" "$BAD_STORAGE"
 echo
 
 echo "----------------------------------------"

@@ -1,0 +1,265 @@
+<?php
+/*
+ * Markdown のリンク・画像のうち、0.13.0 で行き先が変わって直す必要のあるものを出す。
+ *
+ *   php NextForm/app/tool/markdown_link_check /path/to/wiki/index.php [オプション]
+ *
+ *     --base <ページ名>  そのページ以下だけを調べる (既定はサイト全体)
+ *     --list <件数>      見つけたリンクを分類ごとに何件まで出すか (既定 20、0 で全件)
+ *     --quiet            問題が無ければ何も表示しない
+ *     --user <名前>      本文を読むのに使う管理者ユーザー名
+ *
+ * **読み取り専用**。ページ・添付・設定は書き換えない。
+ *
+ * 何が変わったか:
+ *
+ *   Markdown の [説明](行き先) と ![説明](行き先) は、0.13.0 から Web のリンクと
+ *   同じく書いた文字だけで行き先が決まる (handler/markdown/image.inc)。
+ *
+ *                 0.12.0 まで                         0.13.0 から
+ *     名前        子にあれば子、無ければトップ階層    子
+ *     /名前       画像: 名前と同じ / リンク: URL      トップ階層
+ *     ./ ../      変わらない                          変わらない
+ *
+ *   調べるのは種別 Markdown のページと、添付した Markdown (.md)。
+ *   .md の中では、.md を添付したページが起点になる。
+ *   Markdown の中の [[...]] と Wiki 記法は変わっていないので見ない。
+ *
+ * 出すもの:
+ *
+ *   行き先が変わったリンクのうち、次の 3 つだけを出す。
+ *
+ *     A  名前だけ。これまで実在するトップ階層のページを指していた
+ *        → 先頭に / を付ければ、これまでの行き先に戻る
+ *     B  /名前 の画像。これまで実在する子 (添付) を指していた
+ *        → 先頭の / を外せば、これまでの行き先に戻る
+ *     C  /名前 のリンク。これまでサイトの根からの URL で、いまは無いページを指す
+ *        → wiki の外を指していたなら https:// から書く
+ *
+ *   これまでも無いページを指していたリンク (もともとリンク切れ) は出さない。
+ *   押して作りに行く場所が変わるだけで、直す前と後で壊れ方は変わらない。
+ *   /名前 のリンクで、いま実在するページを指すものも出さない。直したあとの
+ *   リンク (A を / 付きにしたもの) がこの形になるので、出すと直しても消えない。
+ *
+ * 終了コード: 0 = 直すものが無い / 1 = 直すものがある / 2 = 使い方の誤り
+ */
+
+$argv = $_SERVER['argv'];
+
+function usage() {
+    fprintf(STDERR, "Usage: php markdown_link_check <path/to/wiki/index.php>\n");
+    fprintf(STDERR, "                               [--base <pagename>] [--list <n>] [--quiet]\n");
+    fprintf(STDERR, "                               [--user <name>]\n");
+    exit(2);
+}
+
+if(count($argv) < 2)
+    usage();
+
+$index_path = $argv[1];
+$base_pagename = '';
+$list_max = 20;
+$is_quiet = false;
+$user = '';
+
+for($i = 2; $i < count($argv); $i++) {
+    switch($argv[$i]) {
+    case '--base':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$base_pagename = $argv[++$i];
+	break;
+    case '--list':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$list_max = (int)$argv[++$i];
+	break;
+    case '--quiet':
+	$is_quiet = true;
+	break;
+    case '--user':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$user = $argv[++$i];
+	break;
+    default:
+	usage();
+    }
+}
+
+require_once(dirname(dirname(__FILE__)) . '/tool/common');
+eval_index_php($index_path);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+/*
+ * 本文を読む。CLI にはセッションが無く auth_get_user() が false を返すため、
+ * 読み取りに権限が要るサイトでは弾かれる。search_index_check と同じ方法で
+ * 管理者を差し込む。
+ */
+if($user !== '')
+    $GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $user, 'method' => 'digest');
+head_tags_init();
+
+$converter = markdown_converter();
+if($converter === false) {
+    printf("Markdown のライブラリ (app/vendor) が見つからない。\n");
+    exit(2);
+}
+/* 描画はしない。木を作るだけなので、表示と同じ拡張で読む */
+$parser = new League\CommonMark\Parser\MarkdownParser($converter->getEnvironment());
+
+/* 0.12.0 までの読み方。名前はまず子として探し、無ければ標準の規則 */
+function link_check_old_pagename($path, $base) {
+    if(strpos($path, './') !== 0 && strpos($path, '../') !== 0) {
+	$child = page_path_to_pagename('./' . $path, $base);
+	if(page_is_exists($child))
+	    return $child;
+    }
+    return page_path_to_pagename($path, $base);
+}
+
+/*
+ * 1 つのリンク・画像を調べる。直す必要があれば分類 (A/B/C) と、いまの行き先・
+ * これまでの行き先を返す。無ければ false。
+ * 行き先から外すもの (外部・?・#) は表示 (image.inc / link.inc) と同じ判定を使う。
+ */
+function link_check_node($node, $base) {
+    global $MARKDOWN_CURRENT_PAGENAME;
+    $is_image = $node instanceof League\CommonMark\Extension\CommonMark\Node\Inline\Image;
+    $url = (string)$node->getUrl();
+    if($is_image) {
+	if($url === '' || markdown_image_is_external($url))
+	    return false;
+	$path = rawurldecode($url);
+    } else {
+	if(!markdown_link_is_page_path($url))
+	    return false;
+	$position = strpos($url, '#');
+	$path = rawurldecode($position === false ? $url : substr($url, 0, $position));
+    }
+
+    $MARKDOWN_CURRENT_PAGENAME = $base;
+    $now = markdown_resolve_pagename($path);
+    $is_slash = (substr($path, 0, 1) === '/');
+
+    if(!$is_image && $is_slash) {
+	if(page_is_exists($now))
+	    return false;
+	return array('C', $now, 'URL ' . $path);
+    }
+    $old = link_check_old_pagename($path, $base);
+    if($old === $now || !page_is_exists($old))
+	return false;
+    return array($is_slash ? 'B' : 'A', $now, $old);
+}
+
+$found = array('A' => array(), 'B' => array(), 'C' => array());
+$markdown_page_num = 0;
+$markdown_file_num = 0;
+$link_num = 0;
+
+/* page_find() は子孫だけを返す。--base のページ自身も調べる */
+$pagenames = array();
+if($base_pagename !== '' && page_is_exists($base_pagename))
+    $pagenames[] = $base_pagename;
+foreach(page_find($base_pagename, array('is_pagename_only' => true)) as $listed)
+    $pagenames[] = $listed['name'];
+
+foreach($pagenames as $pagename) {
+    $page = page_read($pagename);
+    $type = isset($page['meta']['type']) ? $page['meta']['type'] : '';
+    if($type === 'markdown') {
+	$base = $pagename;
+	$markdown_page_num++;
+    } else if($type === 'file' && file_is_markdown($page)) {
+	/* 添付した .md は、それを添付したページが起点 (file_markdown_view と同じ) */
+	$base = page_path_to_pagename('..', $pagename, false);
+	$markdown_file_num++;
+    } else
+	continue;
+
+    $contents = page_get_contents($page);
+    if(!is_string($contents) || $contents === '')
+	continue;
+    /* UTF-8 でない .md は表示されないので、リンクも無い */
+    if(function_exists('mb_check_encoding') && !mb_check_encoding($contents, 'UTF-8'))
+	continue;
+
+    $walker = $parser->parse($contents)->walker();
+    while($event = $walker->next()) {
+	$node = $event->getNode();
+	if(!$event->isEntering() ||
+	   !($node instanceof League\CommonMark\Extension\CommonMark\Node\Inline\AbstractWebResource))
+	    continue;
+	$link_num++;
+	$result = link_check_node($node, $base);
+	if($result === false)
+	    continue;
+	list($class, $now, $old) = $result;
+	$is_image = $node instanceof League\CommonMark\Extension\CommonMark\Node\Inline\Image;
+	$found[$class][] = sprintf('%s: %s[](%s) → %s (これまで %s)',
+				   $pagename, $is_image ? '!' : '',
+				   rawurldecode((string)$node->getUrl()), $now, $old);
+    }
+}
+
+$out = array();
+function report($format) {
+    global $out;
+    $args = array_slice(func_get_args(), 1);
+    $out[] = vsprintf($format, $args);
+}
+
+/* $lines が空でなければ、見出しと説明を出したうえで並べる */
+function report_links($title, $notes, $lines, $list_max) {
+    if(empty($lines))
+	return;
+    report('[要確認] ' . $title, count($lines));
+    foreach($notes as $note)
+	report('       %s', $note);
+    foreach($lines as $n => $line) {
+	if($list_max !== 0 && $n >= $list_max) {
+	    report("\t... 他 %d 件", count($lines) - $n);
+	    break;
+	}
+	report("\t%s", $line);
+    }
+    report('');
+}
+
+report('Markdown のリンクの行き先の検査: %s', $index_path);
+report('');
+report('Markdown のページ : %d 件', $markdown_page_num);
+report('添付した Markdown : %d 件', $markdown_file_num);
+report('リンク・画像      : %d 本', $link_num);
+report('');
+
+report_links('名前だけの行き先が、トップ階層のページから子に変わったものが %d 本ある。',
+	     array('名前だけの行き先は、0.13.0 からそのページの子 (添付) を指す。',
+		   'これまでどおりトップ階層のページを指すには、先頭に / を付ける。',
+		   '例: [説明](ページ名) → [説明](/ページ名)'),
+	     $found['A'], $list_max);
+report_links('/ で始まる画像の行き先が、子 (添付) からトップ階層に変わったものが %d 本ある。',
+	     array('/ で始まる行き先は、0.13.0 からトップ階層のページを指す。',
+		   'これまでどおり子 (添付) を指すには、先頭の / を外す。',
+		   '例: ![説明](/図.png) → ![説明](図.png)'),
+	     $found['B'], $list_max);
+report_links('/ で始まるリンクが、サイトの URL から無いページに変わったものが %d 本ある。',
+	     array('/ で始まるリンクは、これまでサイトの根からの URL だった。',
+		   '0.13.0 からはトップ階層のページを指す。',
+		   'wiki の外を指していたなら、https:// から書く。'),
+	     $found['C'], $list_max);
+
+$found_num = count($found['A']) + count($found['B']) + count($found['C']);
+if($found_num === 0)
+    report('=> 問題なし。行き先が変わって直す必要のあるリンクは無い。');
+else
+    report('=> %d 本のリンクを確かめること。', $found_num);
+
+if(!$is_quiet || $found_num !== 0) {
+    foreach($out as $line)
+	printf("%s\n", $line);
+}
+exit($found_num === 0 ? 0 : 1);
+?>

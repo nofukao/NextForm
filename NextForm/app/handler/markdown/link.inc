@@ -4,6 +4,7 @@
  *
  *   [図](child.png)            子ページ (添付) へのリンク
  *   [隣](../隣のページ)         相対指定 (wiki 記法と同じ解決)
+ *   [上](/トップのページ)       トップ階層から
  *   [節](../ページ#見出し)       ページの見出しへ
  *   [外](https://…)            外部はそのまま
  *
@@ -42,17 +43,20 @@ class MarkdownLinkRenderer implements League\CommonMark\Renderer\NodeRendererInt
  * ページへの行き先として読むか。
  *
  * 外部 (スキーム付き・//) のほか、次のものは URL としてそのまま残す。
- *   /…   サイトの根からの URL
  *   ?…   この wiki の URL (?ページ名)
  *   #…   ページの中の位置
  *   ? を含むもの  index.php?Top のように、いまも動いている相対 URL
  * 残りは、書いたまま出しても /nextform/x.png のような存在しない場所を指す
  * (.htaccess が index.php 以外を拒む) ので、ページ名として読んで失うものが無い。
+ *
+ * /… もページ名 (トップ階層) として読む。画像と同じ規則にするため。
+ * 0.12.0 までは「サイトの根からの URL」として残していた。wiki の外を
+ * 指すときは https:// から書く。
  */
 function markdown_link_is_page_path($url) {
     if($url === '' || markdown_image_is_external($url))
 	return false;
-    if($url[0] === '/' || $url[0] === '#' || strpos($url, '?') !== false)
+    if($url[0] === '#' || strpos($url, '?') !== false)
 	return false;
     return true;
 }
