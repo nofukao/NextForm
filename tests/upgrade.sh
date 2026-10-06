@@ -295,6 +295,10 @@ echo "[9] 所有者"
 BAD_OWNER=$(sudo find "${TEST_SITE}/app" "${TEST_SITE}/theme" \
                  \! -user "${SITE_OWNER%%:*}" -printf '%P\n' 2>/dev/null | head -5)
 check_eq "app/ theme/ が元の所有者 (${SITE_OWNER}) のまま" "" "$BAD_OWNER"
+# 工程 3 はマニュアルのキャッシュと検索の索引のマニュアルの分を storage/cache/ に
+# 作り直す。root で走らせると、そこに root の持ち物が残っていた (0.7.0 から)
+BAD_STORAGE=$(sudo find "${TEST_SITE}/storage" \! -user "${SITE_OWNER%%:*}" -printf '%P\n' 2>/dev/null | head -5)
+check_eq "storage/ にも元の所有者 (${SITE_OWNER}) 以外の持ち物が無い" "" "$BAD_STORAGE"
 echo
 
 # --- バックアップ -----------------------------------------------------------
