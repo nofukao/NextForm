@@ -131,6 +131,9 @@ function wiki_operator_include(&$context, $dom, $tree) {
 動画サイト(YouTube，ニコニコ動画)の埋め込みはv0.10.0で取りやめました．
 すでに書いてあるものは，動画サイトへのリンクとして表示されます．
 
+添付ファイルのうち画像・音声・動画は埋め込み，それ以外はファイル名のリンクになります．
+リンクを押すとそのファイルを開きます(Markdownのファイル(.md)はwikiの画面の中に表示します)．
+
 添付ファイル(子ページとしてアップロードしたファイル)を埋め込む際は
 編集画面で埋め込む位置にカーソルを移動させ，添付ボタンを押してファイルを選択すると便利です．
 
@@ -180,6 +183,10 @@ Otherwise the comma is read as part of the URL.''
 Only images (jpg, jpeg, png, gif) can be embedded. Any other URL becomes a link.
 Embedding from video sites (YouTube, Niconico) was dropped in v0.10.0.
 Anything already written is shown as a link to the video site.
+
+Attached images, audio and video are embedded; any other attached file becomes a link
+with its file name. Pressing the link opens the file (a Markdown file (.md) is shown
+inside the wiki screen).
 
 To embed an attached file (a file uploaded as a child page), move the cursor to the
 position on the editing screen where it should go, press the attach button and choose
