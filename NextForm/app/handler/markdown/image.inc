@@ -4,6 +4,7 @@
  *
  *   ![図](child.png)          子ページ (種別 file) を埋め込む
  *   ![図](../共通/図.png)      相対指定 (wiki 記法と同じ解決)
+ *   ![図](/共通/図.png)        トップ階層から
  *   ![図](https://…/a.png)    外部の画像はそのまま
  *
  * 埋め込みは wiki 記法の &include と同じ経路 (file ハンドラの embed) を通す。
@@ -33,22 +34,28 @@ function markdown_image_is_external($url) {
  * 画像やリンクに書かれた行き先 (URL の符号化を解いたもの) をページ名にする。
  * リンク (link.inc) も同じ規則で解決する。
  *
- * 添付は子ページなので、裸の名前は**まず子ページとして**探す。
+ * **Web のリンクと同じく、書いた文字だけで決める。** 添付はページの子なので、
+ * ページを「フォルダー」と読み替えると次のようになる。
  *
- * page_path_to_pagename() は ./ や ../ で始まらない名前を絶対 (トップ階層)
- * として扱う。Wiki 記法ではそれでよいが、Markdown を書く人は
- * ![図](image.png) と書いて隣に置いた添付を指すつもりでいる。
- * 子ページに無ければ、これまでどおり絶対として解決する。
+ *   名前 / ./名前   そのページの子 (隣に置いた添付)
+ *   ../名前         兄弟
+ *   /名前           トップ階層
+ *
+ * Wiki 記法 ([[名前]]) では名前だけはトップ階層になるが、ここでは揃えない。
+ * Markdown を書く人は ![図](image.png) と書いて隣に置いた添付を指すつもりで
+ * いるし、よそで書いた Markdown もその前提で書かれている。
+ *
+ * 0.12.0 までは、名前をまず子として探し、無ければトップ階層として読んでいた。
+ * 行き先がページの有無で変わるので、存在しないリンクから作った場所と、
+ * 後から作ったページにつながる場所が食い違った。そのときの読み方は
+ * app/tool/markdown_link_check が持っている (行き先が変わったリンクを探すため)。
  */
 function markdown_resolve_pagename($path) {
     global $MARKDOWN_CURRENT_PAGENAME;
 
     $base = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
-    if($base !== '' && strpos($path, './') !== 0 && strpos($path, '../') !== 0) {
-	$child = page_path_to_pagename('./' . $path, $base);
-	if(page_is_exists($child))
-	    return $child;
-    }
+    if(substr($path, 0, 1) !== '/' && strpos($path, './') !== 0 && strpos($path, '../') !== 0)
+	$path = './' . $path;
     return page_path_to_pagename($path, $base);
 }
 
