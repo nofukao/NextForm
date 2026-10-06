@@ -82,6 +82,7 @@
 ./tests/csrf.sh             # CSRF 対策 (複製サイトを作る。要 sudo)
 ./tests/post-encoding.sh    # Base64 に包んだ POST を戻す (WAF 対策。複製サイトを作る。要 sudo)
 ./tests/attach-download.sh  # 添付画面からのダウンロードと ZIP (複製サイトを作る。要 sudo)
+./tests/attach-link.sh      # 添付へのリンクと md の描画 (複製サイトを作る。要 sudo)
 ./tests/clone.sh            # 他の NextForm のページのクローン (複製サイトを 2 つ作る。要 sudo)
 ./tests/dispatch.sh         # 不正な action で 500 にならないか (複製サイトを作る。要 sudo)
 ./tests/syntax-survey.sh    # wiki 記法の棚卸しツール (複製サイトを作る。要 sudo)

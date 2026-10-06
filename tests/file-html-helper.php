@@ -1,6 +1,7 @@
 <?php
 /*
  * tests/file-html.sh からサイトの中で実行される検証ヘルパ。
+ * tests/attach-link.sh も同じものを使う (添付を作ってページから指す)。
  *
  *   php file-html-helper.php <index.php> <管理者ユーザー名> <検査名> [引数..]
  *
@@ -10,6 +11,7 @@
  *                           添付の画面 (file_write) と同じく、Content-type を
  *                           入れてから種別ごとの write を通す
  *   write <名前> <本文>      種別 markdown として保存する (written=1/0)
+ *   write-wiki <名前> <本文> 種別 wiki として保存する (written=1/0)
  *   set-setting <定数名> <値>
  *                           サイトの設定 (storage/setup/site) に書く (saved=1/0)。
  *                           管理画面の「サイトの設定」と同じ保存先
@@ -64,6 +66,10 @@ case 'write-file':
 
 case 'write':
     printf("written=%d\n", test_write($rest[0], $rest[1], 'markdown') ? 1 : 0);
+    break;
+
+case 'write-wiki':
+    printf("written=%d\n", test_write($rest[0], $rest[1], 'wiki') ? 1 : 0);
     break;
 
 case 'set-setting':

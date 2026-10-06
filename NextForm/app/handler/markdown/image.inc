@@ -76,7 +76,7 @@ function markdown_image_html($url, $alt, $title) {
 	    if(!empty($content_type_handler['embed']) &&
 	       function_exists($content_type_handler['embed'])) {
 		/*
-		 * 埋め込みが文字のリンクになる種類 (添付 HTML の「開く」) は、
+		 * 埋め込みが文字のリンクになる種類 (PDF・md・添付 HTML など) は、
 		 * 説明をリンクの表示にする。印 (embed_label) のある種類にだけ
 		 * 名前つきで渡す。画像などに並びの引数で渡すと、240x240 や open の
 		 * ような大きさ・開き方の指定として読まれてしまう。
@@ -85,6 +85,14 @@ function markdown_image_html($url, $alt, $title) {
 		if(!empty($content_type_handler['embed_label']) && $alt !== '')
 		    $params['label'] = $alt;
 		$content_type_handler['embed']($page, $document, $params);
+		/*
+		 * 画像の説明は代替テキストにする (画像が出ないときや読み上げで使われる)。
+		 * 埋め込みの側は &include と共用で、代替テキストにページ名を入れている。
+		 */
+		if($alt !== '') {
+		    foreach($document->getElementsByTagName('img') as $img)
+			$img->setAttribute('alt', $alt);
+		}
 		return dom_save_html($document);
 	    }
 	}

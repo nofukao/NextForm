@@ -5,7 +5,8 @@ $HANDLERS['file'] = array(
     'summary' => 'file_summary',
     'raw'  => 'file_raw',
     'edit' => 'file_edit',
-    'write' => 'file_write');
+    'write' => 'file_write',
+    'view' => 'file_view');
 
 $FILE_CONTENT_TYPE_HANDLERS = array();
 
@@ -14,6 +15,7 @@ require_once(APP_DIR_PATH . '/handler/file/file_image.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_video.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_audio.inc');
 require_once(APP_DIR_PATH . '/handler/file/file_html.inc');
+require_once(APP_DIR_PATH . '/handler/file/file_markdown.inc');
 
 function file_get_content_type(&$page) {
     global $FILE_CONTENT_TYPE_HANDLERS;
@@ -23,9 +25,16 @@ function file_get_content_type(&$page) {
     return 'application/octet-stream';
 }
 
+/*
+ * md は種類ではなく拡張子で見分けるので、登録された種類より先に見る
+ * (file_markdown.inc)。text/plain で送られてきた .md も md として扱う。
+ */
 function &file_get_content_type_handler(&$page) {
     global $FILE_CONTENT_TYPE_HANDLERS;
     global $FILE_CONTENT_TYPE_HANDLER_BINARY;
+    global $FILE_CONTENT_TYPE_HANDLER_MARKDOWN;
+    if(file_is_markdown($page))
+	return $FILE_CONTENT_TYPE_HANDLER_MARKDOWN;
     if(!empty($page['meta']['Content-type']) &&
        !empty($FILE_CONTENT_TYPE_HANDLERS[$page['meta']['Content-type']]))
 	return $FILE_CONTENT_TYPE_HANDLERS[$page['meta']['Content-type']];
@@ -66,9 +75,44 @@ function file_show(&$page, $dom) {
 	$content_type_handler['show']($page, $dl);
 }
 
+/*
+ * 開いた画面 (action=view)。md は wiki の画面の中に描画する (file_markdown.inc)。
+ * 描画する種類でなければ、ファイルのページを出す。
+ */
+function file_view(&$page, $dom) {
+    $content_type_handler = &file_get_content_type_handler($page);
+    if(!empty($content_type_handler['view']) && function_exists($content_type_handler['view']))
+	$content_type_handler['view']($page, $dom);
+    else
+	file_show($page, $dom);
+}
+
+/*
+ * 要約。画像や動画は小さく出す。リンクになる種類 (embed_label の印がある
+ * PDF・md など) には大きさを渡さない。並びの引数を表示名として読むので、
+ * 「max 100x100」というリンクになっていた。
+ */
 function file_summary(&$page, $dom) {
     $content_type_handler = &file_get_content_type_handler($page);
-    $content_type_handler['embed']($page, $dom, array(WIKI_SUMMARY_IMAGE_RESIZE));
+    $params = array(WIKI_SUMMARY_IMAGE_RESIZE);
+    if(!empty($content_type_handler['embed_label']))
+	$params = array();
+    $content_type_handler['embed']($page, $dom, $params);
+}
+
+/*
+ * Content-Disposition。$disposition は attachment (保存させる) か inline (ブラウザで
+ * 開く)。名前は RFC 6266 の filename* で UTF-8 のまま伝え、それを読まない相手の
+ * ために、英数字以外を _ にした名前も付ける。添付画面のまとめてダウンロードも使う。
+ *
+ * 上流はメールの書き方 (=?UTF-8?B?...?=) を流用し、MSIE にだけ URL の符号化を
+ * 使っていた。HTTP の決まりに無い書き方で、ブラウザ以外の道具は読めない
+ * (curl -OJ は Base64 の途中の / から後ろを名前にして保存した)。
+ * User-Agent を送らない相手では警告も出ていた。
+ */
+function file_content_disposition($disposition, $filename) {
+    $fallback = preg_replace('/[^A-Za-z0-9._-]/u', '_', $filename);
+    return $disposition . '; filename="' . $fallback . '"; filename*=UTF-8\'\'' . rawurlencode($filename);
 }
 
 function file_raw(&$page, $dom) {
@@ -86,12 +130,7 @@ function file_raw(&$page, $dom) {
 
     $content_type = file_get_content_type($target_page);
 
-    $user_agent = $_SERVER['HTTP_USER_AGENT'];
     $filename = page_get_simplename($target_page['name']);
-    if(strpos($user_agent, 'MSIE') !== false)
-	$filename = urlencode($filename);
-    else
-	$filename = '=?UTF-8?B?' . base64_encode($filename) . '?=';
 
     header('Content-type: '. $content_type);
     //if(isset($target_page['contents_size'])) // don't send content-length because of image resizing
@@ -99,9 +138,9 @@ function file_raw(&$page, $dom) {
     header('X-Content-Type-Options: nosniff');
 
     if($content_type == 'application/octet-stream')
-	header('Content-Disposition: attachment; filename=' . $filename);
+	header('Content-Disposition: ' . file_content_disposition('attachment', $filename));
     else
-	header('Content-Disposition: inline; filename='. $filename);
+	header('Content-Disposition: ' . file_content_disposition('inline', $filename));
 
     $content_type_handler = &file_get_content_type_handler($target_page);
     if(!empty($content_type_handler['raw']) && function_exists($content_type_handler['raw']))

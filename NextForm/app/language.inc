@@ -50,6 +50,7 @@ $LANGUAGE['ja'] = array(
     'Open' => '開く',
     'Details' => '詳細',
     'Markdown library is missing. Showing the source instead.' => 'Markdownの変換に必要なファイル (app/vendor/) がありません。原文を表示します。',
+    'This file is not UTF-8, so it cannot be shown.' => 'このファイルは UTF-8 ではないため、描画できません。',
     'Source' => 'ソース',
     'Page name' => 'ページ名',
     'Size' => 'サイズ',

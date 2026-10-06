@@ -34,6 +34,7 @@ $CSRF_SAFE_ACTIONS = array(
     'summary'      => true,	// 要約表示
     'texts'        => true,	// 検索用のテキスト抽出
     'raw'          => true,	// 添付ファイルの実体
+    'view'         => true,	// 添付した md を描画して見せる
     'diff'         => true,	// 版の差分表示
     'page'         => true,	// 履歴のページ送り
     'only'         => true,	// 要約の絞り込み表示

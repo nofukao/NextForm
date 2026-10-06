@@ -1209,10 +1209,27 @@ URLをそのまま書いても[[リンクになります:../Extra#自動リン�
 
 URLを書けば外部の画像もそのまま表示します．
 
+添付した画像・音声・動画はページに埋め込みます．
+画像の説明は，画像が出ないときや読み上げで使われる代替テキストになります．
+それ以外のファイルは説明を表示名にしたリンクになり，押すとそのファイルを開きます．
+説明を空にした ""![](ファイル名)"" では，ファイル名がリンクになります．
+
+|ファイルの種類|""![説明](ファイル名)"" を押したとき|h
+|PDF・テキスト|ブラウザの中で表示します(表示できないブラウザではダウンロードになります)|
+|Markdown(.md)|wikiの画面の中に，Markdownのページと同じ見た目で表示します．読むだけで，編集はできません|
+|その他(Word，Excelなど)|ダウンロードします|
+
+添付したMarkdown(.md)の中に書いた ""![図](図.png)"" や ""[資料](./資料.pdf)"" は，
+その .md を添付したページの添付から探します．
+.md と画像を同じページに添付すれば，そのまま表示できます．
+UTF-8でない .md は表示できません(ダウンロードはできます)．
+
 添付したHTMLファイルを動かす設定のサイトでは，""![表示名](ファイル名.html)"" は
 押すとそのHTMLが動くリンクになります([[HTMLファイルの直接実行:../../HtmlFile]])．
 
-""[表示名](ファイル名)"" と書くと，埋め込まずに添付へのリンクになります．
+""[表示名](ファイル名)"" と書くと，埋め込まずに添付のファイルのページへのリンクになります．
+ファイルのページには，ファイルの情報と''ダウンロード''が出ます．
+Markdown(.md)のファイルのページには，wikiの画面の中に表示する''開く''も出ます．
 行き先の探し方は ""![説明](ファイル名)"" と同じです．
 ""[表示名](../隣のページ)"" や ""[表示名](../隣のページ#見出し)"" のように，
 ページへのリンクにも使えます．
@@ -1688,11 +1705,29 @@ Pointing at a file that does not exist yet makes a link, so that it can be creat
 
 Writing a URL shows an external image as it is.
 
+Attached images, audio and video are embedded in the page.
+The description of an image becomes its alternative text, used when the image does
+not show and by screen readers.
+Any other file becomes a link with the description as its text, and pressing it opens
+the file. With an empty description, as in ""![](file name)"", the file name is the link.
+
+|Type of file|What pressing ""![description](file name)"" does|h
+|PDF, text|Shows it in the browser (browsers that cannot show it download it)|
+|Markdown (.md)|Shows it inside the wiki screen, looking like a Markdown page. It can be read, not edited|
+|Others (Word, Excel and so on)|Downloads it|
+
+In an attached Markdown file (.md), ""![figure](figure.png)"" and ""[document](./document.pdf)""
+are looked up among the attachments of the page the .md is attached to.
+Attach the .md and its images to the same page and they show as they are.
+A .md that is not UTF-8 cannot be shown (it can still be downloaded).
+
 On a site set up to run attached HTML files, ""![display name](file name.html)"" becomes
 a link that runs the HTML when pressed ([[Running HTML files directly:../../HtmlFile]]).
 
-Writing ""[display name](file name)"" makes a link to the attachment instead of
-embedding it. The target is looked up in the same way as for ""![description](file name)"".
+Writing ""[display name](file name)"" makes a link to the page of the attached file
+instead of embedding it. The page of a file shows its details and ''Download''.
+The page of a Markdown file (.md) also shows ''Open'', which shows it inside the wiki screen.
+The target is looked up in the same way as for ""![description](file name)"".
 It also links to pages, as in ""[display name](../the next page)"" or
 ""[display name](../the next page#heading)"".
 Anything that starts with ""?"", ""/"" or ""#"", or that contains ""?"", is treated

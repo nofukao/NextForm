@@ -181,7 +181,12 @@ function markdown_render_html(&$page, $contents, &$front_matter = null, $is_posi
     $previous = isset($MARKDOWN_CURRENT_PAGENAME) ? $MARKDOWN_CURRENT_PAGENAME : '';
     $previous_offsets = isset($MARKDOWN_LINE_OFFSETS) ? $MARKDOWN_LINE_OFFSETS : null;
     $previous_length = isset($MARKDOWN_CONTENTS_LENGTH) ? $MARKDOWN_CONTENTS_LENGTH : 0;
-    $MARKDOWN_CURRENT_PAGENAME = $page['name'];
+    /*
+     * 相対の指定を解決する起点。ふつうはそのページ自身。添付した md を描くときは
+     * md を添付したページ (file_markdown_view)。
+     */
+    $MARKDOWN_CURRENT_PAGENAME = isset($page['markdown_base_pagename'])
+	? $page['markdown_base_pagename'] : $page['name'];
     /*
      * 行→バイトの表は**変換に渡す文字列**から作る (末尾の改行を足した後)。
      * ライブラリが返す行番号はそちらを指すため。長さのほうは**保存されている
@@ -562,12 +567,16 @@ function markdown_move_code_positions($dom) {
     }
 }
 
-function markdown_convert(&$page, $dom, $contents = null) {
+/*
+ * $is_positioned が false なら、ブロックに原文の位置 (data-twp) を付けない。
+ * 位置が無ければ部分編集の欄が出ない。添付した md を読むだけの画面が使う。
+ */
+function markdown_convert(&$page, $dom, $contents = null, $is_positioned = true) {
     if(is_null($contents))
 	$contents = page_get_contents($page);
 
     $front_matter = array();
-    $html = markdown_render_html($page, $contents, $front_matter, true);
+    $html = markdown_render_html($page, $contents, $front_matter, $is_positioned);
     if($html === false) {
 	message_error(l('Markdown library is missing. Showing the source instead.'));
 	markdown_source_append($page, $dom, $contents);
