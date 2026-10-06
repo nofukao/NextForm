@@ -123,9 +123,10 @@ put_markdown() {
     fi
 }
 
+# 複製元のほかのページに左右されないよう、検証用のページの下だけを見る
 check_tool() {
     sudo -u "$SITE_OWNER" php "${SITE}/app/tool/markdown_link_check" \
-        "${SITE}/index.php" --user "$WIKI_ADMIN" "$@" 2>&1
+        "${SITE}/index.php" --user "$WIKI_ADMIN" --base "$P" "$@" 2>&1
 }
 
 # storage/page の中身の指紋 (道具が書き換えないことを見る)
