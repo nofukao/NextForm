@@ -1199,12 +1199,21 @@ URLをそのまま書いても[[リンクになります:../Extra#自動リン�
  [ref]: https://example.com/
 
 *画像と添付
-""![説明](ファイル名)"" は，まずそのページの子ページとして探します．
+""![説明](ファイル名)"" は，そのページに添付したファイルを指します．
 添付はページの子ページとして保存されるので，
 ''添付''でアップロードしたファイル名をそのまま書けば埋め込めます．
 
-子ページに無ければ，Wiki記法と同じ規則でページ名として解決します
-(''./'' や ''../'' で始めれば相対指定，そうでなければトップからの名前)．
+行き先は，Webのリンクと同じく書いた文字だけで決まります．
+ページをフォルダーと読み替えると，次のようになります．
+
+|書き方|行き先|h
+|""ファイル名"" または ""./ファイル名""|そのページの子(添付)|
+|""../ページ名""|隣(兄弟)のページ|
+|""/ページ名""|トップ階層からの名前|
+
+名前だけを書いたときの行き先は，Wiki記法の &[&[ページ名&]&] (トップ階層から)と違います
+([[Wiki記法とMarkdown記法の対応:../../Comparison]])．
+Markdown記法の中に書いた &[&[ページ名&]&] は，Wiki記法と同じです．
 まだ無いファイルを指した場合は，作りに行けるようリンクになります．
 
 URLを書けば外部の画像もそのまま表示します．
@@ -1220,7 +1229,7 @@ URLを書けば外部の画像もそのまま表示します．
 |その他(Word，Excelなど)|ダウンロードします|
 
 添付したMarkdown(.md)の中に書いた ""![図](図.png)"" や ""[資料](./資料.pdf)"" は，
-その .md を添付したページの添付から探します．
+その .md を添付したページの添付を指します．
 .md と画像を同じページに添付すれば，そのまま表示できます．
 UTF-8でない .md は表示できません(ダウンロードはできます)．
 
@@ -1230,10 +1239,13 @@ UTF-8でない .md は表示できません(ダウンロードはできます)�
 ""[表示名](ファイル名)"" と書くと，埋め込まずに添付のファイルのページへのリンクになります．
 ファイルのページには，ファイルの情報と''ダウンロード''が出ます．
 Markdown(.md)のファイルのページには，wikiの画面の中に表示する''開く''も出ます．
-行き先の探し方は ""![説明](ファイル名)"" と同じです．
-""[表示名](../隣のページ)"" や ""[表示名](../隣のページ#見出し)"" のように，
+行き先の決め方は ""![説明](ファイル名)"" と同じです．
+""[表示名](/ページ名)"" や ""[表示名](../隣のページ#見出し)"" のように，
 ページへのリンクにも使えます．
-""?"" ""/"" ""#"" で始まるものと ""?"" を含むものは，URLとしてそのまま扱います．
+まだ無いページへのリンクから作ると，書いた場所に作ります．
+""[表示名](新しいページ)"" ならそのページの子に，""[表示名](/新しいページ)"" ならトップ階層に作ります．
+""?"" ""#"" で始まるものと ""?"" を含むものは，URLとしてそのまま扱います．
+このwikiの外を指すときは ""https://"" から書きます．
 */
 
 /**
@@ -1694,13 +1706,21 @@ text, in the reference form.
  [ref]: https://example.com/
 
 *Images and attachments
-""![description](file name)"" first looks for a child page of the current page.
+""![description](file name)"" points at a file attached to the current page.
 Attachments are saved as child pages, so writing the name of a file uploaded through
 ''Attach'' embeds it.
 
-If there is no such child page, the name is resolved as a page name by the same rules
-as Wiki notation (starting with ''./'' or ''../'' makes it relative, otherwise it is
-a name from the top).
+As with links on the web, where it points is decided only by what is written.
+Reading a page as a folder, it works as follows.
+
+|notation|where it points|h
+|""file name"" or ""./file name""|a child (attachment) of the current page|
+|""../page name""|the next (sibling) page|
+|""/page name""|a name from the top|
+
+Where a bare name points differs from &[&[page name&]&] in Wiki notation, which is
+a name from the top ([[Wiki notation and Markdown notation:../../Comparison]]).
+&[&[page name&]&] written in Markdown notation is the same as in Wiki notation.
 Pointing at a file that does not exist yet makes a link, so that it can be created.
 
 Writing a URL shows an external image as it is.
@@ -1717,7 +1737,7 @@ the file. With an empty description, as in ""![](file name)"", the file name is 
 |Others (Word, Excel and so on)|Downloads it|
 
 In an attached Markdown file (.md), ""![figure](figure.png)"" and ""[document](./document.pdf)""
-are looked up among the attachments of the page the .md is attached to.
+point at the attachments of the page the .md is attached to.
 Attach the .md and its images to the same page and they show as they are.
 A .md that is not UTF-8 cannot be shown (it can still be downloaded).
 
@@ -1727,11 +1747,15 @@ a link that runs the HTML when pressed ([[Running HTML files directly:../../Html
 Writing ""[display name](file name)"" makes a link to the page of the attached file
 instead of embedding it. The page of a file shows its details and ''Download''.
 The page of a Markdown file (.md) also shows ''Open'', which shows it inside the wiki screen.
-The target is looked up in the same way as for ""![description](file name)"".
-It also links to pages, as in ""[display name](../the next page)"" or
+Where it points is decided in the same way as for ""![description](file name)"".
+It also links to pages, as in ""[display name](/page name)"" or
 ""[display name](../the next page#heading)"".
-Anything that starts with ""?"", ""/"" or ""#"", or that contains ""?"", is treated
+A page created from a link to a page that does not exist yet is created where the link
+points: ""[display name](new page)"" creates it as a child of the current page, and
+""[display name](/new page)"" creates it at the top.
+Anything that starts with ""?"" or ""#"", or that contains ""?"", is treated
 as a URL as it is.
+To point outside this wiki, write the URL from ""https://"".
 */
 
 /**
@@ -1840,6 +1864,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |コードのハイライト|行頭スペースのあとに (code)|""$bq$$bq$$bq$php""|Wiki記法は色分けまで行われます．Markdown記法は言語名が記録されるだけで，色分けはされません|
 |チェックボックス|なし|""- [ ] 項目""|Markdown記法だけの機能です|
 |脚注|なし|""本文[^1]"" と ""[^1]: 中身""|同上|
+|名前だけを書いたリンクの行き先|&[&[ページ名&]&] はトップ階層から|""[表示名](ページ名)"" はそのページの子(添付)|Markdown記法はWebのリンクと同じく，ページをフォルダーと見ます．トップ階層からは ""[表示名](/ページ名)"" と書きます．Markdown記法の中に書いた &[&[ページ名&]&] はWiki記法と同じです|
 
 見出しへのリンク &[&[ページ名#見出し&]&] は，種別をまたいで同じ場所に届きます．
 
@@ -1908,6 +1933,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |highlighting code|(code) after the leading space|""$bq$$bq$$bq$php""|Wiki notation colours the code. Markdown notation only records the language name; it is not coloured|
 |checkbox|none|""- [ ] item""|Only Markdown notation has this|
 |footnote|none|""text[^1]"" and ""[^1]: the note""|as above|
+|where a link with a bare name points|&[&[page name&]&] is a name from the top|""[display name](page name)"" is a child (attachment) of the current page|Markdown notation reads a page as a folder, as links on the web do. From the top, write ""[display name](/page name)"". &[&[page name&]&] written in Markdown notation is the same as in Wiki notation|
 
 A link to a heading, &[&[page name#heading&]&], reaches the same place
 whatever the type of the page.
