@@ -76,7 +76,7 @@ function markdown_image_html($url, $alt, $title) {
 	    if(!empty($content_type_handler['embed']) &&
 	       function_exists($content_type_handler['embed'])) {
 		/*
-		 * 埋め込みが文字のリンクになる種類 (添付 HTML の「開く」) は、
+		 * 埋め込みが文字のリンクになる種類 (PDF・md・添付 HTML など) は、
 		 * 説明をリンクの表示にする。印 (embed_label) のある種類にだけ
 		 * 名前つきで渡す。画像などに並びの引数で渡すと、240x240 や open の
 		 * ような大きさ・開き方の指定として読まれてしまう。
