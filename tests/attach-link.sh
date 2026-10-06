@@ -96,9 +96,14 @@ markdown_section() {
             echo $d->saveHTML($s);'
 }
 
+# $1 HTML  $2 action  $3 リンクの文字。その文字で ?…&action=$2 を指すリンクの数
+action_link_count() {
+    printf '%s' "$1" | grep -o "<a [^>]*action=$2[^>]*>$3</a>" | wc -l | tr -d ' '
+}
+
 # $1 HTML  $2 リンクの文字。その文字で実体 (action=raw) を指すリンクの数
 raw_link_count() {
-    printf '%s' "$1" | grep -o "<a [^>]*action=raw[^>]*>$2</a>" | wc -l | tr -d ' '
+    action_link_count "$1" raw "$2"
 }
 
 # 種別 file のページを作る。$1 ページ名  $2 中身のファイル  $3 Content-type
@@ -277,7 +282,38 @@ check_eq "  表示名を書けばそれを出す (今のまま)" "?$P/資料.pdf
 check_eq "md は描画した画面を開く" "?$P/読み物.md&action=view" "$(link_href "$WIKI" '読み物.md')"
 echo
 
-echo "7. PHP の警告が出ていないこと"
+echo "7. 要約 (action=summary) でもファイル名を出す"
+# 要約は画像の大きさ (WIKI_SUMMARY_IMAGE_RESIZE) を渡してくる。リンクになる種類が
+# それを表示名として読み、「max 100x100」と出していた。カレンダーの要約もこの経路
+fetch "$P/資料.pdf&action=summary" > /dev/null
+# 見出しにも「資料.pdf」のリンク (ファイルのページ) があるので、実体を指すものだけ数える
+check_eq "PDF の要約はファイル名のリンク" "1" "$(raw_link_count "$(cat "$WORK/body")" '資料.pdf')"
+check_eq "  大きさの指定を表示名にしない" "no" "$(contains "$(cat "$WORK/body")" 'max 100x100')"
+fetch "$P/読み物.md&action=summary" > /dev/null
+check_eq "md の要約は描画した画面へのリンク" "1" \
+         "$(action_link_count "$(cat "$WORK/body")" view '読み物.md')"
+echo
+
+echo "8. 保存するときのファイル名は標準の書き方 (RFC 6266)"
+# これまではメールの書き方 (=?UTF-8?B?...?=) を流用していた。ブラウザ以外の道具は
+# 読めず、curl -OJ は Base64 の途中の / から後ろを名前にして保存した。
+# 添付画面のまとめてダウンロードと同じ書き方にする
+encoded() { php -r 'echo rawurlencode($argv[1]);' "$1"; }
+fetch "$P/読み物.md&action=raw" > /dev/null
+check_eq "ダウンロード (attachment) の名前" \
+         "attachment; filename=\"___.md\"; filename*=UTF-8''$(encoded 読み物.md)" \
+         "$(header_of Content-Disposition)"
+fetch "$P/資料.pdf&action=raw" > /dev/null
+check_eq "ブラウザで開く (inline) ときの名前" \
+         "inline; filename=\"__.pdf\"; filename*=UTF-8''$(encoded 資料.pdf)" \
+         "$(header_of Content-Disposition)"
+# User-Agent を見て書き方を変えていた (MSIE)。送ってこない相手で警告が出ていた。
+# 出たかどうかは次の 9. で見る
+code="$(curl -sk -o /dev/null -w '%{http_code}' -H 'User-Agent:' "${URL}/?$P/資料.pdf&action=raw")"
+check_eq "User-Agent が無くても開ける" "200" "$code"
+echo
+
+echo "9. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null | grep -F "$SITE" || true)
 check_eq "この検証サイトの警告が増えていない" "" "$log_new"
 echo
