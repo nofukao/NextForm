@@ -163,6 +163,16 @@ function upgrade_restore_all() {
 			      $up_attrs, $up_site_uid, $up_site_gid);
     upgrade_restore_attrs($up_site . '/theme', 'theme',
 			  $up_attrs, $up_site_uid, $up_site_gid);
+    /*
+     * 工程 3 は storage/ にも書く。マニュアルのキャッシュと検索の索引の
+     * マニュアルの分を cache/ に作り直し、焼き付けた古いマニュアルのページを
+     * 論理削除する (page/ に版が増える)。root で走らせると root の持ち物が残り、
+     * 新しく作ったディレクトリには web サーバが書けなくなっていた (0.7.0 から)。
+     * 既にあるものは控えた属性に戻すだけなので、何も変わらない。
+     */
+    if(is_dir($up_site . '/storage'))
+	upgrade_restore_attrs($up_site . '/storage', 'storage',
+			      $up_attrs, $up_site_uid, $up_site_gid);
 }
 
 /*
@@ -568,6 +578,7 @@ foreach(explode(',', UPGRADE_TARGET_DIRS) as $up_dir)
 foreach(explode(',', UPGRADE_TARGET_FILES) as $up_file)
     upgrade_capture_attrs($up_site . '/' . $up_file, $up_file, $up_attrs);
 upgrade_capture_attrs($up_site . '/theme', 'theme', $up_attrs);
+upgrade_capture_attrs($up_site . '/storage', 'storage', $up_attrs);
 
 $up_site_uid = fileowner($up_index_real);
 $up_site_gid = filegroup($up_index_real);
