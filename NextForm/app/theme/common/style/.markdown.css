@@ -86,6 +86,21 @@ section.markdown li > *:last-child {
 }
 
 /*
+ * 原文で空行を入れた所だけを空ける。上の打ち消しで項目は詰まって見えるので、
+ * 空行のあとに始まる項目と入れ子のリスト (blank_before。markdown.inc の
+ * markdown_mark_list_blank_lines) の上に、Wiki 記法で空行がリストを切ったとき
+ * (.base.css の section.section > section.list) と同じ余白を付ける。
+ * 前の項目の下の余白は 0 なので、間はこの値と li の padding になり、Wiki 記法と
+ * 同じになる。入れ子のリストでは、前の段落の下の余白 (8px) と相殺されてこの値。
+ * 詳細度 (0,2,3) は上の li > ul の (0,1,3) より強い。
+ */
+section.markdown li.blank_before,
+section.markdown li > ul.blank_before,
+section.markdown li > ol.blank_before {
+    margin-top: <?php echo(theme_density_px(24)); ?>px;
+}
+
+/*
  * 記法の例 (:::example)。ソースと表示を並べた dl。
  *
  * dt (「ソース」「表示」) は本文ではなく札なので、小さく控えめにする。
