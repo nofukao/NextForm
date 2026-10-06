@@ -162,7 +162,7 @@ function attach_download(&$args, $dom) {
 
     if(count($file_pages) == 1) {
 	header('Content-Type: application/octet-stream');
-	header('Content-Disposition: ' . attach_download_disposition(page_get_simplename($file_pages[0]['name'])));
+	header('Content-Disposition: ' . file_content_disposition('attachment', page_get_simplename($file_pages[0]['name'])));
 	header('X-Content-Type-Options: nosniff');
 	page_output_contents($file_pages[0]);
 	exit(0);
@@ -181,21 +181,11 @@ function attach_download(&$args, $dom) {
 	return attach_show($args, $dom);
     }
     header('Content-Type: application/zip');
-    header('Content-Disposition: ' . attach_download_disposition(page_get_simplename($page['name']) . '.zip'));
+    header('Content-Disposition: ' . file_content_disposition('attachment', page_get_simplename($page['name']) . '.zip'));
     header('Content-Length: ' . $length);
     header('X-Content-Type-Options: nosniff');
     zip_output($entries);
     exit(0);
-}
-
-/*
- * ダウンロードとして渡すときの Content-Disposition。名前は RFC 6266 の
- * filename* で UTF-8 のまま伝え、それを読まない相手のために、英数字以外を
- * _ にした名前も付ける。
- */
-function attach_download_disposition($filename) {
-    $fallback = preg_replace('/[^A-Za-z0-9._-]/u', '_', $filename);
-    return 'attachment; filename="' . $fallback . '"; filename*=UTF-8\'\'' . rawurlencode($filename);
 }
 
 function attach_write(&$args, $dom) {

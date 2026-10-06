@@ -100,6 +100,21 @@ function file_summary(&$page, $dom) {
     $content_type_handler['embed']($page, $dom, $params);
 }
 
+/*
+ * Content-Disposition。$disposition は attachment (保存させる) か inline (ブラウザで
+ * 開く)。名前は RFC 6266 の filename* で UTF-8 のまま伝え、それを読まない相手の
+ * ために、英数字以外を _ にした名前も付ける。添付画面のまとめてダウンロードも使う。
+ *
+ * 上流はメールの書き方 (=?UTF-8?B?...?=) を流用し、MSIE にだけ URL の符号化を
+ * 使っていた。HTTP の決まりに無い書き方で、ブラウザ以外の道具は読めない
+ * (curl -OJ は Base64 の途中の / から後ろを名前にして保存した)。
+ * User-Agent を送らない相手では警告も出ていた。
+ */
+function file_content_disposition($disposition, $filename) {
+    $fallback = preg_replace('/[^A-Za-z0-9._-]/u', '_', $filename);
+    return $disposition . '; filename="' . $fallback . '"; filename*=UTF-8\'\'' . rawurlencode($filename);
+}
+
 function file_raw(&$page, $dom) {
     $args =& $page['args'];
     if(!empty($args['backuptime']))
@@ -115,12 +130,7 @@ function file_raw(&$page, $dom) {
 
     $content_type = file_get_content_type($target_page);
 
-    $user_agent = $_SERVER['HTTP_USER_AGENT'];
     $filename = page_get_simplename($target_page['name']);
-    if(strpos($user_agent, 'MSIE') !== false)
-	$filename = urlencode($filename);
-    else
-	$filename = '=?UTF-8?B?' . base64_encode($filename) . '?=';
 
     header('Content-type: '. $content_type);
     //if(isset($target_page['contents_size'])) // don't send content-length because of image resizing
@@ -128,9 +138,9 @@ function file_raw(&$page, $dom) {
     header('X-Content-Type-Options: nosniff');
 
     if($content_type == 'application/octet-stream')
-	header('Content-Disposition: attachment; filename=' . $filename);
+	header('Content-Disposition: ' . file_content_disposition('attachment', $filename));
     else
-	header('Content-Disposition: inline; filename='. $filename);
+	header('Content-Disposition: ' . file_content_disposition('inline', $filename));
 
     $content_type_handler = &file_get_content_type_handler($target_page);
     if(!empty($content_type_handler['raw']) && function_exists($content_type_handler['raw']))
