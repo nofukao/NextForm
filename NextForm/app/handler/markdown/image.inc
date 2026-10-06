@@ -85,6 +85,14 @@ function markdown_image_html($url, $alt, $title) {
 		if(!empty($content_type_handler['embed_label']) && $alt !== '')
 		    $params['label'] = $alt;
 		$content_type_handler['embed']($page, $document, $params);
+		/*
+		 * 画像の説明は代替テキストにする (画像が出ないときや読み上げで使われる)。
+		 * 埋め込みの側は &include と共用で、代替テキストにページ名を入れている。
+		 */
+		if($alt !== '') {
+		    foreach($document->getElementsByTagName('img') as $img)
+			$img->setAttribute('alt', $alt);
+		}
 		return dom_save_html($document);
 	    }
 	}
