@@ -87,9 +87,17 @@ function file_view(&$page, $dom) {
 	file_show($page, $dom);
 }
 
+/*
+ * 要約。画像や動画は小さく出す。リンクになる種類 (embed_label の印がある
+ * PDF・md など) には大きさを渡さない。並びの引数を表示名として読むので、
+ * 「max 100x100」というリンクになっていた。
+ */
 function file_summary(&$page, $dom) {
     $content_type_handler = &file_get_content_type_handler($page);
-    $content_type_handler['embed']($page, $dom, array(WIKI_SUMMARY_IMAGE_RESIZE));
+    $params = array(WIKI_SUMMARY_IMAGE_RESIZE);
+    if(!empty($content_type_handler['embed_label']))
+	$params = array();
+    $content_type_handler['embed']($page, $dom, $params);
 }
 
 function file_raw(&$page, $dom) {
