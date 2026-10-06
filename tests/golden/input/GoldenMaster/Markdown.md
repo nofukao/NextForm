@@ -72,9 +72,10 @@ function example($argument) { return "test"; }
 添付へのリンク: [相対で書く](./portforward01.png)、[名前だけ書く](portforward01.png)、
 [未作成の添付](./nosuchattachment.png)、[装飾つき **太字**](./portforward01.png "題")。
 
-ページへのリンク: [隣のページ](../Top)、[見出しつき](../Syntax#その他の記法)。
+ページへのリンク: [隣のページ](../Top)、[見出しつき](../Syntax#その他の記法)、
+[トップ階層から](/GoldenMaster/Top)、[サイトの根](/)。
 
-そのまま残るもの: [ページの URL](?GoldenMaster/Top)、[スクリプトの URL](index.php?GoldenMaster/Top)、[サイトの根](/)。
+そのまま残るもの: [ページの URL](?GoldenMaster/Top)、[スクリプトの URL](index.php?GoldenMaster/Top)。
 
 ## 脚注
 
