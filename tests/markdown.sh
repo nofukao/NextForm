@@ -219,6 +219,7 @@ P_WIDEN="MarkdownTest/Widen"
 P_HEAD="MarkdownTest/Heading"
 P_LINKS="MarkdownTest/Links"
 P_WIKI_LINKS="MarkdownTest/WikiLinks"
+P_GAP="MarkdownTest/Gap"
 
 echo "1. 閉じの --- の後ろに改行が無くても読むこと"
 # printf の書式に改行を入れない。ここが本題で、末尾は --- で終わる。
@@ -704,6 +705,76 @@ WIKI_EDIT="$(main_html "${P_WIKI_LINKS}&action=edit")"
 # 「Markdown」と表記を揃えて「Wiki」とする (「Wiki記法」ではない)
 check_eq "Wiki 記法のページの編集画面の札は Wiki" "yes" \
          "$(contains "$WIKI_EDIT" '>Wiki</a></p>')"
+echo
+
+echo "15. 箇条書きの空行の位置に印を付けること"
+# CommonMark では項目のあいだの空行はリストを切らず、1 つでもあるとリスト全体が
+# loose になる (全項目の中身が <p> で包まれる)。その形は変えずに、空行のあとに
+# 始まる項目と、親の項目の中で空行のあとに始まる入れ子のリストに blank_before を
+# 付ける。CSS はその上だけを空ける (tests/css-rules.sh)。Wiki 記法で空行が
+# リストを切ったときと同じ見え方になる。
+#
+# gap_marks は本文の li / ul / ol を順に並べる。印の付いたものに * を付け、
+# ul / ol は [ul] のように括る。li は中身の最初の文字で表す。
+gap_marks() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+h = sys.stdin.read()
+h = h[h.find("<section class=\"markdown\">"):]
+out = []
+for m in re.finditer(r"<(li|ul|ol)\b([^>]*)>((?:\s|<p[^>]*>)*)([^<\s]*)", h):
+    tag, attrs, _, text = m.groups()
+    mark = "*" if re.search(r"class=\"[^\"]*\bblank_before\b", attrs) else ""
+    out.append((text if tag == "li" else "[" + tag + "]") + mark)
+print(" ".join(out))'
+}
+G_BODY='- aa
+- bb
+
+- cc
+
+
+- dd
+
+1. one
+2. two
+
+3. three
+
+- 親
+
+  - 子1
+  - 子2
+
+  - 子3
+- 次の親
+  - 詰めた子
+
+- 段落1
+
+  段落2
+- 段落の次
+'
+helper write "$P_GAP" "$G_BODY" > /dev/null
+G_HTML="$(main_html "$P_GAP")"
+G_MARKS=" $(gap_marks "$G_HTML") "
+check_eq "空行のあとの項目にだけ印が付く" "yes" "$(contains "$G_MARKS" ' [ul] aa bb cc* dd* ')"
+check_eq "  空行が 2 つ以上でも印は 1 つ" "yes" "$(contains "$G_MARKS" ' dd* ')"
+check_eq "番号つきでも同じ" "yes" "$(contains "$G_MARKS" ' [ol] one two three* ')"
+check_eq "親の項目のあと、空行を挟んで始まる入れ子のリストに付く" "yes" \
+         "$(contains "$G_MARKS" ' 親 [ul]* 子1 子2 子3* ')"
+check_eq "  詰めて書いた入れ子と、その次の項目には付かない" "yes" \
+         "$(contains "$G_MARKS" ' 次の親 [ul] 詰めた子 ')"
+check_eq "項目の中の 2 段落目のあとの項目には付かない (空行は項目の中)" "yes" \
+         "$(contains "$G_MARKS" ' 段落1* 段落の次 ')"
+# loose の形 (<p> で包む) は CommonMark のまま。剥がさない
+check_eq "loose の項目は <p> で包んだまま" "1" "$(printf '%s' "$G_HTML" | grep -c '<p[^>]*>aa</p>')"
+# 部分編集の範囲は印を付けても変わらない
+G_MARKED="$(printf '%s' "$G_HTML" | grep -o '<li [^>]*blank_before[^>]*>')"
+check_eq "印を付けた項目 (5 つ) にも部分編集の範囲がある" "5 5" \
+         "$(printf '%s\n' "$G_MARKED" | grep -c .) $(printf '%s\n' "$G_MARKED" | grep -c 'data-twp=')"
+helper write "$P_GAP" "$(printf -- '- aa\n- bb\n- cc\n')" > /dev/null
+check_eq "空行が無ければ印は付かない" "no" "$(contains "$(main_html "$P_GAP")" 'blank_before')"
 echo
 
 helper cleanup > /dev/null

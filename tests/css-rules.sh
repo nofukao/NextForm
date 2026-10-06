@@ -130,6 +130,17 @@ rules_common() {
     # 打ち消すのは端だけ。項目の中に段落が 2 つあるときの間は残す。
     check "段落そのものの余白は消していない" \
           "bool(re.search(r'(^|\})[^{}]*\bp,[^{}]*\{[^}]*margin-top:\s*[1-9]', css, re.S))"
+    # そのうえで、原文で空行を入れた所だけを空ける。HTML 側は空行のあとに
+    # 始まる項目と入れ子のリストに blank_before を付けている (tests/markdown.sh)。
+    # 幅は Wiki 記法で空行がリストを切ったとき (section.section 直下のブロックの
+    # 間) と同じにして、2 つの記法で見え方をそろえる。密度の設定でどちらも変わる。
+    local wiki_gap="int(re.search(r'section\.section\s*>\s*section\.list[^{]*\{[^}]*margin-top:\s*([0-9]+)px', css, re.S).group(1))"
+    check "空行のあとの項目の上は、Wiki 記法でリストが分かれたときと同じだけ空ける" \
+          "int(re.search(r'section\.markdown li\.blank_before[^{]*\{[^}]*margin-top:\s*([0-9]+)px', css, re.S).group(1)) == $wiki_gap"
+    check "空行のあとに始まる入れ子のリストの上も同じだけ空ける" \
+          "int(re.search(r'section\.markdown li\s*>\s*ul\.blank_before[^{]*\{[^}]*margin-top:\s*([0-9]+)px', css, re.S).group(1)) == $wiki_gap"
+    check "  番号つきの入れ子も" \
+          "int(re.search(r'section\.markdown li\s*>\s*ol\.blank_before[^{]*\{[^}]*margin-top:\s*([0-9]+)px', css, re.S).group(1)) == $wiki_gap"
 
     # 記法の例 (:::example) の札。dt が本文と同じ大きさだと、「ソース」「表示」が
     # 例の中身と同じ強さで読まれて、どこからが例なのか分からなくなる。
