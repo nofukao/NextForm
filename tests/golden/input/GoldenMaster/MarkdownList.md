@@ -10,8 +10,10 @@ CommonMark の tight / loose と、その HTML の形を固定するページ。
 ものではない。ここではその HTML の形を記録して、うっかりパーサ側で
 `<p>` を剥がす変更が入らないようにする。
 
-見た目の側 — 空行を入れても間隔が変わって見えないようにする方 — は
-`common/style/.markdown.css` が `li > *` の上下の余白を打ち消して受け持つ。
+見た目の側は、原文で空行を入れた所だけを空ける。HTML には空行のあとに
+始まる項目と入れ子のリストに `blank_before` を付け (このページで固定する)、
+`common/style/.markdown.css` が `li > *` の上下の余白を打ち消したうえで、
+`blank_before` の上だけを Wiki 記法でリストが分かれたときと同じだけ空ける。
 CSS の側は tests/css-rules.sh で見る。
 
 ## 空行なし (tight)

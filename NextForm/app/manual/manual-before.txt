@@ -981,7 +981,8 @@ Wiki記法の節と違い，Markdown記法の見出しは折りたたみを持�
  - ハイフンの箇条書き
  * アスタリスクの箇条書き
 
-見た目も変わりません．空行があってもなくても項目の間隔は同じです．
+見た目は書いたとおりに空きます．空行を入れた所だけが，Wiki記法で箇条書きが
+分かれたときと同じだけ空き，空行の無い項目のあいだは詰まったままです．
 
 *引用
 行頭に ""> "" を書きます．""> > "" と重ねると引用の中の引用になります．
@@ -1475,8 +1476,9 @@ defines it this way). To split it in two, change the marker of one of them.
  - a list with hyphens
  * a list with asterisks
 
-The look does not change either. Items are spaced the same with or without the
-empty line.
+The look follows what you wrote. Only where you put an empty line is there a gap,
+as wide as when a list is split in Wiki notation; items with no empty line between
+them stay close together.
 
 *Quotes
 Write ""> "" at the start of the line.
@@ -1856,7 +1858,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます|
 |節の終わりを明示|&*(end)|なし|同上|
 |部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
-|箇条書きの中の空行|そこで箇条書きが''終わります''|終わりません．1つの箇条書きのままです|Wiki記法で2つに分けたいときは空行を入れます．Markdown記法では片方の記号を変えます(""- "" と ""* "")．どちらの記法でも，項目の間隔は空行の有無で変わりません|
+|箇条書きの中の空行|そこで箇条書きが''終わります''|終わりません．1つの箇条書きのままです|Wiki記法で2つに分けたいときは空行を入れます．Markdown記法では片方の記号を変えます(""- "" と ""* "")．どちらの記法でも，空行を入れた所だけが同じだけ空きます|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
 |表の書式指定|行末の h f c l r n など|区切り行で列の揃えを指定|Markdown記法で指定できるのは列の揃えだけです|
 |表のセル結合|&< &> &^ &_|なし|Markdown記法にセル結合はありません|
@@ -1925,7 +1927,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''|
 |marking the end of a section|&*(end)|none|as above|
 |unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
-|empty line inside a list|the list ''ends'' there|it does not end; it stays one list|In Wiki notation an empty line is how you split a list in two. In Markdown notation you change the marker of one of them (""- "" and ""* ""). In both notations the spacing between items is the same with or without the empty line|
+|empty line inside a list|the list ''ends'' there|it does not end; it stays one list|In Wiki notation an empty line is how you split a list in two. In Markdown notation you change the marker of one of them (""- "" and ""* ""). In both notations only the place with the empty line gets a gap, of the same width|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
 |table formatting|h f c l r n and so on at the end of the row|column alignment in the separator row|All you can set in Markdown notation is the column alignment|
 |merging table cells|&< &> &^ &_|none|Markdown notation cannot merge cells|

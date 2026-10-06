@@ -97,6 +97,10 @@ function markdown_converter() {
     $environment->addEventListener(League\CommonMark\Event\DocumentParsedEvent::class,
 				   'markdown_set_block_positions');
 
+    /* 箇条書きで空行のあとに始まるもの (blank_before)。markdown_mark_list_blank_lines() を見よ */
+    $environment->addEventListener(League\CommonMark\Event\DocumentParsedEvent::class,
+				   'markdown_mark_list_blank_lines');
+
     /* ![説明](子ページ) を添付の埋め込みにする。標準の描画より先に見せる */
     $environment->addRenderer(League\CommonMark\Extension\CommonMark\Node\Inline\Image::class,
 			      new MarkdownImageRenderer(), 10);
@@ -465,6 +469,49 @@ function markdown_heading_range($heading, &$offsets, $limit) {
     if($to <= $range[0])
 	return $range;
     return array($range[0], $to - $range[0]);
+}
+
+/*
+ * 箇条書きで、原文の空行のあとに始まるものに blank_before を付ける
+ * (DocumentParsedEvent)。.markdown.css がその上だけを空ける。
+ *
+ * CommonMark では項目のあいだの空行はリストを切らない。1 つでもあるとリスト全体が
+ * loose になり、全項目の中身が <p> で包まれる。.markdown.css はその余白を
+ * 打ち消して項目を詰めて見せているが、それだけだと空行を入れた所も詰まる。
+ * Wiki 記法では空行でリストが分かれ、その間だけが空く。同じ見え方にするため、
+ * 空行の位置を HTML に残す。loose の形 (<p>) には手を付けない。
+ *
+ * 付けるのは次の 2 つ。
+ *   項目            前の項目の終わりとこの項目の始まりの間に空行がある
+ *   入れ子のリスト  親の項目の中で、前のブロックとの間に空行がある
+ * 項目の中の段落のあいだの空行は項目の中のことなので付けない (段落の余白のまま)。
+ *
+ * 行番号はライブラリが持っている (getStartLine / getEndLine)。終わりの行は
+ * 後ろの空行を含まず、フロントマターがあっても本文の行番号のままなので、
+ * 「前の終わり + 1 < この始まり」で空行があったと分かる。空行が 2 つ以上でも
+ * 印は 1 つ。部分編集の範囲 (markdown_set_block_positions) と違い、どこに
+ * 描くときも付ける (サイド・&include・添付した md も同じ見え方にする)。
+ */
+function markdown_mark_list_blank_lines(League\CommonMark\Event\DocumentParsedEvent $event) {
+    $walker = $event->getDocument()->walker();
+    while($walker_event = $walker->next()) {
+	$node = $walker_event->getNode();
+	if(!$walker_event->isEntering())
+	    continue;
+	if(!($node instanceof League\CommonMark\Extension\CommonMark\Node\Block\ListItem) &&
+	   !($node instanceof League\CommonMark\Extension\CommonMark\Node\Block\ListBlock &&
+	     $node->parent() instanceof League\CommonMark\Extension\CommonMark\Node\Block\ListItem))
+	    continue;
+	$previous = $node->previous();
+	if(!($previous instanceof League\CommonMark\Node\Block\AbstractBlock))
+	    continue;
+	$previous_end = $previous->getEndLine();
+	$start = $node->getStartLine();
+	if(is_null($previous_end) || is_null($start) || $start <= $previous_end + 1)
+	    continue;
+	$class = trim($node->data->get('attributes/class', '') . ' blank_before');
+	$node->data->set('attributes/class', $class);
+    }
 }
 
 /*
