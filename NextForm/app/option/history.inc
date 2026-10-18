@@ -118,10 +118,17 @@ function history_page(&$args, $dom) {
 	return;
     }
 
-    if(!empty($args['internal_action']))
-	page_handle($backup_page, $dom, $args['internal_action']);
-    else
-	page_handle($backup_page, $dom);
+    /*
+     * 旧版に対して呼べるのは、見るだけの action に限る。
+     * internal_action をそのまま渡すと、旧版のページに対して write などが走る。
+     * 本文が空として扱われて page_delete() に進み、ロックの判定も旧版の meta で
+     * 行われるので、ロックしていなかった版を選べば、書く権限しか無い人でも
+     * ロック中のページを消せた (上流から)。それ以外は表示に落とす。
+     */
+    $internal_action = default_value($args['internal_action'], '');
+    if(!in_array($internal_action, array('show', 'source'), true))
+	$internal_action = '';
+    page_handle($backup_page, $dom, $internal_action);
 
     if($backup_page['done_action'] == 'source') {
 	title_set_ld('Source of old version of $pagename$ at $time$',  

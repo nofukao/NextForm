@@ -29,6 +29,7 @@
 #      (登録を消して直すと insert / replace / listedit / templateedit と
 #       検索が壊れる。この変更でいちばん危ないのはここ)
 #   3. 普通の action は今までどおり動くこと
+#   4. 履歴の旧版の画面 (internal_action) から、状態を変える action を呼べないこと
 #
 # 資格情報をテストに置かずに済ませるため、複製したサイトの
 # 「ログインしていない利用者」に write 権限を与えてから検査する。
@@ -226,11 +227,37 @@ check_eq "action=write が通る" "書き換えました" \
 helper cleanup > /dev/null
 echo
 
-echo "4. PHP の警告を出さないこと"
+echo "4. 履歴の旧版の画面から、状態を変える action を呼べないこと"
+# 旧版の画面 (option=history&action=page) は internal_action を旧版のページに
+# そのまま渡していた。write を渡すと本文が空として扱われて page_delete() に進み、
+# ロックの判定も旧版の meta で行われる。ロックしていなかった版を選べば、
+# 書く権限しか無い人でもロック中のページを消せた (上流から)。
+L="DispatchTest/Locked"
+bt=$(value_of "$(helper make-locked-history "$L" "これは本文です。")" backuptime)
+check_eq "ロック中のページと、ロックしていない旧版ができる" "1 yes" \
+         "$(value_of "$(csrf_helper is-locked "$L")" locked) $([[ -n "$bt" ]] && echo yes || echo no)"
+
+post_same_origin -d "option=history" -d "action=page" -d "backuptime=${bt}" \
+                 -d "internal_action=write" "${DISPATCH_TEST_URL}/?${L}" > /dev/null
+check_eq "書く権限だけの人が、旧版の画面からロック中のページを消せない" "1" \
+         "$(value_of "$(csrf_helper page-exists "$L")" exists)"
+check_eq "  ロックも外れていない" "1" \
+         "$(value_of "$(csrf_helper is-locked "$L")" locked)"
+
+check_eq "旧版の表示は今までどおり見られる" "1" \
+         "$(has_body "${DISPATCH_TEST_URL}/?${L}&option=history&action=page&backuptime=${bt}")"
+check_eq "旧版の原文も見られる (internal_action=source)" "1" \
+         "$(has_body "${DISPATCH_TEST_URL}/?${L}&option=history&action=page&backuptime=${bt}&internal_action=source")"
+helper cleanup > /dev/null
+echo
+
+echo "5. PHP の警告を出さないこと"
 before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 code "${DISPATCH_TEST_URL}/?${P}&action=texts" > /dev/null
 post_same_origin -d "action=normalize" "${DISPATCH_TEST_URL}/?${P}" > /dev/null
 post_same_origin -d "option=listedit" -d "action=insert" "${DISPATCH_TEST_URL}/?${P}" > /dev/null
+post_same_origin -d "option=history" -d "action=page" -d "backuptime=${bt}" \
+                 -d "internal_action=write" "${DISPATCH_TEST_URL}/?${L}" > /dev/null
 after=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 check_eq "エラーログが増えない" "$before" "$after"
 echo
