@@ -221,8 +221,15 @@ WikiエンジンはWebページの編集, 表示, 管理等の機能を提供し
 NextFormは[[ToraToraWiki:http://toratora.wiki/]] 1.3.10のforkです．
 ライセンスはGPLv3を引き継いでいます．
 
-(早く書き方を知りたい方は[[Markdown記法早見表:$manualpage$/ja/Markdown/CheatSheet]]か
-[[Wiki記法早見表:$manualpage$/ja/Wiki/CheatSheet]]へ)
+*ページの書き方
+文章のページはMarkdown記法かWiki記法で書きます．どちらも正式な書き方です．
+書き方をすぐ知りたいときは，早見表を開いてください(ページ全体の編集画面では，右上の記法の札からも開けます)．
+
+|記法|早見表|詳しい説明|持ち味|h
+|[[Markdown記法:./Markdown]]|[[Markdown記法早見表:./Markdown/CheatSheet]]|[[基本要素:./Markdown/Basic]]，[[拡張要素:./Markdown/Extra]]，[[リンク・画像・添付:./Markdown/Link]]，[[フロントマター:./Markdown/FrontMatter]]|多くのツールやサービスで共通に使われている書き方([[CommonMark:https://commonmark.org/]]と，表や打ち消し線などの拡張)．他のツールで書いた文章をそのまま持ち込める．新しいページの既定|
+|[[Wiki記法:./Wiki]]|[[Wiki記法早見表:./Wiki/CheatSheet]]|[[基本要素:./Wiki/Basic]]，[[行頭記法:./Wiki/LineHead]]，[[ファンクション:./Wiki/Function]]|ToraToraWikiから受け継いだ，PukiWikiの流れをくむ書き方．ページの一覧やカレンダーを埋め込むファンクションで「動くページ」を作れる|
+
+2つの記法の対応と使い分け，Wiki記法のページをMarkdownに変換する方法は[[Wiki記法とMarkdown記法の対応:./Comparison]]にあります．
 
 *やりたいこと別の案内
 **ページを書く・使う
@@ -317,25 +324,6 @@ NextFormを使ったサイトは複数のページによって構成されます
 この''Side''というページは小さめに表示される点を除けば通常のページと同じで自由に編集できます．
 このページによく使うページへのリンクを箇条書きすればサイトのナビゲーションとして使うことができます．
 ''Side''という名前は設定により変更できます．
-
-*ページの書き方
-文章のページはMarkdown記法かWiki記法で書きます．どちらも正式な書き方です．
-
-Markdown記法は多くのツールやサービスで共通に使われている書き方です．
-NextFormは[[CommonMark:https://commonmark.org/]]と，表や打ち消し線などの拡張を
-解釈します．他のツールで書いた文章をそのまま持ち込めるのが持ち味です．
-
-Wiki記法はNextFormのもとになったToraToraWikiから受け継いだ書き方です．
-行頭の記号で文書の構造を表す，PukiWikiに代表されるWikiエンジンの記法の流れを
-くんでいます(そのままではなく，ToraToraWiki独自の拡張が入っています)．
-ページの一覧やカレンダーを埋め込む[[ファンクション:./Wiki/Function]]が使えるのは
-Wiki記法だけで，「動くページ」を作れるのが持ち味です．
-
-詳しくは以下のページにあります．
--[[Markdown記法>./Markdown]]
--[[Wiki記法について>./Wiki]]
--[[Wiki記法とMarkdown記法の対応>./Comparison]]
-
 */
 
 /**
