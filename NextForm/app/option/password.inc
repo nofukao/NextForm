@@ -56,6 +56,17 @@ function password_show(&$args, $dom) {
 
     $reminder_ticket = password_get_reminder_ticket($args);
     if(!password_has_change_permission($target_username) && !password_check_reminder_ticket($reminder_ticket)) {
+	/*
+	 * 再設定のメールの URL (rkey 付き) から来たのに札が使えないのは、期限が
+	 * 切れたか、もう使ったか。「権限がありません」では何が起きたか分からない
+	 * ので、そう言って、申し込み直す画面へのリンクを出す。
+	 */
+	if(isset($args['rkey'])) {
+	    message_error(l('This password reset URL has expired or has already been used.'));
+	    $p = dom_append_child($dom, 'p');
+	    dom_append_link($p, url_make('', array('option' => 'reminder')), l('Reset password'));
+	    return false;
+	}
 	message_error(lf('User \'$user$\' has no permission to perform the requested action.',
 			 array('user' => $target_username)));
 	return false;

@@ -583,6 +583,8 @@ $LANGUAGE['ja'] = array(
     'Email address will be used for password reminder. Blank input allowed.' =>
     'メールアドレスはパスワード忘れてしまった場合に使用します．必要なければ空欄でも構いません．',
     'Reset password' => 'パスワード再設定',
+    'This password reset URL has expired or has already been used.' =>
+    'このパスワード再設定のURLは，期限が切れているか，すでに使われています．もう一度申し込んでください．',
     'Send email to reset password if you input correct user name and email address.' =>
     '正しいユーザー名とメールアドレスが入力された場合のみ再設定用のメールが送信されます．',
     'A mail has just been sent.' => 'メールを送信しました．',
