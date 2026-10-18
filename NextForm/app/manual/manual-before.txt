@@ -1265,6 +1265,33 @@ Markdown(.md)のファイルのページには，wikiの画面の中に表示す
 ""[表示名](新しいページ)"" ならそのページの子に，""[表示名](/新しいページ)"" ならトップ階層に作ります．
 ""?"" ""#"" で始まるものと ""?"" を含むものは，URLとしてそのまま扱います．
 このwikiの外を指すときは ""https://"" から書きます．
+
+*大きさ・配置・キャプション
+説明の後ろに ""|"" を付けて，大きさや配置を指定できます(Obsidianと同じ形)．
+指定に使う語は，Wiki記法の[[&&include:../../Wiki/Function/include]]と同じです．
+ ![説明|300](図.png)
+ ![説明|50% right](図.png "キャプション")
+:幅|""300"" のように数字だけを書くと幅になります．高さは比率を保ちます．
+:幅x高さ|""640x400"" のように書くと，その大きさに収まるように縮めます．末尾に ""!"" を付けると比率を無視します．""640x"" や ""x400"" のように片方だけでも書けます．
+:拡大率%|""50%"" のように，元の大きさに対する割合で指定します．
+:max|""max 640x400"" のように大きさの前に付けると，それより大きいときだけ縮めます．
+:left・right|左・右に寄せて，本文を回り込ませます．
+:open|押すと新しいタブで開きます．
+:!link|押してもリンクにしません．
+:!adjust|縮小をサーバーではなくブラウザで行います．
+語は空白かカンマで区切って並べられます．
+''最後の ""|"" より後ろがすべて指定として読めるときだけ''指定になります．読めないときは全体が説明のままです．
+外部の画像では，数字で書いた幅と高さだけが効きます(拡大率と ""max"" は効きません)．
+
+ファイル名の後ろに引用符で囲んで書いた文字(Markdownのタイトルの欄．上の例の ""キャプション"")は，画像の下にキャプションとして出ます．
+
+*ページの取り込み
+""![説明](ページ名)"" が段落にそれ1つだけのとき，ふつうのページ(Markdown・wiki・text)は，その場所に中身を取り込みます(Wiki記法の&&include と同じ)．
+-文の途中に書いたときは，取り込まずにリンクになります．
+-読む権限の無いページと，まだ無いページはリンクのままです．
+-ページどうしが互いに取り込み合っているときは，2度目からはリンクになります．
+-取り込んだ中身は，このページの検索には載りません(取り込まれたページのほうで見つかります)．
+-キャプションと ""left""・""right"" も使えます．
 */
 
 /**
@@ -1776,6 +1803,33 @@ points: ""[display name](new page)"" creates it as a child of the current page, 
 Anything that starts with ""?"" or ""#"", or that contains ""?"", is treated
 as a URL as it is.
 To point outside this wiki, write the URL from ""https://"".
+
+*Size, placement and caption
+Write ""|"" after the description to give the size or the placement (the same form as Obsidian).
+The words are the same as [[&&include:../../Wiki/Function/include]] of Wiki notation.
+ ![description|300](figure.png)
+ ![description|50% right](figure.png "caption")
+:width|A number alone, such as ""300"", is the width. The height keeps the ratio.
+:widthxheight|""640x400"" shrinks it to fit that size. A trailing ""!"" ignores the ratio. Only one side, such as ""640x"" or ""x400"", can be given too.
+:percent%|""50%"" gives the size as a ratio of the original.
+:max|Put before a size, as in ""max 640x400"", to shrink only when it is larger.
+:left, right|Places it to the left or right, with the text flowing around it.
+:open|Opens it in a new tab when pressed.
+:!link|Does not make it a link.
+:!adjust|Shrinks it in the browser instead of on the server.
+Words are separated by spaces or commas.
+''Only when everything after the last ""|"" can be read as words of this list'' does it become a specification. Otherwise the whole stays the description.
+For an external image, only a width and height written as numbers take effect (not the percentage or ""max"").
+
+Text written in quotes after the file name (the title part of Markdown; ""caption"" in the example above) is shown under the image as its caption.
+
+*Pulling in a page
+When ""![description](page name)"" is the only thing in its paragraph, an ordinary page (Markdown, wiki or text) is pulled in at that place (the same as &&include of Wiki notation).
+-When it is written in the middle of a sentence, it is a link instead.
+-A page that cannot be read and a page that does not exist yet stay links.
+-When pages pull each other in, the second time becomes a link.
+-The contents pulled in are not searched as part of this page (they are found in the page pulled in).
+-A caption and ""left"" / ""right"" can be used too.
 */
 
 /**
@@ -1875,6 +1929,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
 |折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます|
 |節の終わりを明示|&*(end)|なし|同上|
+|他のページの取り込み|&&include(&[&[ページ名&]&])|段落にそれ1つだけの !&[説明&](ページ名)|Markdown記法では，文の途中に書いたときはリンクになります．大きさや配置の指定は説明の後ろに書きます([[リンク・画像・添付:../Markdown/Link#大きさ・配置・キャプション]])|
 |部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
 |箇条書きの中の空行|そこで箇条書きが''終わります''|終わりません．1つの箇条書きのままです|Wiki記法で2つに分けたいときは空行を入れます．Markdown記法では片方の記号を変えます(""- "" と ""* "")．どちらの記法でも，空行を入れた所だけが同じだけ空きます|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
@@ -1893,7 +1948,6 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 次のようなことをしたいページは，種別wikiで作ってください．
 
 |やりたいこと|Wiki記法|h
-|他のページの取り込み|&&include|
 |ページの一覧|&&pages &&index &&subpage|
 |カレンダー|&&calendar &&datepages|
 |数値計算・表計算|行頭の &= と セルの &=|
@@ -1944,6 +1998,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
 |folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''|
 |marking the end of a section|&*(end)|none|as above|
+|pulling in another page|&&include(&[&[page name&]&])|!&[description&](page name) alone in its paragraph|In Markdown notation, it is a link when written in the middle of a sentence. The size and placement are written after the description ([[Links, images and attachments:../Markdown/Link#Size, placement and caption]])|
 |unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
 |empty line inside a list|the list ''ends'' there|it does not end; it stays one list|In Wiki notation an empty line is how you split a list in two. In Markdown notation you change the marker of one of them (""- "" and ""* ""). In both notations only the place with the empty line gets a gap, of the same width|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
@@ -1963,7 +2018,6 @@ Functions of Wiki notation cannot be used in pages of type Markdown.
 Create a page of type wiki when you want to do any of the following.
 
 |what you want|Wiki notation|h
-|pulling in another page|&&include|
 |lists of pages|&&pages &&index &&subpage|
 |calendars|&&calendar &&datepages|
 |calculation and spreadsheets|&= at the start of a line and &= in a cell|
