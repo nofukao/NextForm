@@ -296,7 +296,7 @@ function setup_read($name) {
 |{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
 |{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか。falseならダウンロードになる。trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
 |{POST_ENCODING|none|フォームの送り方。ConoHa WINGなど，WAFのある共用サーバーで，本文に""'--""や""<script>""を書くと保存が「閲覧できません (Forbidden access)」で止まる場合はbase64にする。サイト設定の「フォームの送り方」でも選べる。詳しくは[[サイトの管理:..]]|}
-|{CLONE_ALLOWED_HOSTS||クローン元として許すホスト(1行に1つ。ホスト名かサイトのURLで，URLはホストの部分だけを見る)。プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできる。サイト設定でも書ける。詳しくは[[他のNextFormのページをクローンする:../..#他のNextFormのページをクローンする]]|}
+|{CLONE_ALLOWED_HOSTS||クローン元として許すホスト(1行に1つ。ホスト名かサイトのURLで，URLはホストの部分だけを見る)。プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできる。サイト設定でも書ける。詳しくは[[他のNextFormのページをクローンする:../../SiteMenu#他のNextFormのページをクローンする]]|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
