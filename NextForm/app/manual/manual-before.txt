@@ -28,7 +28,9 @@ Every page belongs to one of the four types below.
 |text    |a page shown exactly as written, with no decoration                          |
 |file    |a page that holds a single file                                              |
 
-The type is chosen when the page is created and cannot be changed afterwards.
+The type is chosen when the page is created. It changes afterwards only when a page in Wiki notation is
+[[converted to Markdown:./Comparison#Converting a page in Wiki notation to Markdown]], and when a version of a different type
+is restored from the [[history:./PageMenu#History]].
 
 A typical way to use them is to write documents as Markdown or wiki pages, and to
 upload images and downloadable files as file pages.
@@ -800,6 +802,17 @@ NextFormではWebサーバーのアクセスログを集計することで，
 
 &title Page operations
 
+*Edit
+''Double click a part of the page to edit just that part.''
+Alt and click works instead of a double click.
+Double clicking the edit box again widens the range one step outwards (paragraph, its section, the enclosing section, then the whole page).
+The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
+The edit box for Markdown also has a thick line on its left.
+How much can be edited at once depends on the notation ([[Markdown notation:../Markdown#How to edit]], [[Wiki notation:../Wiki#How to edit]]).
+
+Click ''Edit'' in the ''page menu'' to edit the source of the whole page.
+Press ''Preview'' on the editing screen to check the converted result before saving.
+
 *Attached files
 What other wiki engines offer as attached files is done in NextForm by creating child
 pages of type file.
@@ -824,7 +837,7 @@ By default, an attached HTML file is downloaded when it is opened.
 Enabling it in the site settings lets you run it in the browser as it is
 ([[Running HTML files directly:../HtmlFile]]).
 
-*Backup
+*History
 A backup is taken before a page is edited (it is skipped when the edits come close
 together). You can therefore show the contents of a page as it was at some point in
 the past, or compare two versions.
@@ -1697,38 +1710,19 @@ as it is and will look much the same.
 -[[Links, images and attachments>./Link]] (links to pages and embedding files)
 -[[Front matter>./FrontMatter]] (the metadata at the top; title and tags)
 
-How the same things are written in Wiki notation is collected in
+When to use which notation, and how the same things are written in Wiki notation, are collected in
 [[Wiki notation and Markdown notation:../Comparison]].
+Wiki [[functions:../Wiki/Function]] cannot be used in pages of type Markdown.
 
 *How to edit
-''Double click a part of the page to edit just that part.''
-The units you can edit are paragraphs, headings, list items, tables, code blocks,
+How to edit just a part of the page by double clicking, and how to edit the whole page, are in [[Page operations:../PageMenu#Edit]].
+On a page in Markdown notation, the units you can edit at once are paragraphs, headings, list items, tables, code blocks,
 quotes and folds.
 Double clicking a heading edits ''the whole section'' (up to the next heading of the
 same or a shallower level).
-Double clicking the edit box again widens the range one step outwards
-(paragraph, its section, the enclosing section, then the whole page), as on a page
-in Wiki notation.
-Alt and click works instead of a double click.
-The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
-The edit box for Markdown also has a thick line on its left.
 
 Unlike Wiki notation, you cannot edit a part of a line (emphasis or strikethrough on
 its own) or a single row of a table. A table is one unit as a whole.
-
-Another way is to click ''Edit'' in the ''page menu'', which lets you edit the source
-of the whole page.
-Press ''Preview'' on the editing screen to check the converted result before saving.
-The editing screen also links to the cheat sheet.
-
-*When to use it
-Types Markdown and wiki are both first-class ways of writing.
-You can use Markdown notation for documents meant to be read, and Wiki notation for
-"living pages" that use [[functions:../Wiki/Function]] (embedding page lists,
-calendars and so on).
-Functions cannot be used in pages of type Markdown.
-For what can and cannot be written, see
-[[Wiki notation and Markdown notation:../Comparison]].
 */
 
 /**
@@ -1737,7 +1731,7 @@ For what can and cannot be written, see
 
 *[[Basic elements:../Basic]]
 |object|notation|h
-|[[heading:../Basic#Headings]]|""# heading"" (six levels, by the number of #)|
+|[[heading:../Basic#Headings]]|""## heading"" (the number of # sets the depth; a single ""#"" is for the title)|
 |[[paragraph:../Basic#Paragraphs and line breaks]]|insert an empty line|
 |[[line break:../Basic#Paragraphs and line breaks]]|two spaces at the end of the line|
 |[[strong:../Basic#Emphasis]]|""**strong words**""|
@@ -2617,16 +2611,11 @@ The Wiki notation of NextForm divides broadly as follows.
 -[[Functions>./Function]]
 
 *How to edit
-''To edit an existing page, double click the part you want to edit.''
-Double clicking replaces just that part with its source and lets you edit it.
+How to edit just a part of the page by double clicking, and how to edit the whole page, are in [[Page operations:../PageMenu#Edit]].
+On a page in Wiki notation, double clicking replaces just that part with its source. Even a part of a line or a single row of a table can be edited.
 For a list, double clicking switches to a display in which items can be removed or
 struck out. Double clicking an item again lets you edit its source.
-Alt and click works instead of a double click.
-The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
-The edit box for Markdown also has a thick line on its left.
-
-Another way is to click ''Edit'' in the ''page menu'', which lets you edit the source
-of the whole page.
+While editing the source, press ''Ctrl+Space'' or a similar key to open a window that completes the notation ([[Wiki Cheat Sheet:./CheatSheet]]).
 
 *Calculation
 Writing an expression in Wiki notation lets you compute its value.
@@ -2693,7 +2682,7 @@ Use [[&&link:../Function/link]] when you want to build a link with finer control
 [[Cooking/Japanese]]
 [[the food I like:Cooking/Japanese]]
 [[../Italian]]
-[[$manualpage$/en/PageMenu#Backup]]
+[[$manualpage$/en/PageMenu#History]]
 [[NextForm official page:`OFFICIAL_URL`]]
 }
 
@@ -3651,7 +3640,7 @@ and so on, letting you build a site of static content.
 This is called the export function.
 
 With the export function you can manage the contents and the design of a site, and the
-screens that administer it, in [[Wiki notation:../Wiki]].
+screens that administer it, in NextForm pages (of type wiki or Markdown).
 Put grandly, NextForm is a CMSMS that can build and manage a CMS (Content Management
 System) itself. That is, the administrator of a site can easily hand the editors of the
 site a minimal CMS, or a CMS with helpful explanations added.
