@@ -329,6 +329,11 @@ check_eq "ページの一覧が取れる (10 件以上)" "yes" \
 before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 crawl_bad=0
 crawl_report=""
+# 見出しへのリンク (ページ名#見出し) の行き先。巡回のあとで、行き先のページに
+# その見出しの id があるかを見る。節を別のページへ移したときに、リンクが
+# 行き先のページの先頭に着くだけで黙って外れるのを捕まえる。
+declare -A page_html
+section_links=""
 while IFS= read -r pagename; do
     [[ -z "$pagename" ]] && continue
     response=$(curl -sk -w $'\n%{http_code}' "${MANUAL_TEST_URL}/?${pagename}")
@@ -339,6 +344,14 @@ while IFS= read -r pagename; do
         crawl_report+="        ${pagename}: HTTP ${status}"$'\n'
         continue
     fi
+    page_html["$pagename"]=$html
+    while IFS= read -r anchor; do
+        [[ -z "$anchor" ]] && continue
+        target=$(printf '%s' "$anchor" | sed -n 's/.*data-link-pagename="\([^"]*\)".*/\1/p')
+        section=$(printf '%s' "$anchor" | sed -n 's/.*data-link-section="\([^"]*\)".*/\1/p')
+        [[ "$target" == "$M" || "$target" == "$M"/* ]] || continue
+        section_links+="${pagename}"$'\t'"${target}"$'\t'"${section}"$'\n'
+    done < <(printf '%s' "$html" | grep -o '<a[^>]*data-link-section="[^"]*"[^>]*>')
     # 属性の並び順に依存しないよう、アンカーごとに切り出してから見る。
     #
     # 除外は 2 つだけ。どちらも「存在しないページへのリンクはこう見える」
@@ -357,6 +370,22 @@ done <<< "$manual_pages"
 check_eq "全 ${page_count} ページが 200 で、マニュアル内のリンクが切れていない (ja + en)" \
          "0" "$crawl_bad"
 [[ -n "$crawl_report" ]] && printf '%s' "$crawl_report"
+section_bad=0
+section_report=""
+while IFS=$'\t' read -r from target section; do
+    [[ -z "$from" ]] && continue
+    if [[ -z "${page_html[$target]+x}" ]]; then
+        page_html["$target"]=$(curl -sk "${MANUAL_TEST_URL}/?${target}")
+    fi
+    if [[ "${page_html[$target]}" != *" id=\"${section}\""* ]]; then
+        section_bad=$((section_bad + 1))
+        section_report+="        ${from} → ${target}#${section}"$'\n'
+    fi
+done <<< "$section_links"
+section_count=$(printf '%s' "$section_links" | grep -c .)
+check_eq "見出しへのリンク ${section_count} 本が、行き先の見出しに届く (ja + en)" \
+         "0" "$section_bad"
+[[ -n "$section_report" ]] && printf '%s' "$section_report"
 # 巡回で通らない経路もエラーログの検査の窓に入れておく
 code "${MANUAL_TEST_URL}/?${MJA}&action=edit" > /dev/null
 code "${MANUAL_TEST_URL}/?option=admin_manual" > /dev/null

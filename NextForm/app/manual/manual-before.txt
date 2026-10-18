@@ -15,8 +15,40 @@ A wiki engine provides the functions to edit, show and manage web pages.
 NextForm is a fork of [[ToraToraWiki:http://toratora.wiki/]] 1.3.10.
 It inherits the GPLv3 license.
 
-(In a hurry? Go to the [[Markdown Cheat Sheet:$manualpage$/en/Markdown/CheatSheet]] or the
-[[Wiki Cheat Sheet:$manualpage$/en/Wiki/CheatSheet]])
+*How to write pages
+Document pages are written in Markdown notation or in Wiki notation. Both are first-class ways of writing.
+To learn the notation quickly, open a cheat sheet (on the screen for editing the whole page, the notation label at the top right also opens it).
+
+|notation|cheat sheet|details|strengths|h
+|[[Markdown notation:./Markdown]]|[[Markdown Cheat Sheet:./Markdown/CheatSheet]]|[[Basic elements:./Markdown/Basic]], [[Extra elements:./Markdown/Extra]], [[Links, images and attachments:./Markdown/Link]], [[Front matter:./Markdown/FrontMatter]]|the way of writing used in common across many tools and services ([[CommonMark:https://commonmark.org/]] with extensions such as tables and strikethrough). Text written in another tool can be brought in as it is. The default for new pages|
+|[[Wiki notation:./Wiki]]|[[Wiki Cheat Sheet:./Wiki/CheatSheet]]|[[Basic elements:./Wiki/Basic]], [[Line head notation:./Wiki/LineHead]], [[Functions:./Wiki/Function]]|inherited from ToraToraWiki, in the tradition of PukiWiki. Functions that embed page lists and calendars let you build "living pages"|
+
+How the two notations correspond, when to use which, and how to convert a page in Wiki notation to Markdown are in [[Wiki notation and Markdown notation:./Comparison]].
+
+*Guide by task
+**Writing and using pages
+|what you want to do|where to look|h
+|create a new page|[[How to create a new page:./SiteMenu#How to create a new page]]|
+|edit just a part of a page|[[Edit:./PageMenu#Edit]]|
+|put an image or a file in a page|[[Attach:./PageMenu#Attach]], [[Images and attachments:./Markdown/Link#Images and attachments]]|
+|see or restore an older version|[[History:./PageMenu#History]]|
+|rename or delete a page|[[Rename:./PageMenu#Rename]], [[Delete:./PageMenu#Delete]]|
+|find a page|[[Search:./SiteMenu#Search]], [[All pages:./SiteMenu#All pages]], [[All tags:./SiteMenu#All tags]]|
+|copy a page of another NextForm|[[Cloning a page of another NextForm:./SiteMenu#Cloning a page of another NextForm]]|
+|turn a page in Wiki notation into Markdown|[[Converting a page in Wiki notation to Markdown:./Comparison#Converting a page in Wiki notation to Markdown]]|
+|forgot the password|[[When you forget your password:./SiteMenu#When you forget your password]]|
+The items of the page menu and the site menu are in [[Page operations:./PageMenu]] and [[Site functions:./SiteMenu]], in the order they appear on the screen.
+
+**Administering the site (administrators)
+|what you want to do|where to look|h
+|change the name or the look of the site|[[Site preferences:./Administration#Site preferences]], [[Appearance theme preferences:./Administration#Appearance theme preferences]], [[Tones:./Administration/Tone]]|
+|decide users and rights|[[User Manager:./Administration#User Manager]]|
+|make detailed settings in index.php|[[Advanced site settings:./Administration#Advanced site settings]], [[Settings:./Administration/Settings]]|
+|write out the site as static files|[[Export function:./Export]]|
+|run attached HTML files|[[Running HTML files directly:./HtmlFile]]|
+|count accesses|[[Access analysis settings:./Administration/Analyzer]]|
+|upgrade to a new version|[[Upgrade:./Administration#Upgrade]]|
+The items of Admin tools are in [[Site administration:./Administration]], in the order they appear on the screen.
 
 *Pages
 A site built with NextForm is made of pages.
@@ -28,7 +60,9 @@ Every page belongs to one of the four types below.
 |text    |a page shown exactly as written, with no decoration                          |
 |file    |a page that holds a single file                                              |
 
-The type is chosen when the page is created and cannot be changed afterwards.
+The type is chosen when the page is created. It changes afterwards only when a page in Wiki notation is
+[[converted to Markdown:./Comparison#Converting a page in Wiki notation to Markdown]], and when a version of a different type
+is restored from the [[history:./PageMenu#History]].
 
 A typical way to use them is to write documents as Markdown or wiki pages, and to
 upload images and downloadable files as file pages.
@@ -85,129 +119,6 @@ It depends on the design theme, but the default theme always shows a page named
 Apart from being shown smaller, ''Side'' is an ordinary page you can edit freely.
 List links to the pages you use often there and it becomes the navigation of your site.
 The name ''Side'' can be changed in the settings.
-
-*How to create a new page
-There are several ways to create a new page. They are listed below.
-:{Use ''New page'' in the ''site menu'' and type a page name|
-A page created this way can only be reached from ''All pages'' in the ''site menu''.
-That is inconvenient on its own, so you will end up
-creating a link to the new page somewhere.}
-:{Make the link first, on the Top page or the side page|
-Add a line of the form
- [[name of the page you want to create]]
-to the Top page or the side page
-(this is written the same way in both Markdown and wiki pages).
-That part becomes a link to a page that does not exist yet.
-Clicking a link to a page that does not exist takes you to the screen that creates it.
-This way is easy, so we recommend it.
-In practice the text of a link is often a ''display name'' different from the page name.
-How to write one differs between the notations, so see
-[[Links, images and attachments:./Markdown/Link#Links to pages]] for Markdown notation
-and [[Link:./Wiki/Basic#Link]] for Wiki notation.}
-
-**Cloning a page of another NextForm
-Choose ''Clone of another NextForm page'' as the page type and press ''Create'';
-a screen to enter the URL of the page to clone appears.
-Enter the URL and press ''Clone'', and a new page is made by copying the text and the attached files of that page with the same type (Markdown, wiki, text or file).
-The title and the tags are written in the text, so they are copied with it.
--Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
--History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
--A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user. When the site to clone redirects from https to http (not encrypted), it stops before sending the login information and asks whether to continue. To continue, check ""Continue without encryption"", enter the password again and press the button. It does not ask when you enter an http URL from the start.
--Each attached file must be within the size limit of this site (the value shown on the ''Attach'' page).
--When the page cannot be copied, nothing is made and the reason is shown.
-
-The check boxes below the URL choose what to copy.
-:Include attached files|On at first. Turn it off not to copy attached files.
-:Include subpages|Shown only when you are logged in. Off at first. Turn it on to copy all the pages under the page, including grandchildren and below, in the same shape (with their attached files when ''Include attached files'' is on). Links inside the tree (such as ""./child"") stay connected.
-When you include subpages, note the following.
--Pages that cannot be read at the site to clone do not appear in its list and are not copied. Enter the user name and password of that site to copy them.
--If even one page of the same name exists where a page would be copied, nothing is copied.
--By default, up to 100 subpages, 500 attached files and 256MB in total can be copied at once. It also stops when fetching from the site to clone takes more than 30 seconds. Clone a large tree in parts, starting from the pages below.
--Only one clone with subpages runs at a time on the whole site.
--If the server stops while writing, some of the pages may remain. In that case, delete them on the ''Delete'' page (with ''Delete follow subpages'' on) before trying again.
-
-It is the server of this wiki that fetches the page to clone.
-By default it fetches only from sites published on the internet.
-To clone from a site on a private network, such as a site for development or a site on your home LAN,
-write its host name or the URL of the site in ''Hosts allowed as clone sources'' in the ''Site setup'' (only the host part of a URL is used).
-
-*Attached files
-What other wiki engines offer as attached files is done in NextForm by creating child
-pages of type file.
-Attaching example1.jpg and example2.png to the page ''Cooking/Japanese'' means you have
-created the two pages of type file
--''Cooking/Japanese/example1.jpg''
--''Cooking/Japanese/example2.png''
-The ''Attach'' function in the ''page menu'' makes this easy.
-NextForm can also attach several files at once.
-
-Attached files can be downloaded together from the ''Attachment files'' list on the ''Attach'' page.
-The list is a table of check boxes, attached file names, the times they were saved and their sizes (in bytes). Pressing a heading sorts the table by that column.
-Choose them with the check boxes in front of the files and press ''Download''. The check box in the heading row chooses all of them; pressing it again clears them all.
-When you choose one file, that file is downloaded; when you choose two or more, they are put together into one ZIP file.
-Either way the files are as they were attached (images are not shrunk either).
-
-To embed an attached image or video in a page, Markdown notation uses
-""![description](file name)"" ([[Links, images and attachments:./Markdown/Link]])
-and Wiki notation uses [[&&include:./Wiki/Function/include]].
-
-By default, an attached HTML file is downloaded when it is opened.
-Enabling it in the site settings lets you run it in the browser as it is
-([[Running HTML files directly:./HtmlFile]]).
-
-*Backup
-A backup is taken before a page is edited (it is skipped when the edits come close
-together). You can therefore show the contents of a page as it was at some point in
-the past, or compare two versions.
-
-In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
-Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
--The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
--The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
--A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
--For an attached file (type file), its contents and file type are restored.
--Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
--If someone edits the page after the confirmation screen was opened, nothing is restored.
-
-*Lock
-Locking a page makes it impossible to edit. Only a user who has been granted the right
-to lock can lock a page. Unlocking returns it to the editable state.
-A user who has the right to lock can edit a page while it stays locked,
-but a warning message is shown.
-
-*How to write pages
-Document pages are written in Markdown notation or in Wiki notation.
-Both are first-class ways of writing.
-
-Markdown notation is the way of writing used in common across many tools and services.
-NextForm understands [[CommonMark:https://commonmark.org/]] and extensions such as
-tables and strikethrough. Its strength is that text written in another tool can be
-brought in as it is.
-
-Wiki notation is the way of writing NextForm inherited from ToraToraWiki, the engine it
-is based on. It follows the tradition of wiki engine notations represented by PukiWiki,
-in which symbols at the start of a line express the structure of the document
-(not the same as it: ToraToraWiki added extensions of its own).
-[[Functions:./Wiki/Function]], which embed things such as page lists and calendars,
-are available only in Wiki notation, and being able to build "living pages"
-is its strength.
-
-For details see the pages below.
--[[Markdown notation>./Markdown]]
--[[About Wiki notation>./Wiki]]
--[[Wiki notation and Markdown notation>./Comparison]]
-
-*Site administration
-For administering the site, see the page below.
--[[Site administration:./Administration]]
-
-*Export function
-For the export function, see below.
--[[Export function:./Export]]
-
-*Running HTML files directly
-For running an attached HTML file in the browser, see below.
--[[Running HTML files directly:./HtmlFile]]
 */
 
 /**
@@ -221,8 +132,40 @@ WikiエンジンはWebページの編集, 表示, 管理等の機能を提供し
 NextFormは[[ToraToraWiki:http://toratora.wiki/]] 1.3.10のforkです．
 ライセンスはGPLv3を引き継いでいます．
 
-(早く書き方を知りたい方は[[Markdown記法早見表:$manualpage$/ja/Markdown/CheatSheet]]か
-[[Wiki記法早見表:$manualpage$/ja/Wiki/CheatSheet]]へ)
+*ページの書き方
+文章のページはMarkdown記法かWiki記法で書きます．どちらも正式な書き方です．
+書き方をすぐ知りたいときは，早見表を開いてください(ページ全体の編集画面では，右上の記法の札からも開けます)．
+
+|記法|早見表|詳しい説明|持ち味|h
+|[[Markdown記法:./Markdown]]|[[Markdown記法早見表:./Markdown/CheatSheet]]|[[基本要素:./Markdown/Basic]]，[[拡張要素:./Markdown/Extra]]，[[リンク・画像・添付:./Markdown/Link]]，[[フロントマター:./Markdown/FrontMatter]]|多くのツールやサービスで共通に使われている書き方([[CommonMark:https://commonmark.org/]]と，表や打ち消し線などの拡張)．他のツールで書いた文章をそのまま持ち込める．新しいページの既定|
+|[[Wiki記法:./Wiki]]|[[Wiki記法早見表:./Wiki/CheatSheet]]|[[基本要素:./Wiki/Basic]]，[[行頭記法:./Wiki/LineHead]]，[[ファンクション:./Wiki/Function]]|ToraToraWikiから受け継いだ，PukiWikiの流れをくむ書き方．ページの一覧やカレンダーを埋め込むファンクションで「動くページ」を作れる|
+
+2つの記法の対応と使い分け，Wiki記法のページをMarkdownに変換する方法は[[Wiki記法とMarkdown記法の対応:./Comparison]]にあります．
+
+*やりたいこと別の案内
+**ページを書く・使う
+|やりたいこと|見るところ|h
+|新しいページを作りたい|[[新しいページの作成方法:./SiteMenu#新しいページの作成方法]]|
+|ページの一部だけを直したい|[[編集:./PageMenu#編集]]|
+|画像やファイルを貼りたい|[[添付:./PageMenu#添付]]，[[画像と添付:./Markdown/Link#画像と添付]]|
+|前の版を見たい・戻したい|[[履歴:./PageMenu#履歴]]|
+|ページの名前を変えたい・消したい|[[リネーム:./PageMenu#リネーム]]，[[削除:./PageMenu#削除]]|
+|ページを探したい|[[検索:./SiteMenu#検索]]，[[全ページ一覧:./SiteMenu#全ページ一覧]]，[[タグ一覧:./SiteMenu#タグ一覧]]|
+|他のNextFormのページを写したい|[[他のNextFormのページをクローンする:./SiteMenu#他のNextFormのページをクローンする]]|
+|Wiki記法のページをMarkdownにしたい|[[Wiki記法のページをMarkdownに変換する:./Comparison#Wiki記法のページをMarkdownに変換する]]|
+|パスワードを忘れた|[[パスワードを忘れたとき:./SiteMenu#パスワードを忘れたとき]]|
+ページメニューとサイトメニューの項目は，[[ページの操作:./PageMenu]]と[[サイトの機能:./SiteMenu]]に画面の並びどおりにあります．
+
+**サイトを管理する(管理者)
+|やりたいこと|見るところ|h
+|サイトの名前や見た目を変えたい|[[サイト設定:./Administration#サイト設定]]，[[外観の設定:./Administration#外観の設定]]，[[色調:./Administration/Tone]]|
+|ユーザーと権限を決めたい|[[ユーザーの管理:./Administration#ユーザーの管理]]|
+|index.phpで細かく設定したい|[[サイトの高度な設定:./Administration#サイトの高度な設定]]，[[設定項目:./Administration/Settings]]|
+|静的なサイトとして書き出したい|[[エクスポート機能:./Export]]|
+|添付したHTMLを動かしたい|[[HTMLファイルの直接実行:./HtmlFile]]|
+|アクセス数を数えたい|[[アクセス解析の設定:./Administration/Analyzer]]|
+|新しい版にしたい|[[アップグレード:./Administration#アップグレード]]|
+管理ツールの項目は，[[サイトの管理:./Administration]]に画面の並びどおりにあります．
 
 *ページ
 NextFormを使ったサイトは複数のページによって構成されます．
@@ -234,7 +177,8 @@ NextFormを使ったサイトは複数のページによって構成されます
 |text    |書いたものが何の装飾もなくそのまま表示されるページ         |
 |file    |ひとつのファイルが保存されたページ                         |
 
-種別はページを作るときに選び，あとから変更することはできません．
+種別はページを作るときに選びます．あとから種別が変わるのは，Wiki記法のページを[[Markdownに変換:./Comparison#Wiki記法のページをMarkdownに変換する]]したときと，
+[[履歴:./PageMenu#履歴]]で種別の違う版に戻したときだけです．
 
 典型的な使い方を例に挙げると，文章は種別Markdownか種別wikiのページとして作成し，
 画像ファイルやダウンロードさせたいファイルは種別fileのページとしてファイルをアップロードすることで作成します．
@@ -291,11 +235,153 @@ NextFormを使ったサイトは複数のページによって構成されます
 この''Side''というページは小さめに表示される点を除けば通常のページと同じで自由に編集できます．
 このページによく使うページへのリンクを箇条書きすればサイトのナビゲーションとして使うことができます．
 ''Side''という名前は設定により変更できます．
+*/
+
+/**
+@manual $manualpage$/ja/PageMenu
+
+&title ページの操作
+
+ページを開いているときの''ページメニュー''の項目を，画面に並ぶ順に説明します．
+画面は誰でも開けますが，権限が足りないときは実行のボタンが押せません(ログインすると押せることがあります)．
+権限については[[ユーザーの管理:../Administration#ユーザーの管理]]を参照してください．
+
+*編集
+''本文の一部をダブルクリックすると，そこだけを編集できます．''
+ダブルクリックの代わりにAltキー+クリックでも編集が開始できます．
+編集中の欄をもう一度ダブルクリックすると，範囲が外側へ一段ずつ広がります(段落→その節→上の節→ページ全体)．
+編集欄の右上には，いま書いている記法の札(''Markdown''または''Wiki'')が出ます(ページ全体の編集画面では，押すとその記法の早見表が開きます)．
+Markdownの編集欄には，左に太い線も付きます．
+どこまでを一度に編集できるかは，記法によって違います([[Markdown記法:../Markdown#編集方法]]，[[Wiki記法:../Wiki#編集方法]])．
+
+''ページメニュー''内の''編集''を押すと，ページ全体のソースを編集できます．
+編集画面の''プレビュー''を押すと，保存する前に変換結果を確かめられます．
+
+*タグ
+ページにタグ(分類のための語)を付けます．タグはページの下に出て，押すとそのタグの付いたページの一覧になります([[タグ一覧:../SiteMenu#タグ一覧]])．
+ページの下のタグの欄の''編集''からも開けます．
+-タグは半角スペースで区切って書きます．入れた内容で''丸ごと置き換わります''．空にすると全部消えます．
+-子ページがあるときは，''以下の子ページも同じタグにする''を選べます．孫以下と添付ファイルも，同じタグに置き換わります(足すのではありません)．
+-種別Markdownのページでは，本文のフロントマターの ""tags:"" が正です．この画面で変えても，次に本文を保存すると ""tags:"" のとおりに戻ります([[フロントマター:../Markdown/FrontMatter#タグ]])．
+-タグはサイトの検索の対象にもなります．
+
+*目次
+そのページの見出しを入れ子の一覧にして出します．項目を押すと，その見出しへ飛びます．
+本文に書く目次(Wiki記法の[[&&index:../Wiki/Function/index]]，Markdown記法の ""[TOC]""([[目次:../Markdown/Extra#目次]]))と同じ形です．
+見出しの無いページでは，本文の書き出しが出ます．
+
+*変更点
+履歴の一番新しい版と今のページを比べて，変わった所を出します．履歴が無いときは押せません．
+-Wiki記法のページは，表示した形で''削除された部分''と''追加された部分''を出します．''ソースを比較''で行ごとの比較に切り替えられます．
+-Markdown記法とtextのページは，行ごとに''削除された行''と''追加された行''を出します．
+-添付ファイルは，新旧の2つを並べて出します．
+-題名・タグ・説明・ロックの違いは，''メタ情報の違い''の表に出ます．
+
+同じ人が続けて編集したときは版ができないので([[履歴:.#履歴]])，何回か分の変更がまとめて出ます．
+好きな2つの版を比べるには，履歴の一覧で2つの版を選んで''比較''を押します．
+
+*履歴
+ページは編集される前に，その時の内容が版として履歴に残ります．
+ただし同じ人が続けて編集したときは，前の版から15分たつまで新しい版を作りません．
+なので過去のある時点でのページの内容を表示したり，比較することができます．
+一覧で2つの版を選んで''比較''を押すと，その2つの違いを出します．
+タグやメタ情報の変更とロックでも，版ができます．
+
+''ページメニュー''の''履歴''の一覧で，前の版の行の''この版に戻す''を押すと(前の版を表示した画面にもあります)，確認の画面になります．
+''この版に戻す''を押すと，今のページをその版の本文と種別で上書きします．
+-題名とタグも，その版のものに戻ります(Markdownの題名とタグ，Wiki記法の題名は本文から取り直します)．説明やロックなどは今のままです．
+-戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
+-種別の違う版にも戻せます．Wiki記法からMarkdownに変換したページも，変換前の版に戻せばWiki記法に戻ります．
+-添付ファイル(種別file)は，中身とファイルの種類を戻します．
+-ページを編集できる人だけが使えます．ロック中は，編集と同じく管理者とロックした本人だけです．
+-確認の画面を開いたあとに誰かがページを編集していたときは，戻しません．
+
+削除したページの履歴も，そのページ名を開いて''履歴''を押せば見られます(''この版に戻す''は出ません．[[削除:.#削除]]を参照してください)．
+[[リネーム:.#リネーム]]したときは，履歴は元の名前のほうに残ります．
+
+*ロック
+ロックとはページを編集不可能にすることです．ロックをする権利を与えられたユーザーのみがページのロックを行えます．
+ロックはアンロックをすることでもとの編集可能な状態にもどすことができます．
+ロックをする権利があるユーザーはロックしたままページを編集することができますが，警告メッセージが表示されます．
+
+ロックの画面では，次のことを選べます．
+:''(ユーザー名) だけがアンロックできるようにする''|ログインしているときに出ます．オンにすると，ロックしたユーザー本人と管理者だけが，そのページを編集したりアンロックしたりできます．
+:以下の子ページもロックする|子ページがあるときに出ます．はじめからオンです．アンロックの画面にも，同じく''以下の子ページもアンロックする''があります．
+
+ロック中のページを編集・削除・リネームできるのは，管理者とロック可能の権限を持つユーザーです．タグやメタ情報の変更と，''この版に戻す''も同じです．
+
+*削除
+ページを削除します．ページを編集できる人が使えます(ロック中は[[ロック:.#ロック]]を参照してください)．
+-添付ファイルは子ページなので，''以下の子ページも削除する''をオンにしないと残ります．オンにすると，孫以下もまとめて消えます．
+-消す直前の内容は履歴に残ります．消したページは''サイトメニュー''の[[削除されたページ:../SiteMenu#削除されたページ]]に載ります．
+-消したページを元に戻すボタンはありません．そのページ名を開いて''履歴''を押すと古い版の内容を見られるので，それを写して同じ名前のページを作り直してください．作り直すと，前の履歴もまた見えるようになり，''この版に戻す''も使えます．
+-''履歴も削除する''は管理者にだけ出ます．履歴ごと完全に消すので，''取り消せません''．
+-本文を空にして保存しても，削除になります．
+
+*リネーム
+ページの名前を変えます．元の名前と新しい名前の両方で，ページを編集できる人が使えます．
+-子ページがあるときは''以下の子ページもリネームする''が出ます．はじめからオンです．添付ファイルも子ページなので，オフにすると元の名前の下に残ります．
+-新しい名前のページ(子ページの分も含めて)が1つでも既にあると，何も変えずに止まります．
+-''他のページのリンクや本文は書き換えません．''元の名前へのリンクは，存在しないページへのリンクになります．必要ならリンクを書き直してください．
+-''履歴は付いていきません．''古い版は元の名前の履歴に残り，元の名前は[[削除されたページ:../SiteMenu#削除されたページ]]に載ります．元の名前にリネームし直すと，その履歴もまた見えるようになります．
+
+*Markdownに変換
+種別wikiのページを，種別Markdownのページに変換します．種別wikiのページにだけ出ます．
+確認の画面で変換後の本文と落ちるものを見てから保存します．変換前の版は履歴に残るので，''この版に戻す''で元に戻せます．
+詳しくは[[Wiki記法のページをMarkdownに変換する:../Comparison#Wiki記法のページをMarkdownに変換する]]を参照してください．
+
+*子ページ
+そのページの子ページ(孫以下も)と添付ファイルを一覧にします．
+上の欄からは，そのページの子ページを作れます(''新規ページ名''に「今のページ名/」が入っています)．
+-一覧は入れ子にせず，全部を平らに並べます．読む権限の無いページは出ません．
+-並べ方や深さを選んで本文に一覧を出すには，Markdown記法の ""[PAGES]""([[子ページのツリー:../Markdown/Extra#子ページのツリー]])か，Wiki記法の[[&&treepages:../Wiki/Function/treepages]]を使います．
+-種別fileのページ(添付ファイル)には出ません．
+
+*添付
+他のWikiエンジンで添付ファイルに相当する機能はNextFormでは種別fileの子ページを作ることで実現できます．
+''料理/和食''のページにexample1.jpgとexample2.pngを添付した場合，
+-''料理/和食/example1.jpg''
+-''料理/和食/example2.png''
+の二つの種別fileのページを作成したことになります．
+''ページメニュー''内の''添付''機能により上記のことが簡単に行えるようになっています．
+また，NextFormでは複数のファイルを同時に添付することができます．
+
+添付したファイルは，''添付''の画面の''添付ファイル''の一覧からまとめてダウンロードできます．
+一覧は，チェックボックス・添付ファイル名・保存日時・サイズ(バイト数)の表です．見出しを押すと，その列で並べ替えられます．
+ファイルの前のチェックボックスで選び，''ダウンロード''を押します．見出しの行のチェックボックスを押すと全部選べ，もう一度押すと全部外れます．
+1つだけ選んだときはそのファイルを，2つ以上選んだときはZIPファイル1つにまとめてダウンロードします．
+どちらも添付したときのファイルのままです(画像も縮小しません)．
+
+添付した画像や動画をページ内に埋め込むには，Markdown記法では ""![説明](ファイル名)""
+([[リンク・画像・添付:../Markdown/Link]])を，Wiki記法では
+[[&&include:../Wiki/Function/include]]を使用します．
+
+添付したHTMLファイルは，既定では開くとダウンロードになります．
+サイトの設定で有効にすると，ブラウザでそのまま動かせます
+([[HTMLファイルの直接実行:../HtmlFile]])．
+
+*メタ情報
+ページの''タイトル''(題名)と''説明''を決めます．
+:タイトル|ページ名とは別に表示する題名です．本文に題名が書いてあるとき(Wiki記法の[[&&title:../Wiki/Function/title]]，Markdown記法の ""title:"" か先頭の ""#"" 見出し)はそちらが使われ，ここで入れた題名は使われません．本文に題名が無いときはここで付けられますが，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．
+:説明|ページの説明です．検索エンジン向けの説明になり，サイトの検索の対象にもなります．本文を保存しても，''この版に戻す''をしても消えません．
+*/
+
+/**
+@manual $manualpage$/ja/SiteMenu
+
+&title サイトの機能
+
+画面の上の''サイトメニュー''を押すと開く項目を，並ぶ順に説明します．
+''管理ツール''は管理者にだけ出ます([[サイトの管理:../Administration]])．
+画面の幅が狭いとき(スマートフォンなど)は，横に出ているサイドページが消え，代わりにサイトメニューにサイドページの名前の項目が出ます．
 
 *新しいページの作成方法
 新しいページを作るにはいくつか方法があります．以下にその方法を挙げます．
 :{''サイトメニュー''内の''新規ページ作成''機能を使いページ名を入力する|
-この方法で作成されたページは''サイトメニュー''内の''全ページ一覧''からしかアクセスできません．
+''新規ページ名''と''種別''を選んで''作成''を押すと，そのページの編集画面になります．
+種別は，はじめはMarkdownが選ばれています．子ページを作るときは「親ページ名/子供の名前」と入れるか，
+親のページの''ページメニュー''の[[子ページ:../PageMenu#子ページ]]から作ります．
+この方法で作成したページへは，リンクを張らないと''全ページ一覧''や検索からしかたどれません．
 このままでは不便なので，
 どこかのページに新しく作ったページへのリンクを作成することになります．}
 :{Topページやサイドページで先にリンクをつくってしまう|
@@ -307,8 +393,8 @@ Topページやサイドページ内に
 この方法が簡単なのでおすすめです．
 なお実際には，リンクの文字をページ名とは別の''表示名''にすることが多くあります．
 表示名の付け方は記法によって違うので，Markdown記法は
-[[リンク・画像・添付:./Markdown/Link#ページへのリンク]]を，
-Wiki記法は[[リンク:./Wiki/Basic#リンク]]を参照してください．}
+[[リンク・画像・添付:../Markdown/Link#ページへのリンク]]を，
+Wiki記法は[[リンク:../Wiki/Basic#リンク]]を参照してください．}
 
 **他のNextFormのページをクローンする
 ページの種別で''他のNextFormページのクローン''を選んで''作成''を押すと，
@@ -334,79 +420,62 @@ URLの下のチェックボックスで，何を写すかを選べます．
 クローン元を取りに行くのは，このwikiのサーバーです．
 既定では，インターネットに公開されているサイトからしか取りません．
 開発用のサイトや自宅のLANのサイトのような，プライベートなネットワークにあるサイトから取るには，
-''サイト設定''の''クローン元として許すホスト''に，そのホスト名かサイトのURLを書いて下さい(URLはホストの部分だけを見ます)．
+''サイト設定''の''クローン元として許すホスト''に，そのホスト名かサイトのURLを書いてください(URLはホストの部分だけを見ます)．
 
-*添付ファイル
-他のWikiエンジンで添付ファイルに相当する機能はNextFormでは種別fileの子ページを作ることで実現できます．
-''料理/和食''のページにexample1.jpgとexample2.pngを添付した場合，
--''料理/和食/example1.jpg''
--''料理/和食/example2.png''
-の二つの種別fileのページを作成したことになります．
-''ページメニュー''内の''添付''機能により上記のことが簡単に行えるようになっています．
-また，NextFormでは複数のファイルを同時に添付することができます．
+*全ページ一覧
+読めるページをすべて，''ページ名''と''更新日時''の表で出します．''ツリー形式で表示する''を押すと，親子の関係を入れ子にして出します．
+-表の見出しを押すと，その列で並べ替えられます(押すたびに昇順・降順・解除と変わります)．並べ方はブラウザに覚えられます．
+-添付ファイルも，親のページの子ページとして出ます．
+-読む権限の無いページと，このマニュアルのページは出ません．
 
-添付したファイルは，''添付''の画面の''添付ファイル''の一覧からまとめてダウンロードできます．
-一覧は，チェックボックス・添付ファイル名・保存日時・サイズ(バイト数)の表です．見出しを押すと，その列で並べ替えられます．
-ファイルの前のチェックボックスで選び，''ダウンロード''を押します．見出しの行のチェックボックスを押すと全部選べ，もう一度押すと全部外れます．
-1つだけ選んだときはそのファイルを，2つ以上選んだときはZIPファイル1つにまとめてダウンロードします．
-どちらも添付したときのファイルのままです(画像も縮小しません)．
+*タグ一覧
+サイトで使われているタグを，''タグ''と''ページ数''の表で出します．タグを押すと，そのタグが付いたページの一覧になります(ページの下のタグを押したときも同じです)．
+読む権限の無いページのタグは出さず，ページ数にも数えません．
+タグの付け方は[[タグ:../PageMenu#タグ]]を参照してください．
 
-添付した画像や動画をページ内に埋め込むには，Markdown記法では ""![説明](ファイル名)""
-([[リンク・画像・添付:./Markdown/Link]])を，Wiki記法では
-[[&&include:./Wiki/Function/include]]を使用します．
+*マニュアル
+このマニュアルを新しいタブで開きます．
 
-添付したHTMLファイルは，既定では開くとダウンロードになります．
-サイトの設定で有効にすると，ブラウザでそのまま動かせます
-([[HTMLファイルの直接実行:./HtmlFile]])．
+*削除されたページ
+削除したページを，''ページ名''と''削除した日時''の表で出します．
+ページ名を押してから''ページメニュー''の''履歴''を押すと，消す前の版を見られます．元に戻すには[[削除:../PageMenu#削除]]を参照してください．
+読む権限の無いページと，''履歴も削除する''で完全に消したページは，ここに出ません．
 
-*バックアップ
-ページは編集される前にバックアップがとられます(編集の間隔が短い場合はバックアップをスキップします)．
-なので過去のある時点でのページの内容を表示したり，比較することができます．
+*検索
+画面の上の検索欄に語を入れて''検索''を押します(検索欄を出さない設定のときや，画面の幅が狭いときは，サイトメニューの''検索''から開けます)．
+:語を並べる|空白(全角でも半角でも)で区切って並べると，''すべての語を含む''ページを探します．語は題名(ページ名を含む)・説明・タグ・本文のどこにあってもかまいません．
+:"..."|ダブルクォートで囲むと，空白も含めて1つの語として探します．
+:大文字と小文字|英字の大文字と小文字は区別しません．
+「どれかを含む」(OR)や「含まない」(除外)の書き方はありません．
+本文は表示したときの文字で探します．句読点(。、．，)と改行をまたぐ語は見つかりません．
+添付ファイルは，中身ではなく，ファイル名・説明・タグで探します．
 
-''ページメニュー''の''履歴''の一覧で，前の版の行の''この版に戻す''を押すと(前の版を表示した画面にもあります)，確認の画面になります．
-''この版に戻す''を押すと，今のページをその版の本文と種別で上書きします．
--題名とタグも，その版のものに戻ります(Markdownの題名とタグ，Wiki記法の題名は本文から取り直します)．説明やロックなどは今のままです．
--戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
--種別の違う版にも戻せます．Wiki記法からMarkdownに変換したページも，変換前の版に戻せばWiki記法に戻ります．
--添付ファイル(種別file)は，中身とファイルの種類を戻します．
--ページを編集できる人だけが使えます．ロック中は，編集と同じく管理者とロックした本人だけです．
--確認の画面を開いたあとに誰かがページを編集していたときは，戻しません．
+結果の画面では次のことを選べます．
+:順序|''出現頻度''(はじめの選択)は，語がよく出るページほど上にします．題名・タグ・説明・本文の順に重く数えます．''更新日時''は新しい順です．
+:マニュアルは除く|オンにすると，このマニュアルのページを結果から除きます．
+-結果は50件ずつ出ます．
+-読む権限の無いページは結果に出ません．ログインしていないときに見つからなければ，ログインすると見つかることがあります．
+-結果を押して開いたページでは，探した語に印が付きます．''検索キーワード:''の横の×を押すと消えます．
+-検索欄でShiftキーを押しながらEnterキーを押すと，結果の一番上のページを直接開きます．
 
-*ロック
-ロックとはページを編集不可能にすることです．ロックをする権利を与えられたユーザーのみがページのロックを行えます．
-ロックはアンロックをすることでもとの編集可能な状態にもどすことができます．
-ロックをする権利があるユーザーはロックしたままページを編集することができますが，警告メッセージが表示されます．
+*個人設定
+:アカウント設定|''パスワード設定''と''メールアドレス設定''です．NextFormのログインでログインしているときだけ出ます．メールアドレスは，パスワードを忘れたときの再設定に使います．
+:編集設定|''Wiki記法の補完機能を使用する''・''ダブルクリックで編集''・''Alt+クリックで編集''・''Control+クリックで編集''を選べます．ログインしていなくても使え，このブラウザにだけ保存されます．
+サイトの設定で閲覧履歴(試験的な機能)を有効にしたときは，''閲覧履歴''の項目も出ます．
 
-*ページの書き方
-文章のページはMarkdown記法かWiki記法で書きます．どちらも正式な書き方です．
+*ログイン
+サイトメニューの一番下の''ログイン''を押すと，ブラウザのログインの窓が出ます．ユーザー名とパスワードは管理者が作ります([[ユーザーの管理:../Administration#ユーザーの管理]])．
+-パスワードそのものはサーバーに送りません(ダイジェスト認証)．
+-ログインすると，トップページに移ります．
+-ログイン中は''ユーザー: 名前''と''ログアウト''が出ます．ログアウトできないブラウザでは，ブラウザを閉じるか，ブラウザに記憶されたパスワードを消してください．
 
-Markdown記法は多くのツールやサービスで共通に使われている書き方です．
-NextFormは[[CommonMark:https://commonmark.org/]]と，表や打ち消し線などの拡張を
-解釈します．他のツールで書いた文章をそのまま持ち込めるのが持ち味です．
-
-Wiki記法はNextFormのもとになったToraToraWikiから受け継いだ書き方です．
-行頭の記号で文書の構造を表す，PukiWikiに代表されるWikiエンジンの記法の流れを
-くんでいます(そのままではなく，ToraToraWiki独自の拡張が入っています)．
-ページの一覧やカレンダーを埋め込む[[ファンクション:./Wiki/Function]]が使えるのは
-Wiki記法だけで，「動くページ」を作れるのが持ち味です．
-
-詳しくは以下のページにあります．
--[[Markdown記法>./Markdown]]
--[[Wiki記法について>./Wiki]]
--[[Wiki記法とMarkdown記法の対応>./Comparison]]
-
-*サイトの管理
-サイトの管理については以下のページを参照して下さい．
--[[サイトの管理:./Administration]]
-
-*エクスポート機能
-エクスポート機能については以下を参照して下さい．
--[[エクスポート機能:./Export]]
-
-*HTMLファイルの直接実行
-添付したHTMLファイルをブラウザで動かす方法は以下を参照して下さい．
--[[HTMLファイルの直接実行:./HtmlFile]]
-
+**パスワードを忘れたとき
+ログインの窓で取り消しを押すか，ログインに失敗すると，''パスワード再設定''のリンクが出ます．
+ユーザー名と，''メールアドレス設定''で登録したメールアドレスを入れて''送信''を押すと，再設定のURLがメールで届きます．
+-メールアドレスを登録していないと使えません．登録は本人がログインして行います．
+-URLの有効期限は1時間です．もう一度申し込むと，前のURLは使えなくなります．期限が切れたURLや使ったURLを開くと，そう出て，申し込み直す画面へのリンクが出ます．
+-サーバーからメールを送れることが前提です．送り主のアドレスは[[PASSWORD_REMINDER_EMAIL_FROM:../Administration/Settings]]で変えられます．
+-index.phpに書いたユーザー(""$AUTH_DIGESTS"")は，この方法では再設定できません．
 */
 
 /**
@@ -414,13 +483,138 @@ Wiki記法だけで，「動くページ」を作れるのが持ち味です．
 
 &title サイトの管理
 
-*サイトの設定
-サイトの基本的な設定を行うには，
-管理権限を持つユーザーでログインして，
-''サイトメニュー'' > ''管理ツール'' > ''サイト設定'' を選択して下さい．
+管理者でログインすると，''サイトメニュー''に''管理ツール''が出ます．
+このページでは，管理ツールの項目を画面に並ぶ順に説明し，最後にサーバーで行う設定を説明します．
 
-**サイトの高度な設定
-サイトの高度な設定はindex.phpの中に定数の定義を追記してくことで行うことができます．
+*サイト設定
+サイトの基本的な設定を行います．''サイトメニュー'' > ''管理ツール'' > ''サイト設定'' を選択してください．
+|項目|内容|h
+|サイト名|サイトの名前．画面の上やブラウザのタブに出ます|
+|サイトの説明|検索エンジンに使われます|
+|トップページの名前|最初に開くページ(はじめはTop)|
+|横に表示するページの名前|サイドページ(はじめはSide)．空欄にすると出しません|
+|自動リンク|本文の中のページ名を自動でリンクにするか(Wiki記法のページだけ)|
+|言語|画面の言葉|
+|タイムゾーン|日時の表示に使います|
+|テーマ|画面の配置の型([[外観の設定:.#外観の設定]])|
+|種別Markdownのページの生HTML|[[生のHTML:../Markdown/Extra#生のHTML]]を参照してください|
+|添付したHTMLファイル|[[HTMLファイルの直接実行:../HtmlFile]]を参照してください|
+|フォームの送り方|下の''WAFに保存を止められるとき''を参照してください|
+|クローン元として許すホスト|[[他のNextFormのページをクローンする:../SiteMenu#他のNextFormのページをクローンする]]を参照してください|
+|Google API key|[[&&calendar:../Wiki/Function/calendar]]で予定を取るときに使います|
+index.phpで定義した項目は，この画面で変えても効きません([[サイトの高度な設定:.#サイトの高度な設定]])．
+
+**WAFに保存を止められるとき(ConoHa WINGなど)
+ConoHa WINGなどの共用サーバーには，攻撃に見える文字列を含む送信を遮断する仕組み(WAF)があります．
+本文に""'--""や""<script>""のような，プログラムのコード例によく出る文字列を書いて保存すると，
+WAFがそれを攻撃とみなし，「閲覧できません (Forbidden access)」の画面(Powered by SiteGuard Lite)になって保存できないことがあります．
+NextFormに届く前に止められているので，NextFormの側には何も記録が残りません．
+
+この場合は''サイトメニュー'' > ''管理ツール'' > ''サイト設定''の''フォームの送り方''を
+''Base64に包んで送る (WAF対策)''にしてください．
+ブラウザが送る内容をBase64に包んで送り，NextFormが元に戻すので，WAFに当たらなくなります．
+index.phpに次のように書いても同じです．
+ define('POST_ENCODING', 'base64');
+
+包んで送るようにすると，次のようになります．
+-このwikiに送る内容をWAFが検査しなくなります．NextFormはデータベースを使わず，表示するときに自分で無害化しているので，WAFに頼っている守りはありませんが，必要なサイトだけで選んでください．
+-ページの本文などの文字は約4/3倍の大きさで送られます．添付ファイルは包まずに送るので，添付のサイズ上限は変わりません．
+-JavaScriptを無効にしているブラウザでは包まずに送ります(WAFに止められることがあります)．
+-検索語は包みません(URLに出るため)．検索語に""'--""などを入れると止められることがあります．
+-自作のプラグインが送られた値をargs_get()を通さずに読んでいる場合は，Base64のまま受け取ります．
+-設定を切り替える前に開いていた画面から送ると，「送られた内容を読み取れませんでした」と出ます．入力した内容を控えてから，画面を読み込み直してください．
+
+コントロールパネルのWAFの除外設定で対処することもできますが，止められる文字列の種類ごとに除外を足すことになり，同じドメインのほかのアプリからもその検査が外れます．
+
+*外観の設定
+テーマごとの見た目を決めます．テーマそのものは[[サイト設定:.#サイト設定]]の''テーマ''で選びます．
+|テーマ|特徴|h
+|basic|標準のテーマ|
+|plain|線と余白で区切り，角丸や影を使わない．行間が広い|
+|docs|本文の幅を読みやすい長さで止め，見出しの深さで差を付ける．サイドページを画面に留めて目次のように使う|
+|card|本文とサイドページをカードに載せて浮かせる|
+どのテーマも項目は同じで，テーマを切り替えても値は引き継がれます．
+:レイアウト|画面全体に広げるか，幅を固定するか．
+:サイドページの位置|左か右か．
+:文字の大きさ|12〜20px(はじめは14px)．見出しの大きさもこれに合わせて変わります．
+:本文の詰まり具合|段落・表・箇条書きの余白(ゆったり・標準・詰める)．
+:整形済みテキストの長い行|折り返すか，横にスクロールさせるか．ブロックごとに[[&&pre:../Wiki/Function/pre]]の wrap・nowrap でも変えられます．
+:サイトのロゴ画像・お気に入りアイコン (favicon)|画像を上げて差し替えます(jpg・png・gif・svg・ico．faviconは.icoがおすすめ)．
+:見出しの構成|画面の上の帯の高さ，サイト名と検索欄を出すか，サイトメニューの大きさ．
+:見出しの画像・本文の背景画像・外側の背景画像|画像と，その繰り返し方と位置．
+画像の横の選択欄で''標準に戻す''を選ぶと，上げた画像を消して，テーマの標準の画像に戻ります．''表示しない''を選ぶと出しません．
+
+''適用''を押すと，画面の見た目(CSS)を作り直します．変わって見えないときは，ブラウザで再読み込みしてください．
+
+*色調の設定
+画面の色をまとめて選んだり，自分で作って保存したりできます．
+''サイトメニュー'' > ''管理ツール'' > ''色調の設定'' で行います．
+-[[色調(トーン):./Tone]]を参照してください．
+
+*ユーザーの管理
+NextFormではユーザーごとページごとに権限が設定できます．
+ユーザーの設定をするには''サイトメニュー'' > ''管理ツール'' > ''ユーザーの管理'' を選択してください．
+権限には以下のものがあります．上から順に権限が強くなり，下の権限は上の権限を含みます．
+
+|権限            |説明                          |h
+|利用不可        |すべての機能が使用できません．|
+|閲覧のみ        |ページの閲覧のみが可能                                       |
+|テキストの挿入のみ|[[&&comment:../Wiki/Function/comment]]や[[&&bbs:../Wiki/Function/bbs]]で用意されたフォームからコメント等の挿入が可能(注意，下記参照)|
+|編集可能        |ページの編集が可能|
+|ロック可能      |ページをロックすることが可能|
+|エクスポート可能|[[エクスポート機能:../Export]]が有効のとき，エクスポートが可能|
+|管理者          |サイトの設定を含むあらゆることが可能|
+
+一覧の表では，次のことができます．
+-一番上の行は''ログインしていないユーザー''です．ログインしていない人(と，一覧に無いユーザー名でログインした人)の権限になります．
+-一番下の行に名前を入れると，ユーザーを足します．ユーザー名に使えるのは英数字と ""-"" ""_"" です．
+-パスワードの列の''未設定''や''変更''を押すと，パスワードを決める画面になります．
+-''削除''にチェックして適用すると，そのユーザーを消します．
+-パスワードのある管理者が1人もいなくなる変更はできません．
+-index.phpに書いたユーザー(""$AUTH_PERMISSIONS"" ""$AUTH_DIGESTS"")は，この画面では変えられません．
+-''エクスポート可能''は，[[エクスポート機能:../Export]]を有効にしたときだけ選べます．
+
+これらの権限の他に''ページごとに設定''という項目を選択するとページごとに権限が設定できます．
+選ぶと，ページ名と権限の決まりを並べる画面に移ります(JavaScriptが要ります)．
+-ページ名には &* と ? のワイルドカードが使えます．料理/&* は料理の子や孫のページで，料理そのものは含みません．
+-決まりは上から順に見て，最初に当てはまった行の権限を使います．どれにも当てはまらないページでは，何もできません．
+
+テキストの挿入のみの権限は見かけ上は[[&&comment:../Wiki/Function/comment]]や[[&&bbs:../Wiki/Function/bbs]]
+を通してのみ編集可能な権限ですが，実際は任意の位置に任意の文字を挿入することができる権限です．
+例えば悪意あるユーザーが特殊な方法を使用して，ページの先頭に'&/&*'を，
+ページの末尾に'&*&/'を挿入することでページの内容をすべてコメント(非表示)にすることもできます．
+テキストの挿入のみの権限は実質的には編集可能と同様の権限で，
+用意されたフォーム以外ではページの編集が行い辛くなるという気休めの権限であると考えてください．
+
+*システム情報
+NextFormの版と，設置の状態を出します．
+-''バージョン''に，NextFormの版と，もとになったToraToraWikiの版が出ます．
+-''設置''に，index.php・app/・app/plugin/ をWebサーバーから書き込めるかが出ます．書き込めるものがあるときは警告が出ます．
+-そのほか，ページの種別・画面・Wiki記法の一覧などが出ます(開発者向け)．
+
+*検索インデックスを再構築
+検索に使う索引(インデックス)を調べたり，作り直したりします．開くと，まず索引と実際のページのずれを調べた結果が出ます．
+-''詳しく検査する''で，ページの中身まで照らし合わせます．
+-ずれたページの横の''直す''で，そのページだけを入れ直せます．
+-''検索インデックスを再構築''の''実行''で，全部を作り直します．ページが多いと時間がかかりますが，画面が自動で続きを進めます(JavaScriptが使えないときは''続ける''を押します)．作り終えるまでは，前の索引が使われます．
+-タグ一覧のページ数も数え直します．
+次のときに使います．
+-アップグレードの手順で求められたとき
+-''検索インデックスを読めませんでした''と出たとき
+-検索で見つかるはずのページが見つからないとき
+
+*他のwikiからページをインポート
+PukiWikiのページや，@wikiのデータバックアップを取り込みます．
+''同じ名前のページは，取り込んだページで上書きされます．''取り込んだページは種別wikiになります．
+:PukiWiki|index.phpに ""define('IMPORT_PUKIWIKI_ENABLE', 'true');"" を書いたときだけ選べます．PukiWikiをインストールしたディレクトリ(サーバーの上のパス)と文字コードを入れます．PukiWikiの履歴と添付ファイルも取り込みます．
+:@wikiデータバックアップ|はじめから選べます．バックアップのzipファイルと文字コードを選びます．1000ページまでです．十分に試されていない機能なので，先にサイトのバックアップを取ってください．
+
+*アクセス解析
+ページごとのアクセス数を出します．集計にはサーバーでの設定が要ります．
+-[[アクセス解析の設定:./Analyzer]]を参照してください．
+
+*サイトの高度な設定
+サイトの高度な設定はindex.phpの中に定数の定義を追記することで行うことができます．
 定数の定義は以下の形式で行います．
  define('定数名', '定数の値');
 例えばデフォルトのページ種別を設定する定数''DEFAULT_PAGE_TYPE''を''text''にするにはindex.phpを以下のような内容に書き換えます．
@@ -436,64 +630,30 @@ Wiki記法だけで，「動くページ」を作れるのが持ち味です．
 またApache HTTP Serverを使用していれば定数名の先頭に''NEXTFORM_''をつけて
  SetEnv NEXTFORM_DEFAULT_PAGE_TYPE "text"
 といった記述をhttpd.confや.htaccessに記述することで同様に設定できます．
+ただし，[[サイト設定:.#サイト設定]]の画面にある項目にはSetEnvは効きません(index.phpのdefineを使ってください)．
+index.phpで定義した項目は，画面で変えても効きません．
 
-設定できる定数は以下のページを参照して下さい．
+設定できる定数は以下のページを参照してください．
 
 -[[設定項目:./Settings]]
 
-*WAFに保存を止められるとき(ConoHa WINGなど)
-ConoHa WINGなどの共用サーバーには，攻撃に見える文字列を含む送信を遮断する仕組み(WAF)があります．
-本文に""'--""や""<script>""のような，プログラムのコード例によく出る文字列を書いて保存すると，
-WAFがそれを攻撃とみなし，「閲覧できません (Forbidden access)」の画面(Powered by SiteGuard Lite)になって保存できないことがあります．
-NextFormに届く前に止められているので，NextFormの側には何も記録が残りません．
+**コマンドラインの道具
+サーバーに入れる人は，app/tool/ の道具を使えます．どれも次の形で，index.phpの持ち主と同じユーザーで動かします．
+ php <install dir>/app/tool/<名前> <path to index.php> ...
+|道具|内容|h
+|upgrade|NextFormを新しい版にします(新しい配布物の中のものを動かします)|
+|update_wiki|キャッシュを消し，テーマの静的なファイルを作り直します|
+|search_index_check|検索の索引と実際のページを照らし合わせます|
+|analyze_weblog|アクセスログを集計します([[アクセス解析の設定:./Analyzer]])|
+|wiki_to_markdown|Wiki記法のページをMarkdownに変換した結果を出します(保存はしません)|
+|wiki_syntax_survey|種別wikiのページで使われている記法を数えます|
+|markdown_link_check|0.13.0で行き先が変わったMarkdownのリンクを出します|
+|markdown_change_check|0.14.0で見え方が変わったMarkdownの書き方を出します|
+|import_pukiwiki|PukiWikiの取り込みをコマンドで行います|
+使い方は，それぞれのファイルの先頭に書いてあります．
 
-この場合は''サイトメニュー'' > ''管理ツール'' > ''サイト設定''の''フォームの送り方''を
-''Base64に包んで送る (WAF対策)''にして下さい．
-ブラウザが送る内容をBase64に包んで送り，NextFormが元に戻すので，WAFに当たらなくなります．
-index.phpに次のように書いても同じです．
- define('POST_ENCODING', 'base64');
-
-包んで送るようにすると，次のようになります．
--このwikiに送る内容をWAFが検査しなくなります．NextFormはデータベースを使わず，表示するときに自分で無害化しているので，WAFに頼っている守りはありませんが，必要なサイトだけで選んで下さい．
--ページの本文などの文字は約4/3倍の大きさで送られます．添付ファイルは包まずに送るので，添付のサイズ上限は変わりません．
--JavaScriptを無効にしているブラウザでは包まずに送ります(WAFに止められることがあります)．
--検索語は包みません(URLに出るため)．検索語に""'--""などを入れると止められることがあります．
--自作のプラグインが送られた値をargs_get()を通さずに読んでいる場合は，Base64のまま受け取ります．
--設定を切り替える前に開いていた画面から送ると，「送られた内容を読み取れませんでした」と出ます．入力した内容を控えてから，画面を読み込み直して下さい．
-
-コントロールパネルのWAFの除外設定で対処することもできますが，止められる文字列の種類ごとに除外を足すことになり，同じドメインのほかのアプリからもその検査が外れます．
-
-*ユーザー
-NextFormではユーザーごとページごとに権限が設定できます．
-ユーザーの設定をするには''サイトメニュー'' > ''管理ツール'' > ''ユーザーの管理'' を選択して下さい．
-権限には以下のものがあります．上から順に権限が強くなり，下の権限は上の権限を含みます．
-
-|権限            |説明                          |h
-|利用不可        |すべての機能が使用できません．|
-|閲覧のみ        |ページの閲覧のみが可能                                       |
-|テキスト挿入のみ|[[&&comment:../Wiki/Function/comment]]や[[&&bbs:../Wiki/Function/bbs]]で用意されたフォームからコメント等の挿入が可能(注意，下記参照)|
-|編集可能        |ページの編集が可能|
-|ロック可能      |ページをロックすることが可能|
-|エクスポート可能|[[エクスポート機能:../Export]]が有効のとき，エクスポートが可能|
-|管理者          |サイトの設定を含むあらゆることが可能|
-
-これらの権限の他に''ページごとに設定''という項目を選択するとページごとに権限が設定できます．
-
-テキスト挿入のみの権限は見かけ上は[[&&comment:../Wiki/Function/comment]]や[[&&bbs:../Wiki/Function/bbs]]
-を通してのみ編集可能な権限ですが，実際は任意の位置に任意の文字を挿入することができる権限です．
-例えば悪意あるユーザーが特殊な方法を使用して，ページの先頭に'&/&*'を，
-ページの末尾に'&*&/'を挿入することでページの内容をすべてコメント(非表示)にすることもできます．
-テキスト挿入のみの権限は実質的には編集可能と同様の権限で，
-用意されたフォーム以外ではページの編集が行い辛くなるという気休めの権限であると考えて下さい．
-
-*色調(画面の色)
-画面の色をまとめて選んだり，自分で作って保存したりできます．
-''サイトメニュー'' > ''管理ツール'' > ''色調の設定'' で行います．
--[[色調(トーン):./Tone]]を参照して下さい．
-
-*アクセス解析の設定
-アクセス解析については
--[[アクセス解析の設定:./Analyzer]]を参照して下さい．
+**アップグレード
+NextFormを新しい版にするときは，配布物に入っている''UPGRADE.md''の手順に従ってください．
 */
 
 /**
@@ -508,7 +668,7 @@ NextFormではユーザーごとページごとに権限が設定できます．
 
 *色を決める
 ''色調の設定''では，27色をそのまま並べています．
-変えたい色だけを書き換えて，一番下の''適用''を押して下さい．
+変えたい色だけを書き換えて，''適用''(上と下にあります)を押してください．
 
 はじめから入っている色調や，保存した色調から始めることもできます．
 一番上の''色調の読み込み''で選んで''読み込む''を押すと，入力欄にその色が入ります．
@@ -527,11 +687,11 @@ Wiki記法のページへのリンクと色を変えておくと，押す前に�
 
 *色調を保存する
 色を決めたら，''この色調の保存''に識別子と表示名を入れて''保存''を押します．
-サーバに保存され，''色調の読み込み''に出るようになります．
+サーバーに保存され，''色調の読み込み''に出るようになります．
 (''保存''を押すと適用も同時に行われます．)
 
 識別子はそのままファイル名になるので，半角の英数字と . _ - だけが使えます(32文字まで)．
-日本語の名前は''表示名''に入れて下さい．
+日本語の名前は''表示名''に入れてください．
 
 ''保存した色調の削除''から選んで''削除''を押すと消せます．削除は取り消せません．
 読み込みの一覧では，''後から保存したものほど上''に出ます．
@@ -547,7 +707,7 @@ Wiki記法のページへのリンクと色を変えておくと，押す前に�
 最初から入っている色調と同じ識別子で保存すれば上書きでき，
 storage側のファイルを消せば元に戻ります．
 
-サーバの管理者は，このファイルを直接置いたり，
+サーバーの管理者は，このファイルを直接置いたり，
 別のサイトへ複製したりすることができます．
 
 *ファイルの形式
@@ -603,13 +763,13 @@ NextFormではWebサーバーのアクセスログを集計することで，
 現在対応している形式はcommon, combinedとこれらの先頭にバーチャルホストのホスト名をつけた形式です．
 再開情報ファイルをもとに前回集計した箇所まで読み飛ばして集計を行いますので同じログファイルに対して何度実行されても
 二重カウントにはなりません．
-ログファイルは''必ず相対パス，絶対パスどちらか一方をで指定して使用して下さい．''
+ログファイルは''必ず相対パス，絶対パスどちらか一方をで指定して使用してください．''
 このスクリプトはパスが異なると違うログファイルと認識して，二重カウントしてしまいます．
 前回の集計と比べてinode番号が変わっていたり，ファイルサイズが小さくなっている場合はログがローテーションされたと認識し，
 ファイルの最初から集計を行います．
 もし二重カウントされてしまう場合はログのローテーションのタイミングで再開情報ファイルを削除するとうまくいく可能性があります．
 }
-スクリプトは''NextFormのディレクトリへの書き込み権限とアクセスログの読み込み権限を持ったユーザー''で実行して下さい．
+スクリプトは''NextFormのディレクトリへの書き込み権限とアクセスログの読み込み権限を持ったユーザー''で実行してください．
 
 アクセスログが残っている場合に限りますが，もし二重カウントしてしまった場合は
  $ php <install dir>/app/tool/analyze_weblog <path to index.php> <URL> <path to resume file> --delete-all
@@ -628,15 +788,389 @@ NextFormではWebサーバーのアクセスログを集計することで，
 */
 
 /**
+@manual $manualpage$/en/PageMenu
+
+&title Page operations
+
+This page explains the items of the ''page menu'' shown on a page, in the order they appear on the screen.
+Anyone can open their screens, but the button that carries out an operation cannot be pressed without enough rights (logging in may make it available).
+For rights, see [[User Manager:../Administration#User Manager]].
+
+*Edit
+''Double click a part of the page to edit just that part.''
+Alt and click works instead of a double click.
+Double clicking the edit box again widens the range one step outwards (paragraph, its section, the enclosing section, then the whole page).
+The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
+The edit box for Markdown also has a thick line on its left.
+How much can be edited at once depends on the notation ([[Markdown notation:../Markdown#How to edit]], [[Wiki notation:../Wiki#How to edit]]).
+
+Click ''Edit'' in the ''page menu'' to edit the source of the whole page.
+Press ''Preview'' on the editing screen to check the converted result before saving.
+
+*Tags
+Puts tags (words for sorting pages) on the page. The tags are shown at the bottom of the page, and clicking one lists the pages with that tag ([[All tags:../SiteMenu#All tags]]).
+''Edit'' in the tag area at the bottom of the page also opens this screen.
+-Write the tags separated by half-width spaces. What you enter ''replaces the tags as a whole''; leaving it empty removes them all.
+-When the page has subpages, you can choose ''Tag follow subpages''. The grandchildren and the attached files below get the same tags too, replacing theirs (the tags are not added).
+-On a page of type Markdown, ""tags:"" in the front matter of the text is what counts. Even if you change the tags on this screen, they go back to ""tags:"" the next time the text is saved ([[Front matter:../Markdown/FrontMatter#Tags]]).
+-Tags are also searched by the site search.
+
+*Summary
+Shows the headings of the page as a nested list. Clicking an item jumps to that heading.
+It has the same shape as a table of contents written in the text (&&index in Wiki notation, ""[TOC]"" in Markdown notation ([[Table of contents:../Markdown/Extra#Table of contents]])).
+A page without headings shows the beginning of its text instead.
+
+*Modification
+Compares the newest version in the history with the current page and shows what changed. It cannot be pressed when there is no history.
+-A page in Wiki notation shows the ''Deleted part'' and the ''Added part'' in the displayed form. ''Compare source'' switches to a line by line comparison.
+-Pages in Markdown notation and text pages show the ''Deleted line'' and the ''Added line'' line by line.
+-For an attached file, the old and the new files are shown side by side.
+-Differences in the title, the tags, the description and the lock are shown in the ''Meta info difference'' table.
+
+When the same person edits again and again, no new version is made ([[History:.#History]]), so the changes of several edits are shown together.
+To compare any two versions, choose two versions in the list of the history and press ''Compare''.
+
+*History
+Before a page is edited, its contents at that moment are kept in the history as a version.
+When the same person edits again within 15 minutes of the last version, however, no new version is made.
+You can therefore show the contents of a page as it was at some point in
+the past, or compare two versions.
+Choose two versions in the list and press ''Compare'' to see the differences between them.
+Changing the tags or the meta info, and locking, also make a version.
+
+In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
+Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
+-The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
+-The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
+-A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
+-For an attached file (type file), its contents and file type are restored.
+-Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
+-If someone edits the page after the confirmation screen was opened, nothing is restored.
+
+The history of a deleted page can also be seen by opening that page name and clicking ''History'' (''Restore this version'' is not shown; see [[Delete:.#Delete]]).
+When a page is [[renamed:.#Rename]], its history stays with the old name.
+
+*Lock
+Locking a page makes it impossible to edit. Only a user who has been granted the right
+to lock can lock a page. Unlocking returns it to the editable state.
+A user who has the right to lock can edit a page while it stays locked,
+but a warning message is shown.
+
+On the lock screen you can choose the following.
+:''Enable only (user name) unlocking''|Shown when you are logged in. With it on, only the user who locked the page and administrators can edit or unlock it.
+:''Lock follow subpages''|Shown when the page has subpages. On at first. The unlock screen likewise has ''Unlock follow subpages''.
+
+While a page is locked, administrators and users with the lock right can edit, delete and rename it. The same goes for changing the tags or the meta info, and for ''Restore this version''.
+
+*Delete
+Deletes the page. Those who can edit the page can use it (while it is locked, see [[Lock:.#Lock]]).
+-Attached files are subpages, so they remain unless ''Delete follow subpages'' is on. With it on, the grandchildren and below are deleted too.
+-The contents just before deletion are kept in the history. A deleted page appears in [[Deleted pages:../SiteMenu#Deleted pages]] in the ''site menu''.
+-There is no button that brings a deleted page back. Open that page name and click ''History'' to see its old versions, and create a page of the same name again from them. Once it is created again, the earlier history becomes visible again and ''Restore this version'' can be used.
+-''Delete history too'' is shown only to administrators. It deletes the page together with its history, so it ''cannot be undone''.
+-Saving a page with empty text also deletes it.
+
+*Rename
+Changes the name of the page. Those who can edit both the old name and the new name can use it.
+-When the page has subpages, ''Rename follow subpages'' is shown. It is on at first. Attached files are subpages too, so with it off they stay under the old name.
+-If a page with a new name (including those of the subpages) already exists, it stops without changing anything.
+-''Links and text in other pages are not rewritten.'' Links to the old name become links to a page that does not exist. Rewrite them if needed.
+-''The history does not move with the page.'' The old versions stay in the history of the old name, and the old name appears in [[Deleted pages:../SiteMenu#Deleted pages]]. Renaming the page back to the old name makes that history visible again.
+
+*Convert to Markdown
+Converts a page of type wiki into a page of type Markdown. It is shown only on pages of type wiki.
+You save after checking the converted text and what is dropped on the confirmation screen. The version before conversion is kept in the history, so ''Restore this version'' brings it back.
+For details see [[Converting a page in Wiki notation to Markdown:../Comparison#Converting a page in Wiki notation to Markdown]].
+
+*Subpage
+Lists the subpages of the page (including grandchildren and below) and its attached files.
+The form at the top creates a subpage of the page (''New page name'' is filled in with the current page name and a slash).
+-The list is flat, not nested. Pages you cannot read are not shown.
+-To show a list in the text with a chosen order or depth, use ""[PAGES]"" in Markdown notation ([[Tree of subpages:../Markdown/Extra#Tree of subpages]]) or &&treepages in Wiki notation (&&pages with show=tree; see [[&&pages:../Wiki/Function/pages]]).
+-It is not shown on pages of type file (attached files).
+
+*Attach
+What other wiki engines offer as attached files is done in NextForm by creating child
+pages of type file.
+Attaching example1.jpg and example2.png to the page ''Cooking/Japanese'' means you have
+created the two pages of type file
+-''Cooking/Japanese/example1.jpg''
+-''Cooking/Japanese/example2.png''
+The ''Attach'' function in the ''page menu'' makes this easy.
+NextForm can also attach several files at once.
+
+Attached files can be downloaded together from the ''Attachment files'' list on the ''Attach'' page.
+The list is a table of check boxes, attached file names, the times they were saved and their sizes (in bytes). Pressing a heading sorts the table by that column.
+Choose them with the check boxes in front of the files and press ''Download''. The check box in the heading row chooses all of them; pressing it again clears them all.
+When you choose one file, that file is downloaded; when you choose two or more, they are put together into one ZIP file.
+Either way the files are as they were attached (images are not shrunk either).
+
+To embed an attached image or video in a page, Markdown notation uses
+""![description](file name)"" ([[Links, images and attachments:../Markdown/Link]])
+and Wiki notation uses [[&&include:../Wiki/Function/include]].
+
+By default, an attached HTML file is downloaded when it is opened.
+Enabling it in the site settings lets you run it in the browser as it is
+([[Running HTML files directly:../HtmlFile]]).
+
+*Meta info
+Sets the ''Title'' and the ''Description'' of the page.
+:Title|A title shown apart from the page name. When the text sets a title ([[&&title:../Wiki/Function/title]] in Wiki notation, ""title:"" or a single ""#"" heading at the top in Markdown notation), that one is used and the title entered here is not. When the text has no title you can set one here, but on pages of type wiki and Markdown it disappears the next time the text is saved.
+:Description|A description of the page. It becomes the description for search engines and is also searched by the site search. It is kept when the text is saved and when ''Restore this version'' is used.
+*/
+
+/**
+@manual $manualpage$/en/SiteMenu
+
+&title Site functions
+
+This page explains the items that open when you click ''site menu'' at the top of the screen, in the order they appear.
+''Admin tools'' is shown only to administrators ([[Site administration:../Administration]]).
+On a narrow screen (such as a smartphone) the side page shown beside the text disappears, and an item with the name of the side page appears in the site menu instead.
+
+*How to create a new page
+There are several ways to create a new page. They are listed below.
+:{Use ''New page'' in the ''site menu'' and type a page name|
+Enter the ''New page name'', choose the ''Type'' and press ''Create'', and the editing screen of that page appears.
+Markdown is chosen as the type at first. To create a subpage, enter "parent page name/child name",
+or create it from [[Subpage:../PageMenu#Subpage]] in the ''page menu'' of the parent page.
+Until a link to it is made, a page created this way can only be reached from ''All pages'' or the search.
+That is inconvenient on its own, so you will end up
+creating a link to the new page somewhere.}
+:{Make the link first, on the Top page or the side page|
+Add a line of the form
+ [[name of the page you want to create]]
+to the Top page or the side page
+(this is written the same way in both Markdown and wiki pages).
+That part becomes a link to a page that does not exist yet.
+Clicking a link to a page that does not exist takes you to the screen that creates it.
+This way is easy, so we recommend it.
+In practice the text of a link is often a ''display name'' different from the page name.
+How to write one differs between the notations, so see
+[[Links, images and attachments:../Markdown/Link#Links to pages]] for Markdown notation
+and [[Link:../Wiki/Basic#Link]] for Wiki notation.}
+
+**Cloning a page of another NextForm
+Choose ''Clone of another NextForm page'' as the page type and press ''Create'';
+a screen to enter the URL of the page to clone appears.
+Enter the URL and press ''Clone'', and a new page is made by copying the text and the attached files of that page with the same type (Markdown, wiki, text or file).
+The title and the tags are written in the text, so they are copied with it.
+-Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
+-History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
+-A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user. When the site to clone redirects from https to http (not encrypted), it stops before sending the login information and asks whether to continue. To continue, check ""Continue without encryption"", enter the password again and press the button. It does not ask when you enter an http URL from the start.
+-Each attached file must be within the size limit of this site (the value shown on the ''Attach'' page).
+-When the page cannot be copied, nothing is made and the reason is shown.
+
+The check boxes below the URL choose what to copy.
+:Include attached files|On at first. Turn it off not to copy attached files.
+:Include subpages|Shown only when you are logged in. Off at first. Turn it on to copy all the pages under the page, including grandchildren and below, in the same shape (with their attached files when ''Include attached files'' is on). Links inside the tree (such as ""./child"") stay connected.
+When you include subpages, note the following.
+-Pages that cannot be read at the site to clone do not appear in its list and are not copied. Enter the user name and password of that site to copy them.
+-If even one page of the same name exists where a page would be copied, nothing is copied.
+-By default, up to 100 subpages, 500 attached files and 256MB in total can be copied at once. It also stops when fetching from the site to clone takes more than 30 seconds. Clone a large tree in parts, starting from the pages below.
+-Only one clone with subpages runs at a time on the whole site.
+-If the server stops while writing, some of the pages may remain. In that case, delete them on the ''Delete'' page (with ''Delete follow subpages'' on) before trying again.
+
+It is the server of this wiki that fetches the page to clone.
+By default it fetches only from sites published on the internet.
+To clone from a site on a private network, such as a site for development or a site on your home LAN,
+write its host name or the URL of the site in ''Hosts allowed as clone sources'' in ''Site preferences'' (only the host part of a URL is used).
+
+*All pages
+Shows all the pages you can read as a table of the page name and the time it was updated. ''Display tree style'' shows them nested by their parent and child relationships.
+-Clicking a heading of the table sorts it by that column (ascending, descending, then off, in turn). The order is remembered by the browser.
+-Attached files are shown as subpages of their pages.
+-Pages you cannot read and the pages of this manual are not shown.
+
+*All tags
+Shows the tags used on the site as a table of ''Tags'' and ''Number of pages''. Clicking a tag lists the pages with that tag (the same happens when you click a tag at the bottom of a page).
+Tags of pages you cannot read are neither shown nor counted.
+For how to put tags, see [[Tags:../PageMenu#Tags]].
+
+*Manual
+Opens this manual in a new tab.
+
+*Deleted pages
+Shows the deleted pages as a table of the page name and ''Deleted at''.
+Click a page name and then ''History'' in the ''page menu'' to see the versions before deletion. To bring a page back, see [[Delete:../PageMenu#Delete]].
+Pages you cannot read and pages deleted completely with ''Delete history too'' are not shown here.
+
+*Search
+Enter words in the search box at the top of the screen and press ''Search'' (when the search box is hidden by the settings or the screen is narrow, open ''Search'' in the site menu).
+:Several words|Words separated by spaces (full-width or half-width) find pages that ''contain all the words''. Each word may be in the title (including the page name), the description, the tags or the text.
+:"..."|Enclosing words in double quotes searches for them as one word, spaces included.
+:Upper and lower case|Upper and lower case letters are not distinguished.
+There is no way to write "any of" (OR) or "not containing" (exclusion).
+The text is searched as it is displayed. A word that spans punctuation (。、．，) or a line break is not found.
+Attached files are searched by their file names, descriptions and tags, not by their contents.
+
+The result screen offers the following.
+:Sort|''Frequency'' (chosen at first) puts pages where the words appear more often higher. Matches in the title count most, then the tags, the description and the text. ''Last updated'' is newest first.
+:Ignore manual pages|Turn it on to leave the pages of this manual out of the results.
+-Results are shown 50 at a time.
+-Pages you cannot read are not in the results. When you find nothing without logging in, logging in may find them.
+-On a page opened from the results, the searched words are marked. Press the × beside ''Search keywords'' to clear them.
+-Pressing the Enter key with the Shift key held in the search box opens the first page of the results directly.
+
+*Preferences
+:Account preferences|''Password settings'' and ''Email address settings''. Shown only when you are logged in with the login of NextForm. The email address is used to reset the password when you forget it.
+:Editing preferences (saved in the browser)|You can choose ''Enable wiki notation completion'', ''Edit by double click'', ''Edit by Alt+click'' and ''Edit by Control+click''. They can be used without logging in and are kept only in this browser.
+When the browsing history (an experimental function) is enabled in the site settings, a ''Browsing history'' item is shown too.
+
+*Login
+Clicking ''Login'' at the bottom of the site menu shows the login window of the browser. User names and passwords are made by the administrator ([[User Manager:../Administration#User Manager]]).
+-The password itself is not sent to the server (digest authentication).
+-After logging in, the top page is shown.
+-While you are logged in, ''User: (name)'' and ''Logout'' are shown. On a browser that cannot log out, close the browser or remove the password it remembers.
+
+**When you forget your password
+Cancelling the login window, or failing to log in, shows a ''Reset password'' link.
+Enter your user name and the email address registered in ''Email address settings'' and press ''Send'', and a URL for resetting arrives by email.
+-It cannot be used without a registered email address. You register it yourself after logging in.
+-The URL is valid for one hour. Requesting again makes the earlier URL unusable. Opening an expired or used URL says so and shows a link to request again.
+-The server must be able to send email. The sender address can be changed with [[PASSWORD_REMINDER_EMAIL_FROM:../Administration/Settings]].
+-Users written in index.php (""$AUTH_DIGESTS"") cannot reset their passwords this way.
+*/
+
+/**
 @manual $manualpage$/en/Administration
 
 &title Site administration
 
-*Site settings
-To make the basic settings of the site, log in as a user with administrator rights
-and choose ''site menu'' > ''Admin tools'' > ''Site setup''.
+When you log in as an administrator, ''Admin tools'' appears in the ''site menu''.
+This page explains the items of Admin tools in the order they appear on the screen, and the settings made on the server at the end.
 
-**Advanced site settings
+*Site preferences
+Makes the basic settings of the site. Choose ''site menu'' > ''Admin tools'' > ''Site preferences''.
+|item|description|h
+|Site name|the name of the site, shown at the top of the screen and in the browser tab|
+|Site description|used by search engines|
+|Default page name|the page opened first (Top at first)|
+|Side page name|the side page (Side at first); leave it empty to show no side page|
+|Automatic page link generation|whether page names in the text become links automatically (pages in Wiki notation only)|
+|Language|the language of the screens|
+|Time Zone|used to show dates and times|
+|Theme|the layout of the screens ([[Appearance theme preferences:.#Appearance theme preferences]])|
+|Raw HTML in Markdown pages|see [[Raw HTML:../Markdown/Extra#Raw HTML]]|
+|Attached HTML files|see [[Running HTML files directly:../HtmlFile]]|
+|How forms are sent|see ''When a WAF stops saving'' below|
+|Hosts allowed as clone sources|see [[Cloning a page of another NextForm:../SiteMenu#Cloning a page of another NextForm]]|
+|Google API key|used to get events for [[&&calendar:../Wiki/Function/calendar]]|
+Items defined in index.php do not change even when they are changed on this screen ([[Advanced site settings:.#Advanced site settings]]).
+
+**When a WAF stops saving (ConoHa WING and others)
+Shared servers such as ConoHa WING have a mechanism (a WAF) that blocks requests containing strings that look like attacks.
+When you save a page whose text contains strings common in program code examples, such as ""'--"" or ""<script>"",
+the WAF may take it as an attack and show a "Forbidden access" page (Powered by SiteGuard Lite) instead of saving.
+The request is stopped before it reaches NextForm, so nothing is recorded on the NextForm side.
+
+In that case, choose ''site menu'' > ''Admin tools'' > ''Site preferences'' and set
+''How forms are sent'' to ''Wrap in Base64 (for a WAF)''.
+The browser wraps what it sends in Base64 and NextForm unwraps it, so the WAF no longer reacts.
+Writing the following in index.php does the same.
+ define('POST_ENCODING', 'base64');
+
+When forms are wrapped:
+-The WAF no longer inspects what is sent to this wiki. NextForm uses no database and makes the output safe itself when showing it, so no protection relies on the WAF, but choose it only on sites that need it.
+-Text such as the page body is sent at about 4/3 of its size. Attached files are sent unwrapped, so the size limit for attachments does not change.
+-A browser with JavaScript turned off sends without wrapping (the WAF may stop it).
+-Search words are not wrapped (they appear in the URL). Search words containing ""'--"" and the like may be stopped.
+-A plugin of your own that reads the sent values without going through args_get() receives them still in Base64.
+-Sending from a page that was opened before the setting was changed shows "The request could not be read". Copy what you entered, then reload the page.
+
+The WAF exclusion settings in the control panel can also deal with this, but you have to add an exclusion for each kind of string that is stopped, and the exclusion also removes that check from the other applications on the same domain.
+
+*Appearance theme preferences
+Sets the look of each theme. The theme itself is chosen with ''Theme'' in [[Site preferences:.#Site preferences]].
+|theme|character|h
+|basic|the standard theme|
+|plain|divided by lines and space, without rounded corners or shadows; wider line spacing|
+|docs|stops the text at a readable width and sets headings apart by their depth; keeps the side page on the screen to use it like a table of contents|
+|card|lifts the text and the side page on cards|
+All themes have the same items, and the values carry over when you switch themes.
+:Layout|full width or fixed width.
+:Side page position|left or right.
+:Font size|12 to 20px (14px at first). The sizes of headings follow it.
+:Density|the space between blocks and inside tables (loose, normal or compact).
+:Long lines in preformatted text|wrap, or scroll sideways. A block can override this with [[&&pre:../Wiki/Function/pre]] (wrap or nowrap).
+:Site logo image, Site favorite icon (favicon)|upload an image to replace them (jpg, png, gif, svg or ico; .ico is recommended for the favicon).
+:Header parts|the height of the band at the top of the screen, whether the site name and the search form are shown, and the size of the site menu.
+:header image, body background image, outside background image|an image, how it repeats and where it is placed.
+Choosing ''Restore the default image'' beside an image removes the uploaded image and returns to the standard image of the theme. ''Do not show'' shows no image.
+
+Pressing ''Apply'' rebuilds the look of the screens (the CSS). If it does not seem to change, reload the page in the browser.
+
+*Tone preferences
+You can choose the colours of the screen as a set, or make and save your own.
+This is done at ''site menu'' > ''Admin tools'' > ''Tone preferences''.
+-See [[Tones:./Tone]].
+
+*User Manager
+NextForm can set rights per user and per page.
+To set up users, choose ''site menu'' > ''Admin tools'' > ''User Manager''.
+The rights are as follows. They grow stronger from the top down,
+and each right includes the ones above it.
+
+|right          |description                   |h
+|keep out       |no feature can be used.       |
+|read only      |only reading pages is possible                               |
+|text insertion available|inserting comments and so on through the forms provided by [[&&comment:../Wiki/Function/comment]] and [[&&bbs:../Wiki/Function/bbs]] is possible (careful, see below)|
+|page write available|editing pages is possible|
+|page lock available|locking pages is possible|
+|export available|exporting is possible when the [[export function:../Export]] is enabled|
+|administrator  |everything is possible, including the settings of the site|
+
+The table of users offers the following.
+-The top row is ''User not logged in''. It is the right of people who are not logged in (and of those who log in with a user name not in the list).
+-Entering a name in the bottom row adds a user. User names can use letters, digits, ""-"" and ""_"".
+-Clicking ''Not set'' or ''Change'' in the password column opens the screen that sets the password.
+-Checking ''Delete'' and applying deletes the user.
+-A change that would leave no administrator with a password cannot be made.
+-Users written in index.php (""$AUTH_PERMISSIONS"" ""$AUTH_DIGESTS"") cannot be changed on this screen.
+-''export available'' can be chosen only when the [[export function:../Export]] is enabled.
+
+Besides these rights, choosing ''Settings for each page'' lets rights be set page
+by page. Choosing it moves to a screen that lists rules of page names and rights (JavaScript is needed).
+-Page names can use the wildcards &* and ?. Cooking/&* means the children and descendants of Cooking, not Cooking itself.
+-The rules are checked from the top, and the right of the first matching row is used. On a page that matches no row, nothing can be done.
+
+The text insertion available right appears to allow editing only through
+[[&&comment:../Wiki/Function/comment]] and [[&&bbs:../Wiki/Function/bbs]], but in
+truth it is the right to insert any text at any position.
+For example, a malicious user could use a special method to insert '&/&*' at the top
+of a page and '&*&/' at the end of it, turning the whole contents of the page into a
+comment (invisible).
+Treat the text insertion available right as effectively the same as writable: it is a
+comforting right that merely makes editing a page awkward outside the forms provided.
+
+*System information
+Shows the version of NextForm and the state of the installation.
+-''Version'' shows the version of NextForm and that of ToraToraWiki it is based on.
+-''Installation'' shows whether index.php, app/ and app/plugin/ can be written by the web server. A warning is shown when any of them can.
+-It also lists page types, screens, Wiki notation and so on (for developers).
+
+*Rebuild search index
+Checks or rebuilds the index used for searching. Opening it first shows how the index and the actual pages differ.
+-''Check in detail'' compares them down to the contents of the pages.
+-''Repair'' beside a page puts just that page into the index again.
+-''Run'' under ''Rebuild search index'' rebuilds the whole index. With many pages it takes time, but the screen goes on by itself (press ''Continue'' when JavaScript cannot be used). Until it finishes, the previous index is used.
+-It also recounts the numbers of pages in All tags.
+Use it:
+-when the upgrade procedure asks for it
+-when ''The search index could not be read'' is shown
+-when a page that should be found by the search is not found
+
+*Import pages from other wiki data
+Imports pages of PukiWiki or a data backup of @wiki.
+''Pages of the same names are overwritten by the imported pages.'' Imported pages become pages of type wiki.
+:PukiWiki|Can be chosen only when ""define('IMPORT_PUKIWIKI_ENABLE', 'true');"" is written in index.php. Enter the directory where PukiWiki is installed (a path on the server) and its character encoding. The history and the attached files of PukiWiki are imported too.
+:a data backup of @wiki|Can be chosen from the start (it is shown as ""@wikiデータバックアップ""). Choose the zip file of the backup and its character encoding. Up to 1000 pages. This function has not been tested enough, so make a backup of the site first.
+
+*Access analyzer
+Shows the number of hits per page. Counting needs settings on the server.
+-see [[Access analysis settings:./Analyzer]].
+
+*Advanced site settings
 Advanced site settings are made by adding constant definitions to index.php.
 A constant is defined in the following form.
  define('constant name', 'value of the constant');
@@ -655,68 +1189,30 @@ If you use the Apache HTTP Server, you can set the same thing by prefixing the
 constant name with ''NEXTFORM_'' and writing a line such as
  SetEnv NEXTFORM_DEFAULT_PAGE_TYPE "text"
 in httpd.conf or .htaccess.
+However, SetEnv does not work for the items on the [[Site preferences:.#Site preferences]] screen (use define in index.php).
+Items defined in index.php do not change even when they are changed on the screen.
 
 For the constants that can be set, see the page below.
 
 -[[Settings:./Settings]]
 
-*When a WAF stops saving (ConoHa WING and others)
-Shared servers such as ConoHa WING have a mechanism (a WAF) that blocks requests containing strings that look like attacks.
-When you save a page whose text contains strings common in program code examples, such as ""'--"" or ""<script>"",
-the WAF may take it as an attack and show a "Forbidden access" page (Powered by SiteGuard Lite) instead of saving.
-The request is stopped before it reaches NextForm, so nothing is recorded on the NextForm side.
+**Command line tools
+Those who can log in to the server can use the tools in app/tool/. Run each of them in the form below, as the user that owns index.php.
+ php <install dir>/app/tool/<name> <path to index.php> ...
+|tool|what it does|h
+|upgrade|upgrades NextForm to a new version (run the one in the new distribution)|
+|update_wiki|clears the caches and rebuilds the static files of the theme|
+|search_index_check|compares the search index with the actual pages|
+|analyze_weblog|counts the access log ([[Access analysis settings:./Analyzer]])|
+|wiki_to_markdown|shows the result of converting a page in Wiki notation to Markdown (does not save)|
+|wiki_syntax_survey|counts the notations used in pages of type wiki|
+|markdown_link_check|lists Markdown links whose destinations changed in 0.13.0|
+|markdown_change_check|lists Markdown writings that look different from 0.14.0 on|
+|import_pukiwiki|imports PukiWiki from the command line|
+How to use each of them is written at the top of its file.
 
-In that case, choose ''site menu'' > ''Admin tools'' > ''Site setup'' and set
-''How forms are sent'' to ''Wrap in Base64 (for a WAF)''.
-The browser wraps what it sends in Base64 and NextForm unwraps it, so the WAF no longer reacts.
-Writing the following in index.php does the same.
- define('POST_ENCODING', 'base64');
-
-When forms are wrapped:
--The WAF no longer inspects what is sent to this wiki. NextForm uses no database and makes the output safe itself when showing it, so no protection relies on the WAF, but choose it only on sites that need it.
--Text such as the page body is sent at about 4/3 of its size. Attached files are sent unwrapped, so the size limit for attachments does not change.
--A browser with JavaScript turned off sends without wrapping (the WAF may stop it).
--Search words are not wrapped (they appear in the URL). Search words containing ""'--"" and the like may be stopped.
--A plugin of your own that reads the sent values without going through args_get() receives them still in Base64.
--Sending from a page that was opened before the setting was changed shows "The request could not be read". Copy what you entered, then reload the page.
-
-The WAF exclusion settings in the control panel can also deal with this, but you have to add an exclusion for each kind of string that is stopped, and the exclusion also removes that check from the other applications on the same domain.
-
-*Users
-NextForm can set rights per user and per page.
-To set up users, choose ''site menu'' > ''Admin tools'' > ''Manage users''.
-The rights are as follows. They grow stronger from the top down,
-and each right includes the ones above it.
-
-|right          |description                   |h
-|not available  |no feature can be used.       |
-|read only      |only reading pages is possible                               |
-|insert text only|inserting comments and so on through the forms provided by [[&&comment:../Wiki/Function/comment]] and [[&&bbs:../Wiki/Function/bbs]] is possible (careful, see below)|
-|writable       |editing pages is possible|
-|lockable       |locking pages is possible|
-|exportable     |exporting is possible when the [[export function:../Export]] is enabled|
-|administrator  |everything is possible, including the settings of the site|
-
-Besides these rights, choosing the entry ''set per page'' lets rights be set page
-by page.
-
-The insert text only right appears to allow editing only through
-[[&&comment:../Wiki/Function/comment]] and [[&&bbs:../Wiki/Function/bbs]], but in
-truth it is the right to insert any text at any position.
-For example, a malicious user could use a special method to insert '&/&*' at the top
-of a page and '&*&/' at the end of it, turning the whole contents of the page into a
-comment (invisible).
-Treat the insert text only right as effectively the same as writable: it is a
-comforting right that merely makes editing a page awkward outside the forms provided.
-
-*Tones (the colours of the screen)
-You can choose the colours of the screen as a set, or make and save your own.
-This is done at ''site menu'' > ''Admin tools'' > ''Tone setup''.
--See [[Tones:./Tone]].
-
-*Access analysis settings
-For access analysis
--see [[Access analysis settings:./Analyzer]].
+**Upgrade
+To upgrade NextForm to a new version, follow ''UPGRADE.md'' included in the distribution.
 */
 
 /**
@@ -728,11 +1224,11 @@ For access analysis
 A tone is a set of the 27 colours used on the screen.
 It is a separate axis from the theme (which makes the layout and the spacing), so the
 same tone can be used whichever theme you choose.
-It is decided at ''site menu'' > ''Admin tools'' > ''Tone setup''.
+It is decided at ''site menu'' > ''Admin tools'' > ''Tone preferences''.
 
 *Choosing the colours
-''Tone setup'' simply lays out the 27 colours.
-Rewrite only the colours you want to change and press ''Apply'' at the bottom.
+''Tone preferences'' simply lays out the 27 colours.
+Rewrite only the colours you want to change and press ''Apply'' (at the top and at the bottom).
 
 You can also start from a tone that came with NextForm or from one you saved.
 Choose it in ''Load tone'' at the top and press ''Load'', and those colours are put
@@ -886,33 +1382,17 @@ The results can be seen at ''Admin tools'' -> ''Access analysis''.
 -[[リンク・画像・添付>./Link]] (ページへのリンクとファイルの埋め込み)
 -[[フロントマター>./FrontMatter]] (先頭のメタ情報．題名とタグ)
 
-同じことをWiki記法でどう書くかは
+Wiki記法との使い分けと，同じことをWiki記法でどう書くかは
 [[Wiki記法とMarkdown記法の対応:../Comparison]]にまとめてあります．
+種別Markdownのページでは，Wiki記法の[[ファンクション:../Wiki/Function]]は使えません．
 
 *編集方法
-''本文の一部をダブルクリックすると，そこだけを編集できます．''
-編集できる単位は段落・見出し・箇条書きの項目・表・コードブロック・引用・折りたたみです．
+ダブルクリックで本文の一部だけを編集する方法と，ページ全体を編集する方法は[[ページの操作:../PageMenu#編集]]にあります．
+Markdown記法のページで一度に編集できる単位は，段落・見出し・箇条書きの項目・表・コードブロック・引用・折りたたみです．
 見出しをダブルクリックすると''その節ぜんぶ''(次の同じ深さ以上の見出しの手前まで)を編集します．
-編集中の欄をもう一度ダブルクリックすると，範囲が外側へ一段ずつ広がります
-(段落→その節→上の節→ページ全体．Wiki記法のページと同じです)．
-ダブルクリックの代わりにAltキー+クリックでも編集が開始できます．
-編集欄の右上には，いま書いている記法の札(''Markdown''または''Wiki'')が出ます(ページ全体の編集画面では，押すとその記法の早見表が開きます)．
-Markdownの編集欄には，左に太い線も付きます．
 
 Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表の1行だけ，といった単位では編集できません．
 表は表ぜんぶが1つの単位になります．
-
-別の方法として''ページメニュー''内の''編集''をクリックするとページ全体のソースを編集できます．
-編集画面の''プレビュー''を押すと，保存する前に変換結果を確かめられます．
-編集画面からはこの早見表にも飛べます．
-
-*使いどころ
-種別Markdownと種別wikiはどちらも正式な書き方です．
-読ませる文書はMarkdown記法で，[[ファンクション:../Wiki/Function]]
-(ページ一覧やカレンダーの埋め込みなど)を使う「動くページ」はWiki記法で，
-という使い分けができます．
-種別Markdownのページではファンクションは使えません．
-何が書けて何が書けないかは[[Wiki記法とMarkdown記法の対応:../Comparison]]を参照してください．
 */
 
 /**
@@ -921,7 +1401,7 @@ Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表�
 
 *[[基本要素:../Basic]]
 |目的|記法|h
-|[[見出し:../Basic#見出し]]|""# 見出し"" (#の数で6段階)|
+|[[見出し:../Basic#見出し]]|""## 見出し"" (#の数で深さ．""#"" 1つは題名に使います)|
 |[[段落:../Basic#段落と改行]]|空行をいれる|
 |[[改行:../Basic#段落と改行]]|行末に半角スペース2つ|
 |[[重要:../Basic#強調]]|""**重要な語**""|
@@ -1444,38 +1924,19 @@ as it is and will look much the same.
 -[[Links, images and attachments>./Link]] (links to pages and embedding files)
 -[[Front matter>./FrontMatter]] (the metadata at the top; title and tags)
 
-How the same things are written in Wiki notation is collected in
+When to use which notation, and how the same things are written in Wiki notation, are collected in
 [[Wiki notation and Markdown notation:../Comparison]].
+Wiki [[functions:../Wiki/Function]] cannot be used in pages of type Markdown.
 
 *How to edit
-''Double click a part of the page to edit just that part.''
-The units you can edit are paragraphs, headings, list items, tables, code blocks,
+How to edit just a part of the page by double clicking, and how to edit the whole page, are in [[Page operations:../PageMenu#Edit]].
+On a page in Markdown notation, the units you can edit at once are paragraphs, headings, list items, tables, code blocks,
 quotes and folds.
 Double clicking a heading edits ''the whole section'' (up to the next heading of the
 same or a shallower level).
-Double clicking the edit box again widens the range one step outwards
-(paragraph, its section, the enclosing section, then the whole page), as on a page
-in Wiki notation.
-Alt and click works instead of a double click.
-The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
-The edit box for Markdown also has a thick line on its left.
 
 Unlike Wiki notation, you cannot edit a part of a line (emphasis or strikethrough on
 its own) or a single row of a table. A table is one unit as a whole.
-
-Another way is to click ''Edit'' in the ''page menu'', which lets you edit the source
-of the whole page.
-Press ''Preview'' on the editing screen to check the converted result before saving.
-The editing screen also links to the cheat sheet.
-
-*When to use it
-Types Markdown and wiki are both first-class ways of writing.
-You can use Markdown notation for documents meant to be read, and Wiki notation for
-"living pages" that use [[functions:../Wiki/Function]] (embedding page lists,
-calendars and so on).
-Functions cannot be used in pages of type Markdown.
-For what can and cannot be written, see
-[[Wiki notation and Markdown notation:../Comparison]].
 */
 
 /**
@@ -1484,7 +1945,7 @@ For what can and cannot be written, see
 
 *[[Basic elements:../Basic]]
 |object|notation|h
-|[[heading:../Basic#Headings]]|""# heading"" (six levels, by the number of #)|
+|[[heading:../Basic#Headings]]|""## heading"" (the number of # sets the depth; a single ""#"" is for the title)|
 |[[paragraph:../Basic#Paragraphs and line breaks]]|insert an empty line|
 |[[line break:../Basic#Paragraphs and line breaks]]|two spaces at the end of the line|
 |[[strong:../Basic#Emphasis]]|""**strong words**""|
@@ -2096,7 +2557,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 変換前の版は履歴に残り，本文の末尾に「このページは、wikiページから変換して作りました。(変換前の版)」とその版へのリンクが付きます．
 元に戻すには，その版を開いて''この版に戻す''を押します．
 -変換するのはそのページだけです．子ページは変換しません．
--ページの名前を変えると，末尾のリンクは切れます(履歴はページに付いていくので，''履歴''からは開けます)．
+-ページの名前を変えると，変換前の版は元の名前の履歴に残ります(履歴は新しい名前に付いていきません)．末尾のリンクで変換前の版は開けますが，''この版に戻す''は出ません．戻すときは，先に元の名前に[[リネーム:../PageMenu#リネーム]]してください．
 -ほかのページがこのページのWiki記法に頼っているときは，その見え方が変わります．
 たとえば，親のページの &&tracker などの一覧は子ページの原文から項目を読み，&&blogpages などの抜粋は &&more を区切りにしています．
 -ページ名の自動リンク(サイトの設定で有効にしたもの)は，Markdown記法では掛かりません．
@@ -2191,7 +2652,7 @@ The rules are as follows.
 The version before conversion is kept in the history, and a sentence with a link to that version is added at the end of the text.
 To undo, open that version and press ''Restore this version''.
 -Only that page is converted. Its subpages are not.
--If the page is renamed, the link at the end breaks (the history moves with the page, so it can still be opened from ''History'').
+-If the page is renamed, the version before conversion stays in the history of the old name (the history does not move to the new name). The link at the end still opens the version before conversion, but ''Restore this version'' is not shown there. To undo the conversion, first [[rename:../PageMenu#Rename]] the page back to the old name.
 -If other pages rely on the Wiki notation of this page, how they look changes.
 For example, lists such as &&tracker on the parent page read items from the source of the subpages, and excerpts such as &&blogpages use &&more as the mark.
 -Automatic links to page names (when enabled in the site settings) are not applied in Markdown notation.
@@ -2213,25 +2674,21 @@ Wiki記法を使用するには種別wikiのページを作成し，その内容
 [[Markdown記法:../Markdown]]と並ぶ正式な書き方で，[[ファンクション>./Function]]
 (ページの一覧やカレンダーの埋め込みなど)まで書けるのがWiki記法の持ち味です．
 
-NextFormのWiki記法は以下のように大分できます．
+NextFormのWiki記法は以下のように大別できます．
 -[[基本要素>./Basic]]
 -[[行頭記法>./LineHead]]
 -[[ファンクション>./Function]]
 
 *編集方法
-''既存のページを編集するには編集したい箇所をダブルクリックします．''
-ダブルクリックをすると該当部分だけがソースに置き換わり編集できるようになります．
+ダブルクリックで本文の一部だけを編集する方法と，ページ全体を編集する方法は[[ページの操作:../PageMenu#編集]]にあります．
+Wiki記法のページでは，ダブルクリックした所だけがソースに置き換わります．文中の一部分や表の1行だけでも編集できます．
 箇条書きの場合はダブルクリックをすると箇条書きの項目を削除や打ち消しにできる
 表示に切り替わります．各項目をさらにダブルクリックするとソースの編集ができます．
-ダブルクリックの代わりにAltキー+クリックでも編集が開始できます．
-編集欄の右上には，いま書いている記法の札(''Markdown''または''Wiki'')が出ます(ページ全体の編集画面では，押すとその記法の早見表が開きます)．
-Markdownの編集欄には，左に太い線も付きます．
-
-別の方法として''ページメニュー''内の''編集''のリンクをクリックするとページ全体のソースを編集できます．
+ソースの編集中に''Ctrl+Space''などを押すと，記法を補う窓が開きます([[Wiki記法早見表:./CheatSheet]])．
 
 *数値計算
 Wiki記法中に式を書くことでその式の値を計算することができます．
-詳しくは[[数値計算>./Calc]]のページを参照して下さい．
+詳しくは[[数値計算>./Calc]]のページを参照してください．
 */
 
 /**
@@ -2293,7 +2750,7 @@ URLをそのままかけばリンクとして表示されます．
 [[料理/和食]]
 [[私の好きな料理:料理/和食]]
 [[../イタリアン]]
-[[$manualpage$/ja#バックアップ]]
+[[$manualpage$/ja/PageMenu#履歴]]
 [[NextFormオフィシャルページ:`OFFICIAL_URL`]]
 }
 
@@ -2335,9 +2792,9 @@ Wiki記法で使う記号をそのまま表示したい場合は&&を記号の�
 |&&worried;|&worried;|
 
 *そのまま表示
-長い文で記号をそのまま表示したい場合は&"&"(ダブルクォート2つ)と&"&"で対象の範囲を囲って下さい．
+長い文で記号をそのまま表示したい場合は&"&"(ダブルクォート2つ)と&"&"で対象の範囲を囲ってください．
 そうすると囲った範囲はWiki記法とは解釈されず，そのまま表示されます．
-複数行に渡ってそのまま表示を行いたい場合は[[&&plain:../Function/plain]]を使用して下さい．
+複数行に渡ってそのまま表示を行いたい場合は[[&&plain:../Function/plain]]を使用してください．
 
 &wikiexample{
 ""&や[[などWiki記法で使用する記号を多用するときダブルクォート2つで囲むとそのまま表示されます""
@@ -2368,16 +2825,11 @@ The Wiki notation of NextForm divides broadly as follows.
 -[[Functions>./Function]]
 
 *How to edit
-''To edit an existing page, double click the part you want to edit.''
-Double clicking replaces just that part with its source and lets you edit it.
+How to edit just a part of the page by double clicking, and how to edit the whole page, are in [[Page operations:../PageMenu#Edit]].
+On a page in Wiki notation, double clicking replaces just that part with its source. Even a part of a line or a single row of a table can be edited.
 For a list, double clicking switches to a display in which items can be removed or
 struck out. Double clicking an item again lets you edit its source.
-Alt and click works instead of a double click.
-The label at the top right of the edit box (''Markdown'' or ''Wiki'') shows which notation you are writing in (on the screen for editing the whole page, click it to open the cheat sheet for that notation).
-The edit box for Markdown also has a thick line on its left.
-
-Another way is to click ''Edit'' in the ''page menu'', which lets you edit the source
-of the whole page.
+While editing the source, press ''Ctrl+Space'' or a similar key to open a window that completes the notation ([[Wiki Cheat Sheet:./CheatSheet]]).
 
 *Calculation
 Writing an expression in Wiki notation lets you compute its value.
@@ -2444,7 +2896,7 @@ Use [[&&link:../Function/link]] when you want to build a link with finer control
 [[Cooking/Japanese]]
 [[the food I like:Cooking/Japanese]]
 [[../Italian]]
-[[$manualpage$/en#Backup]]
+[[$manualpage$/en/PageMenu#History]]
 [[NextForm official page:`OFFICIAL_URL`]]
 }
 
@@ -2570,7 +3022,7 @@ Press  ''Ctrl+Space'' or ''Ctrl+,(comma)'' or ''Alt+/(slash)'' in editing wiki s
  おいしい}
 
 行頭記法の記号のすぐ後に&(と&)で囲まれた部分があると特別な指定と解釈されます．
-記号のすぐ後に&(を記述した場合は記号の後にスペースを入れてから&(を記述して下さい．
+記号のすぐ後に&(を記述した場合は記号の後にスペースを入れてから&(を記述してください．
 
 *節
 行頭に&*を書くと節の始まりになります．&*のあとに文をかくとそれが節の見出しになります．
@@ -2639,7 +3091,7 @@ Press  ''Ctrl+Space'' or ''Ctrl+,(comma)'' or ''Alt+/(slash)'' in editing wiki s
 テキストをそのまま表示させたいときに便利です．
 編集画面で整形済みテキストにしたい範囲を選択し''引用''のボタンを2回押すと簡単に整形済みテキストが作成できます．
 プログラム言語等を書く場合は最初の行で半角スペースに続いて(code)と書くとハイライト機能が有効になります．
-詳細な使い方は[[&&pre:../Function/pre]]のページを参考にして下さい．
+詳細な使い方は[[&&pre:../Function/pre]]のページを参考にしてください．
 
 &wikiexample{
  あいうえお
@@ -2673,9 +3125,9 @@ Press  ''Ctrl+Space'' or ''Ctrl+,(comma)'' or ''Alt+/(slash)'' in editing wiki s
 行頭に&=をひとつだけ書き，続けて式を書くとその式の計算結果に置き換わります．
 式の最後に&=を書くと結果を置き換えずに数式と結果の両方を表示します．
 数式内の&[と&]で囲まれた部分は無視されます．
-&=の直後に&(を書く場合はスペースを入れて下さい．
+&=の直後に&(を書く場合はスペースを入れてください．
 
-[[数値計算の詳細>../Calc]]ページも参照して下さい．
+[[数値計算の詳細>../Calc]]ページも参照してください．
 
 &wikiexample{
 = (1 + 2) * 3 ^ 2 / 4
@@ -2686,7 +3138,7 @@ Press  ''Ctrl+Space'' or ''Ctrl+,(comma)'' or ''Alt+/(slash)'' in editing wiki s
 *表
 行頭に&|を書くと表になります．ソースでの1行がテーブルの1行になります．
 行中でさらに&|で区切ることでテーブルの列を記述できます．
-最後の列の後にも&|を記述して下さい．
+最後の列の後にも&|を記述してください．
 
 ''行の最後&|のあと''に以下の文字を列挙するとセルの書式を指定できます．
 複数回書くことで左のセルから順番に対応して指定できます(hとfは除く)．
@@ -2714,7 +3166,7 @@ Press  ''Ctrl+Space'' or ''Ctrl+,(comma)'' or ''Alt+/(slash)'' in editing wiki s
 
 セルの先頭に&~を書くとそのセルは見出しのセルとして扱われます．
 セルの先頭に&=を書くと式を書くことができ，表計算をすることができます．
-詳細は[[数値計算の詳細>../Calc]]を参照して下さい．
+詳細は[[数値計算の詳細>../Calc]]を参照してください．
 
 ソース上で&|の位置がずれていたとしてもページの保存時に，
 桁がそろえられ，ソース上でも表が見やすくなります．
@@ -3157,7 +3609,7 @@ NextFormにはNextFormで作成したページをhtmlファイル,画像ファ�
 静的コンテンツのサイトを構築できる機能があります．
 これをエクスポート機能と呼びます．
 
-エクスポート機能を用いるとサイトの内容やデザイン，サイトを管理する画面を[[Wiki記法:../Wiki]]で管理することができます．
+エクスポート機能を用いるとサイトの内容やデザイン，サイトを管理する画面をNextFormのページ(種別wikiでも種別Markdownでも)で管理することができます．
 大げさに表現するならばNextFormはCMS(Content Management System)自体を構築，管理できるCMSMSであるといえます．
 すなわち，サイトの管理者がサイトの編集者に必要最低限のCMSや，親切な説明を加えたCMSを簡単に提供することができます．
 
@@ -3183,7 +3635,7 @@ NextFormにはNextFormで作成したページをhtmlファイル,画像ファ�
 設定表は[[Markdown記法の表:../Markdown/Extra#表]]で書いても構いません．
 そのときは1列目のページへのリンクを ""[[ページ名]]"" で書きます．
 
-設定表を書いたら，表でリンクにしたページを作成しておいて下さい．
+設定表を書いたら，表でリンクにしたページを作成しておいてください．
 htmlファイルにしたいページは種別wikiか種別Markdownのページで，その他のページは種別textか種別fileのページで作成するのがおすすめです．
 種別wikiと種別Markdownのページは，画面に表示するときと同じようにHTMLに変換して書き出されます．
 
@@ -3194,14 +3646,14 @@ htmlファイルにしたいページは種別wikiか種別Markdownのページ�
 ただし，別のページに書いた場合は
  &export([[設定表のあるページ]]);
 と書いてください．
-&&export;のより高度な使用方法は[[こちら:../Wiki/Function/export]]を参照して下さい．
+&&export;のより高度な使用方法は[[こちら:../Wiki/Function/export]]を参照してください．
 これでボタンが作成され，押せば実際にファイルの書き出し(エクスポート)が行われます．
 
 ファイルは設定表の2列目に設定したファイル名で，
 [[設定項目:../Administration/Settings]]の''EXPORT_DIR_PATH''
 で設定されているディレクトリの下に保存されます．
 このディレクトリに対してWebサーバーの設定を行い，公開することでhtmlファイル等で構成された静的なサイトが構築できます．
-もしNextFormを設置したWebサーバーとは別のWebサーバーにあるコンテンツを管理したい場合は[[エクスポート後の処理:.#エクスポート後の処理]]を参照して下さい．
+もしNextFormを設置したWebサーバーとは別のWebサーバーにあるコンテンツを管理したい場合は[[エクスポート後の処理:.#エクスポート後の処理]]を参照してください．
 
 *テンプレート
 上記の例ではindex.htmlとcss/style.cssというファイルを書き出しましたが，
@@ -3212,7 +3664,7 @@ index.htmlはcss/style.cssをスタイルとして使用するようにはなっ
  |[[トップページ]]  |index.html   |[[通常ページテンプレート]]|
  |[[スタイルシート]]|css/style.css|                          |
 のように書きます．設定表にテンプレートを書いたらテンプレートを作成します．
-テンプレートになるページは種別textか種別fileにして下さい．
+テンプレートになるページは種別textか種別fileにしてください．
 例えば以下のような内容にします．
  (code)
  <!DOCTYPE html>
@@ -3232,7 +3684,7 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
 
 設定表の3列目，すなわちテンプレートの欄に何も書かなければ1列目の内容がそのまま書き出されます．
 
-エクスポート機能でのテンプレートとWiki記法の[[&&pages:../Wiki/Function/pages]]や[[&&writepage:../Wiki/Function/writepage]]でのテンプレートは異なるものです．注意して下さい．
+エクスポート機能でのテンプレートとWiki記法の[[&&pages:../Wiki/Function/pages]]や[[&&writepage:../Wiki/Function/writepage]]でのテンプレートは異なるものです．注意してください．
 
 **テンプレートの書き方
 上記の$title$や$contents$のようにテンプレート内で特定のキーワードを書けば別の内容に置き換わります．
@@ -3278,7 +3730,7 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
 
 設定表の1列目にページへのリンクではなくページ名のパターンをワイルドカードを用いて指定できます．
 このパターンと一致するページはこの行を設定として使用します．
-''Wiki記法で&*や&/&*や&*&/は見出しやコメントの意味になってしまうので&*の前に&&記号をつけてエスケープする必要があるので注意して下さい．''
+''Wiki記法で&*や&/&*や&*&/は見出しやコメントの意味になってしまうので&*の前に&&記号をつけてエスケープする必要があるので注意してください．''
 上記の設定表の例では''ブログ''というページの子ページはすべて''ブログ用テンプレート''というテンプレートして使用し，ファイル名は空欄なので自動で決定するように設定されています．
 
 同じく設定表の1列目に
@@ -3308,7 +3760,7 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
 このコマンドにrsyncやftpコマンドでファイルを送信するスクリプトを設定すれば，
 リモートホストにあるWebサーバーのコンテンツを管理することができます．
 
-''コマンドに入力される文字列はNextFormのサイトで自由に編集できる文字列であることに注意して下さい．''
+''コマンドに入力される文字列はNextFormのサイトで自由に編集できる文字列であることに注意してください．''
 
 コマンドは0以外のステータスで終了することでエラー扱いになります．
 
@@ -3360,7 +3812,7 @@ HTMLで作ったゲームやちょっとした道具をページに添付して�
 自分だけ，または信頼できる人だけが編集するサイトで有効にしてください．
 
 *動かし方
-HTMLファイルを[[添付:..#添付ファイル]]してから，ファイルのページに出る''開く''を押します．
+HTMLファイルを[[添付:../PageMenu#添付]]してから，ファイルのページに出る''開く''を押します．
 ページからは，次のように書くと押すだけで動くリンクになります．
 
 |記法|書き方|h
@@ -3402,7 +3854,7 @@ and so on, letting you build a site of static content.
 This is called the export function.
 
 With the export function you can manage the contents and the design of a site, and the
-screens that administer it, in [[Wiki notation:../Wiki]].
+screens that administer it, in NextForm pages (of type wiki or Markdown).
 Put grandly, NextForm is a CMSMS that can build and manage a CMS (Content Management
 System) itself. That is, the administrator of a site can easily hand the editors of the
 site a minimal CMS, or a CMS with helpful explanations added.
@@ -3629,7 +4081,7 @@ This function is ''disabled by default''. While it is disabled, opening an attac
 HTML file downloads it.
 
 To enable it, log in as a user with administrator rights, choose
-''site menu'' > ''Admin tools'' > ''Site setup'', set ''Attached HTML files'' to
+''site menu'' > ''Admin tools'' > ''Site preferences'', set ''Attached HTML files'' to
 ''Run in a sandbox'' and save.
 (The name of the setting is [[FILE_ALLOW_HTML:../Administration/Settings]].)
 
@@ -3638,7 +4090,7 @@ this site (for example, one made to look like a login screen).
 Enable it only on a site that you alone, or people you trust, edit.
 
 *Running a file
-[[Attach:..#Attached files]] the HTML file, then press ''Open'' on the page of the file.
+[[Attach:../PageMenu#Attach]] the HTML file, then press ''Open'' on the page of the file.
 From a page, writing the following makes a link that runs the file when pressed.
 
 |notation|how to write it|h

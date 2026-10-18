@@ -34,7 +34,7 @@ function wiki_operator_more(&$context, $dom, $tree) {
  &more{抜粋時のリンクのメッセージ};
 ページの一覧表示([[&&pages(contents):../pages]]や[[&&datepages:../datepages]])の際に
 抜粋として表示される部分を指定します．&&moreより前の部分が抜粋になり，&&more自体はページへのリンクになります．
-通常のページの閲覧では&&moreは無視されます．&&moreは他のWiki記法の中には記述しないで下さい．
+通常のページの閲覧では&&moreは無視されます．&&moreは他のWiki記法の中には記述しないでください．
 
 *パラメータ
 パラメータは指定しません． 
