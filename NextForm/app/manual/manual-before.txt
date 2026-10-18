@@ -922,6 +922,7 @@ Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表�
 |[[脚注:../Extra#脚注]]|""本文[^1]"" と ""[^1]: 中身""|
 |[[URLの自動リンク:../Extra#自動リンク]]|URLをそのまま書く|
 |[[折りたたみ:../Extra#折りたたみ]]|"":::details 見出し"" の行と "":::"" の行で囲む|
+|[[目次:../Extra#目次]]|""[TOC]"" とだけ書いた行|
 |[[記法の例:../Extra#記法の例]]|"":::example"" の行と "":::"" の行で囲む|
 
 *[[リンク・画像・添付:../Link]]
@@ -1132,10 +1133,32 @@ URLをそのまま書くとリンクになります．""www."" で始まる語�
 見出しの文字に記法は効きません(そのままの文字として表示されます)．
 ""details"" 以外の語(""note"" など)を書いても折りたたみにはなりません．
 
+見出しを書いた折りたたみは，ふつうの見出しと同じく目次に載り，&[&[ページ名#見出し&]&] でそこへ飛べます(Wiki記法の &*(optional) と同じ)．
+目次での深さは，見出しの先頭に ""#"" を書いて決められます(""#"" は表示されません)．
+書かなければ，直前の見出しの1段下になります．
+
+ :::details ### 3段目の見出しとして目次に載る
+ 中身
+ :::
+
 この書き方はNextForm独自のもので，Markdownの標準ではありません．
 他のツールに貼り付けると，コロンの行が文字として見えます(中身は残ります)．
 またブラウザの「ページ内検索」は，閉じている中身を見つけられません
 (サイトの検索には中身も載ります)．印刷でも閉じたまま印刷されます．
+
+*目次
+""[TOC]"" とだけ書いた行(前後は空行)は，そのページの見出しの目次になります(Wiki記法の &&index と同じ)．
+''ツール''の''目次''と同じ形で，項目を押すとその見出しに飛びます．
+
+ [TOC]
+ 
+ ## はじめに
+
+-""[toc]"" と小文字で書いてもかまいません．
+-コードの中や，文の途中に書いた ""[TOC]"" は文字のままです．
+-サイドページや，取り込まれた先でも目次になります．
+-""[TOC]"" という文字は，サイトの検索には載りません．
+-GitLab・Typora・Python-Markdown(MkDocs)と同じ書き方です．対応していないツールでは ""[TOC]"" という文字が見えるだけです．
 
 *記法の例
 コロン3つに続けて ""example"" と書いた行から，コロン3つだけの行までが，
@@ -1437,6 +1460,7 @@ For what can and cannot be written, see
 |[[footnote:../Extra#Footnotes]]|""text[^1]"" and ""[^1]: the note""|
 |[[automatic link:../Extra#Automatic links]]|write the URL as it is|
 |[[folding:../Extra#Folding]]|wrap it in a "":::details heading"" line and a "":::"" line|
+|[[table of contents:../Extra#Table of contents]]|a line with only ""[TOC]""|
 |[[notation examples:../Extra#Notation examples]]|wrap it in a "":::example"" line and a "":::"" line|
 
 *[[Links, images and attachments:../Link]]
@@ -1662,10 +1686,32 @@ the page.
 Notation does not apply inside the heading; it is shown as plain characters.
 A word other than ""details"" (""note"", for instance) does not fold anything.
 
+A folded block with a heading appears in the table of contents like an ordinary heading, and &[&[page name#heading&]&] jumps to it (the same as &*(optional) of Wiki notation).
+Its depth in the table of contents can be set by writing ""#"" at the start of the heading (the ""#"" is not shown).
+Without it, the depth is one below the heading before it.
+
+ :::details ### listed in the table of contents as a third-level heading
+ contents
+ :::
+
 This notation is specific to NextForm and is not part of standard Markdown.
 Pasted into another tool, the colon lines show up as text (the contents remain).
 The browser's own find-in-page cannot find contents that are folded away
 (the site search does index them). Printing keeps them folded as well.
+
+*Table of contents
+A line with only ""[TOC]"" (with blank lines around it) becomes the table of contents of the headings of the page (the same as &&index of Wiki notation).
+It has the same form as ''Table of contents'' in ''Tools'', and pressing an item jumps to that heading.
+
+ [TOC]
+ 
+ ## Introduction
+
+-It can be written in lower case, ""[toc]"".
+-""[TOC]"" inside code or in the middle of a sentence stays as text.
+-It becomes a table of contents on the side page and where the page is pulled in, too.
+-The text ""[TOC]"" is not indexed by the site search.
+-It is written the same way as in GitLab, Typora and Python-Markdown (MkDocs). Tools that do not support it just show the text ""[TOC]"".
 
 *Notation examples
 A line of three colons followed by ""example"", down to a line of three colons
@@ -1927,7 +1973,8 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 *意味は同じだが働きが違うもの
 |やりたいこと|Wiki記法|Markdown記法|違い|h
 |見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
-|折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます|
+|折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます．どちらも見出しは目次に載ります|
+|目次|&&index|""[TOC]"" とだけ書いた行|Markdown記法では，ほかのページの目次(&&index(&[&[ページ名&]&]))は書けません|
 |節の終わりを明示|&*(end)|なし|同上|
 |他のページの取り込み|&&include(&[&[ページ名&]&])|段落にそれ1つだけの !&[説明&](ページ名)|Markdown記法では，文の途中に書いたときはリンクになります．大きさや配置の指定は説明の後ろに書きます([[リンク・画像・添付:../Markdown/Link#大きさ・配置・キャプション]])|
 |部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
@@ -1948,7 +1995,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 次のようなことをしたいページは，種別wikiで作ってください．
 
 |やりたいこと|Wiki記法|h
-|ページの一覧|&&pages &&index &&subpage|
+|ページの一覧|&&pages &&subpage|
 |カレンダー|&&calendar &&datepages|
 |数値計算・表計算|行頭の &= と セルの &=|
 |検索結果の埋め込み|&&search|
@@ -1996,7 +2043,8 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 *Things that mean the same but work differently
 |what you want|Wiki notation|Markdown notation|difference|h
 |heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
-|folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''|
+|folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''. In both, the heading appears in the table of contents|
+|table of contents|&&index|a line with only ""[TOC]""|Markdown notation cannot write the table of contents of another page (&&index(&[&[page name&]&]))|
 |marking the end of a section|&*(end)|none|as above|
 |pulling in another page|&&include(&[&[page name&]&])|!&[description&](page name) alone in its paragraph|In Markdown notation, it is a link when written in the middle of a sentence. The size and placement are written after the description ([[Links, images and attachments:../Markdown/Link#Size, placement and caption]])|
 |unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
@@ -2018,7 +2066,7 @@ Functions of Wiki notation cannot be used in pages of type Markdown.
 Create a page of type wiki when you want to do any of the following.
 
 |what you want|Wiki notation|h
-|lists of pages|&&pages &&index &&subpage|
+|lists of pages|&&pages &&subpage|
 |calendars|&&calendar &&datepages|
 |calculation and spreadsheets|&= at the start of a line and &= in a cell|
 |embedding search results|&&search|
