@@ -148,10 +148,18 @@ function wiki_markdown_parse(&$context, $source, $is_root = false) {
     return wiki_markdown_parse_tokens($context, $tokens, $is_root);
 }
 
-function wiki_markdown_parse_tokens(&$context, $tokens, $is_root = false) {
+/*
+ * $is_inline は文中 (表のセル・箇条書きの項目・ファンクションの対象など)。表示
+ * (wiki_convert_from_tokens()) と同じく、文中の中身が空白で始まるときは行頭の
+ * トークンを足さない (`- 項目` や `| セル |` の空白を整形済みとして読まない)。
+ * $append_line_head が false なら足さない (行頭の ~ の中身。wiki_operator_through())。
+ */
+function wiki_markdown_parse_tokens(&$context, $tokens, $is_root = false, $is_inline = false,
+				    $append_line_head = true) {
     if(empty($tokens))
 	return array();
-    array_unshift($tokens, new WikiLineHeadToken('', $tokens[0]->position, 0));
+    if($append_line_head && !($is_inline && ctype_space($tokens[0]->t)))
+	array_unshift($tokens, new WikiLineHeadToken('', $tokens[0]->position, 0));
     $context['tokens'] = $tokens;
     $subtrees = &wiki_parse_tokens_to_subtrees($context, $tokens);
     $blocks = &wiki_subtrees_to_blocks($subtrees);
@@ -575,7 +583,12 @@ function wiki_markdown_table(&$state, &$context, $block) {
 	$fields = wiki_tokens_split($tree->target, new WikiSymbolToken('|', 0, 0));
 	$format = wiki_markdown_text(wiki_markdown_strip_line_tokens(array_pop($fields)));
 	$cells = array();
-	$is_header = strpos($format, 'h') !== false && is_null($header) && empty($rows);
+	/*
+	 * 見出しの行は、行の末尾の h か、1 行目のセルが全部見出しのセル (~) のとき。
+	 * Markdown の表で見出しにできるのは 1 行目だけ
+	 */
+	$is_header = (strpos($format, 'h') !== false || wiki_markdown_table_all_header_cells($fields)) &&
+	    is_null($header) && empty($rows);
 	foreach($fields as $field) {
 	    $field = wiki_markdown_strip_line_tokens($field);
 	    if(!empty($field) && $field[0] instanceof WikiSymbolToken && $field[0]->t === '~') {
@@ -589,11 +602,12 @@ function wiki_markdown_table(&$state, &$context, $block) {
 		$cells[] = '';
 		continue;
 	    }
-	    $text = trim(wiki_markdown_inline_tokens($state, $context, $field));
+	    /* 改行は空白を整える前に見る (セルの末尾の &br; の改行が削られて \ だけ残らないように) */
+	    $text = wiki_markdown_inline_tokens($state, $context, $field);
 	    if(strpos($text, "\\\n") !== false)
 		wiki_markdown_lost($state, l('Line breaks in table cells'));
 	    /* | はエスケープ済み。URL などエスケープしていない所の | だけ直す */
-	    $text = str_replace(array("\\\n", "\n"), ' ', $text);
+	    $text = trim(str_replace(array("\\\n", "\n"), ' ', $text));
 	    $cells[] = preg_replace('/(?<!\\\\)\|/', '\\\\|', $text);
 	}
 	if(preg_match('/[#=%\/,\.we]/', $format))
@@ -622,6 +636,18 @@ function wiki_markdown_table(&$state, &$context, $block) {
     foreach($rows as $row)
 	$lines[] = wiki_markdown_table_row($row, $columns);
     return implode("\n", $lines);
+}
+
+/* 行のセルが全部、見出しのセル (先頭が ~) か */
+function wiki_markdown_table_all_header_cells($fields) {
+    if(empty($fields))
+	return false;
+    foreach($fields as $field) {
+	$field = wiki_markdown_strip_line_tokens($field);
+	if(empty($field) || !($field[0] instanceof WikiSymbolToken) || $field[0]->t !== '~')
+	    return false;
+    }
+    return true;
 }
 
 function wiki_markdown_table_row($cells, $columns) {
@@ -868,10 +894,10 @@ function wiki_markdown_pre_function(&$state, $tree) {
 /* ---- 文中 ----------------------------------------------------------- */
 
 /* トークンの並び (ファンクションの対象など) を文中の Markdown にする */
-function wiki_markdown_inline_tokens(&$state, &$context, $tokens) {
+function wiki_markdown_inline_tokens(&$state, &$context, $tokens, $append_line_head = true) {
     if(empty($tokens))
 	return '';
-    $blocks = wiki_markdown_parse_tokens($context, $tokens);
+    $blocks = wiki_markdown_parse_tokens($context, $tokens, false, true, $append_line_head);
     $items = array();
     foreach(wiki_markdown_flatten_blocks($blocks) as $item)
 	if(!($item instanceof WikiLineHeadToken))
@@ -932,6 +958,9 @@ function wiki_markdown_inline_apply(&$state, &$context, $tree) {
     case 'plain':
 	/* ""そのまま"" は、中を記法として読まない文字 */
 	return wiki_markdown_escape(wiki_tokens_to_string_without_escape($tree->target));
+    case 'through':
+	/* 文中の行頭の ~ (-~項目 など)。表示と同じく ~ だけを消し、中の記法は効かせる */
+	return wiki_markdown_inline_tokens($state, $context, $tree->target, false);
     }
     if(!isset($tree->symbol) || $tree->symbol !== '&') {
 	/* 表のセルの計算 (=1+2) など、Markdown に無い働きは原文を文中のコードで残す */
@@ -1007,9 +1036,29 @@ function wiki_markdown_function_inline(&$state, &$context, $tree) {
     }
     if(isset($WIKI_MARKDOWN_ENTITY_EMOJIS[$id]))
 	return $WIKI_MARKDOWN_ENTITY_EMOJIS[$id];
+    global $WIKI_OPERATORS_FUNCTION;
+    if(empty($WIKI_OPERATORS_FUNCTION[$id]))
+	return wiki_markdown_unknown_function($state, $context, $tree);
     /* 原文を文中のコードとして残す */
     wiki_markdown_kept($state, '&' . $tree->id);
     return wiki_markdown_code_span(wiki_markdown_raw($state, $tree));
+}
+
+/*
+ * 登録されていないファンクション (&VoIP製品 や、名前に文が続いた &calcの方は… など)。
+ * 表示は & から木の終わりまでを、先頭の & を文字にしてから読み直す (中の記法は効く。
+ * wiki_convert_from_tree() の else)。同じく文字として写す。
+ */
+function wiki_markdown_unknown_function(&$state, &$context, $tree) {
+    $raw = wiki_markdown_raw($state, $tree);
+    if($raw === '')
+	return wiki_markdown_escape('&' . $tree->id . wiki_tokens_to_string_without_escape($tree->target));
+    $tokens = wiki_lex($context, $raw);
+    /* 原文での位置に直す (中にコードの枠で残すファンクションがあれば、その原文を位置で取る) */
+    foreach($tokens as $token)
+	$token->position += $tree->position;
+    $tokens[0] = new WikiTextToken($tokens[0]->t, $tokens[0]->position, $tokens[0]->length);
+    return wiki_markdown_inline_tokens($state, $context, $tokens);
 }
 
 /* 文中のコード。中身の ` より長い ` で囲む */

@@ -15,6 +15,7 @@ quote2}
 };
 |=1+2|~見出しのセル|
 |a&br;b|c|
+|末尾で改行&br;|d|
 &include(https://example.com/page.html);
 &include([[./図.png]]){C:\path\};
 *(optional) a_b と [[Foo]] と ''強調''
