@@ -152,7 +152,7 @@ the past, or compare two versions.
 
 In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
 Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
--The title and the tags are taken again from the restored text. The description, the lock and so on stay as they are.
+-The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
 -The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
 -A version of a different type can be restored too.
 -For an attached file (type file), its contents and file type are restored.
@@ -345,7 +345,7 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 
 ''ページメニュー''の''履歴''の一覧で，前の版の行の''この版に戻す''を押すと(前の版を表示した画面にもあります)，確認の画面になります．
 ''この版に戻す''を押すと，今のページをその版の本文と種別で上書きします．
--題名とタグは，戻した本文から取り直します．説明やロックなどは今のままです．
+-題名とタグも，その版のものに戻ります(Markdownの題名とタグ，Wiki記法の題名は本文から取り直します)．説明やロックなどは今のままです．
 -戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
 -種別の違う版にも戻せます．
 -添付ファイル(種別file)は，中身とファイルの種類を戻します．

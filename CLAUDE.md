@@ -86,6 +86,7 @@
 ./tests/markdown-link-path.sh # Markdown のリンクの行き先の規則と確認の道具 (複製サイトを作る。要 sudo)
 ./tests/clone.sh            # 他の NextForm のページのクローン (複製サイトを 2 つ作る。要 sudo)
 ./tests/dispatch.sh         # 不正な action で 500 にならないか (複製サイトを作る。要 sudo)
+./tests/history-restore.sh  # 履歴の「この版に戻す」(複製サイトを作る。要 sudo)
 ./tests/syntax-survey.sh    # wiki 記法の棚卸しツール (複製サイトを作る。要 sudo)
 ```
 
