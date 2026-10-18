@@ -154,7 +154,7 @@ In the list of ''History'' in the ''page menu'', press ''Restore this version'' 
 Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
 -The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
 -The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
--A version of a different type can be restored too.
+-A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
 -For an attached file (type file), its contents and file type are restored.
 -Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
 -If someone edits the page after the confirmation screen was opened, nothing is restored.
@@ -347,7 +347,7 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 ''この版に戻す''を押すと，今のページをその版の本文と種別で上書きします．
 -題名とタグも，その版のものに戻ります(Markdownの題名とタグ，Wiki記法の題名は本文から取り直します)．説明やロックなどは今のままです．
 -戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
--種別の違う版にも戻せます．
+-種別の違う版にも戻せます．Wiki記法からMarkdownに変換したページも，変換前の版に戻せばWiki記法に戻ります．
 -添付ファイル(種別file)は，中身とファイルの種類を戻します．
 -ページを編集できる人だけが使えます．ロック中は，編集と同じく管理者とロックした本人だけです．
 -確認の画面を開いたあとに誰かがページを編集していたときは，戻しません．
@@ -2047,6 +2047,29 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |CSV形式の表|行頭の &,|
 
 これらが1つでも要るページは，Wiki記法のまま置いてください．
+
+*Wiki記法のページをMarkdownに変換する
+種別wikiのページは，''ページメニュー''の''Markdownに変換''で，種別Markdownのページに変換できます．
+確認の画面に，変換後の本文と，次のものが出ます．''変換する''を押すと保存します．
+-落ちるもの(関連リスト・表のセル結合・文字の色など)
+-原文のままコードの枠で残すもの(カレンダー・計算・書き込みのフォームなど，Markdown記法に無い働きをするファンクション)
+-飛び先が変わる見出し(ほかのページからの &[&[ページ名#見出し&]&] が届かなくなるもの)
+
+変換の決まりは次のとおりです．
+-見出しは1段下げます．&&title は本文の先頭の ""#"" に，&* は ""##"" に，&*&* は ""###"" にします(6段まで)．
+-タグはフロントマターの ""tags:"" に書き出します．
+-&*(optional) の節は "":::details"" の折りたたみにします(見出しの深さは保ちます)．
+-&&include は ""![](..)"" に，&&index は ""[TOC]"" に，&&treepages などのページの一覧は ""[PAGES]"" にします．
+-&&color や &&size などの装飾は，中の文字だけを残します．
+-&[&[表示名:ページ名&]&] は &[&[ページ名&|表示名&]&] に並べ替えます．行き先の決まりは同じなので，行き先は書き換えません．
+
+変換前の版は履歴に残り，本文の末尾に「このページは、wikiページから変換して作りました。(変換前の版)」とその版へのリンクが付きます．
+元に戻すには，その版を開いて''この版に戻す''を押します．
+-変換するのはそのページだけです．子ページは変換しません．
+-ページの名前を変えると，末尾のリンクは切れます(履歴はページに付いていくので，''履歴''からは開けます)．
+-ほかのページがこのページのWiki記法に頼っているときは，その見え方が変わります．
+たとえば，親のページの &&tracker などの一覧は子ページの原文から項目を読み，&&blogpages などの抜粋は &&more を区切りにしています．
+-ページ名の自動リンク(サイトの設定で有効にしたもの)は，Markdown記法では掛かりません．
 */
 
 /**
@@ -2119,6 +2142,29 @@ Create a page of type wiki when you want to do any of the following.
 |tables in CSV form|&, at the start of a line|
 
 Keep a page in Wiki notation if it needs even one of these.
+
+*Converting a page in Wiki notation to Markdown
+A page of type wiki can be converted to a page of type Markdown with ''Convert to Markdown'' in the ''page menu''.
+The confirmation screen shows the text after conversion and the following. Press ''Convert'' to save it.
+-Things that are dropped (definition lists, cell merges in tables, colours of text and so on)
+-Functions kept as their source in code blocks (calendars, calculations, input forms and other functions whose work Markdown notation does not have)
+-Headings whose links change (&[&[page name#heading&]&] from other pages stops reaching them)
+
+The rules are as follows.
+-Headings go one level down: &&title becomes the ""#"" at the top of the text, &* becomes ""##"" and &*&* becomes ""###"" (up to level 6).
+-Tags are written in ""tags:"" of the front matter.
+-A section with &*(optional) becomes a "":::details"" fold (keeping the depth of the heading).
+-&&include becomes ""![](..)"", &&index becomes ""[TOC]"", and page lists such as &&treepages become ""[PAGES]"".
+-Decorations such as &&color and &&size keep only the text inside.
+-&[&[display name:page name&]&] is reordered to &[&[page name&|display name&]&]. Where it points is decided in the same way, so the destination is not rewritten.
+
+The version before conversion is kept in the history, and a sentence with a link to that version is added at the end of the text.
+To undo, open that version and press ''Restore this version''.
+-Only that page is converted. Its subpages are not.
+-If the page is renamed, the link at the end breaks (the history moves with the page, so it can still be opened from ''History'').
+-If other pages rely on the Wiki notation of this page, how they look changes.
+For example, lists such as &&tracker on the parent page read items from the source of the subpages, and excerpts such as &&blogpages use &&more as the mark.
+-Automatic links to page names (when enabled in the site settings) are not applied in Markdown notation.
 */
 
 /**
