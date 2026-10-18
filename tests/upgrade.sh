@@ -554,11 +554,16 @@ echo
 # 直すのは利用者なので、ツールは調べ方を知らせるだけ。docs/upgrade-guide.md の
 # 「Markdown のページの見え方が変わったところを確かめる」と 1 対 1。
 echo "[18] 0.14.0 より前の NextForm から: Markdown のページの見え方"
+# バックアップの名前は秒までの時刻なので、[17] と同じ秒に上げると「バックアップ先が
+# すでにあります」で止まる (ツールとしては正しい)。秒をまたいでから上げる
+sleep 1
 sudo sed -i "s/define('NEXTFORM_VERSION', *'[^']*')/define('NEXTFORM_VERSION', '0.13.0')/" \
      "${TEST_SITE}/app/version.inc"
 sudo php "${DIST}/NextForm/app/tool/upgrade" "${TEST_SITE}/index.php" --yes --force \
      > "${DIST}/from-0.13.log" 2>&1
-check_eq  "0.13.0 からのアップグレードが正常終了する" "0" "$?"
+rc=$?
+[[ $rc -ne 0 ]] && sed 's/^/  | /' "${DIST}/from-0.13.log" | tail -30
+check_eq  "0.13.0 からのアップグレードが正常終了する" "0" "$rc"
 check_cmd "Markdown のページの見え方を確かめるよう知らせる" \
           "grep -q 'Markdown のページの見え方が変わったところを確かめてください (0.14.0)' '${DIST}/from-0.13.log'"
 check_cmd "  調べるコマンドを出す" \
