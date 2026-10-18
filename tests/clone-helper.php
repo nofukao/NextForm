@@ -24,6 +24,15 @@
  *   meta <名前> <項目> meta の値 (meta=...)
  *   children <名前>   子孫のページ名を並べる (child=... の行)
  *   cleanup <接頭辞>  その接頭辞のページを消す
+ *   parse-subpages <ファイル> <根のページ名>
+ *                     子ページの画面の HTML から取り出す子孫の名前 (names=a,b,..)
+ *   clone-insecure <クローン先> <URL> <ユーザー> <パスワード> <続ける 0/1>
+ *                     このプロセスからクローンする (https の相手を試すため。
+ *                     php -d openssl.cafile=… で証明書を信頼させて呼ぶ)。
+ *                     written=1/0, insecure=暗号化なしで止まったか 1/0, error=理由 の行
+ *   form-insecure <クローン先>
+ *                     暗号化なしで止まったときのクローンの画面に、続けるための
+ *                     チェックボックスがあるか (checkbox=1/0)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
@@ -159,6 +168,28 @@ case 'cleanup':
 	    $removed++;
     }
     printf("removed=%d\n", $removed);
+    break;
+
+case 'parse-subpages':
+    $names = clone_parse_subpage_list(file_get_contents($rest[0]), $rest[1]);
+    printf("names=%s\n", $names === false ? '(false)' : implode(',', $names));
+    break;
+
+case 'clone-insecure':
+    $auth = remote_auth_create($rest[1], $rest[2], $rest[3]);
+    $auth['allow_insecure'] = ($rest[4] === '1');
+    $errors = array();
+    $written = clone_page($rest[0], $rest[1], $auth, clone_default_options(), $errors);
+    printf("written=%d\ninsecure=%d\n", $written ? 1 : 0, empty($auth['insecure']) ? 0 : 1);
+    foreach($errors as $error)
+	printf("error=%s\n", $error);
+    break;
+
+case 'form-insecure':
+    $page = test_new_page($rest[0]);
+    $dom = dom_create_document();
+    clone_append_form($dom, $page, 'https://localhost/', 'user', clone_default_options(), true, true);
+    printf("checkbox=%d\n", strpos(dom_save_html($dom), 'name="clone_allow_insecure"') === false ? 0 : 1);
     break;
 
 default:

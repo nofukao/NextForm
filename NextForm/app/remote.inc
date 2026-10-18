@@ -22,6 +22,10 @@
  * ダイジェスト認証をする (NextForm のログインの方式)。パスワードそのものは
  * 送らない。資格情報は remote_auth_create() で作る配列に入れて持ち回し、
  * 最初の URL のホストにだけ使う (転送でほかのホストに移ったら使わない)。
+ * https で始めた取得が http (暗号化なし) へ転送されたら、資格情報を使う前に止める
+ * (ログインの情報と、ログインが要るページの中身が暗号化されずに流れるため)。
+ * 呼び出し側が利用者に尋ね、承知したら $auth['allow_insecure'] を立てて続ける。
+ * 初めから http の URL を入れたときは止めない (相手のサイトをいつもその形で使っている)。
  * 一度 401 で受け取った nonce は、番号 (nc) を 1 つずつ上げて使い回す
  * (相手は nonce ごとに番号が増えることを確かめる)。相手が stale を返したら
  * 新しい nonce でやり直す。Basic 認証は扱わない (パスワードがそのまま流れる)。
@@ -34,9 +38,12 @@ define('REMOTE_MAX_REDIRECTS', 3);
  *
  * 成功: array('status' => 応答コード, 'headers' => 小文字の名前 => 値,
  *             'body' => 本文, 'size' => バイト数)
- * $auth を渡すと、401 のときにダイジェスト認証をする。認証に失敗したら
+ * $auth を渡すと、401 のときにダイジェスト認証をする。ログインしなくても読める
+ * ページでもその利用者として読むよう、login=1 の Cookie を送って NextForm に
+ * ログインを求めさせる。認証に失敗したら
  * 401 の応答をそのまま返し、$auth['failed'] (資格情報が違う) か
- * $auth['unsupported'] (ダイジェスト認証でない) を立てる。
+ * $auth['unsupported'] (ダイジェスト認証でない) を立てる。https から http へ
+ * 転送されて止めたときは $auth['insecure'] を立てる。
  *
  * 失敗: array('error' => 理由, 'host' => ホスト名)。理由は
  *       disabled   allow_url_fopen が無効
@@ -46,27 +53,46 @@ define('REMOTE_MAX_REDIRECTS', 3);
  *       connect    接続できない、または途中で時間切れ
  *       too_large  $max_bytes を超える
  *       redirect   転送が多すぎる
+ *       timeout    $deadline (microtime(true) の値) を過ぎた。受け取りの途中でも打ち切る
+ *       insecure   資格情報があり、https から http へ転送された (何も送っていない)
  */
-function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(), &$auth = null) {
+function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(), &$auth = null,
+		      $deadline = null) {
     if(!ini_get('allow_url_fopen'))
 	return array('error' => 'disabled', 'host' => '');
 
+    $is_https = false;
     for($i = 0; $i <= REMOTE_MAX_REDIRECTS; $i++) {
 	$target = remote_target($url, $allowed_hosts);
 	if(isset($target['error']))
 	    return $target;
 	$use_auth = is_array($auth) && $auth['user'] !== '' && $target['host'] === $auth['host'];
+	if($i === 0)
+	    $is_https = ($target['scheme'] === 'https');
+	else if($use_auth && $is_https && $target['scheme'] === 'http' && empty($auth['allow_insecure'])) {
+	    $auth['insecure'] = true;
+	    return array('error' => 'insecure', 'host' => $target['host']);
+	}
 
 	/* 401 を受けたら、新しい nonce で 1 回だけ (stale ならもう 1 回) 送り直す */
 	for($tries = 0; ; $tries++) {
+	    if(!is_null($deadline) && microtime(true) > $deadline)
+		return array('error' => 'timeout', 'host' => $target['host']);
 	    $context = $target['context'];
+	    /*
+	     * 資格情報があるときは、ログインしなくても読めるページでもその利用者として読む
+	     * (読めない子ページや添付を一覧に含めるため)。NextForm は login=1 の Cookie が
+	     * あると、Authorization が無ければ 401 でログインを求める (auth_digest_get_user())。
+	     */
+	    if($use_auth)
+		$context['http']['header'] .= "Cookie: login=1\r\n";
 	    $sent_auth = $use_auth && !empty($auth['nonce']);
 	    if($sent_auth)
 		$context['http']['header'] .= remote_digest_header($auth, $target['request_uri']);
 	    $fp = @fopen($target['connect_url'], 'rb', false, stream_context_create($context));
 	    if($fp === false)
 		return array('error' => 'connect', 'host' => $target['host']);
-	    stream_set_timeout($fp, EXTERNAL_FETCH_TIMEOUT);
+	    stream_set_timeout($fp, remote_read_timeout($deadline));
 	    $meta = stream_get_meta_data($fp);
 	    list($status, $headers) = remote_parse_headers(default_value($meta['wrapper_data'], array()));
 	    if($status != 401 || !$use_auth || $tries >= 2)
@@ -96,7 +122,7 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
 	    return array('error' => 'too_large', 'host' => $target['host']);
 	}
 
-	$result = remote_read($fp, $max_bytes, $to_file);
+	$result = remote_read($fp, $max_bytes, $to_file, $deadline);
 	fclose($fp);
 	if(isset($result['error'])) {
 	    $result['host'] = $target['host'];
@@ -109,8 +135,18 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
     return array('error' => 'redirect', 'host' => $target['host']);
 }
 
-/* 本文を受け取る。$max_bytes を超えたら打ち切る */
-function remote_read($fp, $max_bytes, $to_file) {
+/*
+ * 1 回の読み込みを待つ秒数。期限があれば、残りの時間を超えて待たない
+ * (少しずつ返す相手でも、期限で打ち切れるように)。
+ */
+function remote_read_timeout($deadline) {
+    if(is_null($deadline))
+	return EXTERNAL_FETCH_TIMEOUT;
+    return max(1, min(EXTERNAL_FETCH_TIMEOUT, (int)ceil($deadline - microtime(true))));
+}
+
+/* 本文を受け取る。$max_bytes を超えたら、$deadline を過ぎたら打ち切る */
+function remote_read($fp, $max_bytes, $to_file, $deadline = null) {
     $wfp = null;
     if(!is_null($to_file)) {
 	$wfp = @fopen($to_file, 'wb');
@@ -123,13 +159,20 @@ function remote_read($fp, $max_bytes, $to_file) {
     while(!feof($fp)) {
 	$data = fread($fp, CONTENTS_READ_BUFFER_SIZE);
 	if($data === false || ($data === '' && stream_get_meta_data($fp)['timed_out'])) {
-	    $error = 'connect';
+	    $error = (!is_null($deadline) && microtime(true) > $deadline) ? 'timeout' : 'connect';
 	    break;
 	}
 	$size += strlen($data);
 	if($size > $max_bytes) {
 	    $error = 'too_large';
 	    break;
+	}
+	if(!is_null($deadline)) {
+	    if(microtime(true) > $deadline) {
+		$error = 'timeout';
+		break;
+	    }
+	    stream_set_timeout($fp, remote_read_timeout($deadline));
 	}
 	if(is_null($wfp))
 	    $body .= $data;
@@ -194,6 +237,7 @@ function remote_target($url, $allowed_hosts) {
 	$connect_host = '[' . $connect_host . ']';
     return array(
 	'host' => $host,
+	'scheme' => $scheme,
 	'request_uri' => $path,
 	'connect_url' => $scheme . '://' . $connect_host . ':' . $port . $path,
 	'context' => $context);

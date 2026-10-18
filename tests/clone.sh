@@ -29,8 +29,17 @@
 #      何も書かないこと
 #   6. ログインが必要なページは、そのサイトのユーザー名とパスワードを入れれば
 #      写せること (ダイジェスト認証)。違えば断ること。パスワードを残さないこと
-#   7. クローン元が古い版 (添付の一覧に大きさが無い) でも写せ、大きすぎる添付は
-#      転送の途中で打ち切って断ること
+#   7. 「子ページを含む」を選ぶと、孫以下も含めて木ごと写せること。
+#      「添付ファイルを含む」を外すと、どの深さの添付も写さないこと。
+#      子ページを含められるのはログインした人だけであること。
+#      木全体の上限 (ページ数・添付の数・合計の大きさ・取る時間) を超えたら、
+#      また同時に別のクローンが動いていたら、何も書かないこと
+#   8. クローン元が古い版 (添付の一覧に大きさが無い) でも写せ、大きすぎる添付は
+#      転送の途中で打ち切って断ること。子ページも写せること
+#  10. ログインの情報を入れたクローンで、相手が https から http (暗号化なし) に
+#      転送したら、ログインの情報を送らずに止まり、続けるかを尋ねること。
+#      「続ける」を選べば続けること。ログインの情報が無ければ今までどおり進むこと
+#      (https の相手は tests/clone-redirect-server.py。証明書はテストのたびに作る)
 #
 # クローン先には添付の大きさの上限を 1MB にする .user.ini を置く
 # (max_upload_file_size() が見る upload_max_filesize)。
@@ -59,6 +68,7 @@ total=0
 WORK="$(mktemp -d)"
 
 cleanup() {
+    [[ -n "${TLS_PID:-}" ]] && kill "$TLS_PID" 2>/dev/null
     rm -rf "$WORK"
     if [[ "${KEEP:-0}" != "1" ]]; then
         sudo rm -rf "$CLONE_SRC_SITE" "$CLONE_DST_SITE" 2>/dev/null
@@ -111,6 +121,34 @@ clone_to() {
          -d "option=clone" -d "action=write" --data-urlencode "source_url=$2" \
          --data-urlencode "source_user=${3:-}" --data-urlencode "source_password=${4:-}" \
          "${CLONE_DST_URL}/?$1"
+}
+
+# チェックボックスを付けてクローンする。クローン先にはクローン用の利用者で
+# ログインする (login=1 の Cookie があると、サーバーが必ずダイジェスト認証を求める)。
+# $1 クローン先のページ名  $2 クローン元の URL  $3 添付 (on/off)  $4 子ページ (on/off)
+# $5 $6 クローン元のユーザー名とパスワード (省略すると空欄)
+# CLONE_AS_GUEST=1 のときはログインせずに送る
+clone_tree_to() {
+    local opts=(-d "clone_options=1")
+    [[ "$3" == on ]] && opts+=(-d "clone_attachments=on")
+    [[ "$4" == on ]] && opts+=(-d "clone_subpages=on")
+    local login=(-b "login=1" --digest -u "clonewriter:${PASS}")
+    [[ "${CLONE_AS_GUEST:-0}" == 1 ]] && login=()
+    curl -sk -o "$WORK/body" -D "$WORK/headers" -w '%{http_code}' -X POST "${login[@]}" \
+         -H "Origin: ${DST_ORIGIN}" \
+         -d "option=clone" -d "action=write" "${opts[@]}" --data-urlencode "source_url=$2" \
+         --data-urlencode "source_user=${5:-}" --data-urlencode "source_password=${6:-}" \
+         "${CLONE_DST_URL}/?$1"
+}
+
+# クローン先の index.php で上限を変える (set_const より先に define する)。
+# 引数が無ければ元に戻す。置いたあと PHP-FPM に載るのを待つ
+set_dst_limit() {
+    sudo cp "${CLONE_DST_SITE}/index.php.orig" "${CLONE_DST_SITE}/index.php"
+    if [[ $# -gt 0 ]]; then
+        sudo sed -i "s|^// custom settings here.*|&\ndefine('$1', $2);|" "${CLONE_DST_SITE}/index.php"
+    fi
+    wait_opcache
 }
 
 # 応答の本文にその文言があるか (yes/no)。日本語と英語のどちらでもよい
@@ -184,6 +222,11 @@ printf -- "大きい添付\n" > "$WORK/big.txt"
 printf -- "読めない\n" > "$WORK/secret.txt"
 printf -- "添付 a\n" > "$WORK/a.txt"
 printf -- "日本語の名前の添付\n" > "$WORK/ja.txt"
+printf -- "# 木の根\n\n[子](./Child)\n\n![図](./t.png)\n" > "$WORK/tree.txt"
+printf -- "*子のページ\n[[孫:./Grand]]\n" > "$WORK/child.txt"
+printf -- "孫のページ\n" > "$WORK/grand.txt"
+printf -- "木の中の読めないページ\n" > "$WORK/tsecret.txt"
+printf -- "親の無い添付\n" > "$WORK/orphan.txt"
 head -c 3000 /dev/urandom > "$WORK/file.bin"
 head -c 1572864 /dev/urandom > "$WORK/big.bin"
 python3 - "$WORK/img.png" <<'PYEOF'
@@ -195,7 +238,8 @@ def chunk(t, d):
 open(sys.argv[1], 'wb').write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
                               + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b''))
 PYEOF
-for f in md.txt wiki.txt text.txt sub.txt big.txt secret.txt a.txt ja.txt file.bin big.bin img.png; do
+for f in md.txt wiki.txt text.txt sub.txt big.txt secret.txt a.txt ja.txt file.bin big.bin img.png \
+         tree.txt child.txt grand.txt tsecret.txt orphan.txt; do
     put "$WORK/$f"
 done
 
@@ -214,13 +258,24 @@ src make-file CloneTest/Big/big.bin "${FIX}/big.bin" application/octet-stream > 
 src make-text CloneTest/Secret markdown "${FIX}/secret.txt" > /dev/null
 src make-file CloneTest/Secret/a.txt "${FIX}/a.txt" text/plain > /dev/null
 src make-file CloneTest/Secret/img.png "${FIX}/img.png" image/png > /dev/null
-src guest read CloneTest/Secret 'CloneTest/Secret/*' > /dev/null
+# 子ページを含めて写す木。Missing は無いページで、その下の o.txt は親の無い添付
+src make-text CloneTest/Tree markdown "${FIX}/tree.txt" > /dev/null
+src make-file CloneTest/Tree/t.png "${FIX}/img.png" image/png > /dev/null
+src make-text CloneTest/Tree/Child wiki "${FIX}/child.txt" > /dev/null
+src make-file CloneTest/Tree/Child/a.txt "${FIX}/a.txt" text/plain > /dev/null
+src make-text CloneTest/Tree/Child/Grand text "${FIX}/grand.txt" > /dev/null
+src make-file CloneTest/Tree/Child/Grand/g.bin "${FIX}/file.bin" application/octet-stream > /dev/null
+src make-text CloneTest/Tree/Secret markdown "${FIX}/tsecret.txt" > /dev/null
+src make-file CloneTest/Tree/Missing/o.txt "${FIX}/orphan.txt" text/plain > /dev/null
+src guest read CloneTest/Secret 'CloneTest/Secret/*' CloneTest/Tree/Secret 'CloneTest/Tree/Secret/*' > /dev/null
 # ログインしてクローンするための利用者。パスワードは実行のたびに作る使い捨て
 PASS=$(python3 -c 'import secrets; print(secrets.token_hex(12))')
 src set-user clonereader "$PASS" read > /dev/null
 src set-user clonenoread "$PASS" read CloneTest/Secret 'CloneTest/Secret/*' > /dev/null
 dst guest write > /dev/null
+dst set-user clonewriter "$PASS" write > /dev/null
 dst set-allowed-hosts '' > /dev/null
+sudo cp -p "${CLONE_DST_SITE}/index.php" "${CLONE_DST_SITE}/index.php.orig"
 
 echo "1. 新規ページの種別に選択肢が出て、選ぶとクローンの画面になること"
 html=$(curl -sk "${CLONE_DST_URL}/?option=newpage")
@@ -354,8 +409,8 @@ class P(HTMLParser):
         if tag == "form": self.inside = False
 p = P(); p.feed(sys.stdin.read()); print(",".join(p.items))
 ')
-check_eq "  「クローン」ボタンは URL の入力欄のすぐ後ろ (ユーザー名・パスワードより前)" \
-         "source_url,submit,source_user,source_password" "$form_order"
+check_eq "  「クローン」ボタンは URL の入力欄のすぐ後ろ (選択肢・ユーザー名・パスワードより前)" \
+         "source_url,submit,clone_attachments,source_user,source_password" "$form_order"
 check_eq "  https の画面では暗号化の注意を出さない" "no" \
          "$([[ "$html" == *'https でない'* || "$html" == *'not https'* ]] && echo yes || echo no)"
 
@@ -384,7 +439,168 @@ check_eq "クローン先の storage にパスワードが残っていない" ""
          "$(sudo grep -rlF "$PASS" "${CLONE_DST_SITE}/storage" 2>/dev/null)"
 echo
 
-echo "7. クローン元が古い版 (${OLD_REF}) でも写せること"
+echo "7. 子ページを含めて写すこと"
+# 画面のチェックボックスを「名前=on/off」で並べる
+checkboxes() {
+    python3 -c '
+import sys
+from html.parser import HTMLParser
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.items = []
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "input" and a.get("type") == "checkbox" and (a.get("name") or "").startswith("clone_"):
+            self.items.append(a["name"] + "=" + ("on" if "checked" in a else "off"))
+p = P(); p.feed(sys.stdin.read()); print(",".join(p.items))
+'
+}
+# $1 のページを表示して、$2 へのリンクがあるか (exists / not_exists / none)
+link_state() {
+    curl -sk "${CLONE_DST_URL}/?$1" | python3 -c '
+import sys
+from html.parser import HTMLParser
+target = sys.argv[1]
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.state = "none"
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "a" and a.get("data-link-pagename") == target and self.state == "none":
+            self.state = "not_exists" if "not_exists" in (a.get("class") or "").split() else "exists"
+p = P(); p.feed(sys.stdin.read()); print(p.state)
+' "$2"
+}
+sha_of() { sha256sum < "$1" | cut -d' ' -f1; }
+
+# 強制終了で残った一時ファイルに見立てる (2 時間前のもの)。次のクローンが片付ける。
+# 新しいものは、同時に動いている 1 ページのクローンのものかもしれないので残す
+sudo install -o "$SITE_OWNER" -m 600 /dev/null "${CLONE_DST_SITE}/storage/cache/clone-stale"
+sudo touch -d '2 hours ago' "${CLONE_DST_SITE}/storage/cache/clone-stale"
+sudo install -o "$SITE_OWNER" -m 600 /dev/null "${CLONE_DST_SITE}/storage/cache/clone-fresh"
+
+html=$(curl -sk "${CLONE_DST_URL}/?Dst/New&option=clone")
+check_eq "ログインしていない人の画面: 添付は最初からオン、子ページの選択肢は出ない" \
+         "clone_attachments=on" "$(printf '%s' "$html" | checkboxes)"
+html=$(curl -sk -b "login=1" --digest -u "clonewriter:${PASS}" "${CLONE_DST_URL}/?Dst/New&option=clone")
+check_eq "ログインした人の画面: 子ページの選択肢が出る (最初はオフ)" \
+         "clone_attachments=on,clone_subpages=off" "$(printf '%s' "$html" | checkboxes)"
+
+code=$(CLONE_AS_GUEST=1 clone_tree_to Dst/GuestTree "${CLONE_SRC_URL}/?CloneTest/Tree" on on)
+check_eq "ログインしていない人が子ページを含めて送る: 画面に戻る (200)" "200" "$code"
+check_eq "  理由が出る" "yes" "$(said 'ログインした人だけ|Only logged-in users')"
+check_eq "  何も書かない" "0|" "$(value_of "$(dst exists Dst/GuestTree)" exists)|$(children_of Dst/GuestTree)"
+
+code=$(clone_tree_to Dst/Tree "${CLONE_SRC_URL}/?CloneTest/Tree" on on)
+check_eq "子ページと添付を含める: 保存後の移動 (302)" "302" "$code"
+check_eq "  孫以下と、それぞれの添付を写す (読めないページは抜ける。親の無い添付も写す)" \
+         "Dst/Tree/Child|Dst/Tree/Child/Grand|Dst/Tree/Child/Grand/g.bin|Dst/Tree/Child/a.txt|Dst/Tree/Missing/o.txt|Dst/Tree/t.png|" \
+         "$(children_of Dst/Tree)"
+check_eq "  本文が同じ (根・子・孫)" \
+         "$(src_sha_of_body CloneTest/Tree)|$(src_sha_of_body CloneTest/Tree/Child)|$(src_sha_of_body CloneTest/Tree/Child/Grand)" \
+         "$(sha_of_body Dst/Tree)|$(sha_of_body Dst/Tree/Child)|$(sha_of_body Dst/Tree/Child/Grand)"
+check_eq "  種別が同じ (Markdown・wiki・text)" "markdown|wiki|text" \
+         "$(value_of "$(dst meta Dst/Tree type)" meta)|$(value_of "$(dst meta Dst/Tree/Child type)" meta)|$(value_of "$(dst meta Dst/Tree/Child/Grand type)" meta)"
+check_eq "  添付が同じ" \
+         "$(sha_of "$WORK/img.png")|$(sha_of "$WORK/a.txt")|$(sha_of "$WORK/file.bin")|$(sha_of "$WORK/orphan.txt")" \
+         "$(sha_of_body Dst/Tree/t.png)|$(sha_of_body Dst/Tree/Child/a.txt)|$(sha_of_body Dst/Tree/Child/Grand/g.bin)|$(sha_of_body Dst/Tree/Missing/o.txt)"
+check_eq "  木の中どうしの ./ のリンクがつながる (Markdown・wiki)" "exists|exists" \
+         "$(link_state Dst/Tree Dst/Tree/Child)|$(link_state Dst/Tree/Child Dst/Tree/Child/Grand)"
+
+code=$(clone_tree_to Dst/TreeLogin "${CLONE_SRC_URL}/?CloneTest/Tree" on on clonereader "$PASS")
+check_eq "クローン元にログインすれば、読めなかった子ページも写す" "yes" \
+         "$([[ "$(children_of Dst/TreeLogin)" == *'Dst/TreeLogin/Secret|'* ]] && echo yes || echo no)"
+# クローン元は、応答が違っても 401 を返さず「ログインしていない人」として答える。
+# 確かめずに進むと、読めない子ページが黙って抜けた木が写る
+code=$(clone_tree_to Dst/TreeWrong "${CLONE_SRC_URL}/?CloneTest/Tree" on on clonereader "wrong-${PASS}")
+check_eq "ログインなしで読める木にパスワードを間違えて入れる: 画面に戻る (200)" "200" "$code"
+check_eq "  理由が出る" "yes" "$(said 'ユーザー名かパスワードが違います|user name or password .*wrong')"
+check_eq "  何も書かない" "0|" "$(value_of "$(dst exists Dst/TreeWrong)" exists)|$(children_of Dst/TreeWrong)"
+code=$(clone_to Dst/TextWrong "${CLONE_SRC_URL}/?CloneTest/Text" clonereader "wrong-${PASS}")
+check_eq "1 ページのクローンでも、間違ったパスワードは断る" "200|yes|0" \
+         "${code}|$(said 'ユーザー名かパスワードが違います|user name or password .*wrong')|$(value_of "$(dst exists Dst/TextWrong)" exists)"
+
+code=$(clone_tree_to Dst/TreeSlash "${CLONE_SRC_URL}/?CloneTest/Tree/" on on)
+check_eq "URL のページ名の末尾に / があっても、子ページと添付を写す" \
+         "302|Dst/TreeSlash/Child|Dst/TreeSlash/Child/Grand|Dst/TreeSlash/Child/Grand/g.bin|Dst/TreeSlash/Child/a.txt|Dst/TreeSlash/Missing/o.txt|Dst/TreeSlash/t.png|" \
+         "${code}|$(children_of Dst/TreeSlash)"
+
+code=$(clone_tree_to Dst/TreeNoAtt "${CLONE_SRC_URL}/?CloneTest/Tree" off on)
+check_eq "子ページを含め、添付を含めない: どの深さの添付も写さない" \
+         "302|Dst/TreeNoAtt/Child|Dst/TreeNoAtt/Child/Grand|" "${code}|$(children_of Dst/TreeNoAtt)"
+code=$(clone_tree_to Dst/TreeOne "${CLONE_SRC_URL}/?CloneTest/Tree" on off)
+check_eq "子ページを含めず、添付を含める: 直下の添付だけ (今までと同じ)" \
+         "302|Dst/TreeOne/t.png|" "${code}|$(children_of Dst/TreeOne)"
+code=$(clone_tree_to Dst/TreeBare "${CLONE_SRC_URL}/?CloneTest/Tree" off off)
+check_eq "どちらも含めない: 本文だけ" "302|1|" \
+         "${code}|$(value_of "$(dst exists Dst/TreeBare)" exists)|$(children_of Dst/TreeBare)"
+
+# $1 説明  $2 クローン先  $3 出るはずの文言 (正規表現)
+refuse_tree() {
+    local code
+    code=$(clone_tree_to "$2" "${CLONE_SRC_URL}/?CloneTest/Tree" on on)
+    check_eq "$1: 画面に戻る (200)" "200" "$code"
+    check_eq "  理由が出る" "yes" "$(said "$3")"
+    check_eq "  何も書かない" "0|" "$(value_of "$(dst exists "$2")" exists)|$(children_of "$2")"
+}
+dst make-text Dst/TreeDup/Child/Grand text "${CLONE_DST_SITE}/exists.txt" > /dev/null
+code=$(clone_tree_to Dst/TreeDup "${CLONE_SRC_URL}/?CloneTest/Tree" on on)
+check_eq "子孫の写す先に同じ名前のページがある: 理由に名前が出る" "yes" "$(said 'Dst/TreeDup/Child/Grand')"
+check_eq "  何も書かない (もとからあったページだけ)" "0|Dst/TreeDup/Child/Grand|" \
+         "$(value_of "$(dst exists Dst/TreeDup)" exists)|$(children_of Dst/TreeDup)"
+
+set_dst_limit CLONE_MAX_PAGES 1
+refuse_tree "子ページの数が上限を超える" Dst/LimPages '子ページが多すぎます|too many subpages'
+set_dst_limit CLONE_MAX_TOTAL_ATTACHMENTS 3
+refuse_tree "添付の総数が上限を超える" Dst/LimFiles '全部で多すぎます|too many attached files in total'
+set_dst_limit CLONE_MAX_TOTAL_BYTES 2000
+refuse_tree "合計の大きさが上限を超える" Dst/LimBytes '合計で大きすぎます|too large in total'
+set_dst_limit CLONE_MAX_FETCH_SECONDS 0
+refuse_tree "取るのに時間がかかりすぎる" Dst/LimTime '時間がかかりすぎました|took too long'
+# 添付を含めないときは、添付の数で断らない (子ページを見分けるために一覧は取る)
+set_dst_limit CLONE_MAX_ATTACHMENTS 0
+code=$(clone_tree_to Dst/LimNoAtt "${CLONE_SRC_URL}/?CloneTest/Tree" off on)
+check_eq "添付を含めないときは、1 ページの添付の数の上限で断らない" \
+         "302|Dst/LimNoAtt/Child|Dst/LimNoAtt/Child/Grand|" "${code}|$(children_of Dst/LimNoAtt)"
+refuse_tree "  含めるときは断る" Dst/LimAtt '添付ファイルが多すぎます|too many attached files'
+set_dst_limit
+
+# 子ページを含むクローンが動いているあいだ (ロックを持っているあいだ) は、
+# 子ページを含むクローンを断る。1 ページのクローンは止めない (未ログインでも
+# 使えるので、ロックを握らせると、ほかの人のクローンを止められてしまう)
+sudo -u "$SITE_OWNER" flock "${CLONE_DST_SITE}/storage/cache/clone.lock" sleep 5 &
+holder=$!
+sleep 1
+refuse_tree "子ページを含むクローンが同時に動いている" Dst/Busy 'ほかのクローンが動いています|Another clone is in progress'
+code=$(clone_to Dst/BusyOne "${CLONE_SRC_URL}/?CloneTest/Text")
+check_eq "  1 ページのクローンは止めない" "302" "$code"
+wait "$holder" 2>/dev/null
+
+check_eq "強制終了で残った古い一時ファイルを、次のクローンが片付ける (新しいものは残す)" "0|1" \
+         "$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-stale' | wc -l)|$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-fresh' | wc -l)"
+sudo rm -f "${CLONE_DST_SITE}/storage/cache/clone-fresh"
+
+# クローン元が返す名前が壊れていたら (改行・前後の空白・.. など) 写さない
+cat > "$WORK/subpages.html" <<'HTMLEOF'
+<html><body>
+<article class="side"><section class="page"><section class="pages"><ul class="pages">
+<li data-pagename="Root/Side">x</li></ul></section></section></article>
+<article class="main"><section class="page page"><section class="pages"><ul class="pages">
+<li data-pagename="Root/A/B">x</li>
+<li data-pagename="Root/A">x</li>
+<li data-pagename="Root/a&#10;b">x</li>
+<li data-pagename="Root/c ">x</li>
+<li data-pagename="Root/../Other">x</li>
+<li data-pagename="Root//d">x</li>
+<li data-pagename="Other/x">x</li>
+</ul></section></section></article></body></html>
+HTMLEOF
+sudo install -o "$SITE_OWNER" -m 644 "$WORK/subpages.html" "${CLONE_DST_SITE}/subpages.html"
+check_eq "子ページの一覧から取る名前: 本文の一覧だけ、浅い順、壊れた名前は除く" "Root/A,Root/A/B" \
+         "$(value_of "$(dst parse-subpages "${CLONE_DST_SITE}/subpages.html" Root)" names)"
+echo
+
+echo "8. クローン元が古い版 (${OLD_REF}) でも写せること"
 git -C "$REPO_ROOT" archive "$OLD_REF" NextForm/app NextForm/resource | tar -x -C "$WORK"
 install_code "$CLONE_SRC_SITE" "${WORK}/NextForm"
 wait_opcache
@@ -400,14 +616,64 @@ code=$(clone_to Dst/OldSecret "${CLONE_SRC_URL}/?CloneTest/Secret" clonereader "
 check_eq "ログインが必要なページも、ユーザー名とパスワードで写せる" \
          "$(src_sha_of_body CloneTest/Secret)|$(sha256sum < "$WORK/a.txt" | cut -d' ' -f1)" \
          "$(sha_of_body Dst/OldSecret)|$(sha_of_body Dst/OldSecret/a.txt)"
+code=$(clone_tree_to Dst/OldTree "${CLONE_SRC_URL}/?CloneTest/Tree" on on)
+check_eq "子ページも含めて写せる" \
+         "302|Dst/OldTree/Child|Dst/OldTree/Child/Grand|Dst/OldTree/Child/Grand/g.bin|Dst/OldTree/Child/a.txt|Dst/OldTree/Missing/o.txt|Dst/OldTree/t.png|" \
+         "${code}|$(children_of Dst/OldTree)"
 echo
 
-echo "8. 一時ファイルを残さないこと"
+echo "9. 一時ファイルを残さないこと"
 check_eq "クローン先の storage/cache/ に clone-* が無い" "0" \
          "$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-*' | wc -l)"
 echo
 
-echo "9. PHP の警告が出ていないこと"
+echo "10. https から http に転送されたら、ログインの情報を送らずに止まること"
+# 相手は https で受けて同じホストの http へ転送するだけの小さなサーバー。
+# PHP-FPM はこの証明書を信頼しないので、クローンはヘルパのプロセスから行う
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
+        -addext subjectAltName=DNS:localhost \
+        -keyout "$WORK/tls-key.pem" -out "$WORK/tls-cert.pem" > /dev/null 2>&1
+sudo install -m 644 "$WORK/tls-cert.pem" "${CLONE_DST_SITE}/redirect-cert.pem"
+python3 "${REPO_ROOT}/tests/clone-redirect-server.py" "$WORK/tls-cert.pem" "$WORK/tls-key.pem" \
+        "$WORK/tls-ports" "$WORK/tls-log" &
+TLS_PID=$!
+for _ in $(seq 50); do [[ -s "$WORK/tls-ports" ]] && break; sleep 0.1; done
+HTTPS_PORT=$(sed -n 's/.*https=\([0-9]*\).*/\1/p' "$WORK/tls-ports")
+dst_tls() {
+    sudo -u "$SITE_OWNER" php -d memory_limit=512M -d "openssl.cafile=${CLONE_DST_SITE}/redirect-cert.pem" \
+        "${CLONE_DST_SITE}/clone-helper.php" "${CLONE_DST_SITE}/index.php" "$WIKI_ADMIN" "$@" 2>/dev/null
+}
+dst set-allowed-hosts localhost > /dev/null
+TLS_URL="https://localhost:${HTTPS_PORT}/wiki/?Src/Page"
+http_requests() { [[ -f "$WORK/tls-log" ]] && cat "$WORK/tls-log"; }
+
+: > "$WORK/tls-log"
+R=$(dst_tls clone-insecure Dst/Insecure "$TLS_URL" cloner "$PASS" 0)
+check_eq "ログインの情報があれば、http に移る前に止まる" "0|1" \
+         "$(value_of "$R" written)|$(value_of "$R" insecure)"
+check_eq "  http の側には何も送っていない" "" "$(http_requests)"
+check_eq "  理由に、暗号化されないことを出す" "yes" \
+         "$(printf '%s\n' "$R" | grep -q '^error=.*https.*http' && echo yes || echo no)"
+check_eq "  続けるためのチェックボックスを出す" "1" \
+         "$(value_of "$(dst form-insecure Dst/Insecure)" checkbox)"
+
+: > "$WORK/tls-log"
+R=$(dst_tls clone-insecure Dst/Insecure "$TLS_URL" cloner "$PASS" 1)
+check_eq "「続ける」を選べば、http の側へログインの情報つきで取りに行く" "0|yes" \
+         "$(value_of "$R" insecure)|$(http_requests | grep -q 'cookie=login=1' && echo yes || echo no)"
+
+: > "$WORK/tls-log"
+R=$(dst_tls clone-insecure Dst/Insecure "$TLS_URL" '' '' 0)
+check_eq "ログインの情報が無ければ、今までどおり転送をたどる (尋ねない)" "0|yes" \
+         "$(value_of "$R" insecure)|$(http_requests | grep -q 'authorization=no cookie=$' && echo yes || echo no)"
+
+kill "$TLS_PID" 2>/dev/null
+wait "$TLS_PID" 2>/dev/null
+sudo rm -f "${CLONE_DST_SITE}/redirect-cert.pem"
+dst set-allowed-hosts "$SRC_HOST" > /dev/null
+echo
+
+echo "11. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F -e "$CLONE_SRC_SITE" -e "$CLONE_DST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"
