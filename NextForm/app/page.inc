@@ -211,11 +211,19 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	 * フロントマター) からタグを付けると件数が合わなくなる。
 	 * write_tag を見るこの場所に寄せて、経路によらず 1 回だけ直す。
 	 */
-	$old_tags = tag_get_page_tags($page);
+	$old_tags = empty($page['is_exists']) ? array() : tag_get_page_tags($page);
 	if($page['write_tag'] == '')
 	    unset($page['meta']['tag']);
 	else
 	    $page['meta']['tag'] = $page['write_tag'];
+	$new_tags = tag_get_page_tags($page);
+    } else if(empty($page['is_exists']) && !empty($page['meta']['tag'])) {
+	/*
+	 * まだ無いページを、タグの付いた meta ごと書くとき (リネームは
+	 * 新しい名前で書いてから元を消す)。消すほうは page_delete() で
+	 * 引くので、こちらで足さないと件数が減ったままになる。
+	 */
+	$old_tags = array();
 	$new_tags = tag_get_page_tags($page);
     }
     if(isset($page['title'])) {
@@ -354,6 +362,8 @@ function page_delete(&$page) {
 	    $old_ngrams = search_page_ngram($page);
 	$result = storage_page_delete($page);
 	if($result) {
+	    /* タグ一覧の件数から、消したページのタグを引く (page_write() が足した分) */
+	    tag_alltags_update(tag_get_page_tags($page), array());
 	    if(SEARCH_ENGINE === 'builtin')
 		search_index_remove($page['name'], $old_ngrams);
 	    else

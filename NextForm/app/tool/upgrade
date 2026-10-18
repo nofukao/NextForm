@@ -662,7 +662,7 @@ if(theme_convert(THEME)) {
     upgrade_out("  コードの更新は済んでいて、所有者も元に戻してあります。");
     upgrade_out("  静的 CSS が古いままなので、このままでは見た目が崩れます。");
     upgrade_out("");
-    upgrade_out("  作り直すなら、管理画面の「テーマ設定」を開いてそのまま適用するか、次を実行してください:");
+    upgrade_out("  作り直すなら、管理ツールの「外観の設定」を開いてそのまま適用するか、次を実行してください:");
     upgrade_out("      php %s/app/tool/update_wiki %s", $up_site, $up_index_real);
     if($up_backup_path !== null) {
 	upgrade_out("");

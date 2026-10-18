@@ -205,7 +205,15 @@ function pagelist_apply_rules(&$pages, &$list_options, $args, &$placeholders) {
     foreach($pages as &$page) {
 	$child = array('pagename' => $page['name'], 'terms' => array());
 
-	if(!isset($page['meta']) && empty($page['deleted'])) {
+	/*
+	 * 削除済みのページは中身を読まないが、名前は出る。ページごとの権限で
+	 * 隠した場所の名前が、消したあとの一覧 (?option=deletedpage) に
+	 * 見えないよう、名前を出す前に読む権限を見る。
+	 */
+	if(!empty($page['deleted'])) {
+	    if(!auth_has_permission($page['name'], 'read'))
+		continue;
+	} else if(!isset($page['meta'])) {
 	    if(!auth_has_permission($page['name'], 'read'))
 		continue;
 	    $page = page_read($page['name']);

@@ -1,6 +1,7 @@
 <?php
 $LANGUAGE = array();
-$LANGUAGE_OPTIONS = array('ja' => 'Japanese', 'en' => 'English');
+/* インストールの画面の言語の選択肢。選ぶ前なので、その言語自身の名前で出す */
+$LANGUAGE_OPTIONS = array('ja' => '日本語', 'en' => 'English');
 $LANGUAGE['ja'] = array(
     'Sun' => '日',
     'Mon' => '月',
@@ -130,6 +131,16 @@ $LANGUAGE['ja'] = array(
     'The search index could not be read. Rebuild it from the admin page.' =>
     '検索インデックスを読めませんでした．管理画面から再構築してください．',
     'Installation' => '設置',
+    'Version' => 'バージョン',
+    'Options' => '画面',
+    'Wiki' => 'Wiki記法',
+    'Wiki inline operator' => '文中の記法',
+    'Wiki line head operator' => '行頭記法',
+    'Wiki function operator' => 'ファンクション',
+    'Wiki aliases' => 'エイリアス',
+    'Wiki &include handler' => '&includeで取り込めるURIの処理',
+    'File' => 'ファイル',
+    'Content-type handler' => 'Content-typeごとの処理',
     'not found' => '見つかりません',
     'writable by the web server' => 'Web サーバーから書き込めます',
     'not writable by the web server' => 'Web サーバーからは書き込めません',
@@ -498,7 +509,8 @@ $LANGUAGE['ja'] = array(
     '$term$: cannot choose an image and an action at the same time.' =>
     '$term$ : 画像を選ぶ操作と「標準に戻す」「表示しない」は同時にできません．',
     'Do not show' => '表示しない',
-    'used by &calender' => '&calenderで予定の取得に使用します',
+    'Google API key' => 'Google APIキー',
+    'used by &calendar' => '&calendarで予定の取得に使用します',
 
     'You must enter a $term$' => '$term$ が入力されていません．',
     'Could not save preferences.' => '設定の保存に失敗しました．',
@@ -571,6 +583,8 @@ $LANGUAGE['ja'] = array(
     'Email address will be used for password reminder. Blank input allowed.' =>
     'メールアドレスはパスワード忘れてしまった場合に使用します．必要なければ空欄でも構いません．',
     'Reset password' => 'パスワード再設定',
+    'This password reset URL has expired or has already been used.' =>
+    'このパスワード再設定のURLは，期限が切れているか，すでに使われています．もう一度申し込んでください．',
     'Send email to reset password if you input correct user name and email address.' =>
     '正しいユーザー名とメールアドレスが入力された場合のみ再設定用のメールが送信されます．',
     'A mail has just been sent.' => 'メールを送信しました．',

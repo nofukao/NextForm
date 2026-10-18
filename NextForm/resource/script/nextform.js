@@ -2899,7 +2899,8 @@ function configGet(key) {
 }
 
 function configSet(key, value) {
-    cookieSet('config-' + key, value);
+    /* 「ブラウザに保存されます」と出しているので、閉じても残る期限付きのクッキーに書く */
+    cookieSetLong('config-' + key, value);
 }
 
 function cookieSet(name, value) {

@@ -24,8 +24,8 @@ PHP_ERROR_LOG="${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}"
 
 # 未ログインでは 401 が正しい応答の画面。それ以外は 200 を期待する。
 declare -A EXPECT_401=(
-    [admin_analyze]=1 [admin_manual]=1 [admin_permissions]=1
-    [admin_user]=1    [login]=1
+    [admin_analyze]=1 [admin_info]=1 [admin_manual]=1 [admin_permissions]=1
+    [admin_user]=1    [admin_user_client]=1 [login]=1
 )
 
 baseline=$(sudo cat "$PHP_ERROR_LOG" | wc -l)

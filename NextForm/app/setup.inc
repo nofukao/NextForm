@@ -28,7 +28,8 @@ $SETUP_CONSTANTS['LANG'] = array(
     'description' => 'Language',
     'default' => 'en',
     'type' => 'select',
-    'options' => array('ja' => 'Japanese', 'en' => 'English'));
+    /* 選ぶ人が今の画面の言葉を読めるとは限らないので、その言語自身の名前で出す */
+    'options' => array('ja' => '日本語', 'en' => 'English'));
 $SETUP_CONSTANTS['DEFAULT_TIMEZONE'] = array(
     'description' => 'Time Zone',
     'default' => 'Asia/Tokyo',
@@ -86,7 +87,7 @@ $SETUP_CONSTANTS['GOOGLE_API_KEY'] = array(
     'type' => 'string',
     'allowempty' => true,
     'default' => '',
-    'note' => 'used by &calender');
+    'note' => 'used by &calendar');
 
 set_const('BASE_URI', '');
 

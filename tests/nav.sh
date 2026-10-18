@@ -213,7 +213,46 @@ check_eq "見出しが残る" "1" \
          "$(fetch '?option=admin_setup_tone' | grep -c '<h1>色調の設定 <small class="actual_title">')"
 echo
 
-echo "10. PHP の警告を出さない"
+echo "10. 管理ツールと個人設定の言葉"
+# 訳が無く英語のまま出ていたもの。言語の選択肢は、どの言語の画面でも
+# その言語自身の名前で出す (選ぶ人が今の画面の言葉を読めるとは限らない)。
+info=$(fetch '?option=admin_info')
+for h in バージョン 設置 ページ種別 画面 Wiki記法 ファイル; do
+    check_eq "システム情報の見出し: $h" "1" "$(printf '%s' "$info" | grep -c "<h1>${h}</h1>")"
+done
+site=$(fetch '?option=admin_setup_site')
+check_eq "言語の選択肢: 日本語" "1" "$(printf '%s' "$site" | grep -c '>日本語</option>')"
+check_eq "言語の選択肢: English" "1" "$(printf '%s' "$site" | grep -c '>English</option>')"
+check_eq "Google APIキーの項目名" "1" "$(printf '%s' "$site" | grep -c 'Google APIキー')"
+check_eq "&calendar の綴り" "1" "$(printf '%s' "$site" | grep -c '&amp;calendarで予定の取得に使用します')"
+# 編集設定 (ダブルクリックで編集など) は「ブラウザに保存されます」と出しているので、
+# ブラウザを閉じても残る期限付きのクッキーに書く (nextform.js の configSet())。
+check_eq "編集設定は期限付きのクッキーに書く" "cookieSetLong" \
+         "$(sed -n '/^function configSet(/,/^}/p' "${REPO_ROOT}/NextForm/resource/script/nextform.js" | grep -o 'cookieSet[A-Za-z]*' | head -1)"
+echo
+
+echo "11. パスワード再設定の URL の期限が切れたとき"
+# メールで届いた URL を開いたとき、期限切れや使用済みを「権限がありません」と
+# 言われても分からない。何が起きたかと、申し込み直す先を出す。
+RKEY_OK=$(printf '%s' "ok-$$" | md5sum | cut -c1-32)
+RKEY_OLD=$(printf '%s' "old-$$" | md5sum | cut -c1-32)
+RKEY_NONE=$(printf '%s' "none-$$" | md5sum | cut -c1-32)
+helper reminder-ticket "$NAV_USER" "$RKEY_OK" 600 > /dev/null
+helper reminder-ticket "$NAV_USER" "$RKEY_OLD" -10 > /dev/null
+ok_page=$(fetch "?option=password&user=${NAV_USER}&rkey=${RKEY_OK}")
+old_page=$(fetch "?option=password&user=${NAV_USER}&rkey=${RKEY_OLD}")
+none_page=$(fetch "?option=password&user=${NAV_USER}&rkey=${RKEY_NONE}")
+check_eq "期限内ならパスワードの欄が出る" "1" \
+         "$(printf '%s' "$ok_page" | grep -c 'type="password"' | sed 's/^[1-9][0-9]*$/1/')"
+check_eq "期限切れは、期限切れか使用済みと言う" "1" \
+         "$(printf '%s' "$old_page" | grep -c '期限が切れているか，すでに使われています')"
+check_eq "期限切れは、申し込み直す先を出す" "1" \
+         "$(printf '%s' "$old_page" | grep -c 'href="?option=reminder"')"
+check_eq "使用済み (札が無い) も同じに言う" "1" \
+         "$(printf '%s' "$none_page" | grep -c '期限が切れているか，すでに使われています')"
+echo
+
+echo "12. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo
