@@ -231,7 +231,28 @@ check_eq "編集設定は期限付きのクッキーに書く" "cookieSetLong" \
          "$(sed -n '/^function configSet(/,/^}/p' "${REPO_ROOT}/NextForm/resource/script/nextform.js" | grep -o 'cookieSet[A-Za-z]*' | head -1)"
 echo
 
-echo "11. PHP の警告を出さない"
+echo "11. パスワード再設定の URL の期限が切れたとき"
+# メールで届いた URL を開いたとき、期限切れや使用済みを「権限がありません」と
+# 言われても分からない。何が起きたかと、申し込み直す先を出す。
+RKEY_OK=$(printf '%s' "ok-$$" | md5sum | cut -c1-32)
+RKEY_OLD=$(printf '%s' "old-$$" | md5sum | cut -c1-32)
+RKEY_NONE=$(printf '%s' "none-$$" | md5sum | cut -c1-32)
+helper reminder-ticket "$NAV_USER" "$RKEY_OK" 600 > /dev/null
+helper reminder-ticket "$NAV_USER" "$RKEY_OLD" -10 > /dev/null
+ok_page=$(fetch "?option=password&user=${NAV_USER}&rkey=${RKEY_OK}")
+old_page=$(fetch "?option=password&user=${NAV_USER}&rkey=${RKEY_OLD}")
+none_page=$(fetch "?option=password&user=${NAV_USER}&rkey=${RKEY_NONE}")
+check_eq "期限内ならパスワードの欄が出る" "1" \
+         "$(printf '%s' "$ok_page" | grep -c 'type="password"' | sed 's/^[1-9][0-9]*$/1/')"
+check_eq "期限切れは、期限切れか使用済みと言う" "1" \
+         "$(printf '%s' "$old_page" | grep -c '期限が切れているか，すでに使われています')"
+check_eq "期限切れは、申し込み直す先を出す" "1" \
+         "$(printf '%s' "$old_page" | grep -c 'href="?option=reminder"')"
+check_eq "使用済み (札が無い) も同じに言う" "1" \
+         "$(printf '%s' "$none_page" | grep -c '期限が切れているか，すでに使われています')"
+echo
+
+echo "12. PHP の警告を出さない"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 check_eq "エラーログが増えない" "$log_before" "$log_after"
 echo

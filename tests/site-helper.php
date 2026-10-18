@@ -13,6 +13,8 @@
  *   set-tone <識別子>   保存されている色調を差し替える (theme=... と同じ保存先)
  *   set-password <利用者> <パスワード> [権限]
  *                      検証用の利用者を作る (既定の権限は admin)
+ *   reminder-ticket <利用者> <rkey> <秒>
+ *                      パスワード再設定の札を置く。期限は今から <秒> 後 (負なら切れている)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
@@ -59,6 +61,13 @@ case 'set-password':
     printf("saved=%d\n",
 	   setup_write('auth_digest_' . $username, $digest) &&
 	   auth_save_permissions() ? 1 : 0);
+    break;
+
+case 'reminder-ticket':
+    /* option/reminder.inc がメールを送るときに置くものと同じ形 */
+    $ticket = serialize(array('limit' => time() + (int)$rest[2], 'user' => $rest[0]));
+    printf("saved=%d\n",
+	   cache_create('', 'reminder_ticket_' . $rest[0] . '_' . $rest[1], $ticket) !== false ? 1 : 0);
     break;
 
 case 'values':
