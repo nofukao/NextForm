@@ -974,10 +974,13 @@ Markdownの土台([[CommonMark:https://spec.commonmark.org/]])の範囲の書き
 
 *見出し
 行頭に ""#"" と半角スペースを書きます．""#"" の数(1〜6個)がそのまま見出しの深さになります．
+ふつう ""#"" はページの題名になる(本文から消えて，ページの上の見出しに出る)ので，本文の見出しは ""##"" から書きます．
+""##"" がWiki記法の ""*"" と同じ大きさです．
+""#"" が題名にならずに本文に残るとき(フロントマターに ""title:"" があるとき，""#"" が2つ以上あるときなど)は，""##"" より一段大きく出ます．
 
- # 一番大きい見出し
- ## 二番目の見出し
- ### 三番目の見出し
+ # 題名(本文の先頭の1つだけなら，ページの題名になります)
+ ## 見出し(Wiki記法の * と同じ大きさ)
+ ### その下の見出し
 
 行の''下''に ""==="" の行を書くと1段目，""---"" の行を書くと2段目の見出しになる，
 別の書き方もあります．文のすぐ下の行にうっかり ""---"" を書くと，
@@ -1536,10 +1539,13 @@ the line, or write a single ''backslash''.
 *Headings
 Write ""#"" and a space at the start of the line.
 The number of ""#"" (from one to six) is the depth of the heading.
+Usually ""#"" becomes the page title (it disappears from the text and is shown as the heading at the top of the page), so headings in the text start from ""##"".
+""##"" is the same size as ""*"" of Wiki notation.
+When a ""#"" stays in the text instead of becoming the title (when the front matter has ""title:"", when there are two or more ""#"", and so on), it is shown one step larger than ""##"".
 
- # the largest heading
- ## the second heading
- ### the third heading
+ # the title (the only one at the top of the text becomes the page title)
+ ## a heading (the same size as * of Wiki notation)
+ ### a heading below it
 
 There is another way to write them: a line of ""==="" ''below'' the text makes a first
 level heading, and a line of ""---"" makes a second level heading.
@@ -2034,7 +2040,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 
 *意味は同じだが働きが違うもの
 |やりたいこと|Wiki記法|Markdown記法|違い|h
-|見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
+|見出し|&* 見出し|""## 見出し""(""#"" は題名に使います)|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
 |折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます．どちらも見出しは目次に載ります|
 |目次|&&index|""[TOC]"" とだけ書いた行|Markdown記法では，ほかのページの目次(&&index(&[&[ページ名&]&]))は書けません|
 |子ページのツリー|&&treepages|""[PAGES]"" とだけ書いた行|Markdown記法で書ける指定は，対象のページ・並べ方・件数・直下だけ(children)です．表や中身ごとの一覧は書けません|
@@ -2128,7 +2134,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 
 *Things that mean the same but work differently
 |what you want|Wiki notation|Markdown notation|difference|h
-|heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
+|heading|&* heading|""## heading"" (""#"" is used for the title)|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
 |folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''. In both, the heading appears in the table of contents|
 |table of contents|&&index|a line with only ""[TOC]""|Markdown notation cannot write the table of contents of another page (&&index(&[&[page name&]&]))|
 |tree of subpages|&&treepages|a line with only ""[PAGES]""|Markdown notation can give the page, the order, the number and only the direct subpages (children). Lists as tables or with contents cannot be written|
