@@ -70,7 +70,12 @@ function admin_info_show(&$args, $dom) {
     global $WIKI_OPERATOR_INCLUDE_URI_HANDLERS;
     global $FILE_CONTENT_TYPE_HANDLERS;
 
-    //auth_check(false, 'admin');
+    /*
+     * 管理者だけに見せる。版と、index.php や app/ を Web サーバーから
+     * 書き込めるかが出るので、攻撃の手がかりになる (上流ではこの行が
+     * コメントで外され、ログインしていなくても開けた)。
+     */
+    auth_check(false, 'admin');
     title_set_l('System information');
 
     if(TORATORAWIKI_REVISION !== '$REVISION$')
