@@ -18,7 +18,7 @@ $OPTIONS['alltag'] = array(
 
 function alltag_show(&$args, $dom) {
     title_set_l('All tags');
-    $alltags = tag_alltags_get();
+    $alltags = tag_alltags_for_viewer();
     ksort($alltags, SORT_STRING);
 
     $table = dom_append_child($dom, 'table', 'tags');

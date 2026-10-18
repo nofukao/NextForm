@@ -45,6 +45,22 @@ function tag_alltags_get() {
     return array();
 }
 
+/*
+ * タグ一覧 (?option=alltag) に出すタグと件数。
+ *
+ * 件数の控え (tag_alltags_get()) はサイト全体で数えてあり、見る人の権限を
+ * 知らない。ページごとの権限があると、読めないページにしか付いていないタグと
+ * その件数まで見えてしまうので、そういう人には読めるページから数え直して出す。
+ * どのページも同じ権限の人 (ページごとの権限が無い人) は、全部読めるか
+ * 全部読めないかなので、控えをそのまま使うか、何も出さないかで済む。
+ */
+function tag_alltags_for_viewer() {
+    $permission = auth_get_permission();
+    if(!is_array($permission))
+	return auth_has_permission(DEFAULT_PAGENAME, 'read') ? tag_alltags_get() : array();
+    return tag_find('', array());
+}
+
 function tag_alltags_set(&$alltags) {
     cache_serialized_create('', 'alltag', $alltags);
 }
