@@ -744,7 +744,8 @@ if($up_manual_removed > 0 || count($up_manual_kept) > 0 || count($up_old_torator
 }
 if($up_manual_removed > 0) {
     upgrade_out("    焼き付けてあった %d 件は削除しました (組み込みに置き換わりました)", $up_manual_removed);
-    upgrade_out("    「削除されたページ」から戻せます。完全に消すには ?option=delete から");
+    upgrade_out("    削除の直前の内容は履歴に残ります (「削除されたページ」でページ名を開き「履歴」)");
+    upgrade_out("    完全に消すには、そのページを ?option=delete で「履歴も削除する」を選んで消します");
 }
 if(count($up_manual_kept) > 0) {
     upgrade_out("    手を入れた形跡のある %d 件は残しました:", count($up_manual_kept));

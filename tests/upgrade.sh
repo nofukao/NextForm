@@ -252,6 +252,9 @@ check_cmd "マニュアルが組み込みになったと知らせる" \
           "grep -q 'マニュアルが組み込みになりました' '${DIST}/upgrade.log'"
 check_cmd "  片付けた件数を出す" \
           "grep -q '焼き付けてあった 1 件は削除しました' '${DIST}/upgrade.log'"
+# 「削除されたページ」に戻すボタンは無い。手順書と同じく、履歴に残ると言う
+check_cmd "  消す直前の内容は履歴に残ると言い、戻せるとは言わない" \
+          "grep -q '削除の直前の内容は履歴に残ります' '${DIST}/upgrade.log' && ! grep -q 'から戻せます' '${DIST}/upgrade.log'"
 check_cmd "  ToraToraWikiManual は残すと言う" \
           "grep -q 'ToraToraWikiManual 以下 1 件は普通のページとして残っています' '${DIST}/upgrade.log'"
 check_cmd "見覚えのないファイルが実行ログで報告される" \
