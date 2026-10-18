@@ -358,7 +358,7 @@ function setup_read($name) {
 |{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type Markdown. Setting it true lets anyone who can edit embed a script|}
 |{FILE_ALLOW_HTML|false|whether an attached HTML file runs when it is opened. With false it is downloaded. Setting it true runs it isolated from the wiki, but lets anyone who can edit show any page under the URL of this site|}
 |{POST_ENCODING|none|how forms are sent. On a shared server with a WAF, such as ConoHa WING, where saving a page with ""'--"" or ""<script>"" in it stops at "Forbidden access", set it to base64. It can also be chosen as "How forms are sent" in the site settings. See [[Site administration:..]] for details|}
-|{CLONE_ALLOWED_HOSTS||hosts allowed as clone sources (one per line, as a host name or the URL of the site; only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here. It can also be written in the site settings. See [[Cloning a page of another NextForm:../..#Cloning a page of another NextForm]] for details|}
+|{CLONE_ALLOWED_HOSTS||hosts allowed as clone sources (one per line, as a host name or the URL of the site; only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here. It can also be written in the site settings. See [[Cloning a page of another NextForm:../../SiteMenu#Cloning a page of another NextForm]] for details|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
 |{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
 |{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}

@@ -86,94 +86,13 @@ Apart from being shown smaller, ''Side'' is an ordinary page you can edit freely
 List links to the pages you use often there and it becomes the navigation of your site.
 The name ''Side'' can be changed in the settings.
 
-*How to create a new page
-There are several ways to create a new page. They are listed below.
-:{Use ''New page'' in the ''site menu'' and type a page name|
-A page created this way can only be reached from ''All pages'' in the ''site menu''.
-That is inconvenient on its own, so you will end up
-creating a link to the new page somewhere.}
-:{Make the link first, on the Top page or the side page|
-Add a line of the form
- [[name of the page you want to create]]
-to the Top page or the side page
-(this is written the same way in both Markdown and wiki pages).
-That part becomes a link to a page that does not exist yet.
-Clicking a link to a page that does not exist takes you to the screen that creates it.
-This way is easy, so we recommend it.
-In practice the text of a link is often a ''display name'' different from the page name.
-How to write one differs between the notations, so see
-[[Links, images and attachments:./Markdown/Link#Links to pages]] for Markdown notation
-and [[Link:./Wiki/Basic#Link]] for Wiki notation.}
+*Page operations
+For the functions of the ''page menu'', such as editing, attaching, history and locking, see the page below.
+-[[Page operations:./PageMenu]]
 
-**Cloning a page of another NextForm
-Choose ''Clone of another NextForm page'' as the page type and press ''Create'';
-a screen to enter the URL of the page to clone appears.
-Enter the URL and press ''Clone'', and a new page is made by copying the text and the attached files of that page with the same type (Markdown, wiki, text or file).
-The title and the tags are written in the text, so they are copied with it.
--Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
--History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
--A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user. When the site to clone redirects from https to http (not encrypted), it stops before sending the login information and asks whether to continue. To continue, check ""Continue without encryption"", enter the password again and press the button. It does not ask when you enter an http URL from the start.
--Each attached file must be within the size limit of this site (the value shown on the ''Attach'' page).
--When the page cannot be copied, nothing is made and the reason is shown.
-
-The check boxes below the URL choose what to copy.
-:Include attached files|On at first. Turn it off not to copy attached files.
-:Include subpages|Shown only when you are logged in. Off at first. Turn it on to copy all the pages under the page, including grandchildren and below, in the same shape (with their attached files when ''Include attached files'' is on). Links inside the tree (such as ""./child"") stay connected.
-When you include subpages, note the following.
--Pages that cannot be read at the site to clone do not appear in its list and are not copied. Enter the user name and password of that site to copy them.
--If even one page of the same name exists where a page would be copied, nothing is copied.
--By default, up to 100 subpages, 500 attached files and 256MB in total can be copied at once. It also stops when fetching from the site to clone takes more than 30 seconds. Clone a large tree in parts, starting from the pages below.
--Only one clone with subpages runs at a time on the whole site.
--If the server stops while writing, some of the pages may remain. In that case, delete them on the ''Delete'' page (with ''Delete follow subpages'' on) before trying again.
-
-It is the server of this wiki that fetches the page to clone.
-By default it fetches only from sites published on the internet.
-To clone from a site on a private network, such as a site for development or a site on your home LAN,
-write its host name or the URL of the site in ''Hosts allowed as clone sources'' in the ''Site setup'' (only the host part of a URL is used).
-
-*Attached files
-What other wiki engines offer as attached files is done in NextForm by creating child
-pages of type file.
-Attaching example1.jpg and example2.png to the page ''Cooking/Japanese'' means you have
-created the two pages of type file
--''Cooking/Japanese/example1.jpg''
--''Cooking/Japanese/example2.png''
-The ''Attach'' function in the ''page menu'' makes this easy.
-NextForm can also attach several files at once.
-
-Attached files can be downloaded together from the ''Attachment files'' list on the ''Attach'' page.
-The list is a table of check boxes, attached file names, the times they were saved and their sizes (in bytes). Pressing a heading sorts the table by that column.
-Choose them with the check boxes in front of the files and press ''Download''. The check box in the heading row chooses all of them; pressing it again clears them all.
-When you choose one file, that file is downloaded; when you choose two or more, they are put together into one ZIP file.
-Either way the files are as they were attached (images are not shrunk either).
-
-To embed an attached image or video in a page, Markdown notation uses
-""![description](file name)"" ([[Links, images and attachments:./Markdown/Link]])
-and Wiki notation uses [[&&include:./Wiki/Function/include]].
-
-By default, an attached HTML file is downloaded when it is opened.
-Enabling it in the site settings lets you run it in the browser as it is
-([[Running HTML files directly:./HtmlFile]]).
-
-*Backup
-A backup is taken before a page is edited (it is skipped when the edits come close
-together). You can therefore show the contents of a page as it was at some point in
-the past, or compare two versions.
-
-In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
-Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
--The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
--The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
--A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
--For an attached file (type file), its contents and file type are restored.
--Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
--If someone edits the page after the confirmation screen was opened, nothing is restored.
-
-*Lock
-Locking a page makes it impossible to edit. Only a user who has been granted the right
-to lock can lock a page. Unlocking returns it to the editable state.
-A user who has the right to lock can edit a page while it stays locked,
-but a warning message is shown.
+*Site functions
+For the functions of the ''site menu'', such as creating a new page (including cloning a page of another NextForm), see the page below.
+-[[Site functions:./SiteMenu]]
 
 *How to write pages
 Document pages are written in Markdown notation or in Wiki notation.
@@ -874,6 +793,107 @@ NextFormではWebサーバーのアクセスログを集計することで，
 
 *集計の結果
 集計の結果は，''管理ツール'' -> ''アクセス解析''で確認できます．
+*/
+
+/**
+@manual $manualpage$/en/PageMenu
+
+&title Page operations
+
+*Attached files
+What other wiki engines offer as attached files is done in NextForm by creating child
+pages of type file.
+Attaching example1.jpg and example2.png to the page ''Cooking/Japanese'' means you have
+created the two pages of type file
+-''Cooking/Japanese/example1.jpg''
+-''Cooking/Japanese/example2.png''
+The ''Attach'' function in the ''page menu'' makes this easy.
+NextForm can also attach several files at once.
+
+Attached files can be downloaded together from the ''Attachment files'' list on the ''Attach'' page.
+The list is a table of check boxes, attached file names, the times they were saved and their sizes (in bytes). Pressing a heading sorts the table by that column.
+Choose them with the check boxes in front of the files and press ''Download''. The check box in the heading row chooses all of them; pressing it again clears them all.
+When you choose one file, that file is downloaded; when you choose two or more, they are put together into one ZIP file.
+Either way the files are as they were attached (images are not shrunk either).
+
+To embed an attached image or video in a page, Markdown notation uses
+""![description](file name)"" ([[Links, images and attachments:../Markdown/Link]])
+and Wiki notation uses [[&&include:../Wiki/Function/include]].
+
+By default, an attached HTML file is downloaded when it is opened.
+Enabling it in the site settings lets you run it in the browser as it is
+([[Running HTML files directly:../HtmlFile]]).
+
+*Backup
+A backup is taken before a page is edited (it is skipped when the edits come close
+together). You can therefore show the contents of a page as it was at some point in
+the past, or compare two versions.
+
+In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
+Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
+-The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
+-The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
+-A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
+-For an attached file (type file), its contents and file type are restored.
+-Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
+-If someone edits the page after the confirmation screen was opened, nothing is restored.
+
+*Lock
+Locking a page makes it impossible to edit. Only a user who has been granted the right
+to lock can lock a page. Unlocking returns it to the editable state.
+A user who has the right to lock can edit a page while it stays locked,
+but a warning message is shown.
+*/
+
+/**
+@manual $manualpage$/en/SiteMenu
+
+&title Site functions
+
+*How to create a new page
+There are several ways to create a new page. They are listed below.
+:{Use ''New page'' in the ''site menu'' and type a page name|
+A page created this way can only be reached from ''All pages'' in the ''site menu''.
+That is inconvenient on its own, so you will end up
+creating a link to the new page somewhere.}
+:{Make the link first, on the Top page or the side page|
+Add a line of the form
+ [[name of the page you want to create]]
+to the Top page or the side page
+(this is written the same way in both Markdown and wiki pages).
+That part becomes a link to a page that does not exist yet.
+Clicking a link to a page that does not exist takes you to the screen that creates it.
+This way is easy, so we recommend it.
+In practice the text of a link is often a ''display name'' different from the page name.
+How to write one differs between the notations, so see
+[[Links, images and attachments:../Markdown/Link#Links to pages]] for Markdown notation
+and [[Link:../Wiki/Basic#Link]] for Wiki notation.}
+
+**Cloning a page of another NextForm
+Choose ''Clone of another NextForm page'' as the page type and press ''Create'';
+a screen to enter the URL of the page to clone appears.
+Enter the URL and press ''Clone'', and a new page is made by copying the text and the attached files of that page with the same type (Markdown, wiki, text or file).
+The title and the tags are written in the text, so they are copied with it.
+-Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
+-History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
+-A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user. When the site to clone redirects from https to http (not encrypted), it stops before sending the login information and asks whether to continue. To continue, check ""Continue without encryption"", enter the password again and press the button. It does not ask when you enter an http URL from the start.
+-Each attached file must be within the size limit of this site (the value shown on the ''Attach'' page).
+-When the page cannot be copied, nothing is made and the reason is shown.
+
+The check boxes below the URL choose what to copy.
+:Include attached files|On at first. Turn it off not to copy attached files.
+:Include subpages|Shown only when you are logged in. Off at first. Turn it on to copy all the pages under the page, including grandchildren and below, in the same shape (with their attached files when ''Include attached files'' is on). Links inside the tree (such as ""./child"") stay connected.
+When you include subpages, note the following.
+-Pages that cannot be read at the site to clone do not appear in its list and are not copied. Enter the user name and password of that site to copy them.
+-If even one page of the same name exists where a page would be copied, nothing is copied.
+-By default, up to 100 subpages, 500 attached files and 256MB in total can be copied at once. It also stops when fetching from the site to clone takes more than 30 seconds. Clone a large tree in parts, starting from the pages below.
+-Only one clone with subpages runs at a time on the whole site.
+-If the server stops while writing, some of the pages may remain. In that case, delete them on the ''Delete'' page (with ''Delete follow subpages'' on) before trying again.
+
+It is the server of this wiki that fetches the page to clone.
+By default it fetches only from sites published on the internet.
+To clone from a site on a private network, such as a site for development or a site on your home LAN,
+write its host name or the URL of the site in ''Hosts allowed as clone sources'' in the ''Site setup'' (only the host part of a URL is used).
 */
 
 /**
@@ -2673,7 +2693,7 @@ Use [[&&link:../Function/link]] when you want to build a link with finer control
 [[Cooking/Japanese]]
 [[the food I like:Cooking/Japanese]]
 [[../Italian]]
-[[$manualpage$/en#Backup]]
+[[$manualpage$/en/PageMenu#Backup]]
 [[NextForm official page:`OFFICIAL_URL`]]
 }
 
@@ -3867,7 +3887,7 @@ this site (for example, one made to look like a login screen).
 Enable it only on a site that you alone, or people you trust, edit.
 
 *Running a file
-[[Attach:..#Attached files]] the HTML file, then press ''Open'' on the page of the file.
+[[Attach:../PageMenu#Attached files]] the HTML file, then press ''Open'' on the page of the file.
 From a page, writing the following makes a link that runs the file when pressed.
 
 |notation|how to write it|h
