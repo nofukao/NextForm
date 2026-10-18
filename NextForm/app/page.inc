@@ -188,7 +188,12 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	unset($page['meta']['last_modify_user']);
     }
 
-    $page['meta']['ticket'] = md5($page['name'] . time());
+    /*
+     * 競合の判定の札。保存ごとに必ず変わるよう乱数で作る (上流は「ページ名 + 秒」の
+     * md5 で、同じ秒の 2 回の保存が同じ値になり、間に編集を始めた人の古い札が通った)。
+     * 形は上流と同じ 32 桁の 16 進。
+     */
+    $page['meta']['ticket'] = bin2hex(random_bytes(16));
 
     if(!isset($page['meta']['btime'])) {
 	$page['meta']['btime'] = time();

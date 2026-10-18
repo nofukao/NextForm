@@ -295,8 +295,6 @@ helper unlock "$D" > /dev/null
 
 open_confirm "$D" "$first" > /dev/null
 stale=$(confirm_ticket)
-# ticket は「ページ名 + 保存した秒」から作るので、同じ秒に書くと同じ値になる
-sleep 1
 helper make-text "$D" markdown "${FIX}/other.txt" > /dev/null
 cur=$(sha_of_body "$D")
 restore "$D" "$first" "$stale" > /dev/null
@@ -331,7 +329,18 @@ restore "$G" "$TG" "" > /dev/null
 check_eq "ページが無い (削除した): 戻さない" "0" "$(value_of "$(helper exists "$G")" exists)"
 echo
 
-echo "6. PHP の警告が出ていないこと"
+echo "6. 同じ秒に続けて保存されても、古い ticket の保存を競合として断ること"
+# 戻す画面に限らず、編集の画面すべての競合の判定 (page_write())。ticket が
+# 「ページ名 + 保存した秒」だったころは、同じ秒の 2 回の保存で同じ値になり、
+# 間に編集を始めた人の保存が、あとの保存を黙って上書きした
+S=RestoreTest/SameSecond
+helper make-text "$S" markdown "${FIX}/other.txt" > /dev/null
+R=$(helper same-second-ticket "$S" "${FIX}/first.txt" "${FIX}/other.txt")
+check_eq "2 回の保存が同じ秒に入る (検査の前提)" "1" "$(value_of "$R" same_second)"
+check_eq "  古い ticket の保存は競合として断る" "1" "$(value_of "$R" rejected)"
+echo
+
+echo "7. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F "$RESTORE_TEST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"

@@ -249,7 +249,6 @@ check_eq "ロック中 (書く権限だけの人): 理由が出る・変えな�
 helper unlock "$L" > /dev/null
 open_confirm "$L" > /dev/null
 stale=$(confirm_ticket)
-sleep 1
 helper write-wiki "$L" "${FIX}/Clean.wiki" > /dev/null
 convert_page "$L" "$stale" > /dev/null
 check_eq "確認の画面のあとに誰かが編集した: 理由が出る・変えない" "yes|wiki" \

@@ -34,6 +34,11 @@
  *                            版を作り、同じ秒にファイル1をふつうに保存し (版は作られない)、
  *                            さらに同じ秒にファイル2を版を必ず残して保存する
  *                            (added=増えた版の数, kept=先に作った版の中身が残っているか 1/0)
+ *   same-second-ticket <名前> <ファイル1> <ファイル2>
+ *                            同じ秒にファイル1とファイル2を続けて保存し、ファイル1を
+ *                            保存した直後の ticket でもう一度保存してみる
+ *                            (same_second=2 回の保存が同じ秒だったか 1/0,
+ *                             rejected=古い ticket の保存が競合として断られたか 1/0)
  *   cleanup                  このヘルパが作ったページを消す
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -238,6 +243,29 @@ case 'same-second-backup':
     $kept = page_read_backup($rest[0], $first);
     printf("added=%d\nkept=%d\n", count($after) - count($before),
 	   (string)page_get_contents($kept) === $original ? 1 : 0);
+    break;
+
+case 'same-second-ticket':
+    /* 秒の変わり目をまたがないよう、秒の前半で始める */
+    while(microtime(true) - floor(microtime(true)) > 0.3)
+	usleep(10000);
+    $page = test_page($rest[0]);
+    $contents = file_get_contents($rest[1]);
+    $ticket = default_value($page['meta']['ticket'], '');
+    $start = time();
+    page_write($page, $contents, $ticket);
+    $page = test_page($rest[0]);
+    $stale = default_value($page['meta']['ticket'], '');
+    $contents = file_get_contents($rest[2]);
+    $ticket = $stale;
+    page_write($page, $contents, $ticket);
+    $same_second = (time() === $start) ? 1 : 0;
+    /* ファイル1を保存した直後に編集を始めた人が、ファイル2の保存を知らずに保存する */
+    $page = test_page($rest[0]);
+    $contents = file_get_contents($rest[1]);
+    $ticket = $stale;
+    $written = page_write($page, $contents, $ticket);
+    printf("same_second=%d\nrejected=%d\n", $same_second, $written ? 0 : 1);
     break;
 
 case 'cleanup':
