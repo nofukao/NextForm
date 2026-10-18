@@ -2,8 +2,9 @@
 /*
  * 見出しの深さ → 文字の大きさ。
  *
- * 種別 wiki と種別 markdown で同じ深さの見出しが同じ大きさで出るように、
+ * 種別 wiki と種別 markdown で対応する見出しが同じ大きさで出るように、
  * 両方のセレクタを .constants.php の theme_heading_selectors() から出す。
+ * Markdown の # は題名に使うので、wiki の * に当たるのは ## (.constants.php を見よ)。
  *
  * 上流の wiki 記法は深さを「同じ大きさ + インデント」で表していた。
  * Markdown の見出しはフラットで、節がどこで終わるかが本文から決まらないため、
@@ -17,6 +18,22 @@
 
 <?php foreach(theme_heading_levels() as $heading_level) { ?>
 <?php echo(theme_heading_selectors($heading_level)); ?> {
+    font-size: <?php echo(theme_heading_font_size($heading_level)); ?>px;
+}
+<?php } ?>
+
+/* 本文に残った Markdown の # (題名にならなかったもの)。* より一段大きい。
+   深さ 1 の規則にも入っているので、あとに書いて大きさだけ上書きする */
+article.main section.markdown h1 {
+    font-size: <?php echo(theme_heading_top_font_size()); ?>px;
+}
+
+/* 見出しを書いた折りたたみ (:::details ## 見出し) の札は、その深さの見出しと同じ大きさ */
+<?php echo(theme_heading_summary_selectors(1)); ?> {
+    font-size: <?php echo(theme_heading_top_font_size()); ?>px;
+}
+<?php foreach(theme_heading_levels() as $heading_level) { ?>
+<?php echo(implode(",\n", array_map('theme_heading_summary_selectors', theme_heading_markdown_levels($heading_level)))); ?> {
     font-size: <?php echo(theme_heading_font_size($heading_level)); ?>px;
 }
 <?php } ?>

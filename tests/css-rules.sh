@@ -36,6 +36,9 @@ BASE_URL="${BASE_URL:-http://localhost:8080}"
 CSS=""
 fail=0
 
+# 判定の式で使う: セレクタ (完全一致) の文字の大きさ (px)。後に書いた規則が勝つので最後のもの
+SIZE_OF="(lambda sel: [int(re.search(r'font-size:\s*([0-9]+)px', b).group(1)) for s, b in re.findall(r'([^{}]*)\{([^{}]*)\}', css) if sel in [re.sub(r'\s*>\s*', ' > ', re.sub(r'\s+', ' ', x.strip())) for x in s.split(',')] and re.search(r'font-size:\s*[0-9]+px', b)][-1])"
+
 # $1 説明  $2 判定用の python 式 ($CSS を読んだ css 変数が使える)
 check() {
     local desc="$1" expr="$2"
@@ -101,15 +104,29 @@ rules_common() {
     #
     # 種別 wiki は深さを section.section の入れ子で表し要素は常に h1、
     # 種別 markdown は h1〜h6 のフラットで、DOM の形が違う。セレクタを
-    # 別々に書くと片方だけ直したときにずれるので、同じ深さの wiki と
+    # 別々に書くと片方だけ直したときにずれるので、対応する wiki と
     # markdown が**同じ規則の中に並んでいる**ことを見る
     # (app/theme/common/.constants.php の theme_heading_selectors())。
-    check "見出しの深さ 1〜3 が wiki と markdown で同じ規則に入っている" \
-          "all(re.search(r'article\.main section\.page(\s*>\s*section\.section){%d}\s*>\s*h1,\s*article\.main section\.markdown h%d\s*\{[^}]*font-size' % (n, n), css, re.S) for n in (1, 2, 3))"
-    check "一番深い段に markdown の h4〜h6 が入っている" \
-          "bool(re.search(r'article\.main section\.markdown h4,\s*article\.main section\.markdown h5,\s*article\.main section\.markdown h6\s*\{[^}]*font-size', css, re.S))"
+    # Markdown の # は題名に使うので、wiki の * (深さ 1) に当たるのは ## (h2)。
+    # 本文に残った # (題名にならなかったもの) は、* より一段大きい。
+    check "wiki の深さ 1〜3 と、1 段深い markdown の見出しが同じ規則に入っている" \
+          "all(re.search(r'article\.main section\.page(\s*>\s*section\.section){%d}\s*>\s*h1,\s*article\.main section\.markdown h%d\s*[,{][^{]*\{[^}]*font-size' % (n, n + 1), css, re.S) for n in (1, 2, 3))"
+    check "一番深い段に markdown の h5・h6 が入っている" \
+          "bool(re.search(r'article\.main section\.markdown h5,\s*article\.main section\.markdown h6\s*\{[^}]*font-size', css, re.S))"
+    check "markdown の ## と ### は、wiki の * と ** と同じ大きさ" \
+          "all(${SIZE_OF}('article.main section.markdown h%d' % (n + 1)) == ${SIZE_OF}('article.main section.page' + ' > section.section' * n + ' > h1') for n in (1, 2))"
+    check "本文に残った markdown の # は、wiki の * より大きい" \
+          "${SIZE_OF}('article.main section.markdown h1') > ${SIZE_OF}('article.main section.page > section.section > h1')"
+    check "  # にも、* と同じ飾りの規則 (深さ 1) が当たる" \
+          "bool(re.search(r'article\.main section\.page\s*>\s*section\.section\s*>\s*h1,[^{]*article\.main section\.markdown h1\s*[,{]', css, re.S))"
     check "見出しは深いほど小さい" \
-          "(lambda a: a == sorted(a, reverse=True))([int(re.search(r'article\.main section\.markdown h%d\b[^{}]*\{[^}]*font-size:\s*([0-9]+)px' % n, css, re.S).group(1)) for n in (1, 2, 3, 4)])"
+          "(lambda a: a == sorted(a, reverse=True))([${SIZE_OF}('article.main section.markdown h%d' % n) for n in (1, 2, 3, 4, 5, 6)])"
+    # 折りたたみ (:::details) の札は、見出しの先頭に # を書いたとき (data-heading-level が
+    # 数のとき) だけ、その深さの見出しと同じ大きさにする。書かないときは本文と同じ大きさ。
+    check "# を書いた折りたたみの札は、その深さの見出しと同じ大きさ" \
+          "all(${SIZE_OF}('article.main section.markdown details > summary[data-heading-level=\"%d\"]' % n) == ${SIZE_OF}('article.main section.markdown h%d' % n) for n in (1, 2, 3, 4, 5, 6))"
+    check "  # を書いていない札には大きさを当てない" \
+          "not any('details > summary' in re.sub(r'\s*>\s*', ' > ', s) and '[data-heading-level' not in s and 'font-size' in b for s, b in re.findall(r'([^{}]*)\{([^{}]*)\}', css))"
     # 節そのものは下げない。Markdown の見出しはフラットで同じようには
     # 下げられないため、深さは大きさで表す (.base.css の indent を参照)。
     check "節の入れ子にインデントが付いていない" \

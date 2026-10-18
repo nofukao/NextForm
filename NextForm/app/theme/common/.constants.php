@@ -47,6 +47,12 @@ if(!function_exists('theme_density_px')) {
  *   wiki      深さを section.section の入れ子で表す。要素はどの深さでも h1
  *   markdown  h1〜h6 のフラット。入れ子にはならない
  *
+ * Markdown の # (h1) はふつう題名になって本文から消える (handler/markdown.inc の
+ * markdown_title_heading())。本文の見出しは ## から始まるので、**wiki の * (深さ 1) に
+ * 当たるのは ## (h2)**。Wiki 記法からの変換も * を ## に写す。本文に残った #
+ * (title: があるとき・# が 2 つ以上あるとき・本文が # で始まらないとき) は、
+ * * と同じ飾りで、一段大きく出す (利用者の判断 2026-10-18。v0.14.0 までは # が * に当たっていた)。
+ *
  * セレクタは別々に書くしかないが、**どこに何を当てるかは 1 箇所で決める**。
  * 分けて書くと、片方だけ直したときに必ずずれる。v0.6 で markdown を足したとき、
  * 実際に「wiki は同じ大きさでインデント、markdown は大きさの段差」とずれた。
@@ -85,11 +91,23 @@ if(!function_exists('theme_headings_selector')) {
     }
 
     /*
+     * その深さに当たる Markdown の見出しの段 (h の数字)。wiki の深さ N は h(N+1)。
+     * 一番深い段は h6 までを受け持つ。
+     */
+    function theme_heading_markdown_levels($level) {
+	$first = $level + 1;
+	return range($first, $level >= THEME_HEADING_LEVEL_MAX ? 6 : $first);
+    }
+
+    /*
      * その深さの見出しに当たるセレクタ (wiki と markdown の両方)。
      *
      * 深さ THEME_HEADING_LEVEL_MAX の規則は「それより深い見出しぜんぶ」を
      * 受け持つ。wiki の * には数の制限が無く、Markdown にも h5 h6 があるため。
      * そのため wiki 側は子結合子を使わず、深さを数えない書き方にしてある。
+     *
+     * 深さ 1 には、本文に残った Markdown の # (h1) も入れる。* と同じ飾り (罫線・余白) を
+     * 当てるため。大きさだけは .heading.css があとで一段上げる。
      *
      * article.main に限るのは、サイド (article.side) を巻き込まないため。
      * サイドの見出しはページの中身ではなく道具の見出しで、テーマが別に決めている。
@@ -107,12 +125,22 @@ if(!function_exists('theme_headings_selector')) {
 	    $selectors[] = $wiki . ' > h1';
 	}
 
-	/* markdown: h1〜h6 */
-	$h_last = $is_last ? 6 : $level;
-	for($i = $level; $i <= $h_last; $i++)
+	/* markdown: 1 段深い h (# は題名に使うので、* は ##) */
+	foreach(theme_heading_markdown_levels($level) as $i)
 	    $selectors[] = 'article.main section.markdown h' . $i;
+	if($level == 1)
+	    $selectors[] = 'article.main section.markdown h1';
 
 	return implode(",\n", $selectors);
+    }
+
+    /*
+     * 見出しを書いた折りたたみ (:::details ## 見出し) の札のセレクタ。$h は # の数。
+     * 書かなかった札は data-heading-level が空なので当たらない (本文と同じ大きさのまま)。
+     * 当てるのは大きさだけ。罫線や色帯は開閉の印とぶつかるので付けない。
+     */
+    function theme_heading_summary_selectors($h) {
+	return 'article.main section.markdown details > summary[data-heading-level="' . $h . '"]';
     }
 
     /* 深さ別の規則を書く順。深さの順に特定度が上がるので、浅いほうから書く */
@@ -142,6 +170,11 @@ if(!function_exists('theme_headings_selector')) {
 	case 3:  return THEME_FONT_SIZE_LARGE;
 	default: return THEME_FONT_SIZE_NORMAL;
 	}
+    }
+
+    /* 本文に残った Markdown の # の大きさ。深さ 1 より一段 (2px) 上で、ページ見出しと同じ */
+    function theme_heading_top_font_size() {
+	return THEME_FONT_SIZE_HUGE;
     }
 }
 ?>
