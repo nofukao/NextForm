@@ -34,7 +34,9 @@ define('REMOTE_MAX_REDIRECTS', 3);
  *
  * 成功: array('status' => 応答コード, 'headers' => 小文字の名前 => 値,
  *             'body' => 本文, 'size' => バイト数)
- * $auth を渡すと、401 のときにダイジェスト認証をする。認証に失敗したら
+ * $auth を渡すと、401 のときにダイジェスト認証をする。ログインしなくても読める
+ * ページでもその利用者として読むよう、login=1 の Cookie を送って NextForm に
+ * ログインを求めさせる。認証に失敗したら
  * 401 の応答をそのまま返し、$auth['failed'] (資格情報が違う) か
  * $auth['unsupported'] (ダイジェスト認証でない) を立てる。
  *
@@ -60,6 +62,13 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
 	/* 401 を受けたら、新しい nonce で 1 回だけ (stale ならもう 1 回) 送り直す */
 	for($tries = 0; ; $tries++) {
 	    $context = $target['context'];
+	    /*
+	     * 資格情報があるときは、ログインしなくても読めるページでもその利用者として読む
+	     * (読めない子ページや添付を一覧に含めるため)。NextForm は login=1 の Cookie が
+	     * あると、Authorization が無ければ 401 でログインを求める (auth_digest_get_user())。
+	     */
+	    if($use_auth)
+		$context['http']['header'] .= "Cookie: login=1\r\n";
 	    $sent_auth = $use_auth && !empty($auth['nonce']);
 	    if($sent_auth)
 		$context['http']['header'] .= remote_digest_header($auth, $target['request_uri']);
