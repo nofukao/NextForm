@@ -343,7 +343,7 @@ function setup_read($name) {
 |{ANALYZE_STORAGE_LIFE_DAYS|7|アクセスカウンタの記録保存日数|}
 |{$WIKI_ALIASES (配列)|省略|サイト全体で有効なエイリアスの定義|}
 |{DEBUG_MODE|false|(開発者向け) デバッグモード|}
-|{GOOGLE_API_KEY||&&calendarで使用するGoole APIキー|}
+|{GOOGLE_API_KEY||&&calendarで使用するGoogle APIキー|}
 */
 
 /**
