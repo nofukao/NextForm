@@ -134,6 +134,15 @@ if(!function_exists('theme_headings_selector')) {
 	return implode(",\n", $selectors);
     }
 
+    /*
+     * 見出しを書いた折りたたみ (:::details ## 見出し) の札のセレクタ。$h は # の数。
+     * 書かなかった札は data-heading-level が空なので当たらない (本文と同じ大きさのまま)。
+     * 当てるのは大きさだけ。罫線や色帯は開閉の印とぶつかるので付けない。
+     */
+    function theme_heading_summary_selectors($h) {
+	return 'article.main section.markdown details > summary[data-heading-level="' . $h . '"]';
+    }
+
     /* 深さ別の規則を書く順。深さの順に特定度が上がるので、浅いほうから書く */
     function theme_heading_levels() {
 	$levels = array();

@@ -121,6 +121,12 @@ rules_common() {
           "bool(re.search(r'article\.main section\.page\s*>\s*section\.section\s*>\s*h1,[^{]*article\.main section\.markdown h1\s*[,{]', css, re.S))"
     check "見出しは深いほど小さい" \
           "(lambda a: a == sorted(a, reverse=True))([${SIZE_OF}('article.main section.markdown h%d' % n) for n in (1, 2, 3, 4, 5, 6)])"
+    # 折りたたみ (:::details) の札は、見出しの先頭に # を書いたとき (data-heading-level が
+    # 数のとき) だけ、その深さの見出しと同じ大きさにする。書かないときは本文と同じ大きさ。
+    check "# を書いた折りたたみの札は、その深さの見出しと同じ大きさ" \
+          "all(${SIZE_OF}('article.main section.markdown details > summary[data-heading-level=\"%d\"]' % n) == ${SIZE_OF}('article.main section.markdown h%d' % n) for n in (1, 2, 3, 4, 5, 6))"
+    check "  # を書いていない札には大きさを当てない" \
+          "not any('details > summary' in re.sub(r'\s*>\s*', ' > ', s) and '[data-heading-level' not in s and 'font-size' in b for s, b in re.findall(r'([^{}]*)\{([^{}]*)\}', css))"
     # 節そのものは下げない。Markdown の見出しはフラットで同じようには
     # 下げられないため、深さは大きさで表す (.base.css の indent を参照)。
     check "節の入れ子にインデントが付いていない" \

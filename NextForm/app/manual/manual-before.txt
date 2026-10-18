@@ -1160,6 +1160,7 @@ URLをそのまま書くとリンクになります．""www."" で始まる語�
 見出しを書いた折りたたみは，ふつうの見出しと同じく目次に載り，&[&[ページ名#見出し&]&] でそこへ飛べます(Wiki記法の &*(optional) と同じ)．
 目次での深さは，見出しの先頭に ""#"" を書いて決められます(""#"" は表示されません)．
 書かなければ，直前の見出しの1段下になります．
+""#"" を書いたときは，札(押すと開く行)の文字もその深さの見出しと同じ大きさで出ます．書かなければ本文と同じ大きさの太字です．
 
  :::details ### 3段目の見出しとして目次に載る
  中身
@@ -1737,6 +1738,7 @@ A word other than ""details"" (""note"", for instance) does not fold anything.
 A folded block with a heading appears in the table of contents like an ordinary heading, and &[&[page name#heading&]&] jumps to it (the same as &*(optional) of Wiki notation).
 Its depth in the table of contents can be set by writing ""#"" at the start of the heading (the ""#"" is not shown).
 Without it, the depth is one below the heading before it.
+When ""#"" is written, the label (the line you press to open it) is also shown in the size of a heading of that depth. Without it, the label is bold text of the normal size.
 
  :::details ### listed in the table of contents as a third-level heading
  contents
