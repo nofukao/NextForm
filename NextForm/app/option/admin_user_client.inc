@@ -5,6 +5,12 @@ $OPTIONS['admin_user_client'] = array(
 
 function admin_user_client_show(&$args, $dom) {
     global $AUTH_PRESET_PERMISSIONS;
+    /*
+     * 管理ツールの一覧からは外してあるが、URL を直に開けば出る。
+     * 作るのは index.php に書く行で、サーバーには何も書かないが、
+     * 管理者の道具なので管理者だけに見せる。
+     */
+    auth_check(false, 'admin');
     title_set_l('Make user setting');
 
     $ul = dom_append_child($dom, 'ul', 'form');
