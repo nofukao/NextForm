@@ -22,6 +22,10 @@
  * ダイジェスト認証をする (NextForm のログインの方式)。パスワードそのものは
  * 送らない。資格情報は remote_auth_create() で作る配列に入れて持ち回し、
  * 最初の URL のホストにだけ使う (転送でほかのホストに移ったら使わない)。
+ * https で始めた取得が http (暗号化なし) へ転送されたら、資格情報を使う前に止める
+ * (ログインの情報と、ログインが要るページの中身が暗号化されずに流れるため)。
+ * 呼び出し側が利用者に尋ね、承知したら $auth['allow_insecure'] を立てて続ける。
+ * 初めから http の URL を入れたときは止めない (相手のサイトをいつもその形で使っている)。
  * 一度 401 で受け取った nonce は、番号 (nc) を 1 つずつ上げて使い回す
  * (相手は nonce ごとに番号が増えることを確かめる)。相手が stale を返したら
  * 新しい nonce でやり直す。Basic 認証は扱わない (パスワードがそのまま流れる)。
@@ -38,7 +42,8 @@ define('REMOTE_MAX_REDIRECTS', 3);
  * ページでもその利用者として読むよう、login=1 の Cookie を送って NextForm に
  * ログインを求めさせる。認証に失敗したら
  * 401 の応答をそのまま返し、$auth['failed'] (資格情報が違う) か
- * $auth['unsupported'] (ダイジェスト認証でない) を立てる。
+ * $auth['unsupported'] (ダイジェスト認証でない) を立てる。https から http へ
+ * 転送されて止めたときは $auth['insecure'] を立てる。
  *
  * 失敗: array('error' => 理由, 'host' => ホスト名)。理由は
  *       disabled   allow_url_fopen が無効
@@ -49,17 +54,25 @@ define('REMOTE_MAX_REDIRECTS', 3);
  *       too_large  $max_bytes を超える
  *       redirect   転送が多すぎる
  *       timeout    $deadline (microtime(true) の値) を過ぎた。受け取りの途中でも打ち切る
+ *       insecure   資格情報があり、https から http へ転送された (何も送っていない)
  */
 function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(), &$auth = null,
 		      $deadline = null) {
     if(!ini_get('allow_url_fopen'))
 	return array('error' => 'disabled', 'host' => '');
 
+    $is_https = false;
     for($i = 0; $i <= REMOTE_MAX_REDIRECTS; $i++) {
 	$target = remote_target($url, $allowed_hosts);
 	if(isset($target['error']))
 	    return $target;
 	$use_auth = is_array($auth) && $auth['user'] !== '' && $target['host'] === $auth['host'];
+	if($i === 0)
+	    $is_https = ($target['scheme'] === 'https');
+	else if($use_auth && $is_https && $target['scheme'] === 'http' && empty($auth['allow_insecure'])) {
+	    $auth['insecure'] = true;
+	    return array('error' => 'insecure', 'host' => $target['host']);
+	}
 
 	/* 401 を受けたら、新しい nonce で 1 回だけ (stale ならもう 1 回) 送り直す */
 	for($tries = 0; ; $tries++) {
@@ -224,6 +237,7 @@ function remote_target($url, $allowed_hosts) {
 	$connect_host = '[' . $connect_host . ']';
     return array(
 	'host' => $host,
+	'scheme' => $scheme,
 	'request_uri' => $path,
 	'connect_url' => $scheme . '://' . $connect_host . ':' . $port . $path,
 	'context' => $context);

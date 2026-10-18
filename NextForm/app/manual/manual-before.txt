@@ -112,7 +112,7 @@ Enter the URL and press ''Clone'', and a new page is made by copying the text an
 The title and the tags are written in the text, so they are copied with it.
 -Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
 -History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
--A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user.
+-A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user. When the site to clone redirects from https to http (not encrypted), it stops before sending the login information and asks whether to continue. To continue, check ""Continue without encryption"", enter the password again and press the button. It does not ask when you enter an http URL from the start.
 -Each attached file must be within the size limit of this site (the value shown on the ''Attach'' page).
 -When the page cannot be copied, nothing is made and the reason is shown.
 
@@ -308,7 +308,7 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 題名とタグは本文に書いてあるので，一緒に写ります．
 -写す添付ファイルは，写すページの直下のもの(""./画像.png""で参照するもの)だけです．ほかのページの添付ファイル(""../画像.png""など)は写しません．本文は書き換えないので，それへのリンクはリンク切れになります(このサイトに同じ名前のページがあれば，そちらを指します)．
 -履歴・ロック・権限と，ページや添付ファイルの説明は写しません．クローン元でログインが必要だったページも，写したあとはこのサイトの権限で見えるようになります．
--ログインが必要なページは，URLの下の欄にそのサイトのユーザー名とパスワードを入れればクローンできます．要らなければ空欄のままでかまいません．入れたものは保存せず，そのクローンにだけ使います．対応しているのはNextFormのログイン(ダイジェスト認証)だけで，パスワードそのものはクローン元に送りません．この画面がhttpsでないときは，ブラウザからこのサイトまでパスワードが暗号化されずに送られるので，注意書きが出ます．入れたときは，取りに行く前にログインできることを確かめ(違っていれば何も写しません)，ログインしなくても読めるページも，その利用者として読みます．
+-ログインが必要なページは，URLの下の欄にそのサイトのユーザー名とパスワードを入れればクローンできます．要らなければ空欄のままでかまいません．入れたものは保存せず，そのクローンにだけ使います．対応しているのはNextFormのログイン(ダイジェスト認証)だけで，パスワードそのものはクローン元に送りません．この画面がhttpsでないときは，ブラウザからこのサイトまでパスワードが暗号化されずに送られるので，注意書きが出ます．入れたときは，取りに行く前にログインできることを確かめ(違っていれば何も写しません)，ログインしなくても読めるページも，その利用者として読みます．クローン元がhttpsからhttp(暗号化なし)に転送したときは，ログインの情報を送る前に止まり，続けるかを尋ねます．続けるときは「暗号化されていなくても続ける」にチェックを入れ，パスワードをもう一度入れて押します．初めからhttpのURLを入れたときは尋ねません．
 -添付ファイルは1つずつ，このサイトのサイズ上限(''添付''の画面に出る値)に収まる必要があります．
 -写せないときは，何も作らずに理由を出します．
 

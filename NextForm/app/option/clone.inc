@@ -80,6 +80,8 @@ function clone_write(&$args, $dom) {
     $source_user = trim(clone_arg_string($args, 'source_user'));
     $options = clone_options($args);
     $auth = remote_auth_create($source_url, $source_user, clone_arg_string($args, 'source_password'));
+    /* https から http へ転送されても続ける (止めて尋ねたあとに、利用者が選んだとき) */
+    $auth['allow_insecure'] = !empty($args['clone_allow_insecure']);
 
     $errors = array();
     if($options['subpages'] && auth_get_user() === false) {
@@ -88,6 +90,10 @@ function clone_write(&$args, $dom) {
     } else {
 	$result = clone_page($page['name'], $source_url, $auth, $options, $errors);
     }
+    /* 暗号化なしで止めたとき、または続けると選んでいたときは、続けるかの欄を出す */
+    $insecure = null;
+    if(!empty($auth['insecure']) || $auth['allow_insecure'])
+	$insecure = $auth['allow_insecure'];
     unset($auth);
     if($result) {
 	header('Location: ' . url_make($page['name']));
@@ -95,7 +101,7 @@ function clone_write(&$args, $dom) {
     }
     foreach($errors as $error)
 	message_error($error);
-    clone_append_form($dom, $page, $source_url, $source_user, $options, false);
+    clone_append_form($dom, $page, $source_url, $source_user, $options, false, $insecure);
     return false;
 }
 
@@ -124,8 +130,10 @@ function clone_default_options() {
 /*
  * クローンの画面。同じ名前のページがあるときは作れないので、フォームを出さない
  * ($notice_exists は、書けなかった理由として既に出しているときに false)。
+ * $insecure が null でなければ、暗号化なしでも続けるかのチェックボックスを出す
+ * (値はチェックの状態)。
  */
-function clone_append_form($dom, &$page, $source_url, $source_user, $options, $notice_exists) {
+function clone_append_form($dom, &$page, $source_url, $source_user, $options, $notice_exists, $insecure = null) {
     title_set_pagename('Create $pagename$ by cloning another NextForm page', $page['name']);
     if(!empty($page['is_exists'])) {
 	if($notice_exists)
@@ -177,6 +185,10 @@ function clone_append_form($dom, &$page, $source_url, $source_user, $options, $n
     dom_append_child($label, 'input', '',
 		     array('type' => 'password', 'name' => 'source_password', 'value' => '',
 			   'autocomplete' => 'new-password'));
+    if(!is_null($insecure)) {
+	$p = dom_append_child($form, 'p', 'clone_login');
+	clone_append_checkbox($p, 'clone_allow_insecure', l('Continue without encryption'), $insecure);
+    }
 
     $notes = array(
 	'Only the attached files directly under the copied pages are copied. Attached files of other pages (such as ../image.png) are not, so links to them may be broken.',
@@ -449,6 +461,10 @@ function clone_check_response(&$response, $too_large_message, &$errors) {
 	case 'timeout':
 	    $errors[] = lf('Fetching from the site to clone took too long (more than $seconds$ seconds). Clone without subpages, or in smaller parts.',
 			   array('seconds' => CLONE_MAX_FETCH_SECONDS));
+	    break;
+	case 'insecure':
+	    $errors[] = lf('The site to clone ($host$) redirected from https to http (not encrypted). If you continue, the login information (a value made from the password) and the content of pages that need login are sent without encryption. To continue anyway, check "Continue without encryption", enter the password again and press the button.',
+			   array('host' => $response['host']));
 	    break;
 	default:
 	    $errors[] = lf('Could not connect to $host$.', array('host' => $response['host']));

@@ -36,6 +36,10 @@
 #      また同時に別のクローンが動いていたら、何も書かないこと
 #   8. クローン元が古い版 (添付の一覧に大きさが無い) でも写せ、大きすぎる添付は
 #      転送の途中で打ち切って断ること。子ページも写せること
+#  10. ログインの情報を入れたクローンで、相手が https から http (暗号化なし) に
+#      転送したら、ログインの情報を送らずに止まり、続けるかを尋ねること。
+#      「続ける」を選べば続けること。ログインの情報が無ければ今までどおり進むこと
+#      (https の相手は tests/clone-redirect-server.py。証明書はテストのたびに作る)
 #
 # クローン先には添付の大きさの上限を 1MB にする .user.ini を置く
 # (max_upload_file_size() が見る upload_max_filesize)。
@@ -64,6 +68,7 @@ total=0
 WORK="$(mktemp -d)"
 
 cleanup() {
+    [[ -n "${TLS_PID:-}" ]] && kill "$TLS_PID" 2>/dev/null
     rm -rf "$WORK"
     if [[ "${KEEP:-0}" != "1" ]]; then
         sudo rm -rf "$CLONE_SRC_SITE" "$CLONE_DST_SITE" 2>/dev/null
@@ -622,7 +627,53 @@ check_eq "クローン先の storage/cache/ に clone-* が無い" "0" \
          "$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-*' | wc -l)"
 echo
 
-echo "10. PHP の警告が出ていないこと"
+echo "10. https から http に転送されたら、ログインの情報を送らずに止まること"
+# 相手は https で受けて同じホストの http へ転送するだけの小さなサーバー。
+# PHP-FPM はこの証明書を信頼しないので、クローンはヘルパのプロセスから行う
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
+        -addext subjectAltName=DNS:localhost \
+        -keyout "$WORK/tls-key.pem" -out "$WORK/tls-cert.pem" > /dev/null 2>&1
+sudo install -m 644 "$WORK/tls-cert.pem" "${CLONE_DST_SITE}/redirect-cert.pem"
+python3 "${REPO_ROOT}/tests/clone-redirect-server.py" "$WORK/tls-cert.pem" "$WORK/tls-key.pem" \
+        "$WORK/tls-ports" "$WORK/tls-log" &
+TLS_PID=$!
+for _ in $(seq 50); do [[ -s "$WORK/tls-ports" ]] && break; sleep 0.1; done
+HTTPS_PORT=$(sed -n 's/.*https=\([0-9]*\).*/\1/p' "$WORK/tls-ports")
+dst_tls() {
+    sudo -u "$SITE_OWNER" php -d memory_limit=512M -d "openssl.cafile=${CLONE_DST_SITE}/redirect-cert.pem" \
+        "${CLONE_DST_SITE}/clone-helper.php" "${CLONE_DST_SITE}/index.php" "$WIKI_ADMIN" "$@" 2>/dev/null
+}
+dst set-allowed-hosts localhost > /dev/null
+TLS_URL="https://localhost:${HTTPS_PORT}/wiki/?Src/Page"
+http_requests() { [[ -f "$WORK/tls-log" ]] && cat "$WORK/tls-log"; }
+
+: > "$WORK/tls-log"
+R=$(dst_tls clone-insecure Dst/Insecure "$TLS_URL" cloner "$PASS" 0)
+check_eq "ログインの情報があれば、http に移る前に止まる" "0|1" \
+         "$(value_of "$R" written)|$(value_of "$R" insecure)"
+check_eq "  http の側には何も送っていない" "" "$(http_requests)"
+check_eq "  理由に、暗号化されないことを出す" "yes" \
+         "$(printf '%s\n' "$R" | grep -q '^error=.*https.*http' && echo yes || echo no)"
+check_eq "  続けるためのチェックボックスを出す" "1" \
+         "$(value_of "$(dst form-insecure Dst/Insecure)" checkbox)"
+
+: > "$WORK/tls-log"
+R=$(dst_tls clone-insecure Dst/Insecure "$TLS_URL" cloner "$PASS" 1)
+check_eq "「続ける」を選べば、http の側へログインの情報つきで取りに行く" "0|yes" \
+         "$(value_of "$R" insecure)|$(http_requests | grep -q 'cookie=login=1' && echo yes || echo no)"
+
+: > "$WORK/tls-log"
+R=$(dst_tls clone-insecure Dst/Insecure "$TLS_URL" '' '' 0)
+check_eq "ログインの情報が無ければ、今までどおり転送をたどる (尋ねない)" "0|yes" \
+         "$(value_of "$R" insecure)|$(http_requests | grep -q 'authorization=no cookie=$' && echo yes || echo no)"
+
+kill "$TLS_PID" 2>/dev/null
+wait "$TLS_PID" 2>/dev/null
+sudo rm -f "${CLONE_DST_SITE}/redirect-cert.pem"
+dst set-allowed-hosts "$SRC_HOST" > /dev/null
+echo
+
+echo "11. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F -e "$CLONE_SRC_SITE" -e "$CLONE_DST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"

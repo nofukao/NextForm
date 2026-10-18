@@ -314,6 +314,9 @@ $LANGUAGE['ja'] = array(
     '子ページを含めるときに一度にクローンできるのは，子ページ$pages$ページ・添付ファイル$files$個(合計$bytes$B)までで，クローン元から取るのに$seconds$秒までです．',
     'Include attached files' => '添付ファイルを含む',
     'Include subpages' => '子ページを含む',
+    'Continue without encryption' => '暗号化されていなくても続ける',
+    'The site to clone ($host$) redirected from https to http (not encrypted). If you continue, the login information (a value made from the password) and the content of pages that need login are sent without encryption. To continue anyway, check "Continue without encryption", enter the password again and press the button.' =>
+    'クローン元($host$)が，https から http (暗号化なし) に転送しました．このまま続けると，ログインの情報(パスワードから作った値)と，ログインが要るページの中身が，暗号化されずに流れます．それでも続けるときは，「暗号化されていなくても続ける」にチェックを入れ，パスワードをもう一度入れてから押してください．',
     'Only logged-in users can clone with subpages.' => '子ページを含めてクローンできるのは，ログインした人だけです．',
     'Another clone is in progress. Try again later.' => 'ほかのクローンが動いています．しばらくしてからやり直してください．',
     'Fetching from the site to clone took too long (more than $seconds$ seconds). Clone without subpages, or in smaller parts.' =>
