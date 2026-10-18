@@ -6,10 +6,15 @@
  *   ![図](../共通/図.png)      相対指定 (wiki 記法と同じ解決)
  *   ![図](/共通/図.png)        トップ階層から
  *   ![図](https://…/a.png)    外部の画像はそのまま
+ *   ![説明](ページ)           ふつうのページは、段落にそれ 1 つだけなら取り込む
  *
  * 埋め込みは wiki 記法の &include と同じ経路 (file ハンドラの embed) を通す。
  * 画像なら img、音声や動画ならそれぞれの再生画面になり、大きさなどの扱いも
  * 1 か所に集まったままになる。
+ *
+ * 大きさや配置は説明の後ろに | を付けて書く (Obsidian と同じ形)。語は &include と同じ。
+ *   ![説明|50% right](図.png "キャプション")
+ * タイトルの欄はキャプションにする (&include{...} と同じく figure と figcaption)。
  *
  * **このファイルは vendor/autoload.php を読んだあとに require すること。**
  */
@@ -21,8 +26,106 @@ class MarkdownImageRenderer implements League\CommonMark\Renderer\NodeRendererIn
 	    return '';
 	/* 説明文は子要素として持っている。装飾は落として文字だけ使う */
 	$alt = trim(strip_tags($childRenderer->renderNodes($node->children())));
-	return markdown_image_html((string)$node->getUrl(), $alt, (string)$node->getTitle());
+	return markdown_image_html((string)$node->getUrl(), $alt, (string)$node->getTitle(),
+				   markdown_image_is_alone($node));
     }
+}
+
+/* 段落にそれ 1 つだけか。ページを取り込むのはこのときだけ (文の途中で段落を割らない) */
+function markdown_image_is_alone($node) {
+    return $node->parent() instanceof League\CommonMark\Node\Block\Paragraph &&
+	is_null($node->previous()) && is_null($node->next());
+}
+
+/*
+ * 説明の最後の | より後ろが、すべて &include の指定として読めるときだけ、
+ * 指定として切り出す ($alt から外し、語の配列を返す)。読めなければ説明のまま
+ * (説明に | を書いた既存のページを壊さない)。max はすぐ後ろの大きさの前置き。
+ *   幅x高さ (末尾の ! で比率を無視)、幅x、x高さ、幅 (Obsidian と同じ)、拡大率%、
+ *   max 大きさ、!adjust、open、!link、left、right
+ */
+function markdown_image_split_params(&$alt) {
+    $position = strrpos($alt, '|');
+    if($position === false)
+	return array();
+    $tokens = preg_split('/[\s,]+/', substr($alt, $position + 1), -1, PREG_SPLIT_NO_EMPTY);
+    if(empty($tokens))
+	return array();
+    $params = array();
+    $max = false;
+    foreach($tokens as $token) {
+	if($token === 'max' && !$max) {
+	    $max = true;
+	} else if(preg_match('/^(\d+x\d+!?|\d+x|x\d+|\d+|\d+%)$/', $token)) {
+	    $params[] = ($max ? 'max ' : '') . $token;
+	    $max = false;
+	} else if(!$max && in_array($token, array('!adjust', 'open', '!link', 'left', 'right'), true)) {
+	    $params[] = $token;
+	} else {
+	    return array();
+	}
+    }
+    if($max)
+	return array();
+    $alt = trim(substr($alt, 0, $position));
+    return $params;
+}
+
+/*
+ * キャプションか left / right があれば、wiki の &include と同じく figure.figure で包む。
+ * 包む先を返す (包まないときは $document のまま。今と同じ出力になる)。
+ */
+function markdown_image_open_figure($document, $params, $caption) {
+    $gravity = in_array('left', $params, true) ? 'left' : (in_array('right', $params, true) ? 'right' : '');
+    if($caption === '' && $gravity === '')
+	return $document;
+    $figure = dom_append_child($document, 'figure', 'figure');
+    if($gravity !== '')
+	dom_append_class($figure, 'gravity_' . $gravity);
+    return $figure;
+}
+
+function markdown_image_close_figure($container, $caption) {
+    if($caption === '' || !($container instanceof DOMElement))
+	return;
+    $figcaption = dom_append_child($container, 'figcaption');
+    dom_append_text($figcaption, $caption);
+}
+
+/*
+ * 外部の画像の大きさ。数字で書いた幅と高さだけを当てる。拡大率や max は元の大きさが
+ * 要るが、それを知るにはサーバーからその URL を取りに行くことになる (wiki 記法の
+ * &include は getimagesize() で取りに行く)。ページを書く人の指定でサーバーが外へ
+ * 取りに行く口を、Markdown に新しく作らない。片方だけならブラウザが比率を保つ。
+ */
+function markdown_image_external_size($img, $params) {
+    foreach($params as $param) {
+	if(preg_match('/^(\d+)x(\d+)!$/', $param, $matches)) {
+	    dom_set_attribute($img, 'width', $matches[1]);
+	    dom_set_attribute($img, 'height', $matches[2]);
+	} else if(preg_match('/^(\d+)x(\d+)$/', $param, $matches)) {
+	    /* 比率を保ったまま、その大きさに収める (! が無いとき。&include と同じ) */
+	    dom_set_attribute($img, 'style', 'max-width: ' . $matches[1] . 'px; max-height: ' . $matches[2] . 'px;');
+	} else if(preg_match('/^(\d+)x?$/', $param, $matches)) {
+	    dom_set_attribute($img, 'width', $matches[1]);
+	} else if(preg_match('/^x(\d+)$/', $param, $matches)) {
+	    dom_set_attribute($img, 'height', $matches[1]);
+	}
+    }
+}
+
+/*
+ * ふつうのページの取り込みの印。描画の途中で Markdown のページを描くと変換器に
+ * 再入する (MarkdownConverter は解析中の状態を持ち回す)。そこで描画では今と同じ
+ * リンクを出して印だけ付け、変換が終わってから markdown_expand_embeds() が取り込む。
+ * 印は要求ごとの乱数で、ページ名などはここに置く。表に無い印 (生の HTML を許す
+ * サイトで手で書いたもの) は取り込まない。
+ */
+function markdown_embed_register($pagename, $params, $caption) {
+    global $MARKDOWN_EMBEDS;
+    $token = 'e' . bin2hex(random_bytes(8));
+    $MARKDOWN_EMBEDS[$token] = array('pagename' => $pagename, 'params' => $params, 'caption' => $caption);
+    return $token;
 }
 
 /* スキーム付き (http: など) と // で始まるものは外部とみなす */
@@ -59,25 +162,40 @@ function markdown_resolve_pagename($path) {
     return page_path_to_pagename($path, $base);
 }
 
-function markdown_image_html($url, $alt, $title) {
+function markdown_image_html($url, $alt, $title, $is_alone = false) {
     if($url === '')
 	return '';
+    $params = markdown_image_split_params($alt);
+    $document = dom_create_document();
+    /*
+     * キャプションと left / right (figure で包むもの) は、段落にそれ 1 つだけのときだけ。
+     * 文中で figure を出すと段落が割れる (README のバッジの並びなどが縦に積まれる)。
+     * 文中のタイトルは今までどおり、外部の画像ではヒント (title 属性)、添付では使わない。
+     */
+    $caption = $is_alone ? $title : '';
+    $figure_params = $is_alone ? $params : array_values(array_diff($params, array('left', 'right')));
 
     if(markdown_image_is_external($url)) {
-	$document = dom_create_document();
+	$container = markdown_image_open_figure($document, $figure_params, $caption);
 	$attributes = array('src' => $url, 'alt' => $alt);
-	if($title !== '')
+	if(!$is_alone && $title !== '')
 	    $attributes['title'] = $title;
-	dom_append_child($document, 'img', '', $attributes);
+	$img = dom_append_child($container, 'img', '', $attributes);
+	markdown_image_external_size($img, $params);
+	markdown_image_close_figure($container, $caption);
 	return dom_save_html($document);
     }
 
     $pagename = markdown_resolve_pagename(rawurldecode($url));
 
-    $document = dom_create_document();
-
     if(page_is_exists($pagename) && auth_has_permission($pagename, 'read')) {
 	$page = page_read($pagename);
+	if(page_get_type($page) !== 'file' && $is_alone) {
+	    /* ふつうのページ。今と同じリンクに印を付け、変換のあとで取り込む */
+	    $a = dom_append_page_link($document, $alt !== '' ? $alt : $url, $pagename);
+	    dom_set_attribute($a, 'data-markdown-embed', markdown_embed_register($pagename, $params, $caption));
+	    return dom_save_html($document);
+	}
 	if(page_get_type($page) === 'file') {
 	    $content_type_handler = &file_get_content_type_handler($page);
 	    if(!empty($content_type_handler['embed']) &&
@@ -88,10 +206,18 @@ function markdown_image_html($url, $alt, $title) {
 		 * 名前つきで渡す。画像などに並びの引数で渡すと、240x240 や open の
 		 * ような大きさ・開き方の指定として読まれてしまう。
 		 */
-		$params = array();
-		if(!empty($content_type_handler['embed_label']) && $alt !== '')
-		    $params['label'] = $alt;
-		$content_type_handler['embed']($page, $document, $params);
+		/*
+		 * 文字のリンクになる種類には、並びの引数を渡さない (file_embed_label() は
+		 * 並びの最後をリンクの文字にするので、300 や right が文字になる)。
+		 * left / right は figure で扱うので、どの種類にも渡さない。
+		 */
+		if(!empty($content_type_handler['embed_label']))
+		    $embed_params = ($alt !== '') ? array('label' => $alt) : array();
+		else
+		    $embed_params = array_values(array_diff($params, array('left', 'right')));
+		$container = markdown_image_open_figure($document, $figure_params, $caption);
+		$content_type_handler['embed']($page, $container, $embed_params);
+		markdown_image_close_figure($container, $caption);
 		/*
 		 * 画像の説明は代替テキストにする (画像が出ないときや読み上げで使われる)。
 		 * 埋め込みの側は &include と共用で、代替テキストにページ名を入れている。

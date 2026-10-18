@@ -1,0 +1,266 @@
+<?php
+/*
+ * Markdown のページのうち、0.14.0 で見え方が変わるところを出す。
+ *
+ *   php NextForm/app/tool/markdown_change_check /path/to/wiki/index.php [オプション]
+ *
+ *     --base <ページ名>  そのページ以下だけを調べる (既定はサイト全体)
+ *     --list <件数>      見つけたものを分類ごとに何件まで出すか (既定 20、0 で全件)
+ *     --quiet            何も見つからなければ何も表示しない
+ *     --user <名前>      本文を読むのに使う管理者ユーザー名
+ *
+ * **読み取り専用**。ページ・添付・設定は書き換えない。
+ *
+ * 何が変わったか (docs/development/design-wiki-to-markdown.md の 3a〜3c):
+ *
+ *     E  段落にそれ 1 つだけの ![説明](ふつうのページ)
+ *          リンク → そのページの取り込み
+ *     T  タイトルのある ![説明](対象 "タイトル")
+ *          ヒント (外部の画像) / 出ない (添付) → 画像の下のキャプション
+ *     P  説明の最後の | の後ろが、大きさや配置の指定として読めるもの
+ *          説明の一部 → 指定 (説明からは外れる)
+ *     M  [TOC] や [PAGES …] とだけ書いた段落
+ *          文字 → 目次・子ページのツリー
+ *     D  見出しを書いた :::details
+ *          → 見出しが目次に載り、id が付く
+ *
+ *   どれを出すかの判定は、表示と同じ関数 (handler/markdown.inc、
+ *   handler/markdown/image.inc) で行う。調べるのは種別 Markdown のページと、
+ *   添付した Markdown (.md)。.md の中では、.md を添付したページが起点になる。
+ *
+ * 終了コード: 0 = 確かめる必要のあるところは無い (D だけなら 0) / 1 = ある / 2 = 使い方の誤り
+ */
+
+$argv = $_SERVER['argv'];
+
+function usage() {
+    fprintf(STDERR, "Usage: php markdown_change_check <path/to/wiki/index.php>\n");
+    fprintf(STDERR, "                                 [--base <pagename>] [--list <n>] [--quiet]\n");
+    fprintf(STDERR, "                                 [--user <name>]\n");
+    exit(2);
+}
+
+if(count($argv) < 2)
+    usage();
+
+$index_path = $argv[1];
+$base_pagename = '';
+$list_max = 20;
+$is_quiet = false;
+$user = '';
+
+for($i = 2; $i < count($argv); $i++) {
+    switch($argv[$i]) {
+    case '--base':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$base_pagename = $argv[++$i];
+	break;
+    case '--list':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$list_max = (int)$argv[++$i];
+	break;
+    case '--quiet':
+	$is_quiet = true;
+	break;
+    case '--user':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$user = $argv[++$i];
+	break;
+    default:
+	usage();
+    }
+}
+
+require_once(dirname(dirname(__FILE__)) . '/tool/common');
+eval_index_php($index_path);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+/* 本文を読む。markdown_link_check と同じく、管理者を差し込む */
+if($user !== '')
+    $GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $user, 'method' => 'digest');
+head_tags_init();
+
+$converter = markdown_converter();
+if($converter === false) {
+    printf("Markdown のライブラリ (app/vendor) が見つからない。\n");
+    exit(2);
+}
+/* 描画はしない。木を作るだけなので、表示と同じ拡張で読む */
+$parser = new League\CommonMark\Parser\MarkdownParser($converter->getEnvironment());
+
+/* 子の文字だけをつなぐ (説明・段落の中身)。文字以外の子があれば null */
+function change_check_plain_text($node) {
+    $text = '';
+    foreach($node->children() as $child) {
+	if(!($child instanceof League\CommonMark\Node\Inline\Text))
+	    return null;
+	$text .= $child->getLiteral();
+    }
+    return $text;
+}
+
+/*
+ * 詰めた箇条書き (tight) の項目の段落か。描くときに <p> が付かないので、取り込みや
+ * [TOC] の置き換え (段落を見る) は起きない。見え方が変わらないので出さない。
+ */
+function change_check_in_tight_list($paragraph) {
+    $item = $paragraph->parent();
+    if(!($item instanceof League\CommonMark\Extension\CommonMark\Node\Block\ListItem))
+	return false;
+    $list = $item->parent();
+    return $list instanceof League\CommonMark\Extension\CommonMark\Node\Block\ListBlock && $list->isTight();
+}
+
+/* 説明の文字 (装飾は落とす)。表示 (MarkdownImageRenderer) と同じく文字だけを使う */
+function change_check_alt($image) {
+    $text = '';
+    $walker = $image->walker();
+    while($event = $walker->next()) {
+	$node = $event->getNode();
+	if($event->isEntering() && $node instanceof League\CommonMark\Node\Inline\Text)
+	    $text .= $node->getLiteral();
+    }
+    return trim($text);
+}
+
+$found = array('E' => array(), 'T' => array(), 'P' => array(), 'M' => array(), 'D' => array());
+$markdown_page_num = 0;
+$markdown_file_num = 0;
+
+/* page_find() は子孫だけを返す。--base のページ自身も調べる */
+$pagenames = array();
+if($base_pagename !== '' && page_is_exists($base_pagename))
+    $pagenames[] = $base_pagename;
+foreach(page_find($base_pagename, array('is_pagename_only' => true)) as $listed)
+    $pagenames[] = $listed['name'];
+
+foreach($pagenames as $pagename) {
+    $page = page_read($pagename);
+    $type = isset($page['meta']['type']) ? $page['meta']['type'] : '';
+    if($type === 'markdown') {
+	$base = $pagename;
+	$markdown_page_num++;
+    } else if($type === 'file' && file_is_markdown($page)) {
+	/* 添付した .md は、それを添付したページが起点 (file_markdown_view と同じ) */
+	$base = page_path_to_pagename('..', $pagename, false);
+	$page['markdown_base_pagename'] = $base;
+	$markdown_file_num++;
+    } else
+	continue;
+
+    $contents = page_get_contents($page);
+    if(!is_string($contents) || $contents === '')
+	continue;
+    if(function_exists('mb_check_encoding') && !mb_check_encoding($contents, 'UTF-8'))
+	continue;
+
+    $walker = $parser->parse($contents)->walker();
+    while($event = $walker->next()) {
+	$node = $event->getNode();
+	if(!$event->isEntering())
+	    continue;
+
+	if($node instanceof League\CommonMark\Extension\CommonMark\Node\Inline\Image) {
+	    $url = (string)$node->getUrl();
+	    $alt = change_check_alt($node);
+	    $title = (string)$node->getTitle();
+	    $label = sprintf('%s: ![%s](%s%s)', $pagename, $alt, rawurldecode($url),
+			     $title !== '' ? ' "' . $title . '"' : '');
+	    $alt_split = $alt;
+	    if(!empty(markdown_image_split_params($alt_split)))
+		$found['P'][] = $label;
+	    /* キャプションと取り込みは、段落にそれ 1 つだけのとき (表示と同じ) */
+	    $is_alone = markdown_image_is_alone($node) && !change_check_in_tight_list($node->parent());
+	    if($title !== '' && $is_alone)
+		$found['T'][] = $label;
+	    if($url !== '' && !markdown_image_is_external($url) && $is_alone) {
+		$GLOBALS['MARKDOWN_CURRENT_PAGENAME'] = $base;
+		$target = markdown_resolve_pagename(rawurldecode($url));
+		if(page_is_exists($target) && auth_has_permission($target, 'read')) {
+		    $target_page = page_read($target);
+		    if(page_get_type($target_page) !== 'file')
+			$found['E'][] = $label . ' → ' . $target;
+		}
+	    }
+	} else if($node instanceof League\CommonMark\Node\Block\Paragraph) {
+	    if(change_check_in_tight_list($node))
+		continue;
+	    $text = change_check_plain_text($node);
+	    if($text === null)
+		continue;
+	    $text = trim($text);
+	    if(strcasecmp($text, '[TOC]') == 0)
+		$found['M'][] = sprintf('%s: %s', $pagename, $text);
+	    else if(preg_match('/^\[PAGES(?:[ \t]+([^\]]*))?\]$/i', $text, $matches) &&
+		    markdown_pages_parse_args($page, isset($matches[1]) ? $matches[1] : '') !== false)
+		$found['M'][] = sprintf('%s: %s', $pagename, $text);
+	} else if($node instanceof MarkdownDetails && $node->getLabel() !== '') {
+	    $found['D'][] = sprintf('%s: :::details %s', $pagename, $node->getLabel());
+	}
+    }
+}
+
+$out = array();
+function report($format) {
+    global $out;
+    $args = array_slice(func_get_args(), 1);
+    $out[] = vsprintf($format, $args);
+}
+
+/* $lines が空でなければ、見出しと説明を出したうえで並べる */
+function report_lines($title, $notes, $lines, $list_max) {
+    if(empty($lines))
+	return;
+    report('[要確認] ' . $title, count($lines));
+    foreach($notes as $note)
+	report('       %s', $note);
+    foreach($lines as $n => $line) {
+	if($list_max !== 0 && $n >= $list_max) {
+	    report("\t... 他 %d 件", count($lines) - $n);
+	    break;
+	}
+	report("\t%s", $line);
+    }
+    report('');
+}
+
+report('Markdown のページの見え方の変化の検査 (0.14.0): %s', $index_path);
+report('');
+report('Markdown のページ : %d 件', $markdown_page_num);
+report('添付した Markdown : %d 件', $markdown_file_num);
+report('');
+
+report_lines('段落にそれ 1 つだけの ![説明](ページ) が、そのページの取り込みになったものが %d か所ある。',
+	     array('これまではリンクだった。リンクのままにするには、先頭の ! を外す。',
+		   '例: ![説明](ページ) → [説明](ページ)'),
+	     $found['E'], $list_max);
+report_lines('![説明](対象 "タイトル") のタイトルが、画像の下にキャプションとして出るようになったものが %d か所ある。',
+	     array('出したくなければ、タイトル ("…") を消す。'),
+	     $found['T'], $list_max);
+report_lines('説明の最後の | の後ろが、大きさや配置の指定として読まれるようになったものが %d か所ある。',
+	     array('その部分は説明から外れる。説明として残すには、| を別の文字 (｜ など) に変える。'),
+	     $found['P'], $list_max);
+report_lines('[TOC] や [PAGES …] とだけ書いた段落が、目次や子ページのツリーになったものが %d か所ある。',
+	     array('文字のまま見せるには、`[TOC]` のようにバッククォートで囲む。'),
+	     $found['M'], $list_max);
+report_lines('見出しを書いた :::details が、目次に載るようになったものが %d か所ある。',
+	     array('直す必要は無い。目次 (ツールの「目次」と [TOC]) の項目が増える。'),
+	     $found['D'], $list_max);
+
+/* D は直す必要が無いので数えない (出すだけ。markdown_link_check と同じく、直すものだけで決める) */
+$found_num = count($found['E']) + count($found['T']) + count($found['P']) + count($found['M']);
+if($found_num === 0)
+    report('=> 問題なし。確かめる必要のあるところは無い。');
+else
+    report('=> %d か所を確かめること。', $found_num);
+
+if(!$is_quiet || $found_num !== 0) {
+    foreach($out as $line)
+	printf("%s\n", $line);
+}
+exit($found_num === 0 ? 0 : 1);
+?>

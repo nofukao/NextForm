@@ -223,7 +223,17 @@ function storage_page_write(&$page, &$contents, &$error) {
     }
     
     $page['storage_filepath'] = storage_page_get_filepath($page['name']);
-    if(!storage_page_backup($page, BACKUP_SKIP_TIME_SECONDS)) {
+    /*
+     * backup_now (page_write() の呼び手が立てる) があれば、同じ人が続けて
+     * 保存したときでも必ず今の版を残す。値が時刻ならその時刻で残す
+     * (変換が本文に版の時刻を書くため)。
+     */
+    if(!empty($page['backup_now']))
+	$backed_up = storage_page_backup($page, 0,
+					 is_int($page['backup_now']) ? $page['backup_now'] : null);
+    else
+	$backed_up = storage_page_backup($page, BACKUP_SKIP_TIME_SECONDS);
+    if(!$backed_up) {
 	message_error(l('Backup failed.'));
 	$error = PAGE_WRITE_ERROR_BACKUP;
 	return false;
@@ -262,10 +272,14 @@ function storage_page_write_backup(&$page, $backup_time, $contents, &$error) {
     return true;
 }
 
-function storage_page_backup(&$page, $skip_time = 0) {
+/*
+ * 今の版を履歴に残す。$skip_time 秒以内に同じ人が保存した版があれば残さない。
+ * $backup_time を渡すとその時刻で残す。残したら $page['backup_time'] に時刻を入れる。
+ */
+function storage_page_backup(&$page, $skip_time = 0, $backup_time = null) {
     if(!file_exists($page['storage_filepath']))
 	return true;
-    $now = time();
+    $now = is_null($backup_time) ? time() : $backup_time;
 
     if(isset($page['meta']['last_modify_user']))
 	$modify_user = $page['meta']['last_modify_user'];
@@ -282,11 +296,24 @@ function storage_page_backup(&$page, $skip_time = 0) {
     }
 
     $backuppath = storage_page_get_filepath($page['name'], $now);
+    /*
+     * 必ず残すとき ($skip_time が 0) は、同じ秒の版を上書きしない。上書きすると
+     * その版が履歴から消え、開いている版 (「この版に戻す」で読んでいるもの) の
+     * 中身も書き換わる。時刻を渡されていれば失敗にし (呼び手がその時刻を本文に
+     * 書くため)、渡されていなければ 1 秒ずつずらす。
+     */
+    if(empty($skip_time) && file_exists($backuppath)) {
+	if(!is_null($backup_time))
+	    return false;
+	while(file_exists($backuppath = storage_page_get_filepath($page['name'], ++$now)))
+	    ;
+    }
     if(!copy($page['storage_filepath'], $backuppath)) {
 	message_error(l('File copy error'));
-	return false;	
-    } 
+	return false;
+    }
     touch($backuppath, $page['mtime']);
+    $page['backup_time'] = $now;
     return true;
 }
 

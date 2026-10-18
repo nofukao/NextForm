@@ -122,71 +122,11 @@ head_tags_init();
 
 /*
  * 記法の分類表。値は array(分類, 説明)。
- * 分類の正本は組み込みマニュアルの「Wiki記法との対応」で、ここはその写し。
+ * 正本は変換器 (handler/wiki/wiki_markdown.inc の $WIKI_MARKDOWN_CLASSES)。
+ * 変換で写せるものと、この棚卸しが「写せる」と数えるものを食い違わせないため、
+ * ここでは写しを持たない。
  */
-$SURVEY_CLASSES = array(
-    /* --- a: そのまま写せる --- */
-    'root'          => array('a', '文書そのもの'),
-    'paragraph'     => array('a', '段落'),
-    'section'       => array('a', '節 -> 見出し'),
-    'list'          => array('a', '箇条書き'),
-    'blockquote'    => array('a', '引用'),
-    'hr'            => array('a', '区切り線'),
-    'pre'           => array('a', '整形済みテキスト -> コードブロック'),
-    'code'          => array('a', 'コード'),
-    'link'          => array('a', 'リンク'),
-    'bracelink'     => array('a', 'ページへのリンク'),
-    'em'            => array('a', '強調'),
-    'strong'        => array('a', '重要'),
-    'del'           => array('a', '打ち消し'),
-    'br'            => array('a', '改行'),
-    'title'         => array('a', 'ページの題名 -> フロントマターの title'),
-    'entity'        => array('a', '文字'),
-    'entity_number' => array('a', '文字 (番号指定)'),
-
-    /* --- b: 写せるが落ちるものがある --- */
-    'table'         => array('b', '表 (セル結合・幅指定・並べ替えは落ちる)'),
-    'csv'           => array('b', 'CSV 形式の表 (表には直せる)'),
-    'deflist'       => array('b', '関連リスト (Markdown では箇条書きか表で代用)'),
-    'plain'         => array('b', 'そのまま表示 (エスケープで代用)'),
-    'paa'           => array('b', 'アスキーアート (折り返しの指定は落ちる)'),
-    'through'       => array('b', '素通し'),
-
-    /* --- c: Markdown に無い --- */
-    'align'         => array('c', '配置の指定'),
-    'alias'         => array('c', '記法の別名の定義'),
-    'bgcolor'       => array('c', '背景色'),
-    'btime'         => array('c', '作成日時の埋め込み'),
-    'calc'          => array('c', '数値計算'),
-    'calclist'      => array('c', '数値計算 (行頭)'),
-    'calendar'      => array('c', 'カレンダー'),
-    'color'         => array('c', '文字色'),
-    'counter'       => array('c', 'カウンタ'),
-    'datepages'     => array('c', '日付のページの一覧'),
-    'export'        => array('c', '書き出し'),
-    'feed'          => array('c', '新着の一覧'),
-    'include'       => array('c', '他のページの取り込み'),
-    'index'         => array('c', '見出しの一覧'),
-    'insert'        => array('c', '書き込みフォーム'),
-    'inserttemplate'=> array('c', 'テンプレートからの書き込み'),
-    'listadd'       => array('c', '箇条書きへの追記フォーム'),
-    'math'          => array('c', '数式'),
-    'meta'          => array('c', 'メタ情報の埋め込み'),
-    'more'          => array('c', '折りたたみ'),
-    'mtime'         => array('c', '更新日時の埋め込み'),
-    'pages'         => array('c', 'ページの一覧'),
-    'popularpages'  => array('c', 'よく見られているページ'),
-    'redirect'      => array('c', '転送'),
-    'search'        => array('c', '検索結果の埋め込み'),
-    'select'        => array('c', '選択肢'),
-    'size'          => array('c', '文字の大きさ'),
-    'taro'          => array('c', '飾り'),
-    'time'          => array('c', '日時の埋め込み'),
-    'toro'          => array('c', '飾り'),
-    'toratora'      => array('c', '飾り'),
-    'wikiexample'   => array('c', '記法の実演'),
-    'writepage'     => array('c', 'ページの書き込み'),
-    );
+$SURVEY_CLASSES = $WIKI_MARKDOWN_CLASSES;
 
 $SURVEY_CLASS_LABELS = array(
     'a' => 'そのまま',

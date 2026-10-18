@@ -27,6 +27,15 @@
  *                             ?option=replace と同じ経路で範囲を差し替える
  *                             (written=1/0 contents=...)。チケットを省くと
  *                             いまのページのものを使う
+ *   attach <名前> <ファイル> <Content-type>
+ *                             種別 file のページ (添付) を書く (written=1/0)
+ *   keepout <ページ名..>      ログインしていない利用者にそのページだけ読ませない
+ *                             (ほかは read。saved=1/0)
+ *   section-id <名前> <見出しの文字>
+ *                             見出しに振られる id (id=...)
+ *   render <名前> <main|side> [本文のファイル]
+ *                             変換した HTML を 1 行で (html=...)。本文のファイルを渡すと
+ *                             保存せずにそれを描く (プレビューと同じ経路)
  *   cleanup                   このヘルパが作ったページを消す (removed=...)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -113,6 +122,44 @@ case 'write-file':
 
 case 'write-wiki':
     printf("written=%d\n", test_write($rest[0], $rest[1], 'wiki') ? 1 : 0);
+    break;
+
+case 'attach':
+    $page = page_create($rest[0]);
+    storage_page_read($page);
+    page_setup($page);
+    $page['meta']['type'] = 'file';
+    $page['meta']['Content-type'] = $rest[2];
+    $page['meta']['original_filename'] = page_get_simplename($rest[0]);
+    $contents = array('upload_file' => $rest[1]);
+    $content_type_handler = &file_get_content_type_handler($page);
+    if(!empty($content_type_handler['write']) && function_exists($content_type_handler['write']))
+	$content_type_handler['write']($page, $contents);
+    $ticket = default_value($page['meta']['ticket'], '');
+    printf("written=%d\n", page_write($page, $contents, $ticket) ? 1 : 0);
+    break;
+
+case 'keepout':
+    /* ページごとの権限は先に書いたものから当てはめられるので、'*' を最後に置く */
+    global $AUTH_PERMISSIONS;
+    $permission = array();
+    foreach($rest as $pagename)
+	$permission[$pagename] = 'keepout';
+    $permission['*'] = 'read';
+    $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = $permission;
+    printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
+    break;
+
+case 'section-id':
+    printf("id=%s\n", page_get_section_id($rest[0], $rest[1]));
+    break;
+
+case 'render':
+    $page = page_read($rest[0]);
+    $page['is_main'] = ($rest[1] === 'main');
+    $dom = dom_create_document();
+    markdown_convert($page, $dom, isset($rest[2]) ? file_get_contents($rest[2]) : null);
+    printf("html=%s\n", str_replace("\n", ' ', dom_save_html($dom)));
     break;
 
 case 'meta':

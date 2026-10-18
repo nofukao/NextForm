@@ -148,6 +148,11 @@ for tag in re.findall(r"<a\b[^>]*>", sys.stdin.read()):
 # `curl | grep -q ...` と書いてはいけない。grep -q は見つけた時点で終わるので
 # curl が SIGPIPE で落ち、set -o pipefail のせいでパイプライン全体が失敗と
 # 扱われる。先に変数へ受けてから調べる (manual.sh と同じ)。
+# summary の属性 (見出しの id) を落とす。ラベルだけを見たい検査で使う
+strip_summary() {
+    printf '%s' "$1" | sed -E 's/<summary[^>]*>/<summary>/g'
+}
+
 contains() {
     case "$1" in
         *"$2"*) echo yes ;;
@@ -308,13 +313,13 @@ D_HTML="$(main_html "$P_DETAILS")"
 # 属性の並び順に寄りかからない。部分編集の範囲 (data-twp) が details にも
 # 付くので、'<details>' のような閉じ括弧まで込みの照合はここでは使えない。
 check_eq "details が出る" "yes" "$(contains "$D_HTML" '<details')"
-check_eq "  summary にラベルが入る" "yes" "$(contains "$D_HTML" '<summary>手順</summary>')"
+check_eq "  summary にラベルが入る" "yes" "$(contains "$(strip_summary "$D_HTML")" '<summary>手順</summary>')"
 check_eq "  既定は閉じている" "no" "$(contains "$D_HTML" 'open="open"')"
 check_eq "  中身は Markdown として変換される" "yes" "$(contains "$D_HTML" '<strong>中身</strong>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::details\n中身\n:::\n')" > /dev/null
 check_eq "ラベルを省くと既定の語が入る" "yes" \
-         "$(contains "$(main_html "$P_DETAILS")" '<summary>詳細</summary>')"
+         "$(contains "$(strip_summary "$(main_html "$P_DETAILS")")" '<summary>詳細</summary>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::details+ 開いて出る\n中身\n:::\n')" > /dev/null
 check_eq "+ で開いた状態になる" "yes" \
@@ -323,12 +328,12 @@ check_eq "+ で開いた状態になる" "yes" \
 helper write "$P_DETAILS" "$(printf -- ':::details open 開いて出る\n中身\n:::\n')" > /dev/null
 D_HTML="$(main_html "$P_DETAILS")"
 check_eq "open でも開いた状態になる" "yes" "$(contains "$D_HTML" 'open="open"')"
-check_eq "  open はラベルに残らない" "yes" "$(contains "$D_HTML" '<summary>開いて出る</summary>')"
+check_eq "  open はラベルに残らない" "yes" "$(contains "$(strip_summary "$D_HTML")" '<summary>開いて出る</summary>')"
 
 # open で始まるラベルを書きたいときの逃げ道。マニュアルにも書いてある
 helper write "$P_DETAILS" "$(printf -- ':::details+ open な話\n中身\n:::\n')" > /dev/null
 check_eq "+ を使えば open で始まるラベルも書ける" "yes" \
-         "$(contains "$(main_html "$P_DETAILS")" '<summary>open な話</summary>')"
+         "$(contains "$(strip_summary "$(main_html "$P_DETAILS")")" '<summary>open な話</summary>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::detailsX ラベル\n中身\n:::\n')" > /dev/null
 check_eq "ラベルの前に区切りが無ければ反応しない" "no" \
@@ -339,7 +344,7 @@ D_HTML="$(main_html "$P_DETAILS")"
 check_eq "外側のコロンを増やすと入れ子になる" "2" \
          "$(printf '%s' "$D_HTML" | grep -o '<details' | wc -l)"
 check_eq "  内側が外側の中に入る" "yes" \
-         "$(contains "$(printf '%s' "$D_HTML" | tr -d '\n')" '<summary>外</summary><details')"
+         "$(contains "$(printf '%s' "$D_HTML" | tr -d '\n' | sed -E 's/<summary[^>]*>/<summary>/g')" '<summary>外</summary><details')"
 
 # ここが肝。ライブラリは外側のブロックから順に tryContinue() を呼ぶので、
 # 素直に書くとコードブロックの中の ::: で両方まとめて閉じる。
@@ -356,7 +361,7 @@ check_eq "字下げした ::: では閉じない" "1" \
 helper write "$P_DETAILS" "$(printf -- ':::details 閉じ忘れ\n中身\n')" > /dev/null
 D_HTML="$(printf '%s' "$(main_html "$P_DETAILS")" | tr -d '\n')"
 check_eq "閉じ忘れても文書の終わりで閉じる" "yes" \
-         "$(contains "$D_HTML" '<summary>閉じ忘れ</summary><p')"
+         "$(contains "$(strip_summary "$D_HTML")" '<summary>閉じ忘れ</summary><p')"
 check_eq "  中身が中に入ったまま閉じる" "yes" "$(contains "$D_HTML" '中身</p></details>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::note 注意\n中身\n:::\n')" > /dev/null
@@ -775,6 +780,289 @@ check_eq "印を付けた項目 (5 つ) にも部分編集の範囲がある" "5
          "$(printf '%s\n' "$G_MARKED" | grep -c .) $(printf '%s\n' "$G_MARKED" | grep -c 'data-twp=')"
 helper write "$P_GAP" "$(printf -- '- aa\n- bb\n- cc\n')" > /dev/null
 check_eq "空行が無ければ印は付かない" "no" "$(contains "$(main_html "$P_GAP")" 'blank_before')"
+echo
+
+echo "16. ![](..) でページの取り込みと、大きさ・配置・キャプションの指定"
+# ![説明|指定](対象 "キャプション")。指定は &include と同じ語 (Obsidian と同じ形)。
+# ふつうのページが段落に 1 つだけなら取り込む。取り込んだ中身は検索の文字に入れない
+E="MarkdownTest/Embed"
+WORK_DIR="$(mktemp -d)"
+python3 - "$WORK_DIR/embed.png" <<'PYEOF'
+import struct, sys, zlib
+w, h = 40, 30
+raw = b''.join(b'\x00' + bytes((x * 7 + y * 3) % 256 for x in range(w * 3)) for y in range(h))
+def chunk(t, d):
+    return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+open(sys.argv[1], 'wb').write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+                              + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b''))
+PYEOF
+sudo install -o "$SITE_OWNER" -m 644 "$WORK_DIR/embed.png" "${MARKDOWN_TEST_SITE}/embed.png"
+rm -rf "$WORK_DIR"
+helper attach "$E/pic.png" "${MARKDOWN_TEST_SITE}/embed.png" image/png > /dev/null
+helper write "$E/Part" "$(printf -- '## 部品の見出し\n\n部品の本文ことばパーツ\n')" > /dev/null
+helper write-wiki "$E/WikiPart" "$(printf -- '*ウィキ部品\nウィキ部品の本文ことば\n')" > /dev/null
+helper write "$E/Secret" "読めない本文ことばひみつ" > /dev/null
+helper write "$E/L1" "$(printf -- 'L1の本文\n\n![](../L2)\n')" > /dev/null
+helper write "$E/L2" "$(printf -- 'L2の本文\n\n![](../L1)\n')" > /dev/null
+helper write "$E" "$(printf -- '%s\n' \
+    '取り込む側の本文' '' \
+    '![|50%](./pic.png "図のキャプション")' '' \
+    '![右に|right 20x](./pic.png)' '' \
+    '![取り込み](./Part)' '' \
+    '文の途中の ![リンクのまま](./Part) です。' '' \
+    '![wiki を取り込む](./WikiPart)' '' \
+    '![読めない](./Secret)' '' \
+    '![無い](./Nothing)' '' \
+    '![説明|2024年|ではない](./pic.png)' '' \
+    '![外部|640x400](https://example.com/a.png "外の図")')" > /dev/null
+helper keepout "$E/Secret" > /dev/null
+E_HTML="$(main_html "$E")"
+# 要素ごとに 1 行にして調べる
+e_line() { printf '%s' "$E_HTML" | tr '\n' ' ' | sed 's/<figure/\n<figure/g; s/<\/figure>/<\/figure>\n/g; s/<p[ >]/\n&/g' | grep -F "$1" | head -1; }
+
+L="$(e_line '図のキャプション')"
+check_eq "キャプションは figure と figcaption で出す" "yes|yes" \
+         "$(contains "$L" '<figure class="figure')|$(contains "$L" '<figcaption>図のキャプション</figcaption>')"
+check_eq "  拡大率 (50%) で大きさを決める" "yes" "$(contains "$L" 'width="20" height="15"')"
+check_eq "  段落 (p) の中に入れない" "no" "$(contains "$E_HTML" '<p><figure')"
+L="$(e_line 'alt="右に"')"
+check_eq "right で右に寄せる (gravity_right)。幅だけの指定" "yes|yes" \
+         "$(contains "$L" 'gravity_right')|$(contains "$L" 'width="20"')"
+check_eq "段落に 1 つだけのページは取り込む" "yes|yes" \
+         "$(contains "$E_HTML" '部品の本文ことばパーツ')|$(contains "$E_HTML" "data-pagename=\"$E/Part\"")"
+check_eq "  文の途中に書いたものはリンクのまま" "yes" \
+         "$(contains "$(e_line '文の途中の')" "data-link-pagename=\"$E/Part\"")"
+check_eq "Wiki 記法のページも取り込む" "yes" "$(contains "$E_HTML" 'ウィキ部品の本文ことば')"
+check_eq "読めないページは取り込まない (リンクのまま)" "no|yes" \
+         "$(contains "$E_HTML" 'ひみつ')|$(contains "$E_HTML" "data-link-pagename=\"$E/Secret\"")"
+check_eq "無いページはリンク (まだ無い印)" "yes" "$(contains " $(link_class "$E_HTML" "$E/Nothing") " " not_exists ")"
+check_eq "最後の | の後ろが指定として読めなければ、全体を説明にする" "yes" \
+         "$(contains "$E_HTML" 'alt="説明|2024年|ではない"')"
+L="$(e_line '外の図')"
+check_eq "外部の画像: 数字の大きさに比率を保って収め、キャプションを付ける" "yes|yes" \
+         "$(contains "$L" 'max-width: 640px; max-height: 400px;')|$(contains "$L" '<figcaption>外の図</figcaption>')"
+T="$(value_of "$(helper texts "$E")" texts)"
+check_eq "検索の文字に、取り込んだ中身は入れない (説明は入る)" "no|no|yes" \
+         "$(contains "$T" 'ことばパーツ')|$(contains "$T" 'ウィキ部品の本文')|$(contains "$T" '取り込み')"
+L1_HTML="$(main_html "$E/L1")"
+check_eq "互いに取り込み合っても止まる (相手の中の自分はリンクのまま)" "1|yes" \
+         "$(printf '%s' "$L1_HTML" | grep -o 'L2の本文' | wc -l)|$(contains "$L1_HTML" "data-link-pagename=\"$E/L1\"")"
+
+# 生の HTML を許すサイトで、印を手で書いても取り込まない (印は要求ごとの乱数)
+sudo cp -p "${MARKDOWN_TEST_SITE}/index.php" "${MARKDOWN_TEST_SITE}/index.php.orig"
+sudo sed -i "s|^// custom settings here.*|&\ndefine('MARKDOWN_ALLOW_HTML', 'true');|" "${MARKDOWN_TEST_SITE}/index.php"
+sleep $(( ${OPCACHE_FREQ:-2} + 1 ))
+helper write "$E/Forged" "$(printf -- '<p><a data-markdown-embed="e0" href="#">偽の印</a></p>\n')" > /dev/null
+F_HTML="$(main_html "$E/Forged")"
+check_eq "手で書いた印では取り込まない" "no|no" \
+         "$(contains "$F_HTML" 'ことばパーツ')|$(contains "$F_HTML" 'data-markdown-embed')"
+sudo cp -p "${MARKDOWN_TEST_SITE}/index.php.orig" "${MARKDOWN_TEST_SITE}/index.php"
+sleep $(( ${OPCACHE_FREQ:-2} + 1 ))
+echo
+
+echo "17. 折りたたみの見出しの働きと、目次 [TOC]"
+# :::details の見出しにも id を振り、目次に載せる (wiki 記法の *(optional) と同じ)。
+# 深さは見出しの先頭の # で書ける。書かなければ直前の見出しの 1 段下。
+# [TOC] とだけ書いた段落は、ツールの「目次」と同じ形の目次になる
+# 目次の形を「深さ:文字」で並べる (section.summary の ul の入れ子の深さ)
+toc_outline() {
+    python3 -c '
+import sys
+from html.parser import HTMLParser
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.depth = 0; self.inside = 0; self.items = []; self.in_a = False
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "section" and "summary" in (a.get("class") or "").split() and not self.inside:
+            self.inside = 1
+        elif self.inside:
+            if tag == "section": self.inside += 1
+            if tag == "ul": self.depth += 1
+            if tag == "a": self.in_a = True; self.items.append([self.depth, ""])
+    def handle_endtag(self, tag):
+        if not self.inside: return
+        if tag == "ul": self.depth -= 1
+        if tag == "a": self.in_a = False
+        if tag == "section":
+            self.inside -= 1
+            if not self.inside: raise StopIteration
+    def handle_data(self, data):
+        if self.inside and self.in_a: self.items[-1][1] += data
+p = P()
+try: p.feed(sys.stdin.read())
+except StopIteration: pass
+print(" ".join("%d:%s" % (d, t.strip()) for d, t in p.items))
+'
+}
+T="MarkdownTest/Toc"
+helper write "$T" "$(printf -- '%s\n' \
+    '[TOC]' '' \
+    '## 前置き' '' 'まえおき' '' \
+    ':::details ### 畳んだ見出し' '畳んだ中身' ':::' '' \
+    ':::details 深さを書かない' '中身' ':::' '' \
+    '## 後書き' '' \
+    '```' '[TOC]' '```')" > /dev/null
+T_HTML="$(main_html "$T")"
+SID="$(value_of "$(helper section-id "$T" '畳んだ見出し')" id)"
+check_eq "見出しの先頭の # は、折りたたみの文字に出さない" "yes|no" \
+         "$(contains "$T_HTML" '>畳んだ見出し</summary>')|$(contains "$T_HTML" '### 畳んだ見出し')"
+check_eq "折りたたみの見出しに、wiki と同じ規則の id を振る" "yes" \
+         "$(contains "$(printf '%s' "$T_HTML" | grep -o '<summary[^>]*>' | tr '\n' ' ')" "id=\"${SID}\"")"
+check_eq "ツールの目次に載る (# の数の深さ。書かなければ直前の見出しの 1 段下)" \
+         "1:前置き 2:畳んだ見出し 2:深さを書かない 1:後書き" \
+         "$(curl -sk "${MARKDOWN_TEST_URL}/?${T}&option=summary" | toc_outline)"
+check_eq "[TOC] の段落が、同じ形の目次になる" \
+         "1:前置き 2:畳んだ見出し 2:深さを書かない 1:後書き" "$(printf '%s' "$T_HTML" | toc_outline)"
+check_eq "  目次の項目は見出しの id を指す" "yes" "$(contains "$T_HTML" "#${SID}\"")"
+check_eq "  コードの中の [TOC] は文字のまま (目次にしない)" "1" "$(printf '%s' "$T_HTML" | grep -o '\[TOC\]' | wc -l)"
+check_eq "  検索の文字に目印の [TOC] を出さない (コードの中のものだけが残る)" "1" \
+         "$(value_of "$(helper texts "$T")" texts | grep -o '\[TOC\]' | wc -l)"
+WORK_TOC="$(mktemp)"
+printf -- '[TOC]\n\n## 保存前の見出し\n' > "$WORK_TOC"
+sudo install -o "$SITE_OWNER" -m 644 "$WORK_TOC" "${MARKDOWN_TEST_SITE}/toc-preview.md"
+rm -f "$WORK_TOC"
+check_eq "プレビュー (保存前の本文) の目次には、保存前の見出しが出る" "1:保存前の見出し" \
+         "$(value_of "$(helper render "$T" main "${MARKDOWN_TEST_SITE}/toc-preview.md")" html | toc_outline)"
+check_eq "サイドや取り込まれた先でも目次を出す (項目はページの URL + #id)" "yes|yes" \
+         "$(contains "$(value_of "$(helper render "$T" side)" html | toc_outline)" '2:畳んだ見出し')|$(contains "$(value_of "$(helper render "$T" side)" html)" "#${SID}\"")"
+echo
+
+echo "18. 子ページのツリー [PAGES]"
+# [PAGES …] とだけ書いた段落は、Wiki 記法の &treepages と同じツリーになる。
+# 同じ親について、Wiki 記法のページに書いた &treepages と形が同じかで確かめる
+# 一覧の li[data-pagename] を「入れ子の深さ:ページ名」で並べる
+pages_outline() {
+    python3 -c '
+import sys
+from html.parser import HTMLParser
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.depth = 0; self.items = []
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "ul": self.depth += 1
+        if tag == "li" and a.get("data-pagename"): self.items.append("%d:%s" % (self.depth, a["data-pagename"]))
+    def handle_endtag(self, tag):
+        if tag == "ul": self.depth -= 1
+p = P(); p.feed(sys.stdin.read()); print(" ".join(p.items))
+'
+}
+TR="MarkdownTest/Tree"
+helper write "$TR/A" "子A" > /dev/null
+helper write "$TR/A/B" "孫B" > /dev/null
+helper write "$TR/C" "子C" > /dev/null
+pages_of() {
+    helper write "$TR" "$(printf -- '%s\n' "$1")" > /dev/null
+    value_of "$(helper render "$TR" main)" html | pages_outline
+}
+wiki_pages_of() {
+    helper write-wiki "MarkdownTest/TreeWiki" "$1" > /dev/null
+    curl -sk "${MARKDOWN_TEST_URL}/?MarkdownTest/TreeWiki" \
+        | tr '\n' '\001' | sed -e 's/.*<article class="main">//' -e 's;</article>.*;;' | tr '\001' '\n' \
+        | pages_outline
+}
+W="$(wiki_pages_of "&treepages([[$TR]]);")"
+check_eq "(前提) Wiki 記法の &treepages に子と孫が出る" "yes|yes" \
+         "$(contains "$W" ":$TR/A ")|$(contains "$W" ":$TR/A/B")"
+check_eq "[PAGES] は、このページの子孫を &treepages と同じ形で出す" "$W" "$(pages_of '[PAGES]')"
+check_eq "[PAGES children] は直下だけ (&childpages)" \
+         "$(wiki_pages_of "&treepages([[$TR]], children);")" "$(pages_of '[PAGES children]')"
+check_eq "[PAGES ./A] は ./A の子孫 (Markdown のリンクの規則で解決する)" \
+         "$(wiki_pages_of "&treepages([[$TR/A]]);")" "$(pages_of '[PAGES ./A]')"
+check_eq "[PAGES sort=mtime reverse] は &treepages と同じ並び" \
+         "$(wiki_pages_of "&treepages([[$TR]], sort=mtime, reverse);")" "$(pages_of '[PAGES sort=mtime reverse]')"
+check_eq "[PAGES 1] は件数を絞る" \
+         "$(wiki_pages_of "&treepages([[$TR]], 1);")" "$(pages_of '[PAGES 1]')"
+check_eq "[PAGES /] はサイト全体 (ほかの木のページも出る)" "yes" \
+         "$(contains "$(pages_of '[PAGES /]')" ':MarkdownTest/Toc')"
+helper write "$TR" '[PAGES what=ever]' > /dev/null
+PH="$(value_of "$(helper render "$TR" main)" html)"
+check_eq "読めない指定のときは文字のまま" "yes|" \
+         "$(contains "$PH" '[PAGES what=ever]')|$(printf '%s' "$PH" | pages_outline)"
+helper write "$TR" "$(printf -- '[PAGES]\n\n本文\n')" > /dev/null
+check_eq "検索の文字に [PAGES] を出さない" "no|yes" \
+         "$(contains "$(value_of "$(helper texts "$TR")" texts)" '[PAGES')|$(contains "$(value_of "$(helper texts "$TR")" texts)" '本文')"
+echo
+
+echo "19. 見え方が変わるところを探す道具 (app/tool/markdown_change_check)"
+# 16.〜18. で見え方が変わる書き方を一覧にする。アップグレードの案内から使う
+CH="MarkdownTest/Change"
+helper attach "$CH/pic.png" "${MARKDOWN_TEST_SITE}/embed.png" image/png > /dev/null
+helper write "$CH/Part" "部品" > /dev/null
+helper write "$CH" "$(printf -- '%s\n' \
+    '![取り込み](./Part)' '' \
+    '![図](./pic.png "キャプション")' '' \
+    '![図|300](./pic.png)' '' \
+    '[TOC]' '' \
+    '[PAGES]' '' \
+    '[PAGES what=ever]' '' \
+    ':::details 折りたたみの見出し' '中身' ':::' '' \
+    '文の途中 ![リンク](./Part) です。' '' \
+    '![外|left](https://example.com/a.png)' '' \
+    '![説明|ふつうの説明](./pic.png)')" > /dev/null
+helper write "MarkdownTest/Unchanged" "$(printf -- '# 題名\n\n![図](./x.png)\n\n[リンク](./Part)\n')" > /dev/null
+change_check() {
+    (cd "$MARKDOWN_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+        app/tool/markdown_change_check "${MARKDOWN_TEST_SITE}/index.php" --list 0 --user "$WIKI_ADMIN" "$@" 2>&1)
+}
+CC="$(change_check --base "$CH")"
+check_eq "見え方が変わるところがあれば終了コード 1" "1" "$(change_check --base "$CH" > /dev/null; echo $?)"
+check_eq "  段落に 1 つだけのページの取り込み (文の途中のものは出さない)" "1|yes" \
+         "$(printf '%s\n' "$CC" | grep -c '!\[リンク\]\|!\[取り込み\](./Part) → ')|$(contains "$CC" "![取り込み](./Part) → $CH/Part")"
+check_eq "  タイトルがキャプションになるもの" "yes" "$(contains "$CC" '![図](./pic.png "キャプション")')"
+check_eq "  説明の最後の | が指定として読まれるもの (読めないものは出さない)" "yes|yes|no" \
+         "$(contains "$CC" '![図|300](./pic.png)')|$(contains "$CC" '![外|left](https://example.com/a.png)')|$(contains "$CC" 'ふつうの説明')"
+check_eq "  [TOC] と [PAGES] だけの段落 (読めない指定のものは出さない)" "yes|yes|no" \
+         "$(contains "$CC" "$CH: [TOC]")|$(contains "$CC" "$CH: [PAGES]")|$(contains "$CC" 'what=ever')"
+check_eq "  見出しを書いた :::details" "yes" "$(contains "$CC" ':::details 折りたたみの見出し')"
+CC="$(change_check --base MarkdownTest/Unchanged)"
+check_eq "変わるところが無ければ終了コード 0 で、問題なしと言う" "0|yes" \
+         "$(change_check --base MarkdownTest/Unchanged > /dev/null; echo $?)|$(contains "$CC" '問題なし')"
+helper write "MarkdownTest/OnlyDetails" "$(printf -- ':::details 見出し\n中身\n:::\n')" > /dev/null
+check_eq "見出しのある :::details だけなら、出すが終了コードは 0 (直す必要は無い)" "0|yes" \
+         "$(change_check --base MarkdownTest/OnlyDetails > /dev/null; echo $?)|$(contains "$(change_check --base MarkdownTest/OnlyDetails)" ':::details 見出し')"
+helper write "MarkdownTest/TightList" "$(printf -- '- ![取り込み](../Change/Part)\n- [TOC]\n')" > /dev/null
+check_eq "詰めた箇条書きの中のもの (表示が変わらない) は出さない" "0" \
+         "$(change_check --base MarkdownTest/TightList > /dev/null; echo $?)"
+echo
+
+echo "20. 取り込み・目次・ツリーの細かい振る舞い"
+helper write "$T" "$(printf -- '%s\n' '[TOC]' '' '## 前置き' '' 'まえおき' '' '[PAGES ./Toc]')" > /dev/null
+Q_HTML="$(curl -sk "${MARKDOWN_TEST_URL}/?${T}&query=TOC" | tr '\n' '\001' | sed -e 's/.*<article class="main">//' -e 's;</article>.*;;' | tr '\001' '\n')"
+check_eq "検索語の印が付いても [TOC] は目次になる" "1:前置き|no" \
+         "$(printf '%s' "$Q_HTML" | toc_outline)|$(contains "$Q_HTML" '[<mark')"
+T_HTML="$(main_html "$T")"
+check_eq "本文の目次は data-pagename を持たない (部分編集でページの要素と間違えない)" "no|yes" \
+         "$(contains "$(printf '%s' "$T_HTML" | grep -o '<section class="summary"[^>]*>')" 'data-pagename')|$(contains "$(printf '%s' "$T_HTML" | grep -o '<section class="summary"[^>]*>')" 'data-twp')"
+# 段落ごとに 1 行にして、その文字を含む段落を出す
+e_line_of() { printf '%s' "$1" | tr '\n' ' ' | sed 's/<p[ >]/\n&/g; s/<\/p>/&\n/g' | grep -F "$2" | head -1; }
+helper attach "$CH/doc.pdf" "${MARKDOWN_TEST_SITE}/embed.png" application/pdf > /dev/null
+helper write "$CH/Note" "$(printf -- '取り込まれる側の注[^1]。\n\n[^1]: 取り込まれる側の脚注\n')" > /dev/null
+helper write "$CH/Inline" "$(printf -- '%s\n' \
+    '[![バッジ](https://example.com/b.svg "ビルドの状態")](https://example.com/) と ![|right](../pic.png) の文。' '' \
+    '![|right](../doc.pdf)' '' \
+    '![図](../pic.png "キャプション")' '' \
+    '外側の注[^1]。' '' \
+    '![](../Note)' '' \
+    '[^1]: 外側の脚注')" > /dev/null
+I_HTML="$(main_html "$CH/Inline")"
+check_eq "文中の画像はタイトルがあっても figure にしない (段落を割らない)" "no|yes" \
+         "$(contains "$(e_line_of "$I_HTML" '文。')" '<figure')|$(contains "$I_HTML" 'title="ビルドの状態"')"
+check_eq "指定だけを書いた PDF のリンクの文字はファイル名 (指定の語にしない)" "yes" \
+         "$(contains "$I_HTML" '>doc.pdf</a>')"
+check_eq "段落を図に置き換えても部分編集の範囲を引き継ぐ" "yes" \
+         "$(contains "$(printf '%s' "$I_HTML" | grep -o '<figure[^>]*>' | tr '\n' ' ')" 'data-twp')"
+FN=$(printf '%s' "$I_HTML" | grep -o 'id="fn[^"]*"' | sort | uniq -d | wc -l)
+check_eq "取り込んだページの脚注と id がぶつからない" "0" "$FN"
+check_eq "  取り込まれた側の脚注も出る" "yes|yes" \
+         "$(contains "$I_HTML" '外側の脚注')|$(contains "$I_HTML" '取り込まれる側の脚注')"
+helper write "MarkdownTest/TocOnly" "$(printf -- '[TOC]\n\n見出しの無い本文\n')" > /dev/null
+check_eq "見出しが無いページのツールの目次に [TOC] の文字を出さない" "no|yes" \
+         "$(contains "$(curl -sk "${MARKDOWN_TEST_URL}/?MarkdownTest/TocOnly&option=summary")" '[TOC]')|$(contains "$(curl -sk "${MARKDOWN_TEST_URL}/?MarkdownTest/TocOnly&option=summary")" '見出しの無い本文')"
+helper write "MarkdownTest/BadPages" "$(printf -- '[PAGES what=ever]\n')" > /dev/null
+check_eq "読めない [PAGES …] は、画面と同じく検索の文字にも残す" "yes" \
+         "$(contains "$(value_of "$(helper texts MarkdownTest/BadPages)" texts)" 'what=ever')"
 echo
 
 helper cleanup > /dev/null

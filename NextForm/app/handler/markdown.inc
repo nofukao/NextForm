@@ -649,10 +649,270 @@ function markdown_convert(&$page, $dom, $contents = null, $is_positioned = true)
 	$title_heading->parentNode->removeChild($title_heading);
 
     markdown_move_code_positions($section);
+    /*
+     * [TOC] と [PAGES] は検索語の印より先に置き換える。印 (mark) が付くと、
+     * 目印が「文字だけの段落」でなくなる。
+     */
+    markdown_replace_toc($page, $section);
+    markdown_replace_pages($page, $section);
     markdown_append_sentence($page, $section);
     $ids = markdown_set_heading_ids($page, $section);
     markdown_resolve_section_links($section, $ids);
+    markdown_unwrap_figures($section);
+    /* 取り込みは一番最後。上の後処理が取り込んだ中身に及ばないように */
+    markdown_expand_embeds($page, $section);
     return true;
+}
+
+/*
+ * 中身が目印だけの段落 ([TOC] / [PAGES …]) を拾う。返すのは [要素, 目印の名前, 引数] の並び。
+ * 目印は文字だけの段落に限る ([TOC]: URL のように参照の定義を書いたものはリンクに
+ * なるので当たらない)。コードの中は段落ではないので当たらない。
+ */
+function markdown_marker_paragraphs($dom) {
+    $markers = array();
+    foreach($dom->getElementsByTagName('p') as $p) {
+	foreach($p->childNodes as $child)
+	    if(!($child instanceof DOMText))
+		continue 2;
+	$text = trim($p->textContent);
+	if(strcasecmp($text, '[TOC]') == 0)
+	    $markers[] = array('element' => $p, 'name' => 'toc', 'args' => '');
+	else if(preg_match('/^\[PAGES(?:[ \t]+([^\]]*))?\]$/i', $text, $matches))
+	    $markers[] = array('element' => $p, 'name' => 'pages', 'args' => isset($matches[1]) ? $matches[1] : '');
+    }
+    return $markers;
+}
+
+/*
+ * [TOC] とだけ書いた段落を、ツールの「目次」と同じ形の目次にする (wiki 記法の &index)。
+ * 見出しは描いている途中の DOM から拾う (保存前のプレビューでも、いまの見出しが出る)。
+ * サイドや取り込まれた先でも出す。項目はページの URL + #id なので、そこから押しても飛べる。
+ * 部分編集の範囲は目印の行のものを引き継ぐ ([TOC] の行をダブルクリックで直せる)。
+ */
+function markdown_replace_toc(&$page, $dom) {
+    $markers = array();
+    foreach(markdown_marker_paragraphs($dom) as $marker)
+	if($marker['name'] === 'toc')
+	    $markers[] = $marker;
+    if(empty($markers))
+	return;
+
+    $headings = array();
+    markdown_headings($dom, $headings);
+    foreach($markers as $marker) {
+	$p = $marker['element'];
+	if(empty($headings)) {
+	    $p->parentNode->removeChild($p);
+	    continue;
+	}
+	/*
+	 * data-pagename は付けない。部分編集 (nextform.js) は data-pagename を持つ要素を
+	 * ページとみなしてチケットを読むので、付けるとこの目次を直せなくなる。
+	 */
+	$document = dom_create_document();
+	$summary = dom_append_child($document, 'section', 'summary');
+	markdown_append_summary_list($page, $summary, $headings);
+	foreach(array('data-twp', 'data-twl') as $name)
+	    if($p->hasAttribute($name))
+		dom_set_attribute($summary, $name, $p->getAttribute($name));
+	$p->parentNode->replaceChild(dom_owner($p)->importNode($summary, true), $p);
+    }
+}
+
+/*
+ * [PAGES …] とだけ書いた段落を、子ページのツリーにする (wiki 記法の &treepages)。
+ * 一覧は &pages と同じ部品 (page_find() と pagelist_append() の show=tree) で作る。
+ * 読めない指定があれば文字のまま残す。子ページが無ければ段落ごと消す (&pages と同じ)。
+ * 一覧はページの増減で変わるので、書き出しの差分のために depend_pages_unknown を立てる。
+ */
+function markdown_replace_pages(&$page, $dom) {
+    foreach(markdown_marker_paragraphs($dom) as $marker) {
+	if($marker['name'] !== 'pages')
+	    continue;
+	$query = markdown_pages_parse_args($page, $marker['args']);
+	if($query === false)
+	    continue;
+	$page['depend_pages_unknown'] = true;
+
+	$p = $marker['element'];
+	$pages = page_find($query['pagename'], $query['find_condition']);
+	$document = dom_create_document();
+	$section = pagelist_append($document, $pages, $query['list_options'], page_args($page));
+	if(empty($section)) {
+	    $p->parentNode->removeChild($p);
+	    continue;
+	}
+	dom_remove_empty($section);
+	foreach(array('data-twp', 'data-twl') as $name)
+	    if($p->hasAttribute($name))
+		dom_set_attribute($section, $name, $p->getAttribute($name));
+	$owner = dom_owner($p);
+	$nodes = array();
+	foreach($document->childNodes as $child)
+	    $nodes[] = $child;
+	foreach($nodes as $child)
+	    $p->parentNode->insertBefore($owner->importNode($child, true), $p);
+	$p->parentNode->removeChild($p);
+    }
+}
+
+/*
+ * [PAGES …] の指定を読む。&treepages と同じ語を空白で区切って並べる。
+ *   対象のページ   Markdown のリンクと同じ規則 (名前だけ・./ は子、../ は兄弟、
+ *                  /名前 はトップ階層)。/ だけならサイト全体。省けばこのページ。
+ *                  空白は %20 と書く
+ *   sort=mtime|btime|size、reverse、withsystem、children (直下だけ)、件数
+ * 読めない語があれば false。
+ */
+function markdown_pages_parse_args(&$page, $args) {
+    $find_condition = array('is_pagename_only' => true, 'is_ignore_system_page' => true);
+    $list_options = array('show' => 'tree', 'showhidden' => true, 'context' => array('page' => &$page));
+    $path = null;
+    foreach(preg_split('/[ \t]+/', trim($args), -1, PREG_SPLIT_NO_EMPTY) as $token) {
+	if(preg_match('/^sort=(mtime|btime|size)$/', $token, $matches))
+	    $find_condition['sort'] = $matches[1];
+	else if($token === 'reverse')
+	    $find_condition['reverse'] = true;
+	else if($token === 'withsystem')
+	    $find_condition['is_ignore_system_page'] = false;
+	else if($token === 'children')
+	    $find_condition['is_children_only'] = true;
+	else if(preg_match('/^[1-9][0-9]*$/', $token))
+	    $list_options['limit'] = (int)$token;
+	else if(strpos($token, '=') !== false)
+	    return false;	/* 知らない「名前=値」(&pages の tag= や fields= など) は書けない */
+	else if(is_null($path))
+	    $path = rawurldecode($token);
+	else
+	    return false;
+    }
+
+    $base = isset($page['markdown_base_pagename']) ? $page['markdown_base_pagename'] : $page['name'];
+    if(is_null($path))
+	$pagename = $base;
+    else if($path === '/')
+	$pagename = '';
+    else {
+	if(substr($path, 0, 1) !== '/' && strpos($path, './') !== 0 && strpos($path, '../') !== 0)
+	    $path = './' . $path;
+	$pagename = page_path_to_pagename($path, $base, false);
+    }
+    $list_options['base_pagename'] = $pagename;
+    return array('pagename' => $pagename, 'find_condition' => $find_condition, 'list_options' => $list_options);
+}
+
+/*
+ * 段落にそれ 1 つだけの図 (キャプションや left / right の付いた ![](..)) は、
+ * 段落 (p) から出す。figure は p の中に置けない。
+ */
+function markdown_unwrap_figures($dom) {
+    $figures = array();
+    foreach($dom->getElementsByTagName('figure') as $figure)
+	$figures[] = $figure;
+    foreach($figures as $figure) {
+	$p = $figure->parentNode;
+	if(!($p instanceof DOMElement) || strtolower($p->nodeName) !== 'p' ||
+	   !markdown_is_only_child($p, $figure))
+	    continue;
+	markdown_copy_positions($p, $figure);
+	$p->parentNode->replaceChild($figure, $p);
+    }
+}
+
+/* 部分編集の範囲 (data-twp / data-twl) を引き継ぐ。段落を別の要素に置き換えるとき */
+function markdown_copy_positions($from, $to) {
+    foreach(array('data-twp', 'data-twl') as $name)
+	if($from->hasAttribute($name))
+	    dom_set_attribute($to, $name, $from->getAttribute($name));
+}
+
+/* $element の中身が $child だけか (前後の空白の文字は数えない) */
+function markdown_is_only_child($element, $child) {
+    foreach($element->childNodes as $node) {
+	if($node === $child)
+	    continue;
+	if($node instanceof DOMText && trim($node->nodeValue) === '')
+	    continue;
+	return false;
+    }
+    return true;
+}
+
+/*
+ * ![](ページ) の取り込みを展開する。描画では今と同じリンクに印だけを付けてある
+ * (markdown_embed_register())。印の付いたリンクの段落を、そのページの描画に置き換える。
+ *
+ * 権限・存在・ループはここで確かめる (wiki 記法の &include と同じ順と判定)。
+ * 取り込めないものは、印を外してリンクのまま残す。印は 1 度使ったら表から消す。
+ * 取り込んだ中身は検索の文字に入らない (markdown_texts() はここを通らない)。
+ */
+function markdown_expand_embeds(&$page, $dom) {
+    global $MARKDOWN_EMBEDS;
+
+    $marked = array();
+    $xpath = new DOMXPath(dom_owner($dom));
+    foreach($xpath->query('.//*[@data-markdown-embed]', $dom) as $element)
+	$marked[] = $element;
+    foreach($marked as $a) {
+	$token = $a->getAttribute('data-markdown-embed');
+	$a->removeAttribute('data-markdown-embed');
+	if(!isset($MARKDOWN_EMBEDS[$token]))
+	    continue;
+	$embed = $MARKDOWN_EMBEDS[$token];
+	unset($MARKDOWN_EMBEDS[$token]);
+
+	$p = $a->parentNode;
+	if(!($p instanceof DOMElement) || strtolower($p->nodeName) !== 'p' || !markdown_is_only_child($p, $a))
+	    continue;
+	$pagename = $embed['pagename'];
+	if(!page_is_exists($pagename) || !auth_has_permission($pagename, 'read'))
+	    continue;
+	$chain = default_value($page['include_pages'], array());
+	$chain[] = $page['name'];
+	if(in_array($pagename, $chain, true))
+	    continue;
+	$target = page_read($pagename);
+	if(page_get_type($target) === 'file')
+	    continue;
+	$target['include_pages'] = $chain;
+	$page['depend_pages'][$pagename] = true;
+
+	/*
+	 * 取り込んだ中身は包みに入れ、段落の部分編集の範囲を包みに引き継ぐ (見出しの節を
+	 * 編集するとき、範囲の無い要素で欄の覆いが止まらないように)。
+	 */
+	$document = dom_create_document();
+	$wrapper = dom_append_child($document, 'div', 'embed');
+	$container = markdown_image_open_figure($wrapper, $embed['params'], $embed['caption']);
+	page_handle($target, $container);
+	markdown_image_close_figure($container, $embed['caption']);
+	markdown_prefix_footnote_ids($wrapper, $token);
+
+	$owner = dom_owner($p);
+	$imported = $owner->importNode($wrapper, true);
+	markdown_copy_positions($p, $imported);
+	$p->parentNode->replaceChild($imported, $p);
+    }
+}
+
+/*
+ * 取り込んだ Markdown のページの脚注の id (fn:1 / fnref:1) に、取り込みごとの接頭辞を
+ * 付ける。付けないと外側のページの脚注と同じ id になり、外側の [1] を押すと
+ * 取り込んだ側の脚注に飛ぶ。
+ */
+function markdown_prefix_footnote_ids($dom, $prefix) {
+    $xpath = new DOMXPath(dom_owner($dom));
+    foreach($xpath->query('.//*[@id]', $dom) as $element) {
+	$id = $element->getAttribute('id');
+	if(preg_match('/^fn(ref)?[:-]/', $id))
+	    $element->setAttribute('id', $prefix . '-' . $id);
+    }
+    foreach($xpath->query('.//a[@href]', $dom) as $a) {
+	$href = $a->getAttribute('href');
+	if(preg_match('/^#(fn(ref)?[:-].*)$/', $href, $matches))
+	    $a->setAttribute('href', '#' . $prefix . '-' . $matches[1]);
+    }
 }
 
 /*
@@ -721,8 +981,12 @@ function markdown_show(&$page, $dom) {
 /*
  * 変換後の DOM から見出しを拾う。返すのは [レベル, 文字, 要素] の並び。
  * Markdown の見出しは h1〜h6 で、入れ子ではなく深さが数字で表される。
+ *
+ * 折りたたみ (:::details) の見出しも拾う (wiki 記法の *(optional) と同じく、
+ * id を振って目次に載せる)。深さは data-heading-level (見出しの先頭の # の数)。
+ * 書いていなければ直前の見出し (h1〜h6) の 1 段下。$last_level はその直前の深さ。
  */
-function markdown_headings($dom, &$headings) {
+function markdown_headings($dom, &$headings, &$last_level = 0) {
     foreach($dom->childNodes as $child) {
 	if(!($child instanceof DOMElement))
 	    continue;
@@ -732,8 +996,16 @@ function markdown_headings($dom, &$headings) {
 		$headings[] = array('level' => (int)$matches[1],
 				    'text' => $text,
 				    'element' => $child);
+	    $last_level = (int)$matches[1];
+	} else if($child->nodeName === 'summary' && $child->hasAttribute('data-heading-level')) {
+	    $text = trim($child->textContent);
+	    $level = (int)$child->getAttribute('data-heading-level');
+	    if($level < 1)
+		$level = min(6, $last_level + 1);
+	    if($text !== '')
+		$headings[] = array('level' => $level, 'text' => $text, 'element' => $child);
 	}
-	markdown_headings($child, $headings);
+	markdown_headings($child, $headings, $last_level);
     }
 }
 
@@ -850,6 +1122,10 @@ function markdown_texts(&$page) {
 
     $search_dom = dom_create_document();
     markdown_append_html($search_dom, $html);
+    /* [TOC] などの目印は本文の文字ではない (読めない [PAGES …] は画面と同じく文字のまま) */
+    foreach(markdown_marker_paragraphs($search_dom) as $marker)
+	if($marker['name'] !== 'pages' || markdown_pages_parse_args($page, $marker['args']) !== false)
+	    $marker['element']->parentNode->removeChild($marker['element']);
     $texts_info = array('body' => array());
     dom_texts($search_dom, $texts_info['body']);
     return $texts_info;
@@ -879,6 +1155,9 @@ function markdown_summary(&$page, $dom) {
 
     $headings = array();
     markdown_headings($converted, $headings);
+    /* [TOC] などの目印は書き出しの文字にしない */
+    foreach(markdown_marker_paragraphs($converted) as $marker)
+	$marker['element']->parentNode->removeChild($marker['element']);
 
     $summary = dom_append_child($dom, 'section', 'summary',
 				array('data-pagename' => $page['name']));
@@ -891,14 +1170,23 @@ function markdown_summary(&$page, $dom) {
 	return;
     }
 
-    /*
-     * 見出しの深さで ul を入れ子にする。
-     *
-     * Markdown の見出しは深さが数字なので、h1 の次に h3 が来ることもある。
-     * 飛んでいても 1 段だけ深くし、浅くなったらその深さまで戻る。
-     * 「同じ深さの見出しが入れ子にならない」ことが肝心で、そこを間違えると
-     * 目次が本文と違う形に見える。
-     */
+    markdown_append_summary_list($page, $summary, $headings);
+}
+
+/*
+ * 見出しの深さで ul を入れ子にした目次を $summary に足す。
+ * ツールの「目次」(markdown_summary()) と本文の [TOC] (markdown_replace_toc()) が使う。
+ *
+ * Markdown の見出しは深さが数字なので、h1 の次に h3 が来ることもある。
+ * 飛んでいても 1 段だけ深くし、浅くなったらその深さまで戻る。
+ * 「同じ深さの見出しが入れ子にならない」ことが肝心で、そこを間違えると
+ * 目次が本文と違う形に見える。
+ *
+ * 項目は「ページの URL + #id」(dom_append_page_link())。id は振る側と同じ
+ * page_get_section_id() で作るので、サイドや取り込まれた先から押しても飛べる。
+ */
+function markdown_append_summary_list(&$page, $summary, &$headings) {
+    $ids = array();
     $stack = array();	/* 各段の ul と、その段で最後に足した li */
     $root = dom_append_child($summary, 'ul');
     foreach($headings as $heading) {

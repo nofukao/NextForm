@@ -490,7 +490,14 @@ function markdownEditWiderElement(event) {
 
     var wider = null;
     var widerLength = 0;
+    /*
+     * 取り込んだページ (![](ページ)) の要素は、範囲の数え方がそのページの本文なので
+     * 選ばない。いま編集しているページの要素だけを見る。
+     */
+    var owner = markdown.up('[data-pagename]');
     markdown.select('[data-twp][data-twl]').each(function(element) {
+	if(element.up('[data-pagename]') !== owner)
+	    return;
 	var p = parseInt(element.getAttribute('data-twp'));
 	var l = parseInt(element.getAttribute('data-twl'));
 	if(isNaN(p) || isNaN(l) || l <= length)
@@ -520,8 +527,13 @@ function markdownEditWiderElement(event) {
  * こちらは早見表の場所を知らないので、札は文字だけにする。
  */
 function wikiEditAppendNotation(form, element) {
-    var isMarkdown = element.match('section.markdown') ||
-	element.up('section.markdown') != null ||
+    /*
+     * 欄を開いた要素のページで決める。Markdown のページに取り込んだ wiki のページの
+     * 要素は、外側の section.markdown の中にあっても Wiki 記法。
+     */
+    var page = element.hasAttribute('data-pagename') ? element : element.up('[data-pagename]');
+    var markdown = element.match('section.markdown') ? element : element.up('section.markdown');
+    var isMarkdown = (markdown != null && markdown.up('[data-pagename]') === page) ||
 	element.childElements().any(function(child) {
 	    return child.match('section.markdown');
 	});

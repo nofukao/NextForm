@@ -549,6 +549,37 @@ BAD_STORAGE=$(sudo find "${TEST_SITE}/storage" \! -user "${SITE_OWNER%%:*}" -pri
 check_eq  "  root で流しても storage/ に root の持ち物を残さない" "" "$BAD_STORAGE"
 echo
 
+# --- 0.14.0 より前の NextForm から: Markdown のページの見え方 ---------------
+# 0.14.0 で Markdown の ![](..)・[TOC]・[PAGES]・:::details の見え方が変わった。
+# 直すのは利用者なので、ツールは調べ方を知らせるだけ。docs/upgrade-guide.md の
+# 「Markdown のページの見え方が変わったところを確かめる」と 1 対 1。
+echo "[18] 0.14.0 より前の NextForm から: Markdown のページの見え方"
+# バックアップの名前は秒までの時刻なので、[17] と同じ秒に上げると「バックアップ先が
+# すでにあります」で止まる (ツールとしては正しい)。秒をまたいでから上げる
+sleep 1
+sudo sed -i "s/define('NEXTFORM_VERSION', *'[^']*')/define('NEXTFORM_VERSION', '0.13.0')/" \
+     "${TEST_SITE}/app/version.inc"
+sudo php "${DIST}/NextForm/app/tool/upgrade" "${TEST_SITE}/index.php" --yes --force \
+     > "${DIST}/from-0.13.log" 2>&1
+rc=$?
+[[ $rc -ne 0 ]] && sed 's/^/  | /' "${DIST}/from-0.13.log" | tail -30
+check_eq  "0.13.0 からのアップグレードが正常終了する" "0" "$rc"
+check_cmd "Markdown のページの見え方を確かめるよう知らせる" \
+          "grep -q 'Markdown のページの見え方が変わったところを確かめてください (0.14.0)' '${DIST}/from-0.13.log'"
+check_cmd "  調べるコマンドを出す" \
+          "grep -q 'php .*/app/tool/markdown_change_check .*/index.php --user 管理者名' '${DIST}/from-0.13.log'"
+check_cmd "  0.13.0 からなら、リンクの行き先 (0.13.0) は知らせない" \
+          "! grep -q 'Markdown のリンクの行き先を確かめてください' '${DIST}/from-0.13.log'"
+check_cmd "  手順書にも同じコマンドがある" \
+          "grep -q '^php app/tool/markdown_change_check /path/to/wiki/index.php --user 管理者名$' '${REPO_ROOT}/docs/upgrade-guide.md'"
+# 手順書のコマンドを実走する。tora2 の複製に Markdown のページは無い
+CHANGE_CHECK=$(sudo php "${TEST_SITE}/app/tool/markdown_change_check" "${TEST_SITE}/index.php" --user admin 2>&1)
+check_eq  "  そのコマンドが動く (当てはまるところが無ければ終了コード 0)" "0" "$?"
+check_cmd "  当てはまるところが無いと言う" "grep -q '問題なし' <<< \"\$CHANGE_CHECK\""
+BAD_STORAGE=$(sudo find "${TEST_SITE}/storage" \! -user "${SITE_OWNER%%:*}" -printf '%P\n' 2>/dev/null | head -5)
+check_eq  "  root で流しても storage/ に root の持ち物を残さない" "" "$BAD_STORAGE"
+echo
+
 echo "----------------------------------------"
 if [[ $fail -eq 0 ]]; then
     echo "全 ${total} 項目 ok"

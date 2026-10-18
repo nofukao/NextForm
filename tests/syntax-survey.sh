@@ -121,7 +121,8 @@ echo "3. 分類"
 check_eq "節はそのまま写せる"           "a" "$(field section 2)"
 check_eq "表は一部が落ちる"             "b" "$(field table 2)"
 check_eq "関連リストは一部が落ちる"     "b" "$(field deflist 2)"
-check_eq "&include は写せない"          "c" "$(field include 2)"
+check_eq "&include は写せる (![](..) に写す)" "a" "$(field include 2)"
+check_eq "&calendar は写せない"         "c" "$(field calendar 2)"
 check_eq "&direct は別名を展開して写せる側" "a" "$(field direct 2)"
 
 echo

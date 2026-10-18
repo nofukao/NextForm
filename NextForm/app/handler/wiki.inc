@@ -68,6 +68,7 @@ $WIKI_OPERATOR_INCLUDE_URI_HANDLERS = array();
 require_once(APP_DIR_PATH . '/handler/wiki/wiki_lib.inc');
 require_once(APP_DIR_PATH . '/handler/wiki/wiki_parse.inc');
 require_once(APP_DIR_PATH . '/handler/wiki/wiki_convert.inc');
+require_once(APP_DIR_PATH . '/handler/wiki/wiki_markdown.inc');
 foreach(glob_array(APP_DIR_PATH . '/handler/wiki/function/*.inc') as $file) require_once($file);
 
 function wiki_show(&$page, $dom) {

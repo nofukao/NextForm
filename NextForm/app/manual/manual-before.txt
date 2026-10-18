@@ -150,6 +150,15 @@ A backup is taken before a page is edited (it is skipped when the edits come clo
 together). You can therefore show the contents of a page as it was at some point in
 the past, or compare two versions.
 
+In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
+Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
+-The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
+-The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
+-A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
+-For an attached file (type file), its contents and file type are restored.
+-Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
+-If someone edits the page after the confirmation screen was opened, nothing is restored.
+
 *Lock
 Locking a page makes it impossible to edit. Only a user who has been granted the right
 to lock can lock a page. Unlocking returns it to the editable state.
@@ -333,6 +342,15 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 *バックアップ
 ページは編集される前にバックアップがとられます(編集の間隔が短い場合はバックアップをスキップします)．
 なので過去のある時点でのページの内容を表示したり，比較することができます．
+
+''ページメニュー''の''履歴''の一覧で，前の版の行の''この版に戻す''を押すと(前の版を表示した画面にもあります)，確認の画面になります．
+''この版に戻す''を押すと，今のページをその版の本文と種別で上書きします．
+-題名とタグも，その版のものに戻ります(Markdownの題名とタグ，Wiki記法の題名は本文から取り直します)．説明やロックなどは今のままです．
+-戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
+-種別の違う版にも戻せます．Wiki記法からMarkdownに変換したページも，変換前の版に戻せばWiki記法に戻ります．
+-添付ファイル(種別file)は，中身とファイルの種類を戻します．
+-ページを編集できる人だけが使えます．ロック中は，編集と同じく管理者とロックした本人だけです．
+-確認の画面を開いたあとに誰かがページを編集していたときは，戻しません．
 
 *ロック
 ロックとはページを編集不可能にすることです．ロックをする権利を与えられたユーザーのみがページのロックを行えます．
@@ -904,6 +922,8 @@ Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表�
 |[[脚注:../Extra#脚注]]|""本文[^1]"" と ""[^1]: 中身""|
 |[[URLの自動リンク:../Extra#自動リンク]]|URLをそのまま書く|
 |[[折りたたみ:../Extra#折りたたみ]]|"":::details 見出し"" の行と "":::"" の行で囲む|
+|[[目次:../Extra#目次]]|""[TOC]"" とだけ書いた行|
+|[[子ページのツリー:../Extra#子ページのツリー]]|""[PAGES]"" とだけ書いた行|
 |[[記法の例:../Extra#記法の例]]|"":::example"" の行と "":::"" の行で囲む|
 
 *[[リンク・画像・添付:../Link]]
@@ -1114,10 +1134,51 @@ URLをそのまま書くとリンクになります．""www."" で始まる語�
 見出しの文字に記法は効きません(そのままの文字として表示されます)．
 ""details"" 以外の語(""note"" など)を書いても折りたたみにはなりません．
 
+見出しを書いた折りたたみは，ふつうの見出しと同じく目次に載り，&[&[ページ名#見出し&]&] でそこへ飛べます(Wiki記法の &*(optional) と同じ)．
+目次での深さは，見出しの先頭に ""#"" を書いて決められます(""#"" は表示されません)．
+書かなければ，直前の見出しの1段下になります．
+
+ :::details ### 3段目の見出しとして目次に載る
+ 中身
+ :::
+
 この書き方はNextForm独自のもので，Markdownの標準ではありません．
 他のツールに貼り付けると，コロンの行が文字として見えます(中身は残ります)．
 またブラウザの「ページ内検索」は，閉じている中身を見つけられません
 (サイトの検索には中身も載ります)．印刷でも閉じたまま印刷されます．
+
+*目次
+""[TOC]"" とだけ書いた行(前後は空行)は，そのページの見出しの目次になります(Wiki記法の &&index と同じ)．
+''ツール''の''目次''と同じ形で，項目を押すとその見出しに飛びます．
+
+ [TOC]
+ 
+ ## はじめに
+
+-""[toc]"" と小文字で書いてもかまいません．
+-コードの中や，文の途中に書いた ""[TOC]"" は文字のままです．
+-サイドページや，取り込まれた先でも目次になります．
+-""[TOC]"" という文字は，サイトの検索には載りません．
+-GitLab・Typora・Python-Markdown(MkDocs)と同じ書き方です．対応していないツールでは ""[TOC]"" という文字が見えるだけです．
+
+*子ページのツリー
+""[PAGES]"" とだけ書いた行(前後は空行)は，そのページの子ページを孫以下まで入れ子にした一覧になります(Wiki記法の[[&&treepages:../../Wiki/Function/treepages]]と同じ)．
+""PAGES"" の後ろに空白で区切って，次の指定を並べられます．
+
+ [PAGES]
+ [PAGES ./写真]
+ [PAGES sort=mtime reverse 10]
+
+:ページ名|そのページの子ページの一覧にします．書き方はリンクと同じで，名前だけと ""./"" はこのページの子，""../"" は隣，""/名前"" はトップ階層からです．""/"" だけならサイト全体です．空白は ""%20"" と書きます．
+:sort=mtime|更新日時の順に並べます．""sort=btime"" は作成日時，""sort=size"" は大きさの順です．
+:reverse|逆の順に並べます．
+:children|直下の子ページだけにします(孫は出しません)．
+:数字|その件数だけ出します．
+:withsystem|マニュアルのページなども出します．
+-読めない指定があるときは，""[PAGES …]"" の文字のまま表示されます．
+-子ページが無いときは，何も表示されません．
+-""[PAGES …]"" という文字は，サイトの検索には載りません．
+-この書き方はNextForm独自のものです．他のツールでは ""[PAGES]"" という文字が見えるだけです．
 
 *記法の例
 コロン3つに続けて ""example"" と書いた行から，コロン3つだけの行までが，
@@ -1247,6 +1308,34 @@ Markdown(.md)のファイルのページには，wikiの画面の中に表示す
 ""[表示名](新しいページ)"" ならそのページの子に，""[表示名](/新しいページ)"" ならトップ階層に作ります．
 ""?"" ""#"" で始まるものと ""?"" を含むものは，URLとしてそのまま扱います．
 このwikiの外を指すときは ""https://"" から書きます．
+
+*大きさ・配置・キャプション
+説明の後ろに ""|"" を付けて，大きさや配置を指定できます(Obsidianと同じ形)．
+指定に使う語は，Wiki記法の[[&&include:../../Wiki/Function/include]]と同じです．
+ ![説明|300](図.png)
+ ![説明|50% right](図.png "キャプション")
+:幅|""300"" のように数字だけを書くと幅になります．高さは比率を保ちます．
+:幅x高さ|""640x400"" のように書くと，その大きさに収まるように縮めます．末尾に ""!"" を付けると比率を無視します．""640x"" や ""x400"" のように片方だけでも書けます．
+:拡大率%|""50%"" のように，元の大きさに対する割合で指定します．
+:max|""max 640x400"" のように大きさの前に付けると，それより大きいときだけ縮めます．
+:left・right|左・右に寄せて，本文を回り込ませます．
+:open|押すと新しいタブで開きます．
+:!link|押してもリンクにしません．
+:!adjust|縮小をサーバーではなくブラウザで行います．
+語は空白かカンマで区切って並べられます．
+''最後の ""|"" より後ろがすべて指定として読めるときだけ''指定になります．読めないときは全体が説明のままです．
+外部の画像では，数字で書いた幅と高さだけが効きます(拡大率と ""max"" は効きません)．
+
+ファイル名の後ろに引用符で囲んで書いた文字(Markdownのタイトルの欄．上の例の ""キャプション"")は，画像の下にキャプションとして出ます．
+キャプションと ""left""・""right"" は，その画像が段落にそれ1つだけのときに効きます．文中の画像では効きません(外部の画像のタイトルは，これまでどおりマウスを載せたときのヒントになります)．
+
+*ページの取り込み
+""![説明](ページ名)"" が段落にそれ1つだけのとき，ふつうのページ(Markdown・wiki・text)は，その場所に中身を取り込みます(Wiki記法の&&include と同じ)．
+-文の途中に書いたときは，取り込まずにリンクになります．
+-読む権限の無いページと，まだ無いページはリンクのままです．
+-ページどうしが互いに取り込み合っているときは，2度目からはリンクになります．
+-取り込んだ中身は，このページの検索には載りません(取り込まれたページのほうで見つかります)．
+-キャプションと ""left""・""right"" も使えます．
 */
 
 /**
@@ -1392,6 +1481,8 @@ For what can and cannot be written, see
 |[[footnote:../Extra#Footnotes]]|""text[^1]"" and ""[^1]: the note""|
 |[[automatic link:../Extra#Automatic links]]|write the URL as it is|
 |[[folding:../Extra#Folding]]|wrap it in a "":::details heading"" line and a "":::"" line|
+|[[table of contents:../Extra#Table of contents]]|a line with only ""[TOC]""|
+|[[tree of subpages:../Extra#Tree of subpages]]|a line with only ""[PAGES]""|
 |[[notation examples:../Extra#Notation examples]]|wrap it in a "":::example"" line and a "":::"" line|
 
 *[[Links, images and attachments:../Link]]
@@ -1617,10 +1708,51 @@ the page.
 Notation does not apply inside the heading; it is shown as plain characters.
 A word other than ""details"" (""note"", for instance) does not fold anything.
 
+A folded block with a heading appears in the table of contents like an ordinary heading, and &[&[page name#heading&]&] jumps to it (the same as &*(optional) of Wiki notation).
+Its depth in the table of contents can be set by writing ""#"" at the start of the heading (the ""#"" is not shown).
+Without it, the depth is one below the heading before it.
+
+ :::details ### listed in the table of contents as a third-level heading
+ contents
+ :::
+
 This notation is specific to NextForm and is not part of standard Markdown.
 Pasted into another tool, the colon lines show up as text (the contents remain).
 The browser's own find-in-page cannot find contents that are folded away
 (the site search does index them). Printing keeps them folded as well.
+
+*Table of contents
+A line with only ""[TOC]"" (with blank lines around it) becomes the table of contents of the headings of the page (the same as &&index of Wiki notation).
+It has the same form as ''Table of contents'' in ''Tools'', and pressing an item jumps to that heading.
+
+ [TOC]
+ 
+ ## Introduction
+
+-It can be written in lower case, ""[toc]"".
+-""[TOC]"" inside code or in the middle of a sentence stays as text.
+-It becomes a table of contents on the side page and where the page is pulled in, too.
+-The text ""[TOC]"" is not indexed by the site search.
+-It is written the same way as in GitLab, Typora and Python-Markdown (MkDocs). Tools that do not support it just show the text ""[TOC]"".
+
+*Tree of subpages
+A line with only ""[PAGES]"" (with blank lines around it) becomes a nested list of the subpages of the page, including grandchildren (the same as &&treepages of Wiki notation, which is &&pages with show=tree; see [[&&pages:../../Wiki/Function/pages]]).
+After ""PAGES"", the following can be listed, separated by spaces.
+
+ [PAGES]
+ [PAGES ./photos]
+ [PAGES sort=mtime reverse 10]
+
+:page name|Lists the subpages of that page. It is written as in a link: a bare name and ""./"" are children of this page, ""../"" is next to it, and ""/name"" is from the top. ""/"" alone is the whole site. Write a space as ""%20"".
+:sort=mtime|Sorts by the modification time. ""sort=btime"" sorts by the creation time and ""sort=size"" by the size.
+:reverse|Reverses the order.
+:children|Only the direct subpages (no grandchildren).
+:a number|Shows only that many.
+:withsystem|Also shows pages such as the manual.
+-When there is something it cannot read, the text ""[PAGES …]"" is shown as it is.
+-When there are no subpages, nothing is shown.
+-The text ""[PAGES …]"" is not indexed by the site search.
+-This notation is specific to NextForm. Other tools just show the text ""[PAGES]"".
 
 *Notation examples
 A line of three colons followed by ""example"", down to a line of three colons
@@ -1758,6 +1890,34 @@ points: ""[display name](new page)"" creates it as a child of the current page, 
 Anything that starts with ""?"" or ""#"", or that contains ""?"", is treated
 as a URL as it is.
 To point outside this wiki, write the URL from ""https://"".
+
+*Size, placement and caption
+Write ""|"" after the description to give the size or the placement (the same form as Obsidian).
+The words are the same as [[&&include:../../Wiki/Function/include]] of Wiki notation.
+ ![description|300](figure.png)
+ ![description|50% right](figure.png "caption")
+:width|A number alone, such as ""300"", is the width. The height keeps the ratio.
+:widthxheight|""640x400"" shrinks it to fit that size. A trailing ""!"" ignores the ratio. Only one side, such as ""640x"" or ""x400"", can be given too.
+:percent%|""50%"" gives the size as a ratio of the original.
+:max|Put before a size, as in ""max 640x400"", to shrink only when it is larger.
+:left, right|Places it to the left or right, with the text flowing around it.
+:open|Opens it in a new tab when pressed.
+:!link|Does not make it a link.
+:!adjust|Shrinks it in the browser instead of on the server.
+Words are separated by spaces or commas.
+''Only when everything after the last ""|"" can be read as words of this list'' does it become a specification. Otherwise the whole stays the description.
+For an external image, only a width and height written as numbers take effect (not the percentage or ""max"").
+
+Text written in quotes after the file name (the title part of Markdown; ""caption"" in the example above) is shown under the image as its caption.
+The caption and ""left"" / ""right"" take effect only when the image is the only thing in its paragraph. They do not for an image in the middle of a sentence (the title of an external image is shown as a hint when the mouse is over it, as before).
+
+*Pulling in a page
+When ""![description](page name)"" is the only thing in its paragraph, an ordinary page (Markdown, wiki or text) is pulled in at that place (the same as &&include of Wiki notation).
+-When it is written in the middle of a sentence, it is a link instead.
+-A page that cannot be read and a page that does not exist yet stay links.
+-When pages pull each other in, the second time becomes a link.
+-The contents pulled in are not searched as part of this page (they are found in the page pulled in).
+-A caption and ""left"" / ""right"" can be used too.
 */
 
 /**
@@ -1855,8 +2015,11 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 *意味は同じだが働きが違うもの
 |やりたいこと|Wiki記法|Markdown記法|違い|h
 |見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
-|折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます|
+|折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます．どちらも見出しは目次に載ります|
+|目次|&&index|""[TOC]"" とだけ書いた行|Markdown記法では，ほかのページの目次(&&index(&[&[ページ名&]&]))は書けません|
+|子ページのツリー|&&treepages|""[PAGES]"" とだけ書いた行|Markdown記法で書ける指定は，対象のページ・並べ方・件数・直下だけ(children)です．表や中身ごとの一覧は書けません|
 |節の終わりを明示|&*(end)|なし|同上|
+|他のページの取り込み|&&include(&[&[ページ名&]&])|段落にそれ1つだけの !&[説明&](ページ名)|Markdown記法では，文の途中に書いたときはリンクになります．大きさや配置の指定は説明の後ろに書きます([[リンク・画像・添付:../Markdown/Link#大きさ・配置・キャプション]])|
 |部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
 |箇条書きの中の空行|そこで箇条書きが''終わります''|終わりません．1つの箇条書きのままです|Wiki記法で2つに分けたいときは空行を入れます．Markdown記法では片方の記号を変えます(""- "" と ""* "")．どちらの記法でも，空行を入れた所だけが同じだけ空きます|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
@@ -1875,8 +2038,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 次のようなことをしたいページは，種別wikiで作ってください．
 
 |やりたいこと|Wiki記法|h
-|他のページの取り込み|&&include|
-|ページの一覧|&&pages &&index &&subpage|
+|ページの一覧(表・中身ごと・テンプレート)|&&pages &&subpage|
 |カレンダー|&&calendar &&datepages|
 |数値計算・表計算|行頭の &= と セルの &=|
 |検索結果の埋め込み|&&search|
@@ -1887,6 +2049,29 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |CSV形式の表|行頭の &,|
 
 これらが1つでも要るページは，Wiki記法のまま置いてください．
+
+*Wiki記法のページをMarkdownに変換する
+種別wikiのページは，''ページメニュー''の''Markdownに変換''で，種別Markdownのページに変換できます．
+確認の画面に，変換後の本文と，次のものが出ます．''変換する''を押すと保存します．
+-落ちるもの(関連リスト・表のセル結合・文字の色など)
+-原文のままコードの枠で残すもの(カレンダー・計算・書き込みのフォームなど，Markdown記法に無い働きをするファンクション)
+-飛び先が変わる見出し(ほかのページからの &[&[ページ名#見出し&]&] が届かなくなるもの)
+
+変換の決まりは次のとおりです．
+-見出しは1段下げます．&&title は本文の先頭の ""#"" に，&* は ""##"" に，&*&* は ""###"" にします(6段まで)．
+-タグはフロントマターの ""tags:"" に書き出します．
+-&*(optional) の節は "":::details"" の折りたたみにします(見出しの深さは保ちます)．
+-&&include は ""![](..)"" に，&&index は ""[TOC]"" に，&&treepages などのページの一覧は ""[PAGES]"" にします．
+-&&color や &&size などの装飾は，中の文字だけを残します．
+-&[&[表示名:ページ名&]&] は &[&[ページ名&|表示名&]&] に並べ替えます．行き先の決まりは同じなので，行き先は書き換えません．
+
+変換前の版は履歴に残り，本文の末尾に「このページは、wikiページから変換して作りました。(変換前の版)」とその版へのリンクが付きます．
+元に戻すには，その版を開いて''この版に戻す''を押します．
+-変換するのはそのページだけです．子ページは変換しません．
+-ページの名前を変えると，末尾のリンクは切れます(履歴はページに付いていくので，''履歴''からは開けます)．
+-ほかのページがこのページのWiki記法に頼っているときは，その見え方が変わります．
+たとえば，親のページの &&tracker などの一覧は子ページの原文から項目を読み，&&blogpages などの抜粋は &&more を区切りにしています．
+-ページ名の自動リンク(サイトの設定で有効にしたもの)は，Markdown記法では掛かりません．
 */
 
 /**
@@ -1924,8 +2109,11 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 *Things that mean the same but work differently
 |what you want|Wiki notation|Markdown notation|difference|h
 |heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
-|folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''|
+|folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''. In both, the heading appears in the table of contents|
+|table of contents|&&index|a line with only ""[TOC]""|Markdown notation cannot write the table of contents of another page (&&index(&[&[page name&]&]))|
+|tree of subpages|&&treepages|a line with only ""[PAGES]""|Markdown notation can give the page, the order, the number and only the direct subpages (children). Lists as tables or with contents cannot be written|
 |marking the end of a section|&*(end)|none|as above|
+|pulling in another page|&&include(&[&[page name&]&])|!&[description&](page name) alone in its paragraph|In Markdown notation, it is a link when written in the middle of a sentence. The size and placement are written after the description ([[Links, images and attachments:../Markdown/Link#Size, placement and caption]])|
 |unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
 |empty line inside a list|the list ''ends'' there|it does not end; it stays one list|In Wiki notation an empty line is how you split a list in two. In Markdown notation you change the marker of one of them (""- "" and ""* ""). In both notations only the place with the empty line gets a gap, of the same width|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
@@ -1945,8 +2133,7 @@ Functions of Wiki notation cannot be used in pages of type Markdown.
 Create a page of type wiki when you want to do any of the following.
 
 |what you want|Wiki notation|h
-|pulling in another page|&&include|
-|lists of pages|&&pages &&index &&subpage|
+|lists of pages (as tables, with contents, with templates)|&&pages &&subpage|
 |calendars|&&calendar &&datepages|
 |calculation and spreadsheets|&= at the start of a line and &= in a cell|
 |embedding search results|&&search|
@@ -1957,6 +2144,29 @@ Create a page of type wiki when you want to do any of the following.
 |tables in CSV form|&, at the start of a line|
 
 Keep a page in Wiki notation if it needs even one of these.
+
+*Converting a page in Wiki notation to Markdown
+A page of type wiki can be converted to a page of type Markdown with ''Convert to Markdown'' in the ''page menu''.
+The confirmation screen shows the text after conversion and the following. Press ''Convert'' to save it.
+-Things that are dropped (definition lists, cell merges in tables, colours of text and so on)
+-Functions kept as their source in code blocks (calendars, calculations, input forms and other functions whose work Markdown notation does not have)
+-Headings whose links change (&[&[page name#heading&]&] from other pages stops reaching them)
+
+The rules are as follows.
+-Headings go one level down: &&title becomes the ""#"" at the top of the text, &* becomes ""##"" and &*&* becomes ""###"" (up to level 6).
+-Tags are written in ""tags:"" of the front matter.
+-A section with &*(optional) becomes a "":::details"" fold (keeping the depth of the heading).
+-&&include becomes ""![](..)"", &&index becomes ""[TOC]"", and page lists such as &&treepages become ""[PAGES]"".
+-Decorations such as &&color and &&size keep only the text inside.
+-&[&[display name:page name&]&] is reordered to &[&[page name&|display name&]&]. Where it points is decided in the same way, so the destination is not rewritten.
+
+The version before conversion is kept in the history, and a sentence with a link to that version is added at the end of the text.
+To undo, open that version and press ''Restore this version''.
+-Only that page is converted. Its subpages are not.
+-If the page is renamed, the link at the end breaks (the history moves with the page, so it can still be opened from ''History'').
+-If other pages rely on the Wiki notation of this page, how they look changes.
+For example, lists such as &&tracker on the parent page read items from the source of the subpages, and excerpts such as &&blogpages use &&more as the mark.
+-Automatic links to page names (when enabled in the site settings) are not applied in Markdown notation.
 */
 
 /**

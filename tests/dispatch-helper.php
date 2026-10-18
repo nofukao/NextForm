@@ -11,6 +11,9 @@
  *   normalize-apply <名前>   引いた関数で実際に整形できるか
  *                           (changed=1/0, aligned=1/0, warnings=件数)
  *   texts-lookup <名前>      handler_function() が texts を引けるか (func=名前|false)
+ *   make-locked-history <名前> <本文>
+ *                           ロックしていない旧版を履歴に残してから、ページをロックする
+ *                           (backuptime=その旧版の時刻)
  *   cleanup                 このヘルパが作ったページを消す
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -51,6 +54,21 @@ switch($check) {
 
 case 'make-page':
     printf("written=%d\n", test_write($rest[0], $rest[1]) ? 1 : 0);
+    break;
+
+case 'make-locked-history':
+    /*
+     * 同じ人が 15 分以内に続けて保存すると版が残らないので、
+     * ロックする前の版をここで直に残す (ページを消すときと同じ呼び方)。
+     */
+    test_write($rest[0], $rest[1]);
+    $page = page_read($rest[0]);
+    storage_page_backup($page, 0);
+    $page = page_read($rest[0]);
+    page_lock($page);
+    $page = page_read($rest[0]);
+    $times = page_get_backup_times($page);
+    printf("backuptime=%s\n", empty($times) ? '' : max($times));
     break;
 
 case 'page-body':
