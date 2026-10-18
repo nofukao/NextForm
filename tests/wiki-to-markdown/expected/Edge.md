@@ -21,6 +21,7 @@
 | --- | --- |
 | `=1+2` | 見出しのセル |
 | a b | c |
+| 末尾で改行 | d |
 
 <https://example.com/page.html>
 
