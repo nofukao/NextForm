@@ -653,6 +653,7 @@ function markdown_convert(&$page, $dom, $contents = null, $is_positioned = true)
     $ids = markdown_set_heading_ids($page, $section);
     markdown_resolve_section_links($section, $ids);
     markdown_replace_toc($page, $section);
+    markdown_replace_pages($page, $section);
     markdown_unwrap_figures($section);
     /* 取り込みは一番最後。上の後処理が取り込んだ中身に及ばないように */
     markdown_expand_embeds($page, $section);
@@ -660,7 +661,7 @@ function markdown_convert(&$page, $dom, $contents = null, $is_positioned = true)
 }
 
 /*
- * 中身が目印だけの段落 ([TOC]) を拾う。返すのは [要素, 目印の名前, 引数] の並び。
+ * 中身が目印だけの段落 ([TOC] / [PAGES …]) を拾う。返すのは [要素, 目印の名前, 引数] の並び。
  * 目印は文字だけの段落に限る ([TOC]: URL のように参照の定義を書いたものはリンクに
  * なるので当たらない)。コードの中は段落ではないので当たらない。
  */
@@ -673,6 +674,8 @@ function markdown_marker_paragraphs($dom) {
 	$text = trim($p->textContent);
 	if(strcasecmp($text, '[TOC]') == 0)
 	    $markers[] = array('element' => $p, 'name' => 'toc', 'args' => '');
+	else if(preg_match('/^\[PAGES(?:[ \t]+([^\]]*))?\]$/i', $text, $matches))
+	    $markers[] = array('element' => $p, 'name' => 'pages', 'args' => isset($matches[1]) ? $matches[1] : '');
     }
     return $markers;
 }
@@ -707,6 +710,88 @@ function markdown_replace_toc(&$page, $dom) {
 		dom_set_attribute($summary, $name, $p->getAttribute($name));
 	$p->parentNode->replaceChild(dom_owner($p)->importNode($summary, true), $p);
     }
+}
+
+/*
+ * [PAGES …] とだけ書いた段落を、子ページのツリーにする (wiki 記法の &treepages)。
+ * 一覧は &pages と同じ部品 (page_find() と pagelist_append() の show=tree) で作る。
+ * 読めない指定があれば文字のまま残す。子ページが無ければ段落ごと消す (&pages と同じ)。
+ * 一覧はページの増減で変わるので、書き出しの差分のために depend_pages_unknown を立てる。
+ */
+function markdown_replace_pages(&$page, $dom) {
+    foreach(markdown_marker_paragraphs($dom) as $marker) {
+	if($marker['name'] !== 'pages')
+	    continue;
+	$query = markdown_pages_parse_args($page, $marker['args']);
+	if($query === false)
+	    continue;
+	$page['depend_pages_unknown'] = true;
+
+	$p = $marker['element'];
+	$pages = page_find($query['pagename'], $query['find_condition']);
+	$document = dom_create_document();
+	$section = pagelist_append($document, $pages, $query['list_options'], page_args($page));
+	if(empty($section)) {
+	    $p->parentNode->removeChild($p);
+	    continue;
+	}
+	dom_remove_empty($section);
+	foreach(array('data-twp', 'data-twl') as $name)
+	    if($p->hasAttribute($name))
+		dom_set_attribute($section, $name, $p->getAttribute($name));
+	$owner = dom_owner($p);
+	$nodes = array();
+	foreach($document->childNodes as $child)
+	    $nodes[] = $child;
+	foreach($nodes as $child)
+	    $p->parentNode->insertBefore($owner->importNode($child, true), $p);
+	$p->parentNode->removeChild($p);
+    }
+}
+
+/*
+ * [PAGES …] の指定を読む。&treepages と同じ語を空白で区切って並べる。
+ *   対象のページ   Markdown のリンクと同じ規則 (名前だけ・./ は子、../ は兄弟、
+ *                  /名前 はトップ階層)。/ だけならサイト全体。省けばこのページ。
+ *                  空白は %20 と書く
+ *   sort=mtime|btime|size、reverse、withsystem、children (直下だけ)、件数
+ * 読めない語があれば false。
+ */
+function markdown_pages_parse_args(&$page, $args) {
+    $find_condition = array('is_pagename_only' => true, 'is_ignore_system_page' => true);
+    $list_options = array('show' => 'tree', 'showhidden' => true, 'context' => array('page' => &$page));
+    $path = null;
+    foreach(preg_split('/[ \t]+/', trim($args), -1, PREG_SPLIT_NO_EMPTY) as $token) {
+	if(preg_match('/^sort=(mtime|btime|size)$/', $token, $matches))
+	    $find_condition['sort'] = $matches[1];
+	else if($token === 'reverse')
+	    $find_condition['reverse'] = true;
+	else if($token === 'withsystem')
+	    $find_condition['is_ignore_system_page'] = false;
+	else if($token === 'children')
+	    $find_condition['is_children_only'] = true;
+	else if(preg_match('/^[1-9][0-9]*$/', $token))
+	    $list_options['limit'] = (int)$token;
+	else if(strpos($token, '=') !== false)
+	    return false;	/* 知らない「名前=値」(&pages の tag= や fields= など) は書けない */
+	else if(is_null($path))
+	    $path = rawurldecode($token);
+	else
+	    return false;
+    }
+
+    $base = isset($page['markdown_base_pagename']) ? $page['markdown_base_pagename'] : $page['name'];
+    if(is_null($path))
+	$pagename = $base;
+    else if($path === '/')
+	$pagename = '';
+    else {
+	if(substr($path, 0, 1) !== '/' && strpos($path, './') !== 0 && strpos($path, '../') !== 0)
+	    $path = './' . $path;
+	$pagename = page_path_to_pagename($path, $base, false);
+    }
+    $list_options['base_pagename'] = $pagename;
+    return array('pagename' => $pagename, 'find_condition' => $find_condition, 'list_options' => $list_options);
 }
 
 /*

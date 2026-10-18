@@ -928,6 +928,63 @@ check_eq "サイドや取り込まれた先でも目次を出す (項目はペ�
          "$(contains "$(value_of "$(helper render "$T" side)" html | toc_outline)" '2:畳んだ見出し')|$(contains "$(value_of "$(helper render "$T" side)" html)" "#${SID}\"")"
 echo
 
+echo "18. 子ページのツリー [PAGES]"
+# [PAGES …] とだけ書いた段落は、Wiki 記法の &treepages と同じツリーになる。
+# 同じ親について、Wiki 記法のページに書いた &treepages と形が同じかで確かめる
+# 一覧の li[data-pagename] を「入れ子の深さ:ページ名」で並べる
+pages_outline() {
+    python3 -c '
+import sys
+from html.parser import HTMLParser
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.depth = 0; self.items = []
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "ul": self.depth += 1
+        if tag == "li" and a.get("data-pagename"): self.items.append("%d:%s" % (self.depth, a["data-pagename"]))
+    def handle_endtag(self, tag):
+        if tag == "ul": self.depth -= 1
+p = P(); p.feed(sys.stdin.read()); print(" ".join(p.items))
+'
+}
+TR="MarkdownTest/Tree"
+helper write "$TR/A" "子A" > /dev/null
+helper write "$TR/A/B" "孫B" > /dev/null
+helper write "$TR/C" "子C" > /dev/null
+pages_of() {
+    helper write "$TR" "$(printf -- '%s\n' "$1")" > /dev/null
+    value_of "$(helper render "$TR" main)" html | pages_outline
+}
+wiki_pages_of() {
+    helper write-wiki "MarkdownTest/TreeWiki" "$1" > /dev/null
+    curl -sk "${MARKDOWN_TEST_URL}/?MarkdownTest/TreeWiki" \
+        | tr '\n' '\001' | sed -e 's/.*<article class="main">//' -e 's;</article>.*;;' | tr '\001' '\n' \
+        | pages_outline
+}
+W="$(wiki_pages_of "&treepages([[$TR]]);")"
+check_eq "(前提) Wiki 記法の &treepages に子と孫が出る" "yes|yes" \
+         "$(contains "$W" ":$TR/A ")|$(contains "$W" ":$TR/A/B")"
+check_eq "[PAGES] は、このページの子孫を &treepages と同じ形で出す" "$W" "$(pages_of '[PAGES]')"
+check_eq "[PAGES children] は直下だけ (&childpages)" \
+         "$(wiki_pages_of "&treepages([[$TR]], children);")" "$(pages_of '[PAGES children]')"
+check_eq "[PAGES ./A] は ./A の子孫 (Markdown のリンクの規則で解決する)" \
+         "$(wiki_pages_of "&treepages([[$TR/A]]);")" "$(pages_of '[PAGES ./A]')"
+check_eq "[PAGES sort=mtime reverse] は &treepages と同じ並び" \
+         "$(wiki_pages_of "&treepages([[$TR]], sort=mtime, reverse);")" "$(pages_of '[PAGES sort=mtime reverse]')"
+check_eq "[PAGES 1] は件数を絞る" \
+         "$(wiki_pages_of "&treepages([[$TR]], 1);")" "$(pages_of '[PAGES 1]')"
+check_eq "[PAGES /] はサイト全体 (ほかの木のページも出る)" "yes" \
+         "$(contains "$(pages_of '[PAGES /]')" ':MarkdownTest/Toc')"
+helper write "$TR" '[PAGES what=ever]' > /dev/null
+PH="$(value_of "$(helper render "$TR" main)" html)"
+check_eq "読めない指定のときは文字のまま" "yes|" \
+         "$(contains "$PH" '[PAGES what=ever]')|$(printf '%s' "$PH" | pages_outline)"
+helper write "$TR" "$(printf -- '[PAGES]\n\n本文\n')" > /dev/null
+check_eq "検索の文字に [PAGES] を出さない" "no|yes" \
+         "$(contains "$(value_of "$(helper texts "$TR")" texts)" '[PAGES')|$(contains "$(value_of "$(helper texts "$TR")" texts)" '本文')"
+echo
+
 helper cleanup > /dev/null
 
 if [[ $fail -eq 0 ]]; then
