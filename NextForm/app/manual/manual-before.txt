@@ -112,7 +112,7 @@ Enter the URL and press ''Clone'', and a new page is made by copying the text an
 The title and the tags are written in the text, so they are copied with it.
 -Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
 -History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
--A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, even pages that can be read without login are read as that user.
+-A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user.
 -Each attached file must be within the size limit of this site (the value shown on the ''Attach'' page).
 -When the page cannot be copied, nothing is made and the reason is shown.
 
@@ -123,7 +123,7 @@ When you include subpages, note the following.
 -Pages that cannot be read at the site to clone do not appear in its list and are not copied. Enter the user name and password of that site to copy them.
 -If even one page of the same name exists where a page would be copied, nothing is copied.
 -By default, up to 100 subpages, 500 attached files and 256MB in total can be copied at once. It also stops when fetching from the site to clone takes more than 30 seconds. Clone a large tree in parts, starting from the pages below.
--Only one clone runs at a time on the whole site.
+-Only one clone with subpages runs at a time on the whole site.
 -If the server stops while writing, some of the pages may remain. In that case, delete them on the ''Delete'' page (with ''Delete follow subpages'' on) before trying again.
 
 It is the server of this wiki that fetches the page to clone.
@@ -308,7 +308,7 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 題名とタグは本文に書いてあるので，一緒に写ります．
 -写す添付ファイルは，写すページの直下のもの(""./画像.png""で参照するもの)だけです．ほかのページの添付ファイル(""../画像.png""など)は写しません．本文は書き換えないので，それへのリンクはリンク切れになります(このサイトに同じ名前のページがあれば，そちらを指します)．
 -履歴・ロック・権限と，ページや添付ファイルの説明は写しません．クローン元でログインが必要だったページも，写したあとはこのサイトの権限で見えるようになります．
--ログインが必要なページは，URLの下の欄にそのサイトのユーザー名とパスワードを入れればクローンできます．要らなければ空欄のままでかまいません．入れたものは保存せず，そのクローンにだけ使います．対応しているのはNextFormのログイン(ダイジェスト認証)だけで，パスワードそのものはクローン元に送りません．この画面がhttpsでないときは，ブラウザからこのサイトまでパスワードが暗号化されずに送られるので，注意書きが出ます．入れたときは，ログインしなくても読めるページも，その利用者として読みます．
+-ログインが必要なページは，URLの下の欄にそのサイトのユーザー名とパスワードを入れればクローンできます．要らなければ空欄のままでかまいません．入れたものは保存せず，そのクローンにだけ使います．対応しているのはNextFormのログイン(ダイジェスト認証)だけで，パスワードそのものはクローン元に送りません．この画面がhttpsでないときは，ブラウザからこのサイトまでパスワードが暗号化されずに送られるので，注意書きが出ます．入れたときは，取りに行く前にログインできることを確かめ(違っていれば何も写しません)，ログインしなくても読めるページも，その利用者として読みます．
 -添付ファイルは1つずつ，このサイトのサイズ上限(''添付''の画面に出る値)に収まる必要があります．
 -写せないときは，何も作らずに理由を出します．
 
@@ -319,7 +319,7 @@ URLの下のチェックボックスで，何を写すかを選べます．
 -クローン元で読めないページは，一覧に出てこないので写りません．写すには，そのサイトのユーザー名とパスワードを入れてください．
 -写す先に同じ名前のページが1つでもあれば，何も写しません．
 -一度に写せるのは，既定では子ページ100ページ・添付ファイル500個・合計256MBまでです．クローン元から取るのに30秒を超えたときも断ります．大きな木は，下のページから分けてクローンしてください．
--クローンは，サイト全体で同時に1つだけ動きます．
+-子ページを含むクローンは，サイト全体で同時に1つだけ動きます．
 -書いている途中でサーバーが止まると，一部のページだけが残ることがあります．そのときは，残ったページを''削除''の画面で(''以下の子ページも削除する''をオンにして)消してから，やり直してください．
 
 クローン元を取りに行くのは，このwikiのサーバーです．
