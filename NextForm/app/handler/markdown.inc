@@ -652,7 +652,93 @@ function markdown_convert(&$page, $dom, $contents = null, $is_positioned = true)
     markdown_append_sentence($page, $section);
     $ids = markdown_set_heading_ids($page, $section);
     markdown_resolve_section_links($section, $ids);
+    markdown_unwrap_figures($section);
+    /* 取り込みは一番最後。上の後処理が取り込んだ中身に及ばないように */
+    markdown_expand_embeds($page, $section);
     return true;
+}
+
+/*
+ * 段落にそれ 1 つだけの図 (キャプションや left / right の付いた ![](..)) は、
+ * 段落 (p) から出す。figure は p の中に置けない。
+ */
+function markdown_unwrap_figures($dom) {
+    $figures = array();
+    foreach($dom->getElementsByTagName('figure') as $figure)
+	$figures[] = $figure;
+    foreach($figures as $figure) {
+	$p = $figure->parentNode;
+	if(!($p instanceof DOMElement) || strtolower($p->nodeName) !== 'p' ||
+	   !markdown_is_only_child($p, $figure))
+	    continue;
+	$p->parentNode->replaceChild($figure, $p);
+    }
+}
+
+/* $element の中身が $child だけか (前後の空白の文字は数えない) */
+function markdown_is_only_child($element, $child) {
+    foreach($element->childNodes as $node) {
+	if($node === $child)
+	    continue;
+	if($node instanceof DOMText && trim($node->nodeValue) === '')
+	    continue;
+	return false;
+    }
+    return true;
+}
+
+/*
+ * ![](ページ) の取り込みを展開する。描画では今と同じリンクに印だけを付けてある
+ * (markdown_embed_register())。印の付いたリンクの段落を、そのページの描画に置き換える。
+ *
+ * 権限・存在・ループはここで確かめる (wiki 記法の &include と同じ順と判定)。
+ * 取り込めないものは、印を外してリンクのまま残す。印は 1 度使ったら表から消す。
+ * 取り込んだ中身は検索の文字に入らない (markdown_texts() はここを通らない)。
+ */
+function markdown_expand_embeds(&$page, $dom) {
+    global $MARKDOWN_EMBEDS;
+
+    $marked = array();
+    $xpath = new DOMXPath(dom_owner($dom));
+    foreach($xpath->query('.//*[@data-markdown-embed]', $dom) as $element)
+	$marked[] = $element;
+    foreach($marked as $a) {
+	$token = $a->getAttribute('data-markdown-embed');
+	$a->removeAttribute('data-markdown-embed');
+	if(!isset($MARKDOWN_EMBEDS[$token]))
+	    continue;
+	$embed = $MARKDOWN_EMBEDS[$token];
+	unset($MARKDOWN_EMBEDS[$token]);
+
+	$p = $a->parentNode;
+	if(!($p instanceof DOMElement) || strtolower($p->nodeName) !== 'p' || !markdown_is_only_child($p, $a))
+	    continue;
+	$pagename = $embed['pagename'];
+	if(!page_is_exists($pagename) || !auth_has_permission($pagename, 'read'))
+	    continue;
+	$chain = default_value($page['include_pages'], array());
+	$chain[] = $page['name'];
+	if(in_array($pagename, $chain, true))
+	    continue;
+	$target = page_read($pagename);
+	if(page_get_type($target) === 'file')
+	    continue;
+	$target['include_pages'] = $chain;
+	$page['depend_pages'][$pagename] = true;
+
+	$document = dom_create_document();
+	$container = markdown_image_open_figure($document, $embed['params'], $embed['caption']);
+	page_handle($target, $container);
+	markdown_image_close_figure($container, $embed['caption']);
+
+	$owner = dom_owner($p);
+	$nodes = array();
+	foreach($document->childNodes as $child)
+	    $nodes[] = $child;
+	foreach($nodes as $child)
+	    $p->parentNode->insertBefore($owner->importNode($child, true), $p);
+	$p->parentNode->removeChild($p);
+    }
 }
 
 /*

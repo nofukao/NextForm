@@ -777,6 +777,84 @@ helper write "$P_GAP" "$(printf -- '- aa\n- bb\n- cc\n')" > /dev/null
 check_eq "空行が無ければ印は付かない" "no" "$(contains "$(main_html "$P_GAP")" 'blank_before')"
 echo
 
+echo "16. ![](..) でページの取り込みと、大きさ・配置・キャプションの指定"
+# ![説明|指定](対象 "キャプション")。指定は &include と同じ語 (Obsidian と同じ形)。
+# ふつうのページが段落に 1 つだけなら取り込む。取り込んだ中身は検索の文字に入れない
+E="MarkdownTest/Embed"
+WORK_DIR="$(mktemp -d)"
+python3 - "$WORK_DIR/embed.png" <<'PYEOF'
+import struct, sys, zlib
+w, h = 40, 30
+raw = b''.join(b'\x00' + bytes((x * 7 + y * 3) % 256 for x in range(w * 3)) for y in range(h))
+def chunk(t, d):
+    return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+open(sys.argv[1], 'wb').write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+                              + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b''))
+PYEOF
+sudo install -o "$SITE_OWNER" -m 644 "$WORK_DIR/embed.png" "${MARKDOWN_TEST_SITE}/embed.png"
+rm -rf "$WORK_DIR"
+helper attach "$E/pic.png" "${MARKDOWN_TEST_SITE}/embed.png" image/png > /dev/null
+helper write "$E/Part" "$(printf -- '## 部品の見出し\n\n部品の本文ことばパーツ\n')" > /dev/null
+helper write-wiki "$E/WikiPart" "$(printf -- '*ウィキ部品\nウィキ部品の本文ことば\n')" > /dev/null
+helper write "$E/Secret" "読めない本文ことばひみつ" > /dev/null
+helper write "$E/L1" "$(printf -- 'L1の本文\n\n![](../L2)\n')" > /dev/null
+helper write "$E/L2" "$(printf -- 'L2の本文\n\n![](../L1)\n')" > /dev/null
+helper write "$E" "$(printf -- '%s\n' \
+    '取り込む側の本文' '' \
+    '![|50%](./pic.png "図のキャプション")' '' \
+    '![右に|right 20x](./pic.png)' '' \
+    '![取り込み](./Part)' '' \
+    '文の途中の ![リンクのまま](./Part) です。' '' \
+    '![wiki を取り込む](./WikiPart)' '' \
+    '![読めない](./Secret)' '' \
+    '![無い](./Nothing)' '' \
+    '![説明|2024年|ではない](./pic.png)' '' \
+    '![外部|640x400](https://example.com/a.png "外の図")')" > /dev/null
+helper keepout "$E/Secret" > /dev/null
+E_HTML="$(main_html "$E")"
+# 要素ごとに 1 行にして調べる
+e_line() { printf '%s' "$E_HTML" | tr '\n' ' ' | sed 's/<figure/\n<figure/g; s/<\/figure>/<\/figure>\n/g; s/<p[ >]/\n&/g' | grep -F "$1" | head -1; }
+
+L="$(e_line '図のキャプション')"
+check_eq "キャプションは figure と figcaption で出す" "yes|yes" \
+         "$(contains "$L" '<figure class="figure')|$(contains "$L" '<figcaption>図のキャプション</figcaption>')"
+check_eq "  拡大率 (50%) で大きさを決める" "yes" "$(contains "$L" 'width="20" height="15"')"
+check_eq "  段落 (p) の中に入れない" "no" "$(contains "$E_HTML" '<p><figure')"
+L="$(e_line 'alt="右に"')"
+check_eq "right で右に寄せる (gravity_right)。幅だけの指定" "yes|yes" \
+         "$(contains "$L" 'gravity_right')|$(contains "$L" 'width="20"')"
+check_eq "段落に 1 つだけのページは取り込む" "yes|yes" \
+         "$(contains "$E_HTML" '部品の本文ことばパーツ')|$(contains "$E_HTML" "data-pagename=\"$E/Part\"")"
+check_eq "  文の途中に書いたものはリンクのまま" "yes" \
+         "$(contains "$(e_line '文の途中の')" "data-link-pagename=\"$E/Part\"")"
+check_eq "Wiki 記法のページも取り込む" "yes" "$(contains "$E_HTML" 'ウィキ部品の本文ことば')"
+check_eq "読めないページは取り込まない (リンクのまま)" "no|yes" \
+         "$(contains "$E_HTML" 'ひみつ')|$(contains "$E_HTML" "data-link-pagename=\"$E/Secret\"")"
+check_eq "無いページはリンク (まだ無い印)" "yes" "$(contains " $(link_class "$E_HTML" "$E/Nothing") " " not_exists ")"
+check_eq "最後の | の後ろが指定として読めなければ、全体を説明にする" "yes" \
+         "$(contains "$E_HTML" 'alt="説明|2024年|ではない"')"
+L="$(e_line '外の図')"
+check_eq "外部の画像: 数字の大きさを当て、キャプションを付ける" "yes|yes" \
+         "$(contains "$L" 'width="640" height="400"')|$(contains "$L" '<figcaption>外の図</figcaption>')"
+T="$(value_of "$(helper texts "$E")" texts)"
+check_eq "検索の文字に、取り込んだ中身は入れない (説明は入る)" "no|no|yes" \
+         "$(contains "$T" 'ことばパーツ')|$(contains "$T" 'ウィキ部品の本文')|$(contains "$T" '取り込み')"
+L1_HTML="$(main_html "$E/L1")"
+check_eq "互いに取り込み合っても止まる (相手の中の自分はリンクのまま)" "1|yes" \
+         "$(printf '%s' "$L1_HTML" | grep -o 'L2の本文' | wc -l)|$(contains "$L1_HTML" "data-link-pagename=\"$E/L1\"")"
+
+# 生の HTML を許すサイトで、印を手で書いても取り込まない (印は要求ごとの乱数)
+sudo cp -p "${MARKDOWN_TEST_SITE}/index.php" "${MARKDOWN_TEST_SITE}/index.php.orig"
+sudo sed -i "s|^// custom settings here.*|&\ndefine('MARKDOWN_ALLOW_HTML', 'true');|" "${MARKDOWN_TEST_SITE}/index.php"
+sleep $(( ${OPCACHE_FREQ:-2} + 1 ))
+helper write "$E/Forged" "$(printf -- '<p><a data-markdown-embed="e0" href="#">偽の印</a></p>\n')" > /dev/null
+F_HTML="$(main_html "$E/Forged")"
+check_eq "手で書いた印では取り込まない" "no|no" \
+         "$(contains "$F_HTML" 'ことばパーツ')|$(contains "$F_HTML" 'data-markdown-embed')"
+sudo cp -p "${MARKDOWN_TEST_SITE}/index.php.orig" "${MARKDOWN_TEST_SITE}/index.php"
+sleep $(( ${OPCACHE_FREQ:-2} + 1 ))
+echo
+
 helper cleanup > /dev/null
 
 if [[ $fail -eq 0 ]]; then
