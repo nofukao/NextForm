@@ -293,10 +293,10 @@ function setup_read($name) {
 |{BASE_URI||サイトのURL(通常は変更の必要なし)|}
 |{PASSWORD_REMINDER_EMAIL_FROM|(自動)|パスワード再設定メールの送信者メールアドレス|}
 |{MANUAL_PAGENAME|NextFormManual|マニュアルページのページ名|}
-|{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか。trueにすると編集できる人が誰でもスクリプトを埋め込める|}
-|{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか。falseならダウンロードになる。trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
-|{POST_ENCODING|none|フォームの送り方。ConoHa WINGなど，WAFのある共用サーバーで，本文に""'--""や""<script>""を書くと保存が「閲覧できません (Forbidden access)」で止まる場合はbase64にする。サイト設定の「フォームの送り方」でも選べる。詳しくは[[サイトの管理:..]]|}
-|{CLONE_ALLOWED_HOSTS||クローン元として許すホスト(1行に1つ。ホスト名かサイトのURLで，URLはホストの部分だけを見る)。プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできる。サイト設定でも書ける。詳しくは[[他のNextFormのページをクローンする:../../SiteMenu#他のNextFormのページをクローンする]]|}
+|{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか．trueにすると編集できる人が誰でもスクリプトを埋め込める|}
+|{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか．falseならダウンロードになる．trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
+|{POST_ENCODING|none|フォームの送り方．ConoHa WINGなど，WAFのある共用サーバーで，本文に""'--""や""<script>""を書くと保存が「閲覧できません (Forbidden access)」で止まる場合はbase64にする．サイト設定の「フォームの送り方」でも選べる．詳しくは[[サイトの管理:..]]|}
+|{CLONE_ALLOWED_HOSTS||クローン元として許すホスト(1行に1つ．ホスト名かサイトのURLで，URLはホストの部分だけを見る)．プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできる．サイト設定でも書ける．詳しくは[[他のNextFormのページをクローンする:../../SiteMenu#他のNextFormのページをクローンする]]|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
@@ -314,7 +314,7 @@ function setup_read($name) {
 |{CONTENTS_READ_BUFFER_SIZE|4096|ページの内容を表示するときのバッファサイズ|}
 |{CONTENTS_READ_MAX_SIZE|1024 * 1024|メモリに読み込めるページ容量の最大サイズ|}
 |{NEWPAGE_DEFAULT_TYPE|markdown|新規作成の画面で最初に選ばれているページ種別|}
-|{DEFAULT_PAGE_TYPE|wiki|種別が指定されなかったときのページ種別。&&insertなどが作るページが該当する|}
+|{DEFAULT_PAGE_TYPE|wiki|種別が指定されなかったときのページ種別．&&insertなどが作るページが該当する|}
 |{FFMPEG_PATH|ffmpeg|ffmpegコマンドの名称|}
 |{SEARCH_SNIPPET_LENGTH|30|検索結果のスニペットの文字数|}
 |{SEARCH_RESULTS_PER_PAGE|50|検索結果を1画面に出す件数(0で全件)|}

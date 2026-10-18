@@ -126,7 +126,7 @@ function wiki_operator_analyze_parse_parameters(&$context, $tree, &$condition) {
 *注意
 自分でNextFormを設置した場合，
 アクセスカウンターを使用するにはWebサーバーの管理者がアクセス解析の設定をしていなければいけません．
-詳細は[[アクセス解析の設定:../../../Administration/Analyzer]]を参照して下さい．
+詳細は[[アクセス解析の設定:../../../Administration/Analyzer]]を参照してください．
 
 *パラメータ
 :{&[&[ページ名&]&]|アクセス数を知りたいページを指定します．
@@ -178,7 +178,7 @@ day=0はtodayと，day=1はyesterdayと同じ効果になります．
 *注意
 自分でNextFormを設置した場合，
 人気のページ一覧を使用するにはWebサーバーの管理者がアクセス解析の設定をしていなければいけません．
-詳細は[[アクセス解析の設定:../../../Administration/Analyzer]]を参照して下さい．
+詳細は[[アクセス解析の設定:../../../Administration/Analyzer]]を参照してください．
 
 *パラメータ
 :&[&[ページ名&]&]|一覧の対象を指定したページの子ページに限定します．

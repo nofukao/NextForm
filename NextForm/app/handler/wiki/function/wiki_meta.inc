@@ -59,7 +59,7 @@ $WIKI_ALIASES['description'] = '&meta(description, <PARAMS>);';
 :description|指定したページの説明を表示します．
 :tag|指定したページのタグを表示します．
 :{separator=記号|複数のタグを列挙するときに使用する区切り記号を指定します．
-スペースはspace, カンマはcommaと指定して下さい．
+スペースはspace, カンマはcommaと指定してください．
 }
 
 *対象
