@@ -923,6 +923,7 @@ Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表�
 |[[URLの自動リンク:../Extra#自動リンク]]|URLをそのまま書く|
 |[[折りたたみ:../Extra#折りたたみ]]|"":::details 見出し"" の行と "":::"" の行で囲む|
 |[[目次:../Extra#目次]]|""[TOC]"" とだけ書いた行|
+|[[子ページのツリー:../Extra#子ページのツリー]]|""[PAGES]"" とだけ書いた行|
 |[[記法の例:../Extra#記法の例]]|"":::example"" の行と "":::"" の行で囲む|
 
 *[[リンク・画像・添付:../Link]]
@@ -1159,6 +1160,25 @@ URLをそのまま書くとリンクになります．""www."" で始まる語�
 -サイドページや，取り込まれた先でも目次になります．
 -""[TOC]"" という文字は，サイトの検索には載りません．
 -GitLab・Typora・Python-Markdown(MkDocs)と同じ書き方です．対応していないツールでは ""[TOC]"" という文字が見えるだけです．
+
+*子ページのツリー
+""[PAGES]"" とだけ書いた行(前後は空行)は，そのページの子ページを孫以下まで入れ子にした一覧になります(Wiki記法の[[&&treepages:../../Wiki/Function/treepages]]と同じ)．
+""PAGES"" の後ろに空白で区切って，次の指定を並べられます．
+
+ [PAGES]
+ [PAGES ./写真]
+ [PAGES sort=mtime reverse 10]
+
+:ページ名|そのページの子ページの一覧にします．書き方はリンクと同じで，名前だけと ""./"" はこのページの子，""../"" は隣，""/名前"" はトップ階層からです．""/"" だけならサイト全体です．空白は ""%20"" と書きます．
+:sort=mtime|更新日時の順に並べます．""sort=btime"" は作成日時，""sort=size"" は大きさの順です．
+:reverse|逆の順に並べます．
+:children|直下の子ページだけにします(孫は出しません)．
+:数字|その件数だけ出します．
+:withsystem|マニュアルのページなども出します．
+-読めない指定があるときは，""[PAGES …]"" の文字のまま表示されます．
+-子ページが無いときは，何も表示されません．
+-""[PAGES …]"" という文字は，サイトの検索には載りません．
+-この書き方はNextForm独自のものです．他のツールでは ""[PAGES]"" という文字が見えるだけです．
 
 *記法の例
 コロン3つに続けて ""example"" と書いた行から，コロン3つだけの行までが，
@@ -1461,6 +1481,7 @@ For what can and cannot be written, see
 |[[automatic link:../Extra#Automatic links]]|write the URL as it is|
 |[[folding:../Extra#Folding]]|wrap it in a "":::details heading"" line and a "":::"" line|
 |[[table of contents:../Extra#Table of contents]]|a line with only ""[TOC]""|
+|[[tree of subpages:../Extra#Tree of subpages]]|a line with only ""[PAGES]""|
 |[[notation examples:../Extra#Notation examples]]|wrap it in a "":::example"" line and a "":::"" line|
 
 *[[Links, images and attachments:../Link]]
@@ -1712,6 +1733,25 @@ It has the same form as ''Table of contents'' in ''Tools'', and pressing an item
 -It becomes a table of contents on the side page and where the page is pulled in, too.
 -The text ""[TOC]"" is not indexed by the site search.
 -It is written the same way as in GitLab, Typora and Python-Markdown (MkDocs). Tools that do not support it just show the text ""[TOC]"".
+
+*Tree of subpages
+A line with only ""[PAGES]"" (with blank lines around it) becomes a nested list of the subpages of the page, including grandchildren (the same as &&treepages of Wiki notation, which is &&pages with show=tree; see [[&&pages:../../Wiki/Function/pages]]).
+After ""PAGES"", the following can be listed, separated by spaces.
+
+ [PAGES]
+ [PAGES ./photos]
+ [PAGES sort=mtime reverse 10]
+
+:page name|Lists the subpages of that page. It is written as in a link: a bare name and ""./"" are children of this page, ""../"" is next to it, and ""/name"" is from the top. ""/"" alone is the whole site. Write a space as ""%20"".
+:sort=mtime|Sorts by the modification time. ""sort=btime"" sorts by the creation time and ""sort=size"" by the size.
+:reverse|Reverses the order.
+:children|Only the direct subpages (no grandchildren).
+:a number|Shows only that many.
+:withsystem|Also shows pages such as the manual.
+-When there is something it cannot read, the text ""[PAGES …]"" is shown as it is.
+-When there are no subpages, nothing is shown.
+-The text ""[PAGES …]"" is not indexed by the site search.
+-This notation is specific to NextForm. Other tools just show the text ""[PAGES]"".
 
 *Notation examples
 A line of three colons followed by ""example"", down to a line of three colons
@@ -1975,6 +2015,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |見出し|&* 見出し|""# 見出し""|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
 |折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます．どちらも見出しは目次に載ります|
 |目次|&&index|""[TOC]"" とだけ書いた行|Markdown記法では，ほかのページの目次(&&index(&[&[ページ名&]&]))は書けません|
+|子ページのツリー|&&treepages|""[PAGES]"" とだけ書いた行|Markdown記法で書ける指定は，対象のページ・並べ方・件数・直下だけ(children)です．表や中身ごとの一覧は書けません|
 |節の終わりを明示|&*(end)|なし|同上|
 |他のページの取り込み|&&include(&[&[ページ名&]&])|段落にそれ1つだけの !&[説明&](ページ名)|Markdown記法では，文の途中に書いたときはリンクになります．大きさや配置の指定は説明の後ろに書きます([[リンク・画像・添付:../Markdown/Link#大きさ・配置・キャプション]])|
 |部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
@@ -1995,7 +2036,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 次のようなことをしたいページは，種別wikiで作ってください．
 
 |やりたいこと|Wiki記法|h
-|ページの一覧|&&pages &&subpage|
+|ページの一覧(表・中身ごと・テンプレート)|&&pages &&subpage|
 |カレンダー|&&calendar &&datepages|
 |数値計算・表計算|行頭の &= と セルの &=|
 |検索結果の埋め込み|&&search|
@@ -2045,6 +2086,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |heading|&* heading|""# heading""|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
 |folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''. In both, the heading appears in the table of contents|
 |table of contents|&&index|a line with only ""[TOC]""|Markdown notation cannot write the table of contents of another page (&&index(&[&[page name&]&]))|
+|tree of subpages|&&treepages|a line with only ""[PAGES]""|Markdown notation can give the page, the order, the number and only the direct subpages (children). Lists as tables or with contents cannot be written|
 |marking the end of a section|&*(end)|none|as above|
 |pulling in another page|&&include(&[&[page name&]&])|!&[description&](page name) alone in its paragraph|In Markdown notation, it is a link when written in the middle of a sentence. The size and placement are written after the description ([[Links, images and attachments:../Markdown/Link#Size, placement and caption]])|
 |unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
@@ -2066,7 +2108,7 @@ Functions of Wiki notation cannot be used in pages of type Markdown.
 Create a page of type wiki when you want to do any of the following.
 
 |what you want|Wiki notation|h
-|lists of pages|&&pages &&subpage|
+|lists of pages (as tables, with contents, with templates)|&&pages &&subpage|
 |calendars|&&calendar &&datepages|
 |calculation and spreadsheets|&= at the start of a line and &= in a cell|
 |embedding search results|&&search|
