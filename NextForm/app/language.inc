@@ -295,6 +295,11 @@ $LANGUAGE['ja'] = array(
     'Colors, sizes and alignment of text (only the text remains)' => '文字の色・大きさ・配置 (文字だけ残した)',
     'Opening in a new tab (>>)' => '新しいタブで開く (>>)',
     'Showing the title in the text (&title(show))' => '題名を本文にも出す (&title(show))',
+    'Comments (// and /* */)' => 'コメント (// と /* */)',
+    'Header cells in the middle of tables (made ordinary cells)' => '表の途中の見出しのセル (~。ふつうのセルにした)',
+    'Line breaks in table cells' => '表のセルの中の改行',
+    'Notation not in Markdown (shown as text)' => 'Markdown に無い記法 (文字のまま出した)',
+    'Pages pulled in in the middle of a sentence (made links)' => '文中のページの取り込み (リンクにした)',
     'Restore an old version of $pagename$' => '$pagename$ を前の版に戻す',
     'Overwrite the current $pagename$ with the text and the type ($type$) of the version at $time$. The current content is kept in the history, so this can be undone in the same way.' =>
     '今の $pagename$ を，$time$時点の版の本文と種別($type$)で上書きします．今の内容は履歴に残るので，同じ方法で元に戻せます．',

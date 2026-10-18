@@ -25,7 +25,9 @@ $OPTIONS['tomarkdown'] = array(
 
 /* 種別 wiki のページにだけ出す。書けない・ロック中は押せなくする (編集と同じ) */
 function tomarkdown_tool(&$page, $dom) {
-    if(empty($page) || empty($page['is_exists']) || page_get_type($page) !== 'wiki')
+    /* 組み込みのマニュアルは書き換えられないので出さない */
+    if(empty($page) || empty($page['is_exists']) || page_get_type($page) !== 'wiki' ||
+       page_is_manual($page['name']))
 	return;
     tools_add_link(
 	$dom,
@@ -109,7 +111,10 @@ function tomarkdown_append_form($dom, &$page) {
 	message_error(l('Only pages of type wiki can be converted to Markdown.'));
 	return;
     }
-    $has_permission = auth_warn($page['name'], 'write') && lock_warn($page);
+    /* 変換できない人には、変換して見せない (wiki と Markdown の両方を描くので重い) */
+    if(!auth_warn($page['name'], 'write') || !lock_warn($page))
+	return;
+    $has_permission = true;
     $source = (string)page_get_contents($page);
     $result = wiki_markdown_convert($page, $source);
 
