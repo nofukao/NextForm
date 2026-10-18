@@ -42,8 +42,14 @@ function history_show(&$args, $dom) {
     $thead = dom_append_child($table, 'thead');
     $tbody = dom_append_child($table, 'tbody');
 
+    /* 旧版の行に「この版に戻す」を出すか (option/restore.inc) */
+    $can_restore = restore_can_restore($page);
+
     $tr = dom_append_child($thead, 'tr');
-    foreach(array(l('Modification time'), l('Last updated by'), l('Type'), '', '') as $term) {
+    $terms = array(l('Modification time'), l('Last updated by'), l('Type'), '', '');
+    if($can_restore)
+	$terms[] = '';
+    foreach($terms as $term) {
 	$td = dom_append_child($tr, 'td');
 	dom_append_text($td, $term);
     }
@@ -85,6 +91,12 @@ function history_show(&$args, $dom) {
 	$td = dom_append_child($tr, 'td');
 	if($backup_page['meta']['type'] != 'file')
 	    dom_append_link($td, $uri_source, l('Source'));
+
+	if($can_restore) {
+	    $td = dom_append_child($tr, 'td');
+	    if($time != 'now')
+		restore_append_link($td, $page, $time);
+	}
 
 	$td = dom_append_child($tr, 'td');
 	$radio = dom_append_child($td, 'input', '',
@@ -128,6 +140,11 @@ function history_page(&$args, $dom) {
     $internal_action = default_value($args['internal_action'], '');
     if(!in_array($internal_action, array('show', 'source'), true))
 	$internal_action = '';
+
+    if(restore_can_restore($page)) {
+	$p = dom_append_child($dom, 'p', 'restore');
+	restore_append_link($p, $page, $args['backuptime']);
+    }
     page_handle($backup_page, $dom, $internal_action);
 
     if($backup_page['done_action'] == 'source') {

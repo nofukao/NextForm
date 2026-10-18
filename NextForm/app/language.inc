@@ -266,6 +266,12 @@ $LANGUAGE['ja'] = array(
     'Source of old version of $pagename$ at $time$' => '$time$時点の $pagename$ のソース',
     'Backup not found.' => 'バックアップが見つかりません．',
     'Backup failed.' => 'バックアップに失敗しました．',
+    'Restore this version' => 'この版に戻す',
+    'Restore an old version of $pagename$' => '$pagename$ を前の版に戻す',
+    'Overwrite the current $pagename$ with the text and the type ($type$) of the version at $time$. The current content is kept in the history, so this can be undone in the same way.' =>
+    '今の $pagename$ を，$time$時点の版の本文と種別($type$)で上書きします．今の内容は履歴に残るので，同じ方法で元に戻せます．',
+    'Show this version' => 'この版を表示',
+    'Versions of type $type$ cannot be restored.' => '種別 $type$ の版には戻せません．',
 
     'Difference between $pagename1$ (at $compare1time$) and $pagename2$ (at $compare2time$)' =>
     '$pagename1$ ($compare1time$) と $pagename2$ ($compare2time$)の比較',

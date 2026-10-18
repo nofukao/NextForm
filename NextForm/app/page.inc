@@ -229,6 +229,20 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
     }
     if(isset($page['description']))
 	$page['meta']['description'] = $page['description'];
+    if(isset($page['write_meta'])) {
+	/*
+	 * 種別とそれに付く meta を書き換える (「この版に戻す」と変換)。題名と同じく、
+	 * 古い ngram を古い種別で数え終えたここでだけ変える。手前で meta['type'] を
+	 * 変えると、古い本文を新しい種別として読んで数えるので、古い語が索引に残る。
+	 * null は「消す」。
+	 */
+	foreach($page['write_meta'] as $name => $value) {
+	    if(is_null($value))
+		unset($page['meta'][$name]);
+	    else
+		$page['meta'][$name] = $value;
+	}
+    }
     $result = storage_page_write($page, $contents, $error);
     if($result) {
 	if(isset($old_tags))
@@ -243,6 +257,69 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	}
     }
     return $result;
+}
+
+/*
+ * 種別 file の中身に付いて決まる meta (wiki_meta.inc の一覧と同じ)。
+ * 種別を変えて書くとき、file の版からは取り、file でない版では落とす。
+ */
+$PAGE_FILE_META_NAMES = array('Content-type', 'original_filename',
+			      'image_width', 'image_height', 'audio_duration',
+			      'video_duration', 'video_width', 'video_height');
+
+/*
+ * 旧版 ($backuptime) の本文と種別で、今のページを書き直す (履歴の「この版に戻す」)。
+ * 戻す前の版は、同じ人が続けて保存したときでも必ず履歴に残す。
+ * 題名とタグは、戻した種別の normalize が本文から取り直す (§7「本文を正とする」)。
+ * 説明・ロックなどほかの meta は今のまま。種別 file の版は、中身に付く meta
+ * (Content-type・画像の寸法など) も版から取る。版を書いたときに測ったものなので、
+ * 測り直さない。ロック・権限・ticket は、今のページについて page_write() が確かめる。
+ */
+function page_restore(&$page, $backuptime, &$ticket, &$error = PAGE_WRITE_ERROR_NONE) {
+    global $HANDLERS, $PAGE_FILE_META_NAMES;
+
+    if(empty($page['is_exists'])) {
+	message_error(l('Page not found.'));
+	return false;
+    }
+    $backup_page = page_read_backup($page['name'], $backuptime);
+    if(empty($backup_page['is_exists'])) {
+	message_error(l('Backup not found.'));
+	return false;
+    }
+    $type = default_value($backup_page['meta']['type'], DEFAULT_PAGE_TYPE);
+    if(empty($HANDLERS[$type])) {
+	message_error(lf('Versions of type $type$ cannot be restored.', array('type' => $type)));
+	return false;
+    }
+    $fp = page_open_contents($backup_page);
+    if($fp === false) {
+	message_error(l('Backup not found.'));
+	return false;
+    }
+
+    $write_meta = array('type' => $type);
+    foreach($PAGE_FILE_META_NAMES as $name)
+	$write_meta[$name] = ($type === 'file' && isset($backup_page['meta'][$name])) ?
+	    $backup_page['meta'][$name] : null;
+
+    if($type === 'file') {
+	$contents = $fp;
+    } else {
+	$contents = stream_get_contents($fp);
+	fclose($fp);
+	/* normalize は種別で引くので、戻す種別をそのあいだだけ当てる (meta は page_write() が書く) */
+	$current_type = default_value($page['meta']['type'], DEFAULT_PAGE_TYPE);
+	$page['meta']['type'] = $type;
+	$normalize = handler_function($page, 'normalize');
+	if($normalize !== false)
+	    $contents = $normalize($page, $contents);
+	$page['meta']['type'] = $current_type;
+    }
+
+    $page['write_meta'] = $write_meta;
+    $page['backup_now'] = true;
+    return page_write($page, $contents, $ticket, $error);
 }
 
 function page_delete(&$page) {
