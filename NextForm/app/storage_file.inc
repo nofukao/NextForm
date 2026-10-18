@@ -296,6 +296,18 @@ function storage_page_backup(&$page, $skip_time = 0, $backup_time = null) {
     }
 
     $backuppath = storage_page_get_filepath($page['name'], $now);
+    /*
+     * 必ず残すとき ($skip_time が 0) は、同じ秒の版を上書きしない。上書きすると
+     * その版が履歴から消え、開いている版 (「この版に戻す」で読んでいるもの) の
+     * 中身も書き換わる。時刻を渡されていれば失敗にし (呼び手がその時刻を本文に
+     * 書くため)、渡されていなければ 1 秒ずつずらす。
+     */
+    if(empty($skip_time) && file_exists($backuppath)) {
+	if(!is_null($backup_time))
+	    return false;
+	while(file_exists($backuppath = storage_page_get_filepath($page['name'], ++$now)))
+	    ;
+    }
     if(!copy($page['storage_filepath'], $backuppath)) {
 	message_error(l('File copy error'));
 	return false;

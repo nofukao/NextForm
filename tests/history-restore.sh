@@ -173,6 +173,8 @@ for f in v1.wiki v2.md other.txt a.png b.png; do put "$WORK/$f"; done
 
 D=RestoreTest/Doc
 helper make-text "$D" wiki "${FIX}/v1.wiki" > /dev/null
+# Wiki 記法はタグを本文に書かないので、meta に付ける (タグの画面と同じ経路)
+helper set-tag "$D" ふるい > /dev/null
 T1=$(value_of "$(helper backup-now "$D")" backuptime)
 helper retype-as-guest "$D" markdown "${FIX}/v2.md" > /dev/null
 
@@ -215,12 +217,22 @@ check_eq "  本文が旧版と同じ" "$(sha_of "$WORK/v1.wiki")" "$(sha_of_body
 check_eq "  ページがあり、種別が旧版と同じ (wiki)" "1|wiki" \
          "$(value_of "$(helper exists "$D")" exists)|$(value_of "$(helper meta "$D" type)" meta)"
 check_eq "  題名を Wiki 記法の本文から取り直す" "古い題名" "$(value_of "$(helper meta "$D" title)" meta)"
+check_eq "  タグはその版のもの (Wiki 記法の版は本文にタグが無いので、版の meta から)" "ふるい" \
+         "$(value_of "$(helper meta "$D" tag)" meta)"
+check_eq "  タグ一覧の件数も合う" "1|0" \
+         "$(value_of "$(helper alltag ふるい)" count)|$(value_of "$(helper alltag あたらしい)" count)"
 after_times=$(value_of "$(helper backup-times "$D")" times)
 newest=${after_times##*,}
 check_eq "  戻す前の版 (Markdown) が履歴に残る (15 分以内に続けて保存しても)" "yes|markdown|1" \
          "$([[ "$after_times" == "${before_times},"* ]] && echo yes || echo no)|$(value_of "$(helper backup-type "$D" "$newest")" type)|$(value_of "$(helper exists "$D")" exists)"
 check_eq "  残った版の本文は戻す前のもの" "$(sha_of "$WORK/v2.md")" \
          "$(value_of "$(helper backup-body "$D" "$newest")" body | base64 -d | sha256sum | cut -d' ' -f1)"
+echo
+
+S=RestoreTest/Second
+helper make-text "$S" text "${FIX}/other.txt" > /dev/null
+out=$(helper same-second-backup "$S" "${FIX}/v1.wiki" "${FIX}/other.txt")
+check_eq "同じ秒にある版を、必ず残す保存で上書きしない" "1|1" "$(value_of "$out" added)|$(value_of "$out" kept)"
 echo
 
 echo "3. 検索の索引が、戻した本文と一致すること"
@@ -234,6 +246,8 @@ check_eq "Markdown の版に戻し直すと、題名とタグをフロントマ�
          "$(value_of "$(helper meta "$D" type)" meta)|$(value_of "$(helper meta "$D" title)" meta)|$(value_of "$(helper meta "$D" tag)" meta)"
 out=$(helper index-ok "$D")
 check_eq "  索引が一致する" "1|0|0" "$(value_of "$out" ok)|$(value_of "$out" missing)|$(value_of "$out" extra)"
+check_eq "  タグ一覧の件数も合う" "0|1" \
+         "$(value_of "$(helper alltag ふるい)" count)|$(value_of "$(helper alltag あたらしい)" count)"
 echo
 
 echo "4. 種別 file の版は、中身と、中身に付く meta が戻ること"
@@ -242,6 +256,26 @@ check_eq "戻す: 保存後の移動 (302)" "302" "$(restore "$F" "$TF" "$(confi
 check_eq "  中身が旧版と同じ" "$(sha_of "$WORK/a.png")" "$(sha_of_body "$F")"
 check_eq "  種別・Content-type・画像の寸法が旧版のもの" "file|image/png|40|30" \
          "$(value_of "$(helper meta "$F" type)" meta)|$(value_of "$(helper meta "$F" Content-type)" meta)|$(value_of "$(helper meta "$F" image_width)" meta)|$(value_of "$(helper meta "$F" image_height)" meta)"
+times=$(value_of "$(helper backup-times "$F")" times)
+check_eq "  戻す前の中身 (b.png) が履歴に残る" "$(sha_of "$WORK/b.png")" \
+         "$(value_of "$(helper backup-body "$F" "${times##*,}")" body | base64 -d | sha256sum | cut -d' ' -f1)"
+
+# 種別 file と text が混ざった履歴。file の版に戻すと file の meta が付き、
+# text の版に戻すと落ちる
+Z=RestoreTest/Doc/z.png
+helper make-file "$Z" "${FIX}/a.png" image/png > /dev/null
+TZ=$(value_of "$(helper backup-now "$Z")" backuptime)
+sleep 1
+helper retype-text "$Z" "${FIX}/other.txt" > /dev/null
+open_confirm "$Z" "$TZ" > /dev/null
+restore "$Z" "$TZ" "$(confirm_ticket)" > /dev/null
+check_eq "text のページを file の版に戻す: 中身と file の meta" "file|image/png|40|$(sha_of "$WORK/a.png")" \
+         "$(value_of "$(helper meta "$Z" type)" meta)|$(value_of "$(helper meta "$Z" Content-type)" meta)|$(value_of "$(helper meta "$Z" image_width)" meta)|$(sha_of_body "$Z")"
+times=$(value_of "$(helper backup-times "$Z")" times)
+open_confirm "$Z" "${times##*,}" > /dev/null
+restore "$Z" "${times##*,}" "$(confirm_ticket)" > /dev/null
+check_eq "  text の版に戻し直す: file の meta は落ちる" "text||$(sha_of "$WORK/other.txt")" \
+         "$(value_of "$(helper meta "$Z" type)" meta)|$(value_of "$(helper meta "$Z" Content-type)" meta)|$(sha_of_body "$Z")"
 echo
 
 echo "5. 戻せないときは何も変えないこと"
@@ -279,6 +313,15 @@ helper guest write > /dev/null
 restore "$D" "9999999999" "$(confirm_ticket)" > /dev/null
 check_eq "版が無い: 理由が出る" "yes" "$(said 'Backup not found|バックアップが見つかりません')"
 check_eq "  何も変わらない" "$cur" "$(sha_of_body "$D")"
+for bad in 0 abc; do
+    open_confirm "$D" "$bad" > /dev/null
+    check_eq "版の時刻が ${bad}: 確認の画面にフォームを出さない" "yes|no" \
+             "$(grep -qE 'Backup not found|バックアップが見つかりません' "$WORK/confirm" && echo yes || echo no)|$(grep -q 'name="backuptime"' "$WORK/confirm" && echo yes || echo no)"
+    before=$(value_of "$(helper backup-times "$D")" times)
+    restore "$D" "$bad" "$ticket" > /dev/null
+    check_eq "  送っても何も変わらない (本文も履歴も)" "$cur|$before" \
+             "$(sha_of_body "$D")|$(value_of "$(helper backup-times "$D")" times)"
+done
 
 G=RestoreTest/Gone
 helper make-text "$G" markdown "${FIX}/other.txt" > /dev/null

@@ -39,9 +39,12 @@ function restore_write(&$args, $dom) {
     return false;
 }
 
-/* 版の時刻は数字だけ (保存先のファイル名に使われる) */
+/*
+ * 版の時刻は数字だけ (保存先のファイル名に使われる)。0 は受け付けない。
+ * storage_page_get_filepath() は空の時刻 (empty("0")) を今のページとして扱う。
+ */
 function restore_is_backuptime($backuptime) {
-    return is_string($backuptime) && preg_match('/^[0-9]+$/', $backuptime);
+    return is_string($backuptime) && preg_match('/^[1-9][0-9]*$/', $backuptime);
 }
 
 /*

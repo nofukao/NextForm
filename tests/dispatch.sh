@@ -248,7 +248,6 @@ check_eq "旧版の表示は今までどおり見られる" "1" \
          "$(has_body "${DISPATCH_TEST_URL}/?${L}&option=history&action=page&backuptime=${bt}")"
 check_eq "旧版の原文も見られる (internal_action=source)" "1" \
          "$(has_body "${DISPATCH_TEST_URL}/?${L}&option=history&action=page&backuptime=${bt}&internal_action=source")"
-helper cleanup > /dev/null
 echo
 
 echo "5. PHP の警告を出さないこと"
@@ -260,6 +259,7 @@ post_same_origin -d "option=history" -d "action=page" -d "backuptime=${bt}" \
                  -d "internal_action=write" "${DISPATCH_TEST_URL}/?${L}" > /dev/null
 after=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
 check_eq "エラーログが増えない" "$before" "$after"
+helper cleanup > /dev/null
 echo
 
 if [[ $fail -eq 0 ]]; then

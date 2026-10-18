@@ -270,10 +270,13 @@ $PAGE_FILE_META_NAMES = array('Content-type', 'original_filename',
 /*
  * 旧版 ($backuptime) の本文と種別で、今のページを書き直す (履歴の「この版に戻す」)。
  * 戻す前の版は、同じ人が続けて保存したときでも必ず履歴に残す。
- * 題名とタグは、戻した種別の normalize が本文から取り直す (§7「本文を正とする」)。
- * 説明・ロックなどほかの meta は今のまま。種別 file の版は、中身に付く meta
- * (Content-type・画像の寸法など) も版から取る。版を書いたときに測ったものなので、
- * 測り直さない。ロック・権限・ticket は、今のページについて page_write() が確かめる。
+ * 題名とタグもその版のものにする。本文に書く場所がある種別では、戻した種別の
+ * normalize が本文から取り直す (§7「本文を正とする」。Markdown の題名とタグ、
+ * Wiki 記法の題名)。本文に書く場所が無いもの (Wiki 記法のタグ、text と file の
+ * 題名とタグ) は版の meta から取る。説明・ロックなどほかの meta は今のまま。
+ * 種別 file の版は、中身に付く meta (Content-type・画像の寸法など) も版から取る。
+ * 版を書いたときに測ったものなので、測り直さない。
+ * ロック・権限・ticket は、今のページについて page_write() が確かめる。
  */
 function page_restore(&$page, $backuptime, &$ticket, &$error = PAGE_WRITE_ERROR_NONE) {
     global $HANDLERS, $PAGE_FILE_META_NAMES;
@@ -303,6 +306,7 @@ function page_restore(&$page, $backuptime, &$ticket, &$error = PAGE_WRITE_ERROR_
 	$write_meta[$name] = ($type === 'file' && isset($backup_page['meta'][$name])) ?
 	    $backup_page['meta'][$name] : null;
 
+    unset($page['title'], $page['write_tag']);
     if($type === 'file') {
 	$contents = $fp;
     } else {
@@ -316,10 +320,18 @@ function page_restore(&$page, $backuptime, &$ticket, &$error = PAGE_WRITE_ERROR_
 	    $contents = $normalize($page, $contents);
 	$page['meta']['type'] = $current_type;
     }
+    /* normalize が本文から取らなかったものは、版の meta から (page_write() が書く。空は「消す」) */
+    if(!isset($page['title']))
+	$page['title'] = default_value($backup_page['meta']['title'], '');
+    if(!isset($page['write_tag']))
+	$page['write_tag'] = default_value($backup_page['meta']['tag'], '');
 
     $page['write_meta'] = $write_meta;
     $page['backup_now'] = true;
-    return page_write($page, $contents, $ticket, $error);
+    $result = page_write($page, $contents, $ticket, $error);
+    /* 同じ $page でまた書いたときに、種別の書き換えと版の作成をもう一度走らせない */
+    unset($page['write_meta'], $page['backup_now']);
+    return $result;
 }
 
 function page_delete(&$page) {

@@ -26,6 +26,14 @@
  *   exists <名前>            ページがあるか (exists=1/0)
  *   body <名前>              本文を base64 で 1 行に (body=...)
  *   meta <名前> <項目>       meta の値 (meta=...)
+ *   set-tag <名前> <タグ>     タグの画面と同じ経路でタグを付ける (written=1/0)
+ *   alltag <タグ>            タグ一覧の数え上げ (count=...)
+ *   retype-text <名前> <ファイル>
+ *                            種別を text に変えて書く (版の種別が混ざった履歴を作るための準備)
+ *   same-second-backup <名前> <ファイル1> <ファイル2>
+ *                            版を作り、同じ秒にファイル1をふつうに保存し (版は作られない)、
+ *                            さらに同じ秒にファイル2を版を必ず残して保存する
+ *                            (added=増えた版の数, kept=先に作った版の中身が残っているか 1/0)
  *   cleanup                  このヘルパが作ったページを消す
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -191,6 +199,45 @@ case 'body':
 case 'meta':
     $page = page_read($rest[0]);
     printf("meta=%s\n", default_value($page['meta'][$rest[1]], ''));
+    break;
+
+case 'set-tag':
+    $page = page_read($rest[0]);
+    printf("written=%d\n", tag_set_page_tags($page, array($rest[1])) ? 1 : 0);
+    break;
+
+case 'alltag':
+    $alltags = tag_alltags_get();
+    printf("count=%d\n", isset($alltags[$rest[0]]) ? $alltags[$rest[0]] : 0);
+    break;
+
+case 'retype-text':
+    printf("written=%d\n", test_write_text($rest[0], 'text', $rest[1]) ? 1 : 0);
+    break;
+
+case 'same-second-backup':
+    /* 秒の変わり目をまたがないよう、秒の前半で始める */
+    while(microtime(true) - floor(microtime(true)) > 0.3)
+	usleep(10000);
+    $page = test_page($rest[0]);
+    $original = (string)page_get_contents($page);
+    storage_page_backup($page, 0);
+    $before = page_get_backup_times($page);
+    $first = max($before);
+    $page = test_page($rest[0]);
+    $contents = file_get_contents($rest[1]);
+    $ticket = default_value($page['meta']['ticket'], '');
+    page_write($page, $contents, $ticket);
+    $page = test_page($rest[0]);
+    $page['backup_now'] = true;
+    $contents = file_get_contents($rest[2]);
+    $ticket = default_value($page['meta']['ticket'], '');
+    page_write($page, $contents, $ticket);
+    $page = test_page($rest[0]);
+    $after = page_get_backup_times($page);
+    $kept = page_read_backup($rest[0], $first);
+    printf("added=%d\nkept=%d\n", count($after) - count($before),
+	   (string)page_get_contents($kept) === $original ? 1 : 0);
     break;
 
 case 'cleanup':
