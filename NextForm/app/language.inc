@@ -302,10 +302,29 @@ $LANGUAGE['ja'] = array(
     'クローン元のNextFormのページのURLを入れてください．本文と添付ファイルを，同じ種別で写します．',
     'URL of the page to clone' => 'クローン元のページのURL',
     'Clone' => 'クローン',
-    'Only the attached files directly under the page are copied. Attached files of other pages (such as ../image.png) are not, so links to them may be broken.' =>
-    '写す添付ファイルは，そのページの直下のものだけです．ほかのページの添付ファイル(../画像.png など)は写さないので，それへのリンクはリンク切れになることがあります．',
+    'Only the attached files directly under the copied pages are copied. Attached files of other pages (such as ../image.png) are not, so links to them may be broken.' =>
+    '写す添付ファイルは，写すページの直下のものだけです．ほかのページの添付ファイル(../画像.png など)は写さないので，それへのリンクはリンク切れになることがあります．',
     'History, lock, permissions and the descriptions of the page and its files are not copied.' =>
     '履歴・ロック・権限と，ページや添付ファイルの説明は写しません．',
+    'Copied pages can be seen with the permissions of this site, even if they required login at the site to clone.' =>
+    'クローン元でログインが必要だったページも，写したあとはこのサイトの権限で見えるようになります．',
+    'With "Include subpages", all the pages under the page (including grandchildren) are copied. Pages that cannot be read at the site to clone are skipped. Enter the user name and password of that site to include them.' =>
+    '「子ページを含む」を選ぶと，そのページの下のページを孫以下まで全部写します．クローン元で読めないページは写りません．写すには，そのサイトのユーザー名とパスワードを入れてください．',
+    'With subpages, up to $pages$ pages and $files$ attached files ($bytes$B in total) can be cloned at once.' =>
+    '子ページを含めるときに一度にクローンできるのは，$pages$ページ・添付ファイル$files$個(合計$bytes$B)までです．',
+    'Include attached files' => '添付ファイルを含む',
+    'Include subpages' => '子ページを含む',
+    'Only logged-in users can clone with subpages.' => '子ページを含めてクローンできるのは，ログインした人だけです．',
+    'Another clone is in progress. Try again later.' => 'ほかのクローンが動いています．しばらくしてからやり直してください．',
+    'Fetching from the site to clone took too long (more than $seconds$ seconds). Clone without subpages, or in smaller parts.' =>
+    'クローン元から取るのに時間がかかりすぎました($seconds$秒を超えました)．子ページを含めないか，分けてクローンしてください．',
+    'Could not get the list of subpages.' => '子ページの一覧を取得できませんでした．',
+    'There are too many subpages. Up to $max$ subpages can be cloned at once.' =>
+    '子ページが多すぎます．一度にクローンできる子ページは$max$ページまでです．',
+    'There are too many attached files in total ($num$). Up to $max$ files can be cloned at once.' =>
+    '添付ファイルが全部で多すぎます($num$個)．一度にクローンできるのは$max$個までです．',
+    'The pages and attached files to clone are too large in total. Up to $limit$B can be cloned at once.' =>
+    'クローンするページと添付ファイルが，合計で大きすぎます．一度にクローンできるのは$limit$Bまでです．',
     'Each attached file must be within the size limit of this site ($limit$B).' =>
     '添付ファイルは1つずつ，このサイトのサイズ上限($limit$B)に収まる必要があります．',
     'Enter the URL of a NextForm page.' => 'NextFormのページのURLを入力してください．',

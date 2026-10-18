@@ -20,14 +20,21 @@
  * この要求のあいだメモリに置くだけで、ページ・ログ・メッセージにも書かず、
  * 失敗して画面に戻るときもパスワードは入れ直してもらう。
  *
- * 写すのは、本文 (題名とタグは本文にある) と、直下の添付 (中身、名前、
- * Content-type) だけ。履歴・ロック・権限・メタ情報の説明、添付以外の子ページ、
- * ほかのページの添付 (../画像.png など) は写さない。本文は書き換えないので、
- * 後者へのリンクはクローン先に同じ名前のページが無ければリンク切れになる。
+ * 写すのは、本文 (題名とタグは本文にある) と、各ページの直下の添付 (中身、名前、
+ * Content-type)。「子ページを含む」を選ぶと、子孫のページも孫以下まで写す。
+ * 子孫の一覧は ?ページ&option=subpage (これも上流からある画面) から取る。
+ * 「添付ファイルを含む」を外すと、どの深さの添付も写さない。
+ * 履歴・ロック・権限・メタ情報の説明、写さないページの添付 (../画像.png など) は
+ * 写さない。本文は書き換えないので、後者へのリンクはクローン先に同じ名前の
+ * ページが無ければリンク切れになる。木の中どうしのリンクは、形が同じなのでつながる。
  *
  * まず全部を取ってきて確かめ、問題が無いときだけ書く。取ってきたものは
  * 一時ファイルに置く。書く途中で失敗したら、作った分を消す (論理削除なので
  * 「削除されたページ」から戻せる)。
+ *
+ * 子ページを含めるのはログインした人だけ。木が大きいと、1 回の送信でこの
+ * サーバーがクローン元へ何百回も取りに行くので、通りがかりの人には使わせない。
+ * 同じ理由で、クローンはサイト全体で同時に 1 つだけ動かす。
  *
  * 取りに行く先の制限は app/remote.inc。プライベートなネットワークのホストは、
  * サイト設定の CLONE_ALLOWED_HOSTS に書いたときだけ許す。
@@ -38,16 +45,27 @@ $OPTIONS['clone'] = array(
     'write' => 'clone_write',
     );
 
-/* 一度に写せる添付の数 */
+/* 1 つのページに付いている添付のうち、一度に写せる数 */
 define('CLONE_MAX_ATTACHMENTS', 100);
-/* 編集画面の HTML の上限 (本文が入力欄と hidden の 2 回入る) */
+/* 編集画面と子ページの一覧の HTML の上限 (本文が入力欄と hidden の 2 回入る) */
 define('CLONE_MAX_PAGE_BYTES', 16 * 1024 * 1024);
 /* 添付の一覧 (JSON) の上限 */
 define('CLONE_MAX_LIST_BYTES', 1024 * 1024);
 
+/*
+ * 子ページを含めて写すときの上限。サイトの index.php で define すれば変えられる。
+ * 取ってくる段階の時間を区切るのは、手前のプロキシが既定で 60 秒ほどで 504 を
+ * 返すため (PHP の max_execution_time は通信を待つ時間を数えない)。
+ * 1 ページだけを写すときは、今までどおりどれも掛けない。
+ */
+set_const('CLONE_MAX_PAGES', 100);			/* 子孫のページ (種別 file を除く) */
+set_const('CLONE_MAX_TOTAL_ATTACHMENTS', 500);		/* 木全体の添付 */
+set_const('CLONE_MAX_TOTAL_BYTES', 256 * 1024 * 1024);	/* 本文と添付の合計 */
+set_const('CLONE_MAX_FETCH_SECONDS', 30);		/* 取ってくる段階の経過時間 */
+
 function clone_show(&$args, $dom) {
     $page = &main_page();
-    clone_append_form($dom, $page, '', '', true);
+    clone_append_form($dom, $page, '', '', clone_default_options(), true);
     return false;
 }
 
@@ -58,10 +76,16 @@ function clone_write(&$args, $dom) {
     $source_url = clone_arg_string($args, 'source_url');
     $source_url = trim($source_url);
     $source_user = trim(clone_arg_string($args, 'source_user'));
+    $options = clone_options($args);
     $auth = remote_auth_create($source_url, $source_user, clone_arg_string($args, 'source_password'));
 
     $errors = array();
-    $result = clone_page($page['name'], $source_url, $auth, $errors);
+    if($options['subpages'] && auth_get_user() === false) {
+	$errors[] = l('Only logged-in users can clone with subpages.');
+	$result = false;
+    } else {
+	$result = clone_page($page['name'], $source_url, $auth, $options, $errors);
+    }
     unset($auth);
     if($result) {
 	header('Location: ' . url_make($page['name']));
@@ -69,7 +93,7 @@ function clone_write(&$args, $dom) {
     }
     foreach($errors as $error)
 	message_error($error);
-    clone_append_form($dom, $page, $source_url, $source_user, false);
+    clone_append_form($dom, $page, $source_url, $source_user, $options, false);
     return false;
 }
 
@@ -79,10 +103,27 @@ function clone_arg_string(&$args, $name) {
 }
 
 /*
+ * 何を写すか (チェックボックス)。チェックの無い項目は送られて来ないので、
+ * 画面のフォームから来たこと (hidden の clone_options) を確かめてから読む。
+ * 印が無いとき (この版より前の画面から送られたときなど) は、今までと同じく
+ * 直下の添付だけを写す。
+ */
+function clone_options(&$args) {
+    if(empty($args['clone_options']))
+	return clone_default_options();
+    return array('attachments' => !empty($args['clone_attachments']),
+		 'subpages' => !empty($args['clone_subpages']));
+}
+
+function clone_default_options() {
+    return array('attachments' => true, 'subpages' => false);
+}
+
+/*
  * クローンの画面。同じ名前のページがあるときは作れないので、フォームを出さない
  * ($notice_exists は、書けなかった理由として既に出しているときに false)。
  */
-function clone_append_form($dom, &$page, $source_url, $source_user, $notice_exists) {
+function clone_append_form($dom, &$page, $source_url, $source_user, $options, $notice_exists) {
     title_set_pagename('Create $pagename$ by cloning another NextForm page', $page['name']);
     if(!empty($page['is_exists'])) {
 	if($notice_exists)
@@ -90,11 +131,13 @@ function clone_append_form($dom, &$page, $source_url, $source_user, $notice_exis
 	return;
     }
     $has_permission = auth_warn($page['name'], 'write');
+    $is_logged_in = auth_get_user() !== false;
 
     $p = dom_append_child($dom, 'p');
     dom_append_text($p, l('Enter the URL of the NextForm page to clone. Its text and attached files are copied with the same type.'));
 
-    $form = dom_append_page_form($page, $dom, array('option' => 'clone', 'action' => 'write'), 'clone');
+    $form = dom_append_page_form($page, $dom,
+				 array('option' => 'clone', 'action' => 'write', 'clone_options' => '1'), 'clone');
     $label = dom_append_child($form, 'label');
     dom_append_text($label, l('URL of the page to clone'));
     dom_append_child($label, 'input', '',
@@ -105,6 +148,12 @@ function clone_append_form($dom, &$page, $source_url, $source_user, $notice_exis
 			       array('type' => 'submit', 'value' => l('Clone')));
     if(!$has_permission)
 	dom_set_attribute($submit, 'disabled', 'disabled');
+
+    /* 何を写すか。子ページを含められるのはログインした人だけ */
+    $p = dom_append_child($form, 'p', 'clone_options');
+    clone_append_checkbox($p, 'clone_attachments', l('Include attached files'), $options['attachments']);
+    if($is_logged_in)
+	clone_append_checkbox($p, 'clone_subpages', l('Include subpages'), $options['subpages']);
 
     /*
      * クローン元のログインに使う。ブラウザにこのサイトのパスワードとして
@@ -127,15 +176,32 @@ function clone_append_form($dom, &$page, $source_url, $source_user, $notice_exis
 		     array('type' => 'password', 'name' => 'source_password', 'value' => '',
 			   'autocomplete' => 'new-password'));
 
-    $ul = dom_append_child($dom, 'ul');
-    foreach(array(
-		'Only the attached files directly under the page are copied. Attached files of other pages (such as ../image.png) are not, so links to them may be broken.',
-		'History, lock, permissions and the descriptions of the page and its files are not copied.',
-		'Each attached file must be within the size limit of this site ($limit$B).')
-	    as $note) {
-	$li = dom_append_child($ul, 'li');
-	dom_append_text($li, lf($note, array('limit' => encode_prefixed_number(max_upload_file_size()))));
+    $notes = array(
+	'Only the attached files directly under the copied pages are copied. Attached files of other pages (such as ../image.png) are not, so links to them may be broken.',
+	'History, lock, permissions and the descriptions of the page and its files are not copied.',
+	'Copied pages can be seen with the permissions of this site, even if they required login at the site to clone.',
+	'Each attached file must be within the size limit of this site ($limit$B).');
+    if($is_logged_in) {
+	$notes[] = 'With "Include subpages", all the pages under the page (including grandchildren) are copied. Pages that cannot be read at the site to clone are skipped. Enter the user name and password of that site to include them.';
+	$notes[] = 'With subpages, up to $pages$ pages and $files$ attached files ($bytes$B in total) can be cloned at once.';
     }
+    $ul = dom_append_child($dom, 'ul');
+    foreach($notes as $note) {
+	$li = dom_append_child($ul, 'li');
+	dom_append_text($li, lf($note, array('limit' => encode_prefixed_number(max_upload_file_size()),
+					     'pages' => CLONE_MAX_PAGES,
+					     'files' => CLONE_MAX_TOTAL_ATTACHMENTS,
+					     'bytes' => encode_prefixed_number(CLONE_MAX_TOTAL_BYTES))));
+    }
+}
+
+function clone_append_checkbox($dom, $name, $text, $checked) {
+    $label = dom_append_child($dom, 'label');
+    $attributes = array('type' => 'checkbox', 'name' => $name, 'value' => 'on');
+    if($checked)
+	$attributes['checked'] = 'checked';
+    dom_append_child($label, 'input', '', $attributes);
+    dom_append_text($label, $text);
 }
 
 /*
@@ -154,8 +220,9 @@ function clone_request_is_https() {
 /*
  * クローンする。書けたら true。書けなかったら理由を $errors に入れて false
  * (何も書かない)。$auth はクローン元の資格情報 (remote_auth_create())。
+ * $options は何を写すか (clone_options())。
  */
-function clone_page($pagename, $source_url, &$auth, &$errors) {
+function clone_page($pagename, $source_url, &$auth, $options, &$errors) {
     if(page_is_exists($pagename)) {
 	$errors[] = l('Page already exists.');
 	return false;
@@ -166,30 +233,74 @@ function clone_page($pagename, $source_url, &$auth, &$errors) {
 	return false;
     }
 
+    $lock = clone_lock($errors);
+    if($lock === false)
+	return false;
     $temp_files = array();
     try {
 	$source['auth'] = &$auth;
-	$remote = clone_fetch_source($source, $errors);
-	if($remote === false)
-	    return false;
-
-	$attachments = array();
-	$main_file = null;
-	if($remote['type'] === 'file') {
-	    $main_file = clone_fetch_file($source, $source['pagename'], null, $temp_files, $errors);
-	    if($main_file === false)
-		return false;
-	} else {
-	    $attachments = clone_fetch_attachments($source, $pagename, $temp_files, $errors);
-	    if($attachments === false)
-		return false;
+	if($options['subpages']) {
+	    $source['deadline'] = microtime(true) + CLONE_MAX_FETCH_SECONDS;
+	    $source['max_total_bytes'] = CLONE_MAX_TOTAL_BYTES;
 	}
 
-	return clone_write_pages($pagename, $remote, $main_file, $attachments, $errors);
+	$entries = clone_collect($source, $options, $temp_files, $errors);
+	if($entries === false)
+	    return false;
+	if(!clone_check_entries($pagename, $source, $entries, $errors))
+	    return false;
+	if(!clone_fetch_files($source, $entries, $temp_files, $errors))
+	    return false;
+	return clone_write_pages($pagename, $entries, $errors);
     } finally {
 	foreach($temp_files as $temp_file)
 	    @unlink($temp_file);
+	clone_unlock($lock);
     }
+}
+
+/*
+ * クローンは同時に 1 つだけ動かす。木を写すと 1 回の送信で外へ何百回も
+ * 取りに行くので、並べて送られても重ならないようにする。ロックを取れたときに
+ * 残っている一時ファイル (clone-*) は、強制終了などで消せなかった前の
+ * クローンのものなので、ここで片付ける (finally は強制終了では走らない)。
+ */
+function clone_lock(&$errors) {
+    $dir = STORAGE_FILE_DIR_PATH . '/' . STORAGE_FILE_DIR_CACHE_NAME;
+    $fp = @fopen($dir . '/clone.lock', 'c');
+    if($fp === false) {
+	$errors[] = l('Could not make a temporary file.');
+	return false;
+    }
+    if(!flock($fp, LOCK_EX | LOCK_NB)) {
+	fclose($fp);
+	$errors[] = l('Another clone is in progress. Try again later.');
+	return false;
+    }
+    $paths = glob($dir . '/clone-*');
+    foreach(is_array($paths) ? $paths : array() as $path)
+	@unlink($path);
+    return $fp;
+}
+
+function clone_unlock($fp) {
+    flock($fp, LOCK_UN);
+    fclose($fp);
+}
+
+/*
+ * 一時ファイルを作る。storage/cache/ に置く。共用サーバーでは open_basedir で
+ * システムの一時ディレクトリに書けないことがある。storage/ は .htaccess で
+ * 外から読めない。
+ */
+function clone_temp_file(&$temp_files, &$errors) {
+    $path = @tempnam(STORAGE_FILE_DIR_PATH . '/' . STORAGE_FILE_DIR_CACHE_NAME, 'clone-');
+    if($path === false) {
+	$errors[] = l('Could not make a temporary file.');
+	return false;
+    }
+    $temp_files[] = $path;
+    return $path;
 }
 
 /*
@@ -251,6 +362,9 @@ function clone_allowed_hosts() {
 }
 
 function clone_fetch(&$source, $pagename, $queries, $max_bytes, $to_file = null) {
+    /* 子ページを含めるときは、取ってくる段階の時間を区切る (clone_page()) */
+    if(isset($source['deadline']) && microtime(true) > $source['deadline'])
+	return array('error' => 'timeout', 'auth' => $source['auth']);
     $response = remote_fetch(clone_remote_url($source, $pagename, $queries), $max_bytes, $to_file,
 			     clone_allowed_hosts(), $source['auth']);
     $response['auth'] = $source['auth'];
@@ -277,6 +391,10 @@ function clone_check_response(&$response, $too_large_message, &$errors) {
 	case 'too_large':
 	    $errors[] = $too_large_message;
 	    break;
+	case 'timeout':
+	    $errors[] = lf('Fetching from the site to clone took too long (more than $seconds$ seconds). Clone without subpages, or in smaller parts.',
+			   array('seconds' => CLONE_MAX_FETCH_SECONDS));
+	    break;
 	default:
 	    $errors[] = lf('Could not connect to $host$.', array('host' => $response['host']));
 	    break;
@@ -302,11 +420,14 @@ function clone_check_response(&$response, $too_large_message, &$errors) {
     return true;
 }
 
-/* 本文と種別を取る。array('type' => 種別, 'contents' => 本文) か false */
-function clone_fetch_source(&$source, &$errors) {
+/*
+ * クローン元のページ $remote_pagename の本文と種別を取る。
+ * array('type' => 種別, 'contents' => 本文) か false。種別 file なら本文は無い
+ */
+function clone_fetch_source(&$source, $remote_pagename, &$errors) {
     global $HANDLERS, $PAGE_TYPES_TEXTBASE;
 
-    $response = clone_fetch($source, $source['pagename'], array('action' => 'edit'), CLONE_MAX_PAGE_BYTES);
+    $response = clone_fetch($source, $remote_pagename, array('action' => 'edit'), CLONE_MAX_PAGE_BYTES);
     if(!clone_check_response($response, l('The page to clone is too large.'), $errors))
 	return false;
 
@@ -371,11 +492,108 @@ function clone_parse_edit_page($html) {
 }
 
 /*
- * 直下の添付を取ってくる。array(ファイル名 => array('path', 'content_type')) か false。
- * 一覧に大きさがあれば、上限を超えるものを転送の前に全部挙げて断る。
+ * 写すものを集める。根のページの本文と種別、子ページを含めるなら子孫の本文と種別、
+ * 添付を含めるならそれぞれの添付の一覧。添付の中身はまだ取らない。
+ * 項目の配列か false。項目は根から浅い順に並べる (親を子より先に書くため)。
+ *   relname  根からの相対名 ('' か '/子/孫')。写す先は「クローン先 + relname」
+ *   type     種別
+ *   path     本文の一時ファイル (種別 file 以外)
+ *   remote   クローン元のページ名 (種別 file)
+ *   size     大きさ。種別 file では一覧にあった値 (分からなければ null)
  */
-function clone_fetch_attachments(&$source, $pagename, &$temp_files, &$errors) {
-    $response = clone_fetch($source, $source['pagename'], array('option' => 'attach', 'action' => 'list'),
+function clone_collect(&$source, $options, &$temp_files, &$errors) {
+    $root = $source['pagename'];
+    $remote = clone_fetch_source($source, $root, $errors);
+    if($remote === false)
+	return false;
+    if($remote['type'] === 'file')
+	return array(array('relname' => '', 'type' => 'file', 'remote' => $root, 'size' => null));
+
+    /* 添付 (種別 file) のページ名 => 大きさ。子ページを含めるときは見分けるのにも使う */
+    $files = array();
+    $entries = array();
+    if(!clone_collect_text($source, $root, $remote, $options, $entries, $files, $temp_files, $errors))
+	return false;
+
+    if($options['subpages']) {
+	$names = clone_fetch_subpage_list($source, $errors);
+	if($names === false)
+	    return false;
+	$num_pages = 0;
+	foreach($names as $name) {
+	    /* 親のページの添付の一覧に出たものは添付。浅い順なので親が先に済んでいる */
+	    if(array_key_exists($name, $files))
+		continue;
+	    $remote = clone_fetch_source($source, $name, $errors);
+	    if($remote === false)
+		return false;
+	    if($remote['type'] === 'file') {
+		/* 写すページの一覧に出なかった添付 (親のページが無いなど)。大きさは分からない */
+		$files[$name] = null;
+		continue;
+	    }
+	    if(++$num_pages > CLONE_MAX_PAGES) {
+		$errors[] = lf('There are too many subpages. Up to $max$ subpages can be cloned at once.',
+			       array('max' => CLONE_MAX_PAGES));
+		return false;
+	    }
+	    if(!clone_collect_text($source, $name, $remote, $options, $entries, $files, $temp_files, $errors))
+		return false;
+	}
+    }
+
+    if($options['attachments']) {
+	if($options['subpages'] && count($files) > CLONE_MAX_TOTAL_ATTACHMENTS) {
+	    $errors[] = lf('There are too many attached files in total ($num$). Up to $max$ files can be cloned at once.',
+			   array('num' => count($files), 'max' => CLONE_MAX_TOTAL_ATTACHMENTS));
+	    return false;
+	}
+	foreach($files as $name => $size)
+	    $entries[] = array('relname' => substr($name, strlen($root)), 'type' => 'file',
+			       'remote' => $name, 'size' => $size);
+    }
+
+    usort($entries, 'clone_entry_compare');
+    return $entries;
+}
+
+/* 浅い順、同じ深さなら名前の順 (親を子より先に書く) */
+function clone_entry_compare($a, $b) {
+    return clone_pagename_compare($a['relname'], $b['relname']);
+}
+
+function clone_pagename_compare($a, $b) {
+    $depth = substr_count($a, '/') - substr_count($b, '/');
+    return $depth != 0 ? $depth : strcmp($a, $b);
+}
+
+/* 本文のページを 1 つ写すものに加える。本文は一時ファイルに逃がす (木が大きいとき、メモリに抱えない) */
+function clone_collect_text(&$source, $remote_pagename, &$remote, $options, &$entries, &$files, &$temp_files, &$errors) {
+    $path = clone_temp_file($temp_files, $errors);
+    if($path === false)
+	return false;
+    if(file_put_contents($path, $remote['contents']) === false) {
+	$errors[] = l('Could not make a temporary file.');
+	return false;
+    }
+    $entries[] = array('relname' => substr($remote_pagename, strlen($source['pagename'])),
+		       'type' => $remote['type'], 'path' => $path, 'size' => strlen($remote['contents']));
+
+    if(!$options['attachments'] && !$options['subpages'])
+	return true;
+    $list = clone_fetch_attachment_list($source, $remote_pagename, $errors);
+    if($list === false)
+	return false;
+    $files += $list;
+    return true;
+}
+
+/*
+ * クローン元のページ $remote_pagename の直下の添付の一覧を取る。
+ * array(ページ名 => 大きさ) か false。この版より前の一覧には大きさが無いので null
+ */
+function clone_fetch_attachment_list(&$source, $remote_pagename, &$errors) {
+    $response = clone_fetch($source, $remote_pagename, array('option' => 'attach', 'action' => 'list'),
 			    CLONE_MAX_LIST_BYTES);
     if(!clone_check_response($response, l('Could not get the list of attached files.'), $errors))
 	return false;
@@ -386,8 +604,8 @@ function clone_fetch_attachments(&$source, $pagename, &$temp_files, &$errors) {
 	return false;
     }
 
-    $prefix = $source['pagename'] . '/';
-    $entries = array();
+    $prefix = $remote_pagename . '/';
+    $files = array();
     foreach($list['pages'] as $entry) {
 	$name = is_array($entry) ? default_value($entry['name'], '') : '';
 	if(!is_string($name) || strpos($name, $prefix) !== 0)
@@ -395,58 +613,130 @@ function clone_fetch_attachments(&$source, $pagename, &$temp_files, &$errors) {
 	$basename = normalize_string(substr($name, strlen($prefix)));
 	if($basename === '' || $basename === '.' || $basename === '..' || strpos($basename, '/') !== false)
 	    continue;
-	$entries[$basename] = (isset($entry['size']) && is_int($entry['size'])) ? $entry['size'] : null;
+	$files[$prefix . $basename] = (isset($entry['size']) && is_int($entry['size'])) ? $entry['size'] : null;
     }
 
-    if(count($entries) > CLONE_MAX_ATTACHMENTS) {
+    if(count($files) > CLONE_MAX_ATTACHMENTS) {
 	$errors[] = lf('There are too many attached files ($num$). Up to $max$ files can be cloned.',
-		       array('num' => count($entries), 'max' => CLONE_MAX_ATTACHMENTS));
+		       array('num' => count($files), 'max' => CLONE_MAX_ATTACHMENTS));
 	return false;
     }
+    return $files;
+}
 
+/*
+ * 子孫のページ名を取る (?ページ&option=subpage)。深さを問わず、クローン元で
+ * 読めるものだけが並ぶ。種別 file (添付) も含む。浅い順に並べて返す。false は失敗
+ */
+function clone_fetch_subpage_list(&$source, &$errors) {
+    $response = clone_fetch($source, $source['pagename'], array('option' => 'subpage'), CLONE_MAX_PAGE_BYTES);
+    if(!clone_check_response($response, l('Could not get the list of subpages.'), $errors))
+	return false;
+    $names = clone_parse_subpage_list($response['body'], $source['pagename']);
+    if($names === false) {
+	$errors[] = l('Could not get the list of subpages.');
+	return false;
+    }
+    return $names;
+}
+
+/*
+ * 子ページの画面の HTML から、子孫のページ名を取り出す。
+ * 一覧は article.main > section.page > section.pages > ul.pages > li[@data-pagename]。
+ * サイドに &pages があるとそこ (article.side) にも同じ形の一覧が出るので、本文だけを見る。
+ * 種別 file の一覧と分かれて 2 つ出るが、片方が空だと出ないので、位置では見分けない。
+ */
+function clone_parse_subpage_list($html, $pagename) {
+    $doc = new DOMDocument();
+    if(!@$doc->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET))
+	return false;
+    $xpath = new DOMXPath($doc);
+    $mains = $xpath->query('//article[contains(concat(" ", normalize-space(@class), " "), " main ")]');
+    if($mains->length != 1)
+	return false;
+
+    $prefix = $pagename . '/';
+    $names = array();
+    foreach($xpath->query('.//section[contains(concat(" ", normalize-space(@class), " "), " pages ")]' .
+			  '/ul/li[@data-pagename]', $mains->item(0)) as $li) {
+	$name = normalize_string($li->getAttribute('data-pagename'));
+	if(strpos($name, $prefix) !== 0 || $name === $prefix)
+	    continue;
+	$relnames = explode('/', substr($name, strlen($prefix)));
+	if(in_array('', $relnames, true) || in_array('.', $relnames, true) || in_array('..', $relnames, true))
+	    continue;
+	$names[$name] = true;
+    }
+    $names = array_keys($names);
+    usort($names, 'clone_pagename_compare');
+    return $names;
+}
+
+/*
+ * 転送の前に、写す先に同じ名前のページが無いこと・書く権限があること・
+ * 大きさが上限に収まることを、全部について確かめる。問題は全部挙げる。
+ * 根のページは clone_page() と clone_write() で確かめてある。
+ */
+function clone_check_entries($pagename, &$source, &$entries, &$errors) {
     $limit = max_upload_file_size();
-    foreach($entries as $basename => $size) {
-	$new_pagename = $pagename . '/' . $basename;
-	if(page_is_exists($new_pagename))
-	    $errors[] = lf('$pagename$ already exists.', array('pagename' => $new_pagename));
-	else if(!auth_has_permission($new_pagename, 'write'))
-	    $errors[] = lf('You have no permission to write $pagename$.', array('pagename' => $new_pagename));
-	else if(!is_null($size) && $size > $limit)
-	    $errors[] = clone_too_large_message($basename, $size, $limit);
+    $total = 0;
+    foreach($entries as &$entry) {
+	$new_pagename = $pagename . $entry['relname'];
+	if($entry['relname'] !== '') {
+	    if(page_is_exists($new_pagename))
+		$errors[] = lf('$pagename$ already exists.', array('pagename' => $new_pagename));
+	    else if(!auth_has_permission($new_pagename, 'write'))
+		$errors[] = lf('You have no permission to write $pagename$.', array('pagename' => $new_pagename));
+	}
+	if($entry['type'] === 'file' && !is_null($entry['size']) && $entry['size'] > $limit)
+	    $errors[] = clone_too_large_message(ltrim($entry['relname'], '/'), $entry['size'], $limit);
+	if(!is_null($entry['size']))
+	    $total += $entry['size'];
     }
-    if(!empty($errors))
-	return false;
+    unset($entry);
+    if(isset($source['max_total_bytes']) && $total > $source['max_total_bytes'])
+	$errors[] = clone_too_large_total_message($source['max_total_bytes']);
+    return empty($errors);
+}
 
-    $attachments = array();
-    foreach($entries as $basename => $size) {
-	$file = clone_fetch_file($source, $source['pagename'] . '/' . $basename, $basename, $temp_files, $errors);
-	if($file !== false)
-	    $attachments[$basename] = $file;
+/* 添付の中身を取る。大きさの合計は、一覧に無かったものも取りながら数える */
+function clone_fetch_files(&$source, &$entries, &$temp_files, &$errors) {
+    $total = 0;
+    foreach($entries as &$entry) {
+	if($entry['type'] !== 'file') {
+	    $total += $entry['size'];
+	    continue;
+	}
+	$basename = $entry['relname'] === '' ? null : ltrim($entry['relname'], '/');
+	$file = clone_fetch_file($source, $entry['remote'], $basename, $temp_files, $errors);
+	if($file === false)
+	    return false;
+	$entry['file'] = $file;
+	$total += filesize($file['path']);
+	if(isset($source['max_total_bytes']) && $total > $source['max_total_bytes']) {
+	    $errors[] = clone_too_large_total_message($source['max_total_bytes']);
+	    return false;
+	}
     }
-    if(!empty($errors))
-	return false;
-    return $attachments;
+    return true;
+}
+
+function clone_too_large_total_message($limit) {
+    return lf('The pages and attached files to clone are too large in total. Up to $limit$B can be cloned at once.',
+	      array('limit' => encode_prefixed_number($limit)));
 }
 
 /*
  * ファイルの中身を一時ファイルに取る。array('path', 'content_type') か false。
- * $basename は添付のときのファイル名 (理由に出す)。ページそのものが種別 file のときは null。
+ * $basename は添付のときの根からの名前 (理由に出す)。ページそのものが種別 file のときは null。
  */
 function clone_fetch_file(&$source, $remote_pagename, $basename, &$temp_files, &$errors) {
     $limit = max_upload_file_size();
     $label = is_null($basename) ? page_get_simplename($remote_pagename) : $basename;
 
-    /*
-     * 一時ファイルは storage/cache/ に置く。共用サーバーでは open_basedir で
-     * システムの一時ディレクトリに書けないことがある。storage/ は .htaccess で
-     * 外から読めない。
-     */
-    $path = @tempnam(STORAGE_FILE_DIR_PATH . '/' . STORAGE_FILE_DIR_CACHE_NAME, 'clone-');
-    if($path === false) {
-	$errors[] = l('Could not make a temporary file.');
+    $path = clone_temp_file($temp_files, $errors);
+    if($path === false)
 	return false;
-    }
-    $temp_files[] = $path;
 
     $response = clone_fetch($source, $remote_pagename, array('action' => 'raw'), $limit, $path);
     if(isset($response['error']) && $response['error'] === 'too_large') {
@@ -477,25 +767,26 @@ function clone_too_large_message($filename, $size, $limit) {
 }
 
 /*
- * 書く。本文 (または種別 file の中身) のページ、添付の順。途中で失敗したら
- * 作った分を消して false。
+ * 書く。浅い順 (親を子より先に)。途中で失敗したら作った分を消して false。
+ * ここからは、ブラウザやプロキシが接続を切っても、書き終えるか消し終えるまで続ける。
  */
-function clone_write_pages($pagename, &$remote, $main_file, &$attachments, &$errors) {
+function clone_write_pages($pagename, &$entries, &$errors) {
+    ignore_user_abort(true);
     $created = array();
-    if($remote['type'] === 'file')
-	$ok = clone_write_file($pagename, $main_file);
-    else
-	$ok = clone_write_text($pagename, $remote['type'], $remote['contents']);
-    if($ok)
-	$created[] = $pagename;
-
-    foreach($attachments as $basename => $file) {
+    $ok = true;
+    foreach($entries as &$entry) {
+	$new_pagename = $pagename . $entry['relname'];
+	if($entry['type'] === 'file') {
+	    $ok = clone_write_file($new_pagename, $entry['file']);
+	} else {
+	    $contents = file_get_contents($entry['path']);
+	    $ok = $contents !== false && clone_write_text($new_pagename, $entry['type'], $contents);
+	}
 	if(!$ok)
 	    break;
-	$ok = clone_write_file($pagename . '/' . $basename, $file);
-	if($ok)
-	    $created[] = $pagename . '/' . $basename;
+	$created[] = $new_pagename;
     }
+    unset($entry);
     if($ok)
 	return true;
 
