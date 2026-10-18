@@ -355,7 +355,7 @@ check_eq "トップページが HTTP 200" "200" "$code"
 code=$(curl -sk -o /dev/null -w '%{http_code}' "${TEST_URL}/theme/basic/style/main.css")
 check_eq "静的 CSS が HTTP 200 で配信される" "200" "$code"
 code=$(curl -sk -o /dev/null -w '%{http_code}' "${TEST_URL}/?option=admin_info")
-check_eq "システム情報が HTTP 200" "200" "$code"
+check_eq "システム情報はログインを求める (HTTP 401)" "401" "$code"
 sleep 1
 warnings=$(sudo tail -n "+$((log_before + 1))" "$PHP_ERROR_LOG" | grep -c . )
 if [[ "$warnings" != "0" ]]; then
