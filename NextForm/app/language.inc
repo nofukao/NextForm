@@ -310,8 +310,8 @@ $LANGUAGE['ja'] = array(
     'クローン元でログインが必要だったページも，写したあとはこのサイトの権限で見えるようになります．',
     'With "Include subpages", all the pages under the page (including grandchildren) are copied. Pages that cannot be read at the site to clone are skipped. Enter the user name and password of that site to include them.' =>
     '「子ページを含む」を選ぶと，そのページの下のページを孫以下まで全部写します．クローン元で読めないページは写りません．写すには，そのサイトのユーザー名とパスワードを入れてください．',
-    'With subpages, up to $pages$ pages and $files$ attached files ($bytes$B in total) can be cloned at once.' =>
-    '子ページを含めるときに一度にクローンできるのは，$pages$ページ・添付ファイル$files$個(合計$bytes$B)までです．',
+    'With subpages, up to $pages$ subpages and $files$ attached files ($bytes$B in total) can be cloned at once, within $seconds$ seconds of fetching.' =>
+    '子ページを含めるときに一度にクローンできるのは，子ページ$pages$ページ・添付ファイル$files$個(合計$bytes$B)までで，クローン元から取るのに$seconds$秒までです．',
     'Include attached files' => '添付ファイルを含む',
     'Include subpages' => '子ページを含む',
     'Only logged-in users can clone with subpages.' => '子ページを含めてクローンできるのは，ログインした人だけです．',

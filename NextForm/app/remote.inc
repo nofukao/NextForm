@@ -48,8 +48,10 @@ define('REMOTE_MAX_REDIRECTS', 3);
  *       connect    接続できない、または途中で時間切れ
  *       too_large  $max_bytes を超える
  *       redirect   転送が多すぎる
+ *       timeout    $deadline (microtime(true) の値) を過ぎた。受け取りの途中でも打ち切る
  */
-function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(), &$auth = null) {
+function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(), &$auth = null,
+		      $deadline = null) {
     if(!ini_get('allow_url_fopen'))
 	return array('error' => 'disabled', 'host' => '');
 
@@ -61,6 +63,8 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
 
 	/* 401 を受けたら、新しい nonce で 1 回だけ (stale ならもう 1 回) 送り直す */
 	for($tries = 0; ; $tries++) {
+	    if(!is_null($deadline) && microtime(true) > $deadline)
+		return array('error' => 'timeout', 'host' => $target['host']);
 	    $context = $target['context'];
 	    /*
 	     * 資格情報があるときは、ログインしなくても読めるページでもその利用者として読む
@@ -75,7 +79,7 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
 	    $fp = @fopen($target['connect_url'], 'rb', false, stream_context_create($context));
 	    if($fp === false)
 		return array('error' => 'connect', 'host' => $target['host']);
-	    stream_set_timeout($fp, EXTERNAL_FETCH_TIMEOUT);
+	    stream_set_timeout($fp, remote_read_timeout($deadline));
 	    $meta = stream_get_meta_data($fp);
 	    list($status, $headers) = remote_parse_headers(default_value($meta['wrapper_data'], array()));
 	    if($status != 401 || !$use_auth || $tries >= 2)
@@ -105,7 +109,7 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
 	    return array('error' => 'too_large', 'host' => $target['host']);
 	}
 
-	$result = remote_read($fp, $max_bytes, $to_file);
+	$result = remote_read($fp, $max_bytes, $to_file, $deadline);
 	fclose($fp);
 	if(isset($result['error'])) {
 	    $result['host'] = $target['host'];
@@ -118,8 +122,18 @@ function remote_fetch($url, $max_bytes, $to_file = null, $allowed_hosts = array(
     return array('error' => 'redirect', 'host' => $target['host']);
 }
 
-/* 本文を受け取る。$max_bytes を超えたら打ち切る */
-function remote_read($fp, $max_bytes, $to_file) {
+/*
+ * 1 回の読み込みを待つ秒数。期限があれば、残りの時間を超えて待たない
+ * (少しずつ返す相手でも、期限で打ち切れるように)。
+ */
+function remote_read_timeout($deadline) {
+    if(is_null($deadline))
+	return EXTERNAL_FETCH_TIMEOUT;
+    return max(1, min(EXTERNAL_FETCH_TIMEOUT, (int)ceil($deadline - microtime(true))));
+}
+
+/* 本文を受け取る。$max_bytes を超えたら、$deadline を過ぎたら打ち切る */
+function remote_read($fp, $max_bytes, $to_file, $deadline = null) {
     $wfp = null;
     if(!is_null($to_file)) {
 	$wfp = @fopen($to_file, 'wb');
@@ -132,13 +146,20 @@ function remote_read($fp, $max_bytes, $to_file) {
     while(!feof($fp)) {
 	$data = fread($fp, CONTENTS_READ_BUFFER_SIZE);
 	if($data === false || ($data === '' && stream_get_meta_data($fp)['timed_out'])) {
-	    $error = 'connect';
+	    $error = (!is_null($deadline) && microtime(true) > $deadline) ? 'timeout' : 'connect';
 	    break;
 	}
 	$size += strlen($data);
 	if($size > $max_bytes) {
 	    $error = 'too_large';
 	    break;
+	}
+	if(!is_null($deadline)) {
+	    if(microtime(true) > $deadline) {
+		$error = 'timeout';
+		break;
+	    }
+	    stream_set_timeout($fp, remote_read_timeout($deadline));
 	}
 	if(is_null($wfp))
 	    $body .= $data;

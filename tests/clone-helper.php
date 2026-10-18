@@ -24,6 +24,8 @@
  *   meta <名前> <項目> meta の値 (meta=...)
  *   children <名前>   子孫のページ名を並べる (child=... の行)
  *   cleanup <接頭辞>  その接頭辞のページを消す
+ *   parse-subpages <ファイル> <根のページ名>
+ *                     子ページの画面の HTML から取り出す子孫の名前 (names=a,b,..)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
@@ -159,6 +161,11 @@ case 'cleanup':
 	    $removed++;
     }
     printf("removed=%d\n", $removed);
+    break;
+
+case 'parse-subpages':
+    $names = clone_parse_subpage_list(file_get_contents($rest[0]), $rest[1]);
+    printf("names=%s\n", $names === false ? '(false)' : implode(',', $names));
     break;
 
 default:

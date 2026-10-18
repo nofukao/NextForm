@@ -468,8 +468,11 @@ p = P(); p.feed(sys.stdin.read()); print(p.state)
 }
 sha_of() { sha256sum < "$1" | cut -d' ' -f1; }
 
-# 強制終了で残った一時ファイルに見立てる。次のクローンが片付ける
+# 強制終了で残った一時ファイルに見立てる (2 時間前のもの)。次のクローンが片付ける。
+# 新しいものは、同時に動いている 1 ページのクローンのものかもしれないので残す
 sudo install -o "$SITE_OWNER" -m 600 /dev/null "${CLONE_DST_SITE}/storage/cache/clone-stale"
+sudo touch -d '2 hours ago' "${CLONE_DST_SITE}/storage/cache/clone-stale"
+sudo install -o "$SITE_OWNER" -m 600 /dev/null "${CLONE_DST_SITE}/storage/cache/clone-fresh"
 
 html=$(curl -sk "${CLONE_DST_URL}/?Dst/New&option=clone")
 check_eq "ログインしていない人の画面: 添付は最初からオン、子ページの選択肢は出ない" \
@@ -502,6 +505,20 @@ check_eq "  木の中どうしの ./ のリンクがつながる (Markdown・wik
 code=$(clone_tree_to Dst/TreeLogin "${CLONE_SRC_URL}/?CloneTest/Tree" on on clonereader "$PASS")
 check_eq "クローン元にログインすれば、読めなかった子ページも写す" "yes" \
          "$([[ "$(children_of Dst/TreeLogin)" == *'Dst/TreeLogin/Secret|'* ]] && echo yes || echo no)"
+# クローン元は、応答が違っても 401 を返さず「ログインしていない人」として答える。
+# 確かめずに進むと、読めない子ページが黙って抜けた木が写る
+code=$(clone_tree_to Dst/TreeWrong "${CLONE_SRC_URL}/?CloneTest/Tree" on on clonereader "wrong-${PASS}")
+check_eq "ログインなしで読める木にパスワードを間違えて入れる: 画面に戻る (200)" "200" "$code"
+check_eq "  理由が出る" "yes" "$(said 'ユーザー名かパスワードが違います|user name or password .*wrong')"
+check_eq "  何も書かない" "0|" "$(value_of "$(dst exists Dst/TreeWrong)" exists)|$(children_of Dst/TreeWrong)"
+code=$(clone_to Dst/TextWrong "${CLONE_SRC_URL}/?CloneTest/Text" clonereader "wrong-${PASS}")
+check_eq "1 ページのクローンでも、間違ったパスワードは断る" "200|yes|0" \
+         "${code}|$(said 'ユーザー名かパスワードが違います|user name or password .*wrong')|$(value_of "$(dst exists Dst/TextWrong)" exists)"
+
+code=$(clone_tree_to Dst/TreeSlash "${CLONE_SRC_URL}/?CloneTest/Tree/" on on)
+check_eq "URL のページ名の末尾に / があっても、子ページと添付を写す" \
+         "302|Dst/TreeSlash/Child|Dst/TreeSlash/Child/Grand|Dst/TreeSlash/Child/Grand/g.bin|Dst/TreeSlash/Child/a.txt|Dst/TreeSlash/Missing/o.txt|Dst/TreeSlash/t.png|" \
+         "${code}|$(children_of Dst/TreeSlash)"
 
 code=$(clone_tree_to Dst/TreeNoAtt "${CLONE_SRC_URL}/?CloneTest/Tree" off on)
 check_eq "子ページを含め、添付を含めない: どの深さの添付も写さない" \
@@ -535,17 +552,47 @@ set_dst_limit CLONE_MAX_TOTAL_BYTES 2000
 refuse_tree "合計の大きさが上限を超える" Dst/LimBytes '合計で大きすぎます|too large in total'
 set_dst_limit CLONE_MAX_FETCH_SECONDS 0
 refuse_tree "取るのに時間がかかりすぎる" Dst/LimTime '時間がかかりすぎました|took too long'
+# 添付を含めないときは、添付の数で断らない (子ページを見分けるために一覧は取る)
+set_dst_limit CLONE_MAX_ATTACHMENTS 0
+code=$(clone_tree_to Dst/LimNoAtt "${CLONE_SRC_URL}/?CloneTest/Tree" off on)
+check_eq "添付を含めないときは、1 ページの添付の数の上限で断らない" \
+         "302|Dst/LimNoAtt/Child|Dst/LimNoAtt/Child/Grand|" "${code}|$(children_of Dst/LimNoAtt)"
+refuse_tree "  含めるときは断る" Dst/LimAtt '添付ファイルが多すぎます|too many attached files'
 set_dst_limit
 
-# 別のクローンが動いているあいだ (ロックを持っているあいだ) は断る
-sudo flock "${CLONE_DST_SITE}/storage/cache/clone.lock" sleep 5 &
+# 子ページを含むクローンが動いているあいだ (ロックを持っているあいだ) は、
+# 子ページを含むクローンを断る。1 ページのクローンは止めない (未ログインでも
+# 使えるので、ロックを握らせると、ほかの人のクローンを止められてしまう)
+sudo -u "$SITE_OWNER" flock "${CLONE_DST_SITE}/storage/cache/clone.lock" sleep 5 &
 holder=$!
 sleep 1
-refuse_tree "同時に別のクローンが動いている" Dst/Busy 'ほかのクローンが動いています|Another clone is in progress'
+refuse_tree "子ページを含むクローンが同時に動いている" Dst/Busy 'ほかのクローンが動いています|Another clone is in progress'
+code=$(clone_to Dst/BusyOne "${CLONE_SRC_URL}/?CloneTest/Text")
+check_eq "  1 ページのクローンは止めない" "302" "$code"
 wait "$holder" 2>/dev/null
 
-check_eq "強制終了で残った一時ファイルを、次のクローンが片付ける" "0" \
-         "$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-stale' | wc -l)"
+check_eq "強制終了で残った古い一時ファイルを、次のクローンが片付ける (新しいものは残す)" "0|1" \
+         "$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-stale' | wc -l)|$(sudo find "${CLONE_DST_SITE}/storage/cache" -maxdepth 1 -name 'clone-fresh' | wc -l)"
+sudo rm -f "${CLONE_DST_SITE}/storage/cache/clone-fresh"
+
+# クローン元が返す名前が壊れていたら (改行・前後の空白・.. など) 写さない
+cat > "$WORK/subpages.html" <<'HTMLEOF'
+<html><body>
+<article class="side"><section class="page"><section class="pages"><ul class="pages">
+<li data-pagename="Root/Side">x</li></ul></section></section></article>
+<article class="main"><section class="page page"><section class="pages"><ul class="pages">
+<li data-pagename="Root/A/B">x</li>
+<li data-pagename="Root/A">x</li>
+<li data-pagename="Root/a&#10;b">x</li>
+<li data-pagename="Root/c ">x</li>
+<li data-pagename="Root/../Other">x</li>
+<li data-pagename="Root//d">x</li>
+<li data-pagename="Other/x">x</li>
+</ul></section></section></article></body></html>
+HTMLEOF
+sudo install -o "$SITE_OWNER" -m 644 "$WORK/subpages.html" "${CLONE_DST_SITE}/subpages.html"
+check_eq "子ページの一覧から取る名前: 本文の一覧だけ、浅い順、壊れた名前は除く" "Root/A,Root/A/B" \
+         "$(value_of "$(dst parse-subpages "${CLONE_DST_SITE}/subpages.html" Root)" names)"
 echo
 
 echo "8. クローン元が古い版 (${OLD_REF}) でも写せること"
