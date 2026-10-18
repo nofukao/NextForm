@@ -649,11 +649,15 @@ function markdown_convert(&$page, $dom, $contents = null, $is_positioned = true)
 	$title_heading->parentNode->removeChild($title_heading);
 
     markdown_move_code_positions($section);
+    /*
+     * [TOC] と [PAGES] は検索語の印より先に置き換える。印 (mark) が付くと、
+     * 目印が「文字だけの段落」でなくなる。
+     */
+    markdown_replace_toc($page, $section);
+    markdown_replace_pages($page, $section);
     markdown_append_sentence($page, $section);
     $ids = markdown_set_heading_ids($page, $section);
     markdown_resolve_section_links($section, $ids);
-    markdown_replace_toc($page, $section);
-    markdown_replace_pages($page, $section);
     markdown_unwrap_figures($section);
     /* 取り込みは一番最後。上の後処理が取り込んだ中身に及ばないように */
     markdown_expand_embeds($page, $section);
@@ -702,8 +706,12 @@ function markdown_replace_toc(&$page, $dom) {
 	    $p->parentNode->removeChild($p);
 	    continue;
 	}
+	/*
+	 * data-pagename は付けない。部分編集 (nextform.js) は data-pagename を持つ要素を
+	 * ページとみなしてチケットを読むので、付けるとこの目次を直せなくなる。
+	 */
 	$document = dom_create_document();
-	$summary = dom_append_child($document, 'section', 'summary', array('data-pagename' => $page['name']));
+	$summary = dom_append_child($document, 'section', 'summary');
 	markdown_append_summary_list($page, $summary, $headings);
 	foreach(array('data-twp', 'data-twl') as $name)
 	    if($p->hasAttribute($name))
@@ -807,8 +815,16 @@ function markdown_unwrap_figures($dom) {
 	if(!($p instanceof DOMElement) || strtolower($p->nodeName) !== 'p' ||
 	   !markdown_is_only_child($p, $figure))
 	    continue;
+	markdown_copy_positions($p, $figure);
 	$p->parentNode->replaceChild($figure, $p);
     }
+}
+
+/* 部分編集の範囲 (data-twp / data-twl) を引き継ぐ。段落を別の要素に置き換えるとき */
+function markdown_copy_positions($from, $to) {
+    foreach(array('data-twp', 'data-twl') as $name)
+	if($from->hasAttribute($name))
+	    dom_set_attribute($to, $name, $from->getAttribute($name));
 }
 
 /* $element の中身が $child だけか (前後の空白の文字は数えない) */
@@ -862,18 +878,40 @@ function markdown_expand_embeds(&$page, $dom) {
 	$target['include_pages'] = $chain;
 	$page['depend_pages'][$pagename] = true;
 
+	/*
+	 * 取り込んだ中身は包みに入れ、段落の部分編集の範囲を包みに引き継ぐ (見出しの節を
+	 * 編集するとき、範囲の無い要素で欄の覆いが止まらないように)。
+	 */
 	$document = dom_create_document();
-	$container = markdown_image_open_figure($document, $embed['params'], $embed['caption']);
+	$wrapper = dom_append_child($document, 'div', 'embed');
+	$container = markdown_image_open_figure($wrapper, $embed['params'], $embed['caption']);
 	page_handle($target, $container);
 	markdown_image_close_figure($container, $embed['caption']);
+	markdown_prefix_footnote_ids($wrapper, $token);
 
 	$owner = dom_owner($p);
-	$nodes = array();
-	foreach($document->childNodes as $child)
-	    $nodes[] = $child;
-	foreach($nodes as $child)
-	    $p->parentNode->insertBefore($owner->importNode($child, true), $p);
-	$p->parentNode->removeChild($p);
+	$imported = $owner->importNode($wrapper, true);
+	markdown_copy_positions($p, $imported);
+	$p->parentNode->replaceChild($imported, $p);
+    }
+}
+
+/*
+ * 取り込んだ Markdown のページの脚注の id (fn:1 / fnref:1) に、取り込みごとの接頭辞を
+ * 付ける。付けないと外側のページの脚注と同じ id になり、外側の [1] を押すと
+ * 取り込んだ側の脚注に飛ぶ。
+ */
+function markdown_prefix_footnote_ids($dom, $prefix) {
+    $xpath = new DOMXPath(dom_owner($dom));
+    foreach($xpath->query('.//*[@id]', $dom) as $element) {
+	$id = $element->getAttribute('id');
+	if(preg_match('/^fn(ref)?[:-]/', $id))
+	    $element->setAttribute('id', $prefix . '-' . $id);
+    }
+    foreach($xpath->query('.//a[@href]', $dom) as $a) {
+	$href = $a->getAttribute('href');
+	if(preg_match('/^#(fn(ref)?[:-].*)$/', $href, $matches))
+	    $a->setAttribute('href', '#' . $prefix . '-' . $matches[1]);
     }
 }
 
@@ -1084,9 +1122,10 @@ function markdown_texts(&$page) {
 
     $search_dom = dom_create_document();
     markdown_append_html($search_dom, $html);
-    /* [TOC] などの目印は本文の文字ではない */
+    /* [TOC] などの目印は本文の文字ではない (読めない [PAGES …] は画面と同じく文字のまま) */
     foreach(markdown_marker_paragraphs($search_dom) as $marker)
-	$marker['element']->parentNode->removeChild($marker['element']);
+	if($marker['name'] !== 'pages' || markdown_pages_parse_args($page, $marker['args']) !== false)
+	    $marker['element']->parentNode->removeChild($marker['element']);
     $texts_info = array('body' => array());
     dom_texts($search_dom, $texts_info['body']);
     return $texts_info;
@@ -1116,6 +1155,9 @@ function markdown_summary(&$page, $dom) {
 
     $headings = array();
     markdown_headings($converted, $headings);
+    /* [TOC] などの目印は書き出しの文字にしない */
+    foreach(markdown_marker_paragraphs($converted) as $marker)
+	$marker['element']->parentNode->removeChild($marker['element']);
 
     $summary = dom_append_child($dom, 'section', 'summary',
 				array('data-pagename' => $page['name']));

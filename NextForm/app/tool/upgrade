@@ -795,8 +795,9 @@ if($up_old_version !== null && version_compare($up_old_version, '0.13.0', '<')) 
 if($up_old_version !== null && version_compare($up_old_version, '0.14.0', '<')) {
     upgrade_out("");
     upgrade_out("  Markdown のページの見え方が変わったところを確かめてください (0.14.0):");
-    upgrade_out("    段落に 1 つだけの ![説明](ページ) はそのページの取り込みに、画像のタイトルはキャプションに、");
-    upgrade_out("    [TOC]・[PAGES] だけの行は目次・子ページのツリーになります");
+    upgrade_out("    段落に 1 つだけの ![説明](ページ) はそのページの取り込みに、段落に 1 つだけの画像のタイトルは");
+    upgrade_out("    キャプションに、説明の最後の | の後ろは大きさや配置の指定に、[TOC]・[PAGES] だけの行は");
+    upgrade_out("    目次・子ページのツリーになり、見出しを書いた :::details は目次に載ります");
     upgrade_out("    当てはまるところは次で一覧できます (ページは書き換えません):");
     upgrade_out("      php %s/app/tool/markdown_change_check %s --user 管理者名", $up_site, $up_index_real);
 }

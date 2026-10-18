@@ -839,8 +839,8 @@ check_eq "無いページはリンク (まだ無い印)" "yes" "$(contains " $(l
 check_eq "最後の | の後ろが指定として読めなければ、全体を説明にする" "yes" \
          "$(contains "$E_HTML" 'alt="説明|2024年|ではない"')"
 L="$(e_line '外の図')"
-check_eq "外部の画像: 数字の大きさを当て、キャプションを付ける" "yes|yes" \
-         "$(contains "$L" 'width="640" height="400"')|$(contains "$L" '<figcaption>外の図</figcaption>')"
+check_eq "外部の画像: 数字の大きさに比率を保って収め、キャプションを付ける" "yes|yes" \
+         "$(contains "$L" 'max-width: 640px; max-height: 400px;')|$(contains "$L" '<figcaption>外の図</figcaption>')"
 T="$(value_of "$(helper texts "$E")" texts)"
 check_eq "検索の文字に、取り込んだ中身は入れない (説明は入る)" "no|no|yes" \
          "$(contains "$T" 'ことばパーツ')|$(contains "$T" 'ウィキ部品の本文')|$(contains "$T" '取り込み')"
@@ -1019,6 +1019,50 @@ check_eq "  見出しを書いた :::details" "yes" "$(contains "$CC" ':::detail
 CC="$(change_check --base MarkdownTest/Unchanged)"
 check_eq "変わるところが無ければ終了コード 0 で、問題なしと言う" "0|yes" \
          "$(change_check --base MarkdownTest/Unchanged > /dev/null; echo $?)|$(contains "$CC" '問題なし')"
+helper write "MarkdownTest/OnlyDetails" "$(printf -- ':::details 見出し\n中身\n:::\n')" > /dev/null
+check_eq "見出しのある :::details だけなら、出すが終了コードは 0 (直す必要は無い)" "0|yes" \
+         "$(change_check --base MarkdownTest/OnlyDetails > /dev/null; echo $?)|$(contains "$(change_check --base MarkdownTest/OnlyDetails)" ':::details 見出し')"
+helper write "MarkdownTest/TightList" "$(printf -- '- ![取り込み](../Change/Part)\n- [TOC]\n')" > /dev/null
+check_eq "詰めた箇条書きの中のもの (表示が変わらない) は出さない" "0" \
+         "$(change_check --base MarkdownTest/TightList > /dev/null; echo $?)"
+echo
+
+echo "20. 取り込み・目次・ツリーの細かい振る舞い"
+helper write "$T" "$(printf -- '%s\n' '[TOC]' '' '## 前置き' '' 'まえおき' '' '[PAGES ./Toc]')" > /dev/null
+Q_HTML="$(curl -sk "${MARKDOWN_TEST_URL}/?${T}&query=TOC" | tr '\n' '\001' | sed -e 's/.*<article class="main">//' -e 's;</article>.*;;' | tr '\001' '\n')"
+check_eq "検索語の印が付いても [TOC] は目次になる" "1:前置き|no" \
+         "$(printf '%s' "$Q_HTML" | toc_outline)|$(contains "$Q_HTML" '[<mark')"
+T_HTML="$(main_html "$T")"
+check_eq "本文の目次は data-pagename を持たない (部分編集でページの要素と間違えない)" "no|yes" \
+         "$(contains "$(printf '%s' "$T_HTML" | grep -o '<section class="summary"[^>]*>')" 'data-pagename')|$(contains "$(printf '%s' "$T_HTML" | grep -o '<section class="summary"[^>]*>')" 'data-twp')"
+# 段落ごとに 1 行にして、その文字を含む段落を出す
+e_line_of() { printf '%s' "$1" | tr '\n' ' ' | sed 's/<p[ >]/\n&/g; s/<\/p>/&\n/g' | grep -F "$2" | head -1; }
+helper attach "$CH/doc.pdf" "${MARKDOWN_TEST_SITE}/embed.png" application/pdf > /dev/null
+helper write "$CH/Note" "$(printf -- '取り込まれる側の注[^1]。\n\n[^1]: 取り込まれる側の脚注\n')" > /dev/null
+helper write "$CH/Inline" "$(printf -- '%s\n' \
+    '[![バッジ](https://example.com/b.svg "ビルドの状態")](https://example.com/) と ![|right](../pic.png) の文。' '' \
+    '![|right](../doc.pdf)' '' \
+    '![図](../pic.png "キャプション")' '' \
+    '外側の注[^1]。' '' \
+    '![](../Note)' '' \
+    '[^1]: 外側の脚注')" > /dev/null
+I_HTML="$(main_html "$CH/Inline")"
+check_eq "文中の画像はタイトルがあっても figure にしない (段落を割らない)" "no|yes" \
+         "$(contains "$(e_line_of "$I_HTML" '文。')" '<figure')|$(contains "$I_HTML" 'title="ビルドの状態"')"
+check_eq "指定だけを書いた PDF のリンクの文字はファイル名 (指定の語にしない)" "yes" \
+         "$(contains "$I_HTML" '>doc.pdf</a>')"
+check_eq "段落を図に置き換えても部分編集の範囲を引き継ぐ" "yes" \
+         "$(contains "$(printf '%s' "$I_HTML" | grep -o '<figure[^>]*>' | tr '\n' ' ')" 'data-twp')"
+FN=$(printf '%s' "$I_HTML" | grep -o 'id="fn[^"]*"' | sort | uniq -d | wc -l)
+check_eq "取り込んだページの脚注と id がぶつからない" "0" "$FN"
+check_eq "  取り込まれた側の脚注も出る" "yes|yes" \
+         "$(contains "$I_HTML" '外側の脚注')|$(contains "$I_HTML" '取り込まれる側の脚注')"
+helper write "MarkdownTest/TocOnly" "$(printf -- '[TOC]\n\n見出しの無い本文\n')" > /dev/null
+check_eq "見出しが無いページのツールの目次に [TOC] の文字を出さない" "no|yes" \
+         "$(contains "$(curl -sk "${MARKDOWN_TEST_URL}/?MarkdownTest/TocOnly&option=summary")" '[TOC]')|$(contains "$(curl -sk "${MARKDOWN_TEST_URL}/?MarkdownTest/TocOnly&option=summary")" '見出しの無い本文')"
+helper write "MarkdownTest/BadPages" "$(printf -- '[PAGES what=ever]\n')" > /dev/null
+check_eq "読めない [PAGES …] は、画面と同じく検索の文字にも残す" "yes" \
+         "$(contains "$(value_of "$(helper texts MarkdownTest/BadPages)" texts)" 'what=ever')"
 echo
 
 helper cleanup > /dev/null

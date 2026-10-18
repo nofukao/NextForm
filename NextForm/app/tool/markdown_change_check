@@ -28,7 +28,7 @@
  *   handler/markdown/image.inc) で行う。調べるのは種別 Markdown のページと、
  *   添付した Markdown (.md)。.md の中では、.md を添付したページが起点になる。
  *
- * 終了コード: 0 = 見え方が変わるところは無い / 1 = ある / 2 = 使い方の誤り
+ * 終了コード: 0 = 確かめる必要のあるところは無い (D だけなら 0) / 1 = ある / 2 = 使い方の誤り
  */
 
 $argv = $_SERVER['argv'];
@@ -103,6 +103,18 @@ function change_check_plain_text($node) {
     return $text;
 }
 
+/*
+ * 詰めた箇条書き (tight) の項目の段落か。描くときに <p> が付かないので、取り込みや
+ * [TOC] の置き換え (段落を見る) は起きない。見え方が変わらないので出さない。
+ */
+function change_check_in_tight_list($paragraph) {
+    $item = $paragraph->parent();
+    if(!($item instanceof League\CommonMark\Extension\CommonMark\Node\Block\ListItem))
+	return false;
+    $list = $item->parent();
+    return $list instanceof League\CommonMark\Extension\CommonMark\Node\Block\ListBlock && $list->isTight();
+}
+
 /* 説明の文字 (装飾は落とす)。表示 (MarkdownImageRenderer) と同じく文字だけを使う */
 function change_check_alt($image) {
     $text = '';
@@ -161,9 +173,11 @@ foreach($pagenames as $pagename) {
 	    $alt_split = $alt;
 	    if(!empty(markdown_image_split_params($alt_split)))
 		$found['P'][] = $label;
-	    if($title !== '')
+	    /* キャプションと取り込みは、段落にそれ 1 つだけのとき (表示と同じ) */
+	    $is_alone = markdown_image_is_alone($node) && !change_check_in_tight_list($node->parent());
+	    if($title !== '' && $is_alone)
 		$found['T'][] = $label;
-	    if($url !== '' && !markdown_image_is_external($url) && markdown_image_is_alone($node)) {
+	    if($url !== '' && !markdown_image_is_external($url) && $is_alone) {
 		$GLOBALS['MARKDOWN_CURRENT_PAGENAME'] = $base;
 		$target = markdown_resolve_pagename(rawurldecode($url));
 		if(page_is_exists($target) && auth_has_permission($target, 'read')) {
@@ -173,6 +187,8 @@ foreach($pagenames as $pagename) {
 		}
 	    }
 	} else if($node instanceof League\CommonMark\Node\Block\Paragraph) {
+	    if(change_check_in_tight_list($node))
+		continue;
 	    $text = change_check_plain_text($node);
 	    if($text === null)
 		continue;
@@ -235,10 +251,10 @@ report_lines('見出しを書いた :::details が、目次に載るようにな
 	     array('直す必要は無い。目次 (ツールの「目次」と [TOC]) の項目が増える。'),
 	     $found['D'], $list_max);
 
-$found_num = count($found['E']) + count($found['T']) + count($found['P']) +
-    count($found['M']) + count($found['D']);
+/* D は直す必要が無いので数えない (出すだけ。markdown_link_check と同じく、直すものだけで決める) */
+$found_num = count($found['E']) + count($found['T']) + count($found['P']) + count($found['M']);
 if($found_num === 0)
-    report('=> 問題なし。見え方が変わるところは無い。');
+    report('=> 問題なし。確かめる必要のあるところは無い。');
 else
     report('=> %d か所を確かめること。', $found_num);
 

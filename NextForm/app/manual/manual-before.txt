@@ -1327,6 +1327,7 @@ Markdown(.md)のファイルのページには，wikiの画面の中に表示す
 外部の画像では，数字で書いた幅と高さだけが効きます(拡大率と ""max"" は効きません)．
 
 ファイル名の後ろに引用符で囲んで書いた文字(Markdownのタイトルの欄．上の例の ""キャプション"")は，画像の下にキャプションとして出ます．
+キャプションと ""left""・""right"" は，その画像が段落にそれ1つだけのときに効きます．文中の画像では効きません(外部の画像のタイトルは，これまでどおりマウスを載せたときのヒントになります)．
 
 *ページの取り込み
 ""![説明](ページ名)"" が段落にそれ1つだけのとき，ふつうのページ(Markdown・wiki・text)は，その場所に中身を取り込みます(Wiki記法の&&include と同じ)．
@@ -1908,6 +1909,7 @@ Words are separated by spaces or commas.
 For an external image, only a width and height written as numbers take effect (not the percentage or ""max"").
 
 Text written in quotes after the file name (the title part of Markdown; ""caption"" in the example above) is shown under the image as its caption.
+The caption and ""left"" / ""right"" take effect only when the image is the only thing in its paragraph. They do not for an image in the middle of a sentence (the title of an external image is shown as a hint when the mouse is over it, as before).
 
 *Pulling in a page
 When ""![description](page name)"" is the only thing in its paragraph, an ordinary page (Markdown, wiki or text) is pulled in at that place (the same as &&include of Wiki notation).

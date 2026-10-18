@@ -100,9 +100,12 @@ function markdown_image_close_figure($container, $caption) {
  */
 function markdown_image_external_size($img, $params) {
     foreach($params as $param) {
-	if(preg_match('/^(\d+)x(\d+)!?$/', $param, $matches)) {
+	if(preg_match('/^(\d+)x(\d+)!$/', $param, $matches)) {
 	    dom_set_attribute($img, 'width', $matches[1]);
 	    dom_set_attribute($img, 'height', $matches[2]);
+	} else if(preg_match('/^(\d+)x(\d+)$/', $param, $matches)) {
+	    /* 比率を保ったまま、その大きさに収める (! が無いとき。&include と同じ) */
+	    dom_set_attribute($img, 'style', 'max-width: ' . $matches[1] . 'px; max-height: ' . $matches[2] . 'px;');
 	} else if(preg_match('/^(\d+)x?$/', $param, $matches)) {
 	    dom_set_attribute($img, 'width', $matches[1]);
 	} else if(preg_match('/^x(\d+)$/', $param, $matches)) {
@@ -159,15 +162,25 @@ function markdown_resolve_pagename($path) {
     return page_path_to_pagename($path, $base);
 }
 
-function markdown_image_html($url, $alt, $caption, $is_alone = false) {
+function markdown_image_html($url, $alt, $title, $is_alone = false) {
     if($url === '')
 	return '';
     $params = markdown_image_split_params($alt);
     $document = dom_create_document();
+    /*
+     * キャプションと left / right (figure で包むもの) は、段落にそれ 1 つだけのときだけ。
+     * 文中で figure を出すと段落が割れる (README のバッジの並びなどが縦に積まれる)。
+     * 文中のタイトルは今までどおり、外部の画像ではヒント (title 属性)、添付では使わない。
+     */
+    $caption = $is_alone ? $title : '';
+    $figure_params = $is_alone ? $params : array_values(array_diff($params, array('left', 'right')));
 
     if(markdown_image_is_external($url)) {
-	$container = markdown_image_open_figure($document, $params, $caption);
-	$img = dom_append_child($container, 'img', '', array('src' => $url, 'alt' => $alt));
+	$container = markdown_image_open_figure($document, $figure_params, $caption);
+	$attributes = array('src' => $url, 'alt' => $alt);
+	if(!$is_alone && $title !== '')
+	    $attributes['title'] = $title;
+	$img = dom_append_child($container, 'img', '', $attributes);
 	markdown_image_external_size($img, $params);
 	markdown_image_close_figure($container, $caption);
 	return dom_save_html($document);
@@ -193,10 +206,16 @@ function markdown_image_html($url, $alt, $caption, $is_alone = false) {
 		 * 名前つきで渡す。画像などに並びの引数で渡すと、240x240 や open の
 		 * ような大きさ・開き方の指定として読まれてしまう。
 		 */
-		$embed_params = $params;
-		if(!empty($content_type_handler['embed_label']) && $alt !== '')
-		    $embed_params['label'] = $alt;
-		$container = markdown_image_open_figure($document, $params, $caption);
+		/*
+		 * 文字のリンクになる種類には、並びの引数を渡さない (file_embed_label() は
+		 * 並びの最後をリンクの文字にするので、300 や right が文字になる)。
+		 * left / right は figure で扱うので、どの種類にも渡さない。
+		 */
+		if(!empty($content_type_handler['embed_label']))
+		    $embed_params = ($alt !== '') ? array('label' => $alt) : array();
+		else
+		    $embed_params = array_values(array_diff($params, array('left', 'right')));
+		$container = markdown_image_open_figure($document, $figure_params, $caption);
 		$content_type_handler['embed']($page, $container, $embed_params);
 		markdown_image_close_figure($container, $caption);
 		/*
