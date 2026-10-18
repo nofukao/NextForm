@@ -985,6 +985,42 @@ check_eq "検索の文字に [PAGES] を出さない" "no|yes" \
          "$(contains "$(value_of "$(helper texts "$TR")" texts)" '[PAGES')|$(contains "$(value_of "$(helper texts "$TR")" texts)" '本文')"
 echo
 
+echo "19. 見え方が変わるところを探す道具 (app/tool/markdown_change_check)"
+# 16.〜18. で見え方が変わる書き方を一覧にする。アップグレードの案内から使う
+CH="MarkdownTest/Change"
+helper attach "$CH/pic.png" "${MARKDOWN_TEST_SITE}/embed.png" image/png > /dev/null
+helper write "$CH/Part" "部品" > /dev/null
+helper write "$CH" "$(printf -- '%s\n' \
+    '![取り込み](./Part)' '' \
+    '![図](./pic.png "キャプション")' '' \
+    '![図|300](./pic.png)' '' \
+    '[TOC]' '' \
+    '[PAGES]' '' \
+    '[PAGES what=ever]' '' \
+    ':::details 折りたたみの見出し' '中身' ':::' '' \
+    '文の途中 ![リンク](./Part) です。' '' \
+    '![外|left](https://example.com/a.png)' '' \
+    '![説明|ふつうの説明](./pic.png)')" > /dev/null
+helper write "MarkdownTest/Unchanged" "$(printf -- '# 題名\n\n![図](./x.png)\n\n[リンク](./Part)\n')" > /dev/null
+change_check() {
+    (cd "$MARKDOWN_TEST_SITE" && sudo -u "$SITE_OWNER" php -d memory_limit=512M \
+        app/tool/markdown_change_check "${MARKDOWN_TEST_SITE}/index.php" --list 0 --user "$WIKI_ADMIN" "$@" 2>&1)
+}
+CC="$(change_check --base "$CH")"
+check_eq "見え方が変わるところがあれば終了コード 1" "1" "$(change_check --base "$CH" > /dev/null; echo $?)"
+check_eq "  段落に 1 つだけのページの取り込み (文の途中のものは出さない)" "1|yes" \
+         "$(printf '%s\n' "$CC" | grep -c '!\[リンク\]\|!\[取り込み\](./Part) → ')|$(contains "$CC" "![取り込み](./Part) → $CH/Part")"
+check_eq "  タイトルがキャプションになるもの" "yes" "$(contains "$CC" '![図](./pic.png "キャプション")')"
+check_eq "  説明の最後の | が指定として読まれるもの (読めないものは出さない)" "yes|yes|no" \
+         "$(contains "$CC" '![図|300](./pic.png)')|$(contains "$CC" '![外|left](https://example.com/a.png)')|$(contains "$CC" 'ふつうの説明')"
+check_eq "  [TOC] と [PAGES] だけの段落 (読めない指定のものは出さない)" "yes|yes|no" \
+         "$(contains "$CC" "$CH: [TOC]")|$(contains "$CC" "$CH: [PAGES]")|$(contains "$CC" 'what=ever')"
+check_eq "  見出しを書いた :::details" "yes" "$(contains "$CC" ':::details 折りたたみの見出し')"
+CC="$(change_check --base MarkdownTest/Unchanged)"
+check_eq "変わるところが無ければ終了コード 0 で、問題なしと言う" "0|yes" \
+         "$(change_check --base MarkdownTest/Unchanged > /dev/null; echo $?)|$(contains "$CC" '問題なし')"
+echo
+
 helper cleanup > /dev/null
 
 if [[ $fail -eq 0 ]]; then
