@@ -1,0 +1,71 @@
+<?php
+/*
+ * Wiki 記法のページを Markdown に変換した結果を出す。**読み取り専用**。
+ * ページは書き換えない (変換して保存するのは画面の「Markdownに変換」)。
+ *
+ *   php NextForm/app/tool/wiki_to_markdown /path/to/wiki/index.php <ページ名> [オプション]
+ *
+ *     --report        変換した本文の代わりに、落ちるもの・原文の枠で残るものを出す
+ *     --user <名前>   本文を読むのに使う管理者ユーザー名
+ *
+ * 変換の規則は handler/wiki/wiki_markdown.inc。
+ * 終了コード: 0 = 変換した / 1 = 種別 wiki のページでない / 2 = 使い方の誤り
+ */
+
+$argv = $_SERVER['argv'];
+
+function usage() {
+    fprintf(STDERR, "Usage: php wiki_to_markdown <path/to/wiki/index.php> <pagename> [--report] [--user <name>]\n");
+    exit(2);
+}
+
+if(count($argv) < 3)
+    usage();
+$index_path = $argv[1];
+$pagename = $argv[2];
+$is_report = false;
+$user = '';
+for($i = 3; $i < count($argv); $i++) {
+    switch($argv[$i]) {
+    case '--report':
+	$is_report = true;
+	break;
+    case '--user':
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$user = $argv[++$i];
+	break;
+    default:
+	usage();
+    }
+}
+
+require_once(dirname(dirname(__FILE__)) . '/tool/common');
+eval_index_php($index_path);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+if($user !== '')
+    $GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $user, 'method' => 'digest');
+head_tags_init();
+
+if(!page_is_exists($pagename)) {
+    fprintf(STDERR, "ページがありません: %s\n", $pagename);
+    exit(1);
+}
+$page = page_read($pagename);
+if(page_get_type($page) !== 'wiki') {
+    fprintf(STDERR, "種別 wiki のページではありません: %s\n", $pagename);
+    exit(1);
+}
+$result = wiki_markdown_convert($page, (string)page_get_contents($page));
+if(!$is_report) {
+    printf("%s", $result['markdown']);
+    exit(0);
+}
+foreach($result['lost'] as $label => $count)
+    printf("lost\t%s\t%d\n", $label, $count);
+foreach($result['kept'] as $label => $count)
+    printf("kept\t%s\t%d\n", $label, $count);
+exit(0);
+?>
