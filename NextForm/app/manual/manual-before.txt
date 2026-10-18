@@ -150,6 +150,15 @@ A backup is taken before a page is edited (it is skipped when the edits come clo
 together). You can therefore show the contents of a page as it was at some point in
 the past, or compare two versions.
 
+In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
+Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
+-The title and the tags are taken again from the restored text. The description, the lock and so on stay as they are.
+-The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
+-A version of a different type can be restored too.
+-For an attached file (type file), its contents and file type are restored.
+-Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
+-If someone edits the page after the confirmation screen was opened, nothing is restored.
+
 *Lock
 Locking a page makes it impossible to edit. Only a user who has been granted the right
 to lock can lock a page. Unlocking returns it to the editable state.
@@ -333,6 +342,15 @@ URLを入れて''クローン''を押すと，そのページの本文と添付�
 *バックアップ
 ページは編集される前にバックアップがとられます(編集の間隔が短い場合はバックアップをスキップします)．
 なので過去のある時点でのページの内容を表示したり，比較することができます．
+
+''ページメニュー''の''履歴''の一覧で，前の版の行の''この版に戻す''を押すと(前の版を表示した画面にもあります)，確認の画面になります．
+''この版に戻す''を押すと，今のページをその版の本文と種別で上書きします．
+-題名とタグは，戻した本文から取り直します．説明やロックなどは今のままです．
+-戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
+-種別の違う版にも戻せます．
+-添付ファイル(種別file)は，中身とファイルの種類を戻します．
+-ページを編集できる人だけが使えます．ロック中は，編集と同じく管理者とロックした本人だけです．
+-確認の画面を開いたあとに誰かがページを編集していたときは，戻しません．
 
 *ロック
 ロックとはページを編集不可能にすることです．ロックをする権利を与えられたユーザーのみがページのロックを行えます．
