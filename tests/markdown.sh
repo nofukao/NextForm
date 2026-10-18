@@ -148,6 +148,11 @@ for tag in re.findall(r"<a\b[^>]*>", sys.stdin.read()):
 # `curl | grep -q ...` と書いてはいけない。grep -q は見つけた時点で終わるので
 # curl が SIGPIPE で落ち、set -o pipefail のせいでパイプライン全体が失敗と
 # 扱われる。先に変数へ受けてから調べる (manual.sh と同じ)。
+# summary の属性 (見出しの id) を落とす。ラベルだけを見たい検査で使う
+strip_summary() {
+    printf '%s' "$1" | sed -E 's/<summary[^>]*>/<summary>/g'
+}
+
 contains() {
     case "$1" in
         *"$2"*) echo yes ;;
@@ -308,13 +313,13 @@ D_HTML="$(main_html "$P_DETAILS")"
 # 属性の並び順に寄りかからない。部分編集の範囲 (data-twp) が details にも
 # 付くので、'<details>' のような閉じ括弧まで込みの照合はここでは使えない。
 check_eq "details が出る" "yes" "$(contains "$D_HTML" '<details')"
-check_eq "  summary にラベルが入る" "yes" "$(contains "$D_HTML" '<summary>手順</summary>')"
+check_eq "  summary にラベルが入る" "yes" "$(contains "$(strip_summary "$D_HTML")" '<summary>手順</summary>')"
 check_eq "  既定は閉じている" "no" "$(contains "$D_HTML" 'open="open"')"
 check_eq "  中身は Markdown として変換される" "yes" "$(contains "$D_HTML" '<strong>中身</strong>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::details\n中身\n:::\n')" > /dev/null
 check_eq "ラベルを省くと既定の語が入る" "yes" \
-         "$(contains "$(main_html "$P_DETAILS")" '<summary>詳細</summary>')"
+         "$(contains "$(strip_summary "$(main_html "$P_DETAILS")")" '<summary>詳細</summary>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::details+ 開いて出る\n中身\n:::\n')" > /dev/null
 check_eq "+ で開いた状態になる" "yes" \
@@ -323,12 +328,12 @@ check_eq "+ で開いた状態になる" "yes" \
 helper write "$P_DETAILS" "$(printf -- ':::details open 開いて出る\n中身\n:::\n')" > /dev/null
 D_HTML="$(main_html "$P_DETAILS")"
 check_eq "open でも開いた状態になる" "yes" "$(contains "$D_HTML" 'open="open"')"
-check_eq "  open はラベルに残らない" "yes" "$(contains "$D_HTML" '<summary>開いて出る</summary>')"
+check_eq "  open はラベルに残らない" "yes" "$(contains "$(strip_summary "$D_HTML")" '<summary>開いて出る</summary>')"
 
 # open で始まるラベルを書きたいときの逃げ道。マニュアルにも書いてある
 helper write "$P_DETAILS" "$(printf -- ':::details+ open な話\n中身\n:::\n')" > /dev/null
 check_eq "+ を使えば open で始まるラベルも書ける" "yes" \
-         "$(contains "$(main_html "$P_DETAILS")" '<summary>open な話</summary>')"
+         "$(contains "$(strip_summary "$(main_html "$P_DETAILS")")" '<summary>open な話</summary>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::detailsX ラベル\n中身\n:::\n')" > /dev/null
 check_eq "ラベルの前に区切りが無ければ反応しない" "no" \
@@ -339,7 +344,7 @@ D_HTML="$(main_html "$P_DETAILS")"
 check_eq "外側のコロンを増やすと入れ子になる" "2" \
          "$(printf '%s' "$D_HTML" | grep -o '<details' | wc -l)"
 check_eq "  内側が外側の中に入る" "yes" \
-         "$(contains "$(printf '%s' "$D_HTML" | tr -d '\n')" '<summary>外</summary><details')"
+         "$(contains "$(printf '%s' "$D_HTML" | tr -d '\n' | sed -E 's/<summary[^>]*>/<summary>/g')" '<summary>外</summary><details')"
 
 # ここが肝。ライブラリは外側のブロックから順に tryContinue() を呼ぶので、
 # 素直に書くとコードブロックの中の ::: で両方まとめて閉じる。
@@ -356,7 +361,7 @@ check_eq "字下げした ::: では閉じない" "1" \
 helper write "$P_DETAILS" "$(printf -- ':::details 閉じ忘れ\n中身\n')" > /dev/null
 D_HTML="$(printf '%s' "$(main_html "$P_DETAILS")" | tr -d '\n')"
 check_eq "閉じ忘れても文書の終わりで閉じる" "yes" \
-         "$(contains "$D_HTML" '<summary>閉じ忘れ</summary><p')"
+         "$(contains "$(strip_summary "$D_HTML")" '<summary>閉じ忘れ</summary><p')"
 check_eq "  中身が中に入ったまま閉じる" "yes" "$(contains "$D_HTML" '中身</p></details>')"
 
 helper write "$P_DETAILS" "$(printf -- ':::note 注意\n中身\n:::\n')" > /dev/null
@@ -853,6 +858,74 @@ check_eq "手で書いた印では取り込まない" "no|no" \
          "$(contains "$F_HTML" 'ことばパーツ')|$(contains "$F_HTML" 'data-markdown-embed')"
 sudo cp -p "${MARKDOWN_TEST_SITE}/index.php.orig" "${MARKDOWN_TEST_SITE}/index.php"
 sleep $(( ${OPCACHE_FREQ:-2} + 1 ))
+echo
+
+echo "17. 折りたたみの見出しの働きと、目次 [TOC]"
+# :::details の見出しにも id を振り、目次に載せる (wiki 記法の *(optional) と同じ)。
+# 深さは見出しの先頭の # で書ける。書かなければ直前の見出しの 1 段下。
+# [TOC] とだけ書いた段落は、ツールの「目次」と同じ形の目次になる
+# 目次の形を「深さ:文字」で並べる (section.summary の ul の入れ子の深さ)
+toc_outline() {
+    python3 -c '
+import sys
+from html.parser import HTMLParser
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.depth = 0; self.inside = 0; self.items = []; self.in_a = False
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "section" and "summary" in (a.get("class") or "").split() and not self.inside:
+            self.inside = 1
+        elif self.inside:
+            if tag == "section": self.inside += 1
+            if tag == "ul": self.depth += 1
+            if tag == "a": self.in_a = True; self.items.append([self.depth, ""])
+    def handle_endtag(self, tag):
+        if not self.inside: return
+        if tag == "ul": self.depth -= 1
+        if tag == "a": self.in_a = False
+        if tag == "section":
+            self.inside -= 1
+            if not self.inside: raise StopIteration
+    def handle_data(self, data):
+        if self.inside and self.in_a: self.items[-1][1] += data
+p = P()
+try: p.feed(sys.stdin.read())
+except StopIteration: pass
+print(" ".join("%d:%s" % (d, t.strip()) for d, t in p.items))
+'
+}
+T="MarkdownTest/Toc"
+helper write "$T" "$(printf -- '%s\n' \
+    '[TOC]' '' \
+    '## 前置き' '' 'まえおき' '' \
+    ':::details ### 畳んだ見出し' '畳んだ中身' ':::' '' \
+    ':::details 深さを書かない' '中身' ':::' '' \
+    '## 後書き' '' \
+    '```' '[TOC]' '```')" > /dev/null
+T_HTML="$(main_html "$T")"
+SID="$(value_of "$(helper section-id "$T" '畳んだ見出し')" id)"
+check_eq "見出しの先頭の # は、折りたたみの文字に出さない" "yes|no" \
+         "$(contains "$T_HTML" '>畳んだ見出し</summary>')|$(contains "$T_HTML" '### 畳んだ見出し')"
+check_eq "折りたたみの見出しに、wiki と同じ規則の id を振る" "yes" \
+         "$(contains "$(printf '%s' "$T_HTML" | grep -o '<summary[^>]*>' | tr '\n' ' ')" "id=\"${SID}\"")"
+check_eq "ツールの目次に載る (# の数の深さ。書かなければ直前の見出しの 1 段下)" \
+         "1:前置き 2:畳んだ見出し 2:深さを書かない 1:後書き" \
+         "$(curl -sk "${MARKDOWN_TEST_URL}/?${T}&option=summary" | toc_outline)"
+check_eq "[TOC] の段落が、同じ形の目次になる" \
+         "1:前置き 2:畳んだ見出し 2:深さを書かない 1:後書き" "$(printf '%s' "$T_HTML" | toc_outline)"
+check_eq "  目次の項目は見出しの id を指す" "yes" "$(contains "$T_HTML" "#${SID}\"")"
+check_eq "  コードの中の [TOC] は文字のまま (目次にしない)" "1" "$(printf '%s' "$T_HTML" | grep -o '\[TOC\]' | wc -l)"
+check_eq "  検索の文字に目印の [TOC] を出さない (コードの中のものだけが残る)" "1" \
+         "$(value_of "$(helper texts "$T")" texts | grep -o '\[TOC\]' | wc -l)"
+WORK_TOC="$(mktemp)"
+printf -- '[TOC]\n\n## 保存前の見出し\n' > "$WORK_TOC"
+sudo install -o "$SITE_OWNER" -m 644 "$WORK_TOC" "${MARKDOWN_TEST_SITE}/toc-preview.md"
+rm -f "$WORK_TOC"
+check_eq "プレビュー (保存前の本文) の目次には、保存前の見出しが出る" "1:保存前の見出し" \
+         "$(value_of "$(helper render "$T" main "${MARKDOWN_TEST_SITE}/toc-preview.md")" html | toc_outline)"
+check_eq "サイドや取り込まれた先でも目次を出す (項目はページの URL + #id)" "yes|yes" \
+         "$(contains "$(value_of "$(helper render "$T" side)" html | toc_outline)" '2:畳んだ見出し')|$(contains "$(value_of "$(helper render "$T" side)" html)" "#${SID}\"")"
 echo
 
 helper cleanup > /dev/null

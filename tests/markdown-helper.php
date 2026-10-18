@@ -31,6 +31,11 @@
  *                             種別 file のページ (添付) を書く (written=1/0)
  *   keepout <ページ名..>      ログインしていない利用者にそのページだけ読ませない
  *                             (ほかは read。saved=1/0)
+ *   section-id <名前> <見出しの文字>
+ *                             見出しに振られる id (id=...)
+ *   render <名前> <main|side> [本文のファイル]
+ *                             変換した HTML を 1 行で (html=...)。本文のファイルを渡すと
+ *                             保存せずにそれを描く (プレビューと同じ経路)
  *   cleanup                   このヘルパが作ったページを消す (removed=...)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -143,6 +148,18 @@ case 'keepout':
     $permission['*'] = 'read';
     $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = $permission;
     printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
+    break;
+
+case 'section-id':
+    printf("id=%s\n", page_get_section_id($rest[0], $rest[1]));
+    break;
+
+case 'render':
+    $page = page_read($rest[0]);
+    $page['is_main'] = ($rest[1] === 'main');
+    $dom = dom_create_document();
+    markdown_convert($page, $dom, isset($rest[2]) ? file_get_contents($rest[2]) : null);
+    printf("html=%s\n", str_replace("\n", ' ', dom_save_html($dom)));
     break;
 
 case 'meta':

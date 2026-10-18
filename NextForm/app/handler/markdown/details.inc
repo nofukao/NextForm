@@ -24,16 +24,23 @@
 class MarkdownDetails extends League\CommonMark\Node\Block\AbstractBlock {
     private $label;
     private $is_open;
+    private $heading_level;
     private $is_fence_closed = false;
 
-    public function __construct(string $label, bool $is_open) {
+    public function __construct(string $label, bool $is_open, int $heading_level = 0) {
 	parent::__construct();
 	$this->label = $label;
 	$this->is_open = $is_open;
+	$this->heading_level = $heading_level;
     }
 
     public function getLabel(): string {
 	return $this->label;
+    }
+
+    /* 見出しの先頭に書いた # の数 (:::details ### 見出し)。書かなければ 0 */
+    public function getHeadingLevel(): int {
+	return $this->heading_level;
     }
 
     public function isOpen(): bool {
@@ -89,10 +96,19 @@ class MarkdownDetailsStartParser implements League\CommonMark\Parser\Block\Block
 	    $is_open = true;
 	    $label = isset($matches[1]) ? trim($matches[1]) : '';
 	}
+	/*
+	 * 見出しの先頭の # は、目次での深さ (:::details ### 見出し)。文字には出さない。
+	 * wiki 記法の *(optional) を写すときに、元の節の深さを残すため。
+	 */
+	$heading_level = 0;
+	if(preg_match('/^(#{1,6})[ \t]+(.*)$/', $label, $matches)) {
+	    $heading_level = strlen($matches[1]);
+	    $label = trim($matches[2]);
+	}
 	$cursor->advanceToEnd();
 
 	return League\CommonMark\Parser\Block\BlockStart::of(
-	    new MarkdownDetailsParser($fence_length, $label, $is_open))->at($cursor);
+	    new MarkdownDetailsParser($fence_length, $label, $is_open, $heading_level))->at($cursor);
     }
 }
 
@@ -100,9 +116,9 @@ class MarkdownDetailsParser extends League\CommonMark\Parser\Block\AbstractBlock
     private $block;
     private $fence_length;
 
-    public function __construct(int $fence_length, string $label, bool $is_open) {
+    public function __construct(int $fence_length, string $label, bool $is_open, int $heading_level = 0) {
 	$this->fence_length = $fence_length;
-	$this->block = new MarkdownDetails($label, $is_open);
+	$this->block = new MarkdownDetails($label, $is_open, $heading_level);
     }
 
     public function getBlock(): MarkdownDetails {
@@ -155,12 +171,21 @@ class MarkdownDetailsRenderer implements League\CommonMark\Renderer\NodeRenderer
 	if(!($node instanceof MarkdownDetails))
 	    return '';
 
-	/* ラベルは素の文字として扱う。中で記法を効かせない (押す所なので短く保たせる) */
+	/*
+	 * ラベルは素の文字として扱う。中で記法を効かせない (押す所なので短く保たせる)。
+	 * ラベルを書いたものは見出しとして働く (id と目次。markdown_headings())。
+	 * 深さは data-heading-level で渡す。空なら直前の見出しの 1 段下。
+	 */
 	$label = $node->getLabel();
-	if($label === '')
+	$summary_attributes = array();
+	if($label === '') {
 	    $label = l('Details');
+	} else {
+	    $level = $node->getHeadingLevel();
+	    $summary_attributes['data-heading-level'] = $level > 0 ? (string)$level : '';
+	}
 	$summary = new League\CommonMark\Util\HtmlElement(
-	    'summary', array(), League\CommonMark\Util\Xml::escape($label));
+	    'summary', $summary_attributes, League\CommonMark\Util\Xml::escape($label));
 
 	/*
 	 * 部分編集の範囲 (data-twp / data-twl) は
