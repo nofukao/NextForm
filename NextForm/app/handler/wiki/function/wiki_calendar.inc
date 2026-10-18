@@ -592,7 +592,7 @@ Double clicking a box of the calendar edits the child page straight away.
 Data about events such as public holidays can be written as the target.
 Ordinary public holidays are shown through Google Calendar even with nothing written,
 but using Google Calendar means getting a Google API key allowed to reach the Calendar
-API and setting it in site menu > Admin tools > Site setup, under Google API key.
+API and setting it in site menu > Admin tools > Site preferences, under Google API key.
 The php settings also have to contain ""extension=openssl.so"", so that the API can be
 reached over SSL.
 
