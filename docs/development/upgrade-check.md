@@ -264,7 +264,8 @@ sudo php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --force
 
 `storage/` は戻らない。ツールが `storage/` に触れるのは
 「焼き付けた古いマニュアルのページを消す」1 か所だけで、これは論理削除なので
-`?option=deletedpage`「削除されたページ」から戻せる。
+消す直前の内容は履歴に残る (`?option=deletedpage`「削除されたページ」から
+ページ名を開き、「履歴」で見られる。戻すボタンは無いので、作り直す)。
 2 回目以降は何も消さない (冪等)。
 
 ページの中身ごと何度も試すなら、`--full-backup` で `storage/` を含めて控えておく。

@@ -115,7 +115,7 @@ sudo tail -50 /var/log/php-fpm/www-error.log
 
 `app/theme/` は**テーマのソース**で、配信される `theme/` はそこから生成されます。
 `app/theme/` のファイルを直接編集しても、そのままではブラウザに反映されません。
-管理画面の「テーマ設定」を適用すると再生成されます。
+管理ツールの「外観の設定」を開いてそのまま適用すると再生成されます。
 
 ### プラグインを足すとき
 
@@ -176,8 +176,8 @@ sudo chown -R apache:apache storage theme install-info.dat
 > `app/tool/upgrade` は `app/` `resource/` `theme/` を置き換えるためです。
 > 手順は `docs/upgrade-guide.md` を参照してください。
 >
-> `index.php` にはサイト独自の `define()` を書きます (`?option=admin_user` が
-> 出力する行など)。読み取り専用にすると、その編集にも `sudo` が要ります。
+> `index.php` にはサイト独自の `define()` や、認証の設定 (`$AUTH_DIGESTS` など) を
+> 書きます。読み取り専用にすると、その編集にも `sudo` が要ります。
 
 ---
 
