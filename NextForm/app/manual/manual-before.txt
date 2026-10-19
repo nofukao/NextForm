@@ -1794,6 +1794,9 @@ URLを書けば外部の画像もそのまま表示します．
 |Markdown(.md)|wikiの画面の中に，Markdownのページと同じ見た目で表示します．読むだけで，編集はできません|
 |その他(Word，Excelなど)|ダウンロードします|
 
+Wiki記法の &&direct と同じく，ファイルそのものを開くリンクです．
+画像・音声・動画は埋め込みになるので，文字のリンクで画像そのものを開く書き方はありません．
+
 添付したMarkdown(.md)の中に書いた ""![図](図.png)"" や ""[資料](./資料.pdf)"" は，
 その .md を添付したページの添付を指します．
 .md と画像を同じページに添付すれば，そのまま表示できます．
@@ -1829,6 +1832,11 @@ Markdown(.md)のファイルのページには，wikiの画面の中に表示す
 語は空白かカンマで区切って並べられます．
 ''最後の ""|"" より後ろがすべて指定として読めるときだけ''指定になります．読めないときは全体が説明のままです．
 外部の画像では，数字で書いた幅と高さだけが効きます(拡大率と ""max"" は効きません)．
+
+画像をほかのページへのリンクにするときは，""!link"" を付けてリンクの中に書きます．
+ [![|100x100 !link](小.png)](大.png)
+押すと，囲んだリンクの行き先(この例では 大.png のファイルのページ)が開きます．
+""!link"" を付けないと，画像そのものへのリンクと重なります．
 
 ファイル名の後ろに引用符で囲んで書いた文字(Markdownのタイトルの欄．上の例の ""キャプション"")は，画像の下にキャプションとして出ます．
 キャプションと ""left""・""right"" は，その画像が段落にそれ1つだけのときに効きます．文中の画像では効きません(外部の画像のタイトルは，これまでどおりマウスを載せたときのヒントになります)．
@@ -2359,6 +2367,9 @@ the file. With an empty description, as in ""![](file name)"", the file name is 
 |Markdown (.md)|Shows it inside the wiki screen, looking like a Markdown page. It can be read, not edited|
 |Others (Word, Excel and so on)|Downloads it|
 
+Like &&direct of Wiki notation, it is a link that opens the file itself.
+Images, audio and video are embedded, so there is no way to write a text link that opens the image itself.
+
 In an attached Markdown file (.md), ""![figure](figure.png)"" and ""[document](./document.pdf)""
 point at the attachments of the page the .md is attached to.
 Attach the .md and its images to the same page and they show as they are.
@@ -2396,6 +2407,11 @@ The words are the same as [[&&include:../../Wiki/Function/include]] of Wiki nota
 Words are separated by spaces or commas.
 ''Only when everything after the last ""|"" can be read as words of this list'' does it become a specification. Otherwise the whole stays the description.
 For an external image, only a width and height written as numbers take effect (not the percentage or ""max"").
+
+To make an image a link to another page, add ""!link"" and write it inside the link.
+ [![|100x100 !link](small.png)](large.png)
+Pressing it opens where the surrounding link points (the page of the file large.png in this example).
+Without ""!link"", it overlaps with the link to the image itself.
 
 Text written in quotes after the file name (the title part of Markdown; ""caption"" in the example above) is shown under the image as its caption.
 The caption and ""left"" / ""right"" take effect only when the image is the only thing in its paragraph. They do not for an image in the middle of a sentence (the title of an external image is shown as a hint when the mouse is over it, as before).
@@ -2509,6 +2525,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |子ページのツリー|&&treepages|""[PAGES]"" とだけ書いた行|Markdown記法で書ける指定は，対象のページ・並べ方・件数・直下だけ(children)です．表や中身ごとの一覧は書けません|
 |節の終わりを明示|&*(end)|なし|同上|
 |他のページの取り込み|&&include(&[&[ページ名&]&])|段落にそれ1つだけの !&[説明&](ページ名)|Markdown記法では，文の途中に書いたときはリンクになります．大きさや配置の指定は説明の後ろに書きます([[リンク・画像・添付:../Markdown/Link#大きさ・配置・キャプション]])|
+|ファイルそのものを開くリンク|&&direct(&[&[./資料.pdf&]&]){説明}|!&[説明&](./資料.pdf)|PDF・テキスト・Wordなどは同じ働きです．Markdown(.md)は，表示した画面が開きます．画像・音声・動画は埋め込みになるので，文字のリンクにするときは &[説明&](./写真.png) と書きます(押すとファイルのページが開きます)|
 |部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
 |箇条書きの中の空行|そこで箇条書きが''終わります''|終わりません．1つの箇条書きのままです|Wiki記法で2つに分けたいときは空行を入れます．Markdown記法では片方の記号を変えます(""- "" と ""* "")．どちらの記法でも，空行を入れた所だけが同じだけ空きます|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
@@ -2551,6 +2568,11 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 -タグはフロントマターの ""tags:"" に書き出します．
 -&*(optional) の節は "":::details"" の折りたたみにします(見出しの深さは保ちます)．
 -&&include は ""![](..)"" に，&&index は ""[TOC]"" に，&&treepages などのページの一覧は ""[PAGES]"" にします．
+-&&direct(&[&[./資料.pdf&]&]){説明} は ""![説明](./資料.pdf)"" にします．押すとファイルそのものが開くのは同じです(Markdown(.md)は表示した画面が開きます)．
+画像・音声・動画とページへの &&direct は，見た目を変えないよう ""[説明](./写真.png)"" にします．押すとファイルのページが開くようになるので，落ちるものに出ます．
+-縮小画像を押すと元の画像が開く &&direct(&[&[./写真.png&]&]){&&include(&[&[./写真.png&]&],100x100);} は ""![|100x100](./写真.png)"" にします．
+縮小画像が別の画像のときは ""[![|!link](./小.png)](./写真.png)"" にします．押すと写真.png のファイルのページが開きます．
+""&link(https://example.com/){&include([[./バナー.png]]);}"" のように外部のサイトへのリンクにした縮小画像も，""[![|!link](./バナー.png)](https://example.com/)"" にします．
 -&&color や &&size などの装飾は，中の文字だけを残します．
 -&[&[表示名:ページ名&]&] は &[&[ページ名&|表示名&]&] に並べ替えます．行き先の決まりは同じなので，行き先は書き換えません．
 
@@ -2603,6 +2625,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |tree of subpages|&&treepages|a line with only ""[PAGES]""|Markdown notation can give the page, the order, the number and only the direct subpages (children). Lists as tables or with contents cannot be written|
 |marking the end of a section|&*(end)|none|as above|
 |pulling in another page|&&include(&[&[page name&]&])|!&[description&](page name) alone in its paragraph|In Markdown notation, it is a link when written in the middle of a sentence. The size and placement are written after the description ([[Links, images and attachments:../Markdown/Link#Size, placement and caption]])|
+|a link that opens the file itself|&&direct(&[&[./document.pdf&]&]){description}|!&[description&](./document.pdf)|PDF, text, Word and so on work the same. A Markdown file (.md) opens the screen that shows it. Images, audio and video are embedded, so for a text link write &[description&](./photo.png) (pressing it opens the page of the file)|
 |unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
 |empty line inside a list|the list ''ends'' there|it does not end; it stays one list|In Wiki notation an empty line is how you split a list in two. In Markdown notation you change the marker of one of them (""- "" and ""* ""). In both notations only the place with the empty line gets a gap, of the same width|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
@@ -2646,6 +2669,11 @@ The rules are as follows.
 -Tags are written in ""tags:"" of the front matter.
 -A section with &*(optional) becomes a "":::details"" fold (keeping the depth of the heading).
 -&&include becomes ""![](..)"", &&index becomes ""[TOC]"", and page lists such as &&treepages become ""[PAGES]"".
+-&&direct(&[&[./document.pdf&]&]){description} becomes ""![description](./document.pdf)"". Pressing it still opens the file itself (a Markdown file (.md) opens the screen that shows it).
+&&direct to images, audio, video and pages becomes ""[description](./photo.png)"", so that the look does not change. Pressing it now opens the page of the file, so it is listed among the things that are dropped.
+-&&direct(&[&[./photo.png&]&]){&&include(&[&[./photo.png&]&],100x100);}, a thumbnail that opens the image when pressed, becomes ""![|100x100](./photo.png)"".
+When the thumbnail is a different image, it becomes ""[![|!link](./small.png)](./photo.png)"". Pressing it opens the page of the file photo.png.
+A thumbnail made a link to another site, as in ""&link(https://example.com/){&include([[./banner.png]]);}"", becomes ""[![|!link](./banner.png)](https://example.com/)"" too.
 -Decorations such as &&color and &&size keep only the text inside.
 -&[&[display name:page name&]&] is reordered to &[&[page name&|display name&]&]. Where it points is decided in the same way, so the destination is not rewritten.
 
