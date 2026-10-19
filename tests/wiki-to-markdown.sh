@@ -335,7 +335,22 @@ check_eq "CSV 形式の表" "名前|値" "$(printf '%s\n' "$theads" | sed -n 4p)
 check_eq "表は 4 つとも表のまま" "4" "$(grep -o '<table' "$WORK/table" | wc -l)"
 echo
 
-echo "10. PHP の警告が出ていないこと"
+echo "10. 複数行の項目 (-{…}) を、表示と同じに読むこと"
+LI=WikiMdTest/ListItem
+open_confirm "$LI" > /dev/null
+convert_page "$LI" "$(confirm_ticket)" > /dev/null
+check_eq "変換した" "markdown" "$(value_of "$(helper meta "$LI" type)" meta)"
+curl -sk -o "$WORK/listitem" "${WIKI_MD_TEST_URL}/?${LI}"
+check_eq "空白で始まる中身の URL はリンクのまま (整形済みにしない)" "yes|0" \
+         "$(grep -q '<a [^>]*href="https://example.com/manage/#/login"' "$WORK/listitem" && echo yes || echo no)|$(grep -c '<code[^>]*>https://example.com' "$WORK/listitem")"
+check_eq "  行末の ~ は改行のまま" "yes" \
+         "$(tr -d '\n' < "$WORK/listitem" | grep -q '管理画面<br' && echo yes || echo no)"
+check_eq "中身の 2 行目からの行頭の空白は整形済み" "1" "$(grep -c '<code[^>]*>行頭の空白は整形済み' "$WORK/listitem")"
+check_eq "空白で始まる項目は文のまま (入れ子の項目も残る)" "0|yes" \
+         "$(grep -c '<code[^>]*>空白で始まる項目' "$WORK/listitem")|$(grep -q '入れ子の項目' "$WORK/listitem" && echo yes || echo no)"
+echo
+
+echo "11. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F "$WIKI_MD_TEST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"
