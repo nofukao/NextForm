@@ -8,6 +8,8 @@
 
 \&copy; と \&heart; と https\://example.com/plain と www\.example.com
 
+[[Top|&&link]] と [[Top|&&copy; と 強調]] と [[Top|&&amp;]]
+
 > 引用の中の https\://example.com/quote
 
 ## file: のリンク

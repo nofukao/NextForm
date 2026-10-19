@@ -360,6 +360,8 @@ has() { grep -qF -- "$1" "$WORK/context" && echo yes || echo no; }
 check_eq "強調・打ち消し・リンクの中身の頭の記号が残る" "yes|yes|yes|yes" \
          "$(has '<strong>-マイナス</strong>')|$(has '<em>|縦棒|</em>')|$(has '<del>,カンマ</del>')|$(has '>,カンマの名前</a>')"
 check_eq "&&copy; は文字のまま (実体参照にしない)" "yes|yes" "$(has '&amp;copy;')|$(has '&amp;heart;')"
+check_eq "リンクの名前の && は & にする (表示と同じ文字)" "yes|yes|yes|no" \
+         "$(has '>&amp;link</a>')|$(has '>&amp;copy; と 強調</a>')|$(has '>&amp;amp;</a>')|$(has '&amp;&amp;')"
 check_eq "文字のままの URL・引用の中の URL はリンクにしない" "no|no|no" \
          "$(has 'href="https://example.com/plain"')|$(has 'href="http://www.example.com"')|$(has 'href="https://example.com/quote"')"
 check_eq "行末の ~ は文字にしない" "no|no|no" "$(has '項目の行末~')|$(has 'チルダの行末~')|$(has '行末の改行~')"
