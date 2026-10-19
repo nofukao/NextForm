@@ -320,7 +320,22 @@ check_eq "縮小画像: 外部のサイトへのリンク" "https://example.com/
 check_eq "縮小画像: リンクの中にリンクを入れない" "0" "$(grep -c '<a [^>]*><a ' "$WORK/direct")"
 echo
 
-echo "9. PHP の警告が出ていないこと"
+echo "9. 表の 1 行目が見出しの行になること"
+TB=WikiMdTest/Table
+open_confirm "$TB" > /dev/null
+convert_page "$TB" "$(confirm_ticket)" > /dev/null
+check_eq "変換した" "markdown" "$(value_of "$(helper meta "$TB" type)" meta)"
+curl -sk -o "$WORK/table" "${WIKI_MD_TEST_URL}/?${TB}"
+# 表ごとに、見出しの行のセルの文字を | で並べる (1 行に 1 つ)
+theads=$(tr -d '\n' < "$WORK/table" | sed 's#</thead>#\n#g' | sed -n 's#.*<thead>##p' |
+             sed -E 's#<[^>]+>#|#g; s#\|+#|#g; s#^\|##; s#\|$##')
+check_eq "見出しの行が無かった表" "拠点|装置|接続先|ポート" "$(printf '%s\n' "$theads" | sed -n 1p)"
+check_eq "見出しの行があった表" "項目|値" "$(printf '%s\n' "$theads" | sed -n 2p)"
+check_eq "CSV 形式の表" "名前|値" "$(printf '%s\n' "$theads" | sed -n 4p)"
+check_eq "表は 4 つとも表のまま" "4" "$(grep -o '<table' "$WORK/table" | wc -l)"
+echo
+
+echo "10. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F "$WIKI_MD_TEST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"
