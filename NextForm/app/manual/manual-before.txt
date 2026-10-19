@@ -1241,8 +1241,8 @@ whose destination is a page of type Markdown.
 Giving them colours different from links to pages in Wiki notation tells you which
 notation a page is written in before you follow the link.
 
-''Leave them empty'', together with ''external link color'' and ''external link visited
-color'', and they are the same as ''link color'' and ''link visited color''; changing
+''Leave them empty'', together with ''external link color'' and ''external link visited color'',
+and they are the same as ''link color'' and ''link visited color''; changing
 ''link color'' changes them too. They start empty.
 (On a site that saved external link colours before, those colours stay. Empty them
 and press ''Apply'' to follow the link colours.)
@@ -1339,8 +1339,7 @@ it takes the log to have been rotated and totals from the start of the file.
 If it does count twice, removing the resume file at the moment the log rotates may
 put it right.
 }
-Run the script ''as a user who has the right to write into the NextForm directory and
-to read the access log''.
+Run the script ''as a user who has the right to write into the NextForm directory and to read the access log''.
 
 Only while the access log is still there, if it has counted twice, running
  $ php <install dir>/app/tool/analyze_weblog <path to index.php> <URL> <path to resume file> --delete-all
@@ -2305,8 +2304,7 @@ Surrounding a name with &[&[ and &]&] makes a link to a page inside this site.
 |""[[../the next page]]""|a relative name (resolved as [[relative page names:../..#Relative page names]] are)|
 |""[[page name#heading]]""|a link to a heading in that page|
 
-Unlike Wiki notation, what comes first inside &[&[ &]&] is ''the target, and the
-display name comes second''. This matches the order used by Obsidian and MediaWiki.
+Unlike Wiki notation, what comes first inside &[&[ &]&] is ''the target, and the display name comes second''. This matches the order used by Obsidian and MediaWiki.
 
 A link to a page that does not exist is shown in a different colour,
 just as in Wiki notation.
@@ -4030,8 +4028,7 @@ in the setup table. For example:
 The first column of the setup table can name a pattern of page names using wildcards,
 instead of a link to a page.
 Pages matching the pattern use that row as their setup.
-''Note that &* and &/&* and &*&/ mean a heading or a comment in Wiki notation, so the
-&* has to be escaped by putting an && in front of it.''
+''Note that &* and &/&* and &*&/ mean a heading or a comment in Wiki notation, so the &* has to be escaped by putting an && in front of it.''
 In the example above, every child page of the page ''Blog'' uses the template
 ''Blog template'', and the file name is blank so it is decided automatically.
 
@@ -4067,8 +4064,7 @@ characters ('\0').
 Set this command to a script that sends the files with rsync or ftp and you can manage
 the content of a web server on a remote host.
 
-''Note that the strings fed to the command are strings that can be edited freely on the
-NextForm site.''
+''Note that the strings fed to the command are strings that can be edited freely on the NextForm site.''
 
 The command is treated as having failed when it exits with a status other than 0.
 
