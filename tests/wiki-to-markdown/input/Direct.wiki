@@ -1,0 +1,27 @@
+&title ファイルへの直接のリンク
+*文中
+PDF は &direct([[./a.pdf]]){資料} です。
+zip は &direct([[./a.zip]]){まとめて}、テキストは &direct([[./a.txt]]){メモ}、md は &direct([[./a.md]]){読みもの}。
+画像は &direct([[./a.png]]){写真}、音声は &direct([[./a.mp3]]){録音}、動画は &direct([[./a.mp4]]){動画}。
+まだ無いものは &direct([[./none.pdf]]){無いもの}、ふつうのページは &direct([[WikiMdTest/Clean]]){原文}。
+説明なしは &direct([[./a.pdf]]); と &direct([[./a.png]]);。
+説明の記号は &direct([[./a.pdf]]){資料|right [版1]} と &direct([[./a.pdf]]){''重要''な資料}。
+raw を書いた link でも &link([[./a.pdf]],raw,open){開く}。
+
+*単独の段落
+&direct([[./a.pdf]]){単独の資料}
+
+&direct([[./a.png]]){単独の写真}
+
+*縮小画像
+同じ画像 &direct([[./a.png]]){&include([[./a.png]],40x30);}
+
+別の画像 &direct([[./a.png]]){&include([[./thumb.png]]);}
+
+ページへ &link([[./a.png]]){&include([[./thumb.png]],max 10x10);}
+
+ふつうのページへ &link([[WikiMdTest/Clean]]){&include([[./thumb.png]]);}
+
+外部のサイトへ &link(https://example.com/){&include([[./thumb.png]]);}
+
+画像でないもの &direct([[./a.pdf]]){&include([[./a.pdf]]);}

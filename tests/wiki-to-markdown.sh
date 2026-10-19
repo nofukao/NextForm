@@ -114,6 +114,22 @@ for f in "${FIXTURES}"/input/*.wiki; do
 done
 # タグは Wiki 記法の本文に書かないので、タグの画面と同じ経路で付ける
 helper set-tags WikiMdTest/Full タグA "タグ, B" > /dev/null
+# &direct の行き先 (Direct.wiki)。変換は行き先の種類で書き方を変える
+PNG_80x60='iVBORw0KGgoAAAANSUhEUgAAAFAAAAA8CAIAAAB+RarbAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAWUlEQVRo3u3PQQEAQAQAMK5/MCGEEOEyeNsaLKsnLnlxjLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCw8M4HGT0DDH3NO/8AAAAASUVORK5CYII='
+PNG_20x15='iVBORw0KGgoAAAANSUhEUgAAABQAAAAPCAIAAABr+ngCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAEUlEQVQoz2NgGAWjYBQMIgAAA5MAATFpEvgAAAAASUVORK5CYII='
+attach() {
+    sudo tee "${FIX}/up-$1" > /dev/null
+    sudo chown "$SITE_OWNER" "${FIX}/up-$1"
+    helper attach "WikiMdTest/Direct/$1" "${FIX}/up-$1" "$2" > /dev/null
+}
+printf '%%PDF-1.4\n%%%%EOF\n' | attach a.pdf application/pdf
+printf 'PK\003\004'          | attach a.zip application/zip
+printf 'memo\n'               | attach a.txt text/plain
+printf '# md\n'               | attach a.md  application/octet-stream
+printf 'ID3'                  | attach a.mp3 audio/mpeg
+printf 'mp4'                  | attach a.mp4 video/mp4
+printf '%s' "$PNG_80x60" | base64 -d | attach a.png     image/png
+printf '%s' "$PNG_20x15" | base64 -d | attach thumb.png image/png
 
 for f in "${FIXTURES}"/input/*.wiki; do
     name="$(basename "$f" .wiki)"
@@ -262,7 +278,96 @@ check_eq "書く権限が無い: ログインを求める (401)" "401" "$(conver
 helper guest write > /dev/null
 echo
 
-echo "9. PHP の警告が出ていないこと"
+echo "8. ファイルそのものへのリンク (&direct) が、変換したあとも同じところを指すこと"
+D=WikiMdTest/Direct
+open_confirm "$D" > /dev/null
+convert_page "$D" "$(confirm_ticket)" > /dev/null
+check_eq "変換した" "markdown" "$(value_of "$(helper meta "$D" type)" meta)"
+curl -sk -o "$WORK/direct" "${WIKI_MD_TEST_URL}/?${D}"
+# 表示の文字が $1 のリンクの行き先
+href_of() {
+    local text
+    text=$(printf '%s' "$1" | sed 's/[][\.*^$]/\\&/g')
+    grep -o "<a [^>]*>${text}</a>" "$WORK/direct" | head -1 | sed -E 's/.*href="([^"]*)".*/\1/'
+}
+# リンクで包んだ画像の、リンクの行き先と画像の src (1 行に 1 つ、本文の順)
+linked_images() {
+    grep -o '<a [^>]*><img [^>]*>' "$WORK/direct" |
+        sed -E 's/^<a [^>]*href="([^"]*)"[^>]*><img [^>]*src="([^"]*)".*/\1 \2/'
+}
+RAW="&amp;action=raw"
+check_eq "PDF は、ファイルそのもの" "?${D}/a.pdf${RAW}" "$(href_of 資料)"
+check_eq "zip・テキストも、ファイルそのもの" "?${D}/a.zip${RAW}|?${D}/a.txt${RAW}" \
+         "$(href_of まとめて)|$(href_of メモ)"
+check_eq "md は、描画した画面" "?${D}/a.md&amp;action=view" "$(href_of 読みもの)"
+check_eq "画像・音声・動画は、ファイルのページ (文字のリンクのまま)" "?${D}/a.png|?${D}/a.mp3|?${D}/a.mp4" \
+         "$(href_of 写真)|$(href_of 録音)|$(href_of 動画)"
+check_eq "まだ無いもの・ふつうのページは、そのページ" "?${D}/none.pdf|?WikiMdTest/Clean" \
+         "$(href_of 無いもの)|$(href_of 原文)"
+check_eq "説明の | が配置の指定として読まれない" "?${D}/a.pdf${RAW}" "$(href_of '資料｜right [版1]')"
+check_eq "&link(raw) も、ファイルそのもの" "?${D}/a.pdf${RAW}" "$(href_of 開く)"
+check_eq "単独の段落でも、文字のリンク" "?${D}/a.pdf${RAW}|?${D}/a.png" \
+         "$(href_of 単独の資料)|$(href_of 単独の写真)"
+images=$(linked_images)
+check_eq "縮小画像: 同じ画像は、押すと画像そのもの" "?${D}/a.png${RAW} ?${D}/a.png${RAW}&amp;width=40&amp;height=30" \
+         "$(printf '%s\n' "$images" | sed -n 1p)"
+check_eq "縮小画像: 別の画像は、押すと行き先のファイルのページ" "?${D}/a.png ?${D}/thumb.png${RAW}" \
+         "$(printf '%s\n' "$images" | sed -n 2p | sed -E 's/&amp;width=.*//')"
+check_eq "縮小画像: &link の行き先 (添付・ふつうのページ)" "?${D}/a.png|?WikiMdTest/Clean" \
+         "$(printf '%s\n' "$images" | sed -n 3p | cut -d' ' -f1)|$(printf '%s\n' "$images" | sed -n 4p | cut -d' ' -f1)"
+check_eq "縮小画像: 外部のサイトへのリンク" "https://example.com/ ?${D}/thumb.png${RAW}" \
+         "$(printf '%s\n' "$images" | sed -n 5p | sed -E 's/&amp;width=.*//')"
+check_eq "縮小画像: リンクの中にリンクを入れない" "0" "$(grep -c '<a [^>]*><a ' "$WORK/direct")"
+echo
+
+echo "9. 表の 1 行目が見出しの行になること"
+TB=WikiMdTest/Table
+open_confirm "$TB" > /dev/null
+convert_page "$TB" "$(confirm_ticket)" > /dev/null
+check_eq "変換した" "markdown" "$(value_of "$(helper meta "$TB" type)" meta)"
+curl -sk -o "$WORK/table" "${WIKI_MD_TEST_URL}/?${TB}"
+# 表ごとに、見出しの行のセルの文字を | で並べる (1 行に 1 つ)
+theads=$(tr -d '\n' < "$WORK/table" | sed 's#</thead>#\n#g' | sed -n 's#.*<thead>##p' |
+             sed -E 's#<[^>]+>#|#g; s#\|+#|#g; s#^\|##; s#\|$##')
+check_eq "見出しの行が無かった表" "拠点|装置|接続先|ポート" "$(printf '%s\n' "$theads" | sed -n 1p)"
+check_eq "見出しの行があった表" "項目|値" "$(printf '%s\n' "$theads" | sed -n 2p)"
+check_eq "CSV 形式の表" "名前|値" "$(printf '%s\n' "$theads" | sed -n 4p)"
+check_eq "表は 4 つとも表のまま" "4" "$(grep -o '<table' "$WORK/table" | wc -l)"
+echo
+
+echo "10. 複数行の項目 (-{…}) を、表示と同じに読むこと"
+LI=WikiMdTest/ListItem
+open_confirm "$LI" > /dev/null
+convert_page "$LI" "$(confirm_ticket)" > /dev/null
+check_eq "変換した" "markdown" "$(value_of "$(helper meta "$LI" type)" meta)"
+curl -sk -o "$WORK/listitem" "${WIKI_MD_TEST_URL}/?${LI}"
+check_eq "空白で始まる中身の URL はリンクのまま (整形済みにしない)" "yes|0" \
+         "$(grep -q '<a [^>]*href="https://example.com/manage/#/login"' "$WORK/listitem" && echo yes || echo no)|$(grep -c '<code[^>]*>https://example.com' "$WORK/listitem")"
+check_eq "  行末の ~ は改行のまま" "yes" \
+         "$(tr -d '\n' < "$WORK/listitem" | grep -q '管理画面<br' && echo yes || echo no)"
+check_eq "中身の 2 行目からの行頭の空白は整形済み" "1" "$(grep -c '<code[^>]*>行頭の空白は整形済み' "$WORK/listitem")"
+check_eq "空白で始まる項目は文のまま (入れ子の項目も残る)" "0|yes" \
+         "$(grep -c '<code[^>]*>空白で始まる項目' "$WORK/listitem")|$(grep -q '入れ子の項目' "$WORK/listitem" && echo yes || echo no)"
+echo
+
+echo "11. 中身の頭の記号・文字のままの記号を、表示と同じに写すこと"
+CX=WikiMdTest/Context
+open_confirm "$CX" > /dev/null
+convert_page "$CX" "$(confirm_ticket)" > /dev/null
+check_eq "変換した" "markdown" "$(value_of "$(helper meta "$CX" type)" meta)"
+curl -sk -o "$WORK/context" "${WIKI_MD_TEST_URL}/?${CX}"
+has() { grep -qF -- "$1" "$WORK/context" && echo yes || echo no; }
+check_eq "強調・打ち消し・リンクの中身の頭の記号が残る" "yes|yes|yes|yes" \
+         "$(has '<strong>-マイナス</strong>')|$(has '<em>|縦棒|</em>')|$(has '<del>,カンマ</del>')|$(has '>,カンマの名前</a>')"
+check_eq "&&copy; は文字のまま (実体参照にしない)" "yes|yes" "$(has '&amp;copy;')|$(has '&amp;heart;')"
+check_eq "文字のままの URL・引用の中の URL はリンクにしない" "no|no|no" \
+         "$(has 'href="https://example.com/plain"')|$(has 'href="http://www.example.com"')|$(has 'href="https://example.com/quote"')"
+check_eq "行末の ~ は文字にしない" "no|no|no" "$(has '項目の行末~')|$(has 'チルダの行末~')|$(has '行末の改行~')"
+check_eq "見出しの中の改行を \\ にしない" "no" "$(has '見出しの\')"
+check_eq "折りたたみの見出しの実体参照は文字にする" "yes" "$(has 'リンク と © の見出し')"
+echo
+
+echo "12. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F "$WIKI_MD_TEST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"

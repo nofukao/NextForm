@@ -813,6 +813,7 @@ helper write "$E" "$(printf -- '%s\n' \
     '![wiki を取り込む](./WikiPart)' '' \
     '![読めない](./Secret)' '' \
     '![無い](./Nothing)' '' \
+    '![](./無い図.png)' '' \
     '![説明|2024年|ではない](./pic.png)' '' \
     '![外部|640x400](https://example.com/a.png "外の図")')" > /dev/null
 helper keepout "$E/Secret" > /dev/null
@@ -836,6 +837,8 @@ check_eq "Wiki 記法のページも取り込む" "yes" "$(contains "$E_HTML" '�
 check_eq "読めないページは取り込まない (リンクのまま)" "no|yes" \
          "$(contains "$E_HTML" 'ひみつ')|$(contains "$E_HTML" "data-link-pagename=\"$E/Secret\"")"
 check_eq "無いページはリンク (まだ無い印)" "yes" "$(contains " $(link_class "$E_HTML" "$E/Nothing") " " not_exists ")"
+check_eq "  説明が無ければ、書いた行き先をそのまま表示にする (%XX にしない)" "yes" \
+         "$(contains "$E_HTML" '>./無い図.png</a>')"
 check_eq "最後の | の後ろが指定として読めなければ、全体を説明にする" "yes" \
          "$(contains "$E_HTML" 'alt="説明|2024年|ではない"')"
 L="$(e_line '外の図')"

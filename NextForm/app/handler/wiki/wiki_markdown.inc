@@ -269,16 +269,28 @@ function wiki_markdown_section(&$state, &$context, $tree) {
     $is_optional = in_array('optional', $params, true);
     $children = wiki_markdown_blocks($state, $context, $tree->children);
 
+    $target = wiki_markdown_strip_line_tokens($tree->target);
     if(!$is_optional) {
-	$text = trim(str_replace("\n", ' ', wiki_markdown_inline_tokens($state, $context,
-									  wiki_markdown_strip_line_tokens($tree->target))));
+	$text = wiki_markdown_inline_tokens($state, $context, $target);
+	/* Markdown の見出しは 1 行。&br; などの改行は空白にする (\ を残すと文字で出る) */
+	if(strpos($text, "\\\n") !== false)
+	    wiki_markdown_lost($state, l('Line breaks in headings'));
+	$text = trim(str_replace(array("\\\n", "\n"), ' ', $text));
 	$blocks = array();
 	if($text !== '')
 	    $blocks[] = str_repeat('#', $level) . ' ' . wiki_markdown_heading_text($text);
 	return array_merge($blocks, $children);
     }
-    /* 折りたたみの見出しは記法を読まない素の文字。表示と同じ文字にする (記号は落とす) */
-    $text = wiki_markdown_rendered_text($context, wiki_markdown_strip_line_tokens($tree->target));
+    /*
+     * 折りたたみの見出しは記法を読まない素の文字。表示と同じ文字にする (記号は落とす)。
+     * リンクや強調があれば、文字だけ残るので落ちるものに数える。行末の ~ (改行) は書かない
+     */
+    if(!empty($target) && wiki_markdown_is_symbol(end($target), '~') &&
+       wiki_markdown_is_line_end($state, end($target)))
+	array_pop($target);
+    if(wiki_markdown_has_markup($context, $target))
+	wiki_markdown_lost($state, l('Links and decorations in folding headings (only the text remains)'));
+    $text = wiki_markdown_rendered_text($context, $target);
 
     /* 折りたたみ。入れ子は外側のコロンを長くする */
     $inner = implode("\n\n", $children);
@@ -324,14 +336,31 @@ function wiki_markdown_has_newline($tokens) {
     return false;
 }
 
-/* 表示と同じ読み方で、対象の文字だけを取る (折りたたみの見出し・キャプション。記号は落ちる) */
+/*
+ * 表示と同じ読み方で、対象の文字だけを取る (折りたたみの見出し・キャプション。記号は落ちる)。
+ * 文字実体参照 (&copy;) は DOM では中身の無い参照なので、HTML にしてから文字に戻す
+ */
 function wiki_markdown_rendered_text(&$context, $tokens) {
     if(empty($tokens))
 	return '';
     $dom = dom_create_document();
     $sub_context = wiki_modify_context($context, array('display' => 'inline'), 1);
     wiki_convert_from_tokens($sub_context, $dom, $tokens, array('display' => 'inline', 'append_line_head' => false), 0);
-    return trim(preg_replace('/\s+/u', ' ', dom_text($dom)));
+    $text = html_entity_decode(strip_tags(dom_save_html($dom)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return trim(preg_replace('/\s+/u', ' ', $text));
+}
+
+/* 対象にリンク・強調・ファンクションなど、文字でないものがあるか (文字実体参照は文字) */
+function wiki_markdown_has_markup(&$context, $tokens) {
+    if(empty($tokens))
+	return false;
+    foreach(wiki_markdown_flatten_blocks(wiki_markdown_parse_tokens($context, $tokens, false, true, false)) as $item) {
+	if($item instanceof WikiURIToken)
+	    return true;
+	if($item instanceof WikiApplyTree && !in_array($item->id, array('entity', 'entity_number', 'plain'), true))
+	    return true;
+    }
+    return false;
 }
 
 /*
@@ -339,12 +368,22 @@ function wiki_markdown_rendered_text(&$context, $tokens) {
  * (入れ子の箇条書きや段落を保つ)。無ければ文中として。どちらも行ごとにエスケープ済み。
  */
 function wiki_markdown_item_blocks(&$state, &$context, $tokens) {
-    $tokens = wiki_markdown_strip_line_tokens($tokens);
-    if(!wiki_markdown_has_newline($tokens)) {
-	$text = trim(wiki_markdown_inline_tokens($state, $context, $tokens));
+    $stripped = wiki_markdown_strip_line_tokens($tokens);
+    /* 改行は { の直後のものも数える (-{ の次の行から書いた中身は、行頭の記法が効く) */
+    $lines = $tokens;
+    while(!empty($lines) && wiki_markdown_is_line_token(end($lines)))
+	array_pop($lines);
+    if(!wiki_markdown_has_newline($lines)) {
+	$text = trim(wiki_markdown_inline_tokens($state, $context, $stripped));
 	return $text === '' ? array() : array(wiki_markdown_escape_lines($text));
     }
-    return wiki_markdown_blocks($state, $context, wiki_markdown_parse_tokens($context, $tokens));
+    /*
+     * ブロックとして読むときは、表示 (項目は wiki_convert_from_tokens() の文中) と同じく
+     * 行頭・行末の印を落とさずに読み、中身が空白で始まるなら行頭のトークンを足さない。
+     * 落としてから読むと、-{ https://… の 1 行目が整形済みになり、-{ の次の行の
+     * 行頭の空白 (表示では整形済み) がふつうの文になっていた。
+     */
+    return wiki_markdown_blocks($state, $context, wiki_markdown_parse_tokens($context, $tokens, false, true));
 }
 
 /* ブロックの並びを、1 行目は $first の後ろに、2 行目からは $indent 桁下げてつなぐ */
@@ -584,11 +623,13 @@ function wiki_markdown_table(&$state, &$context, $block) {
 	$format = wiki_markdown_text(wiki_markdown_strip_line_tokens(array_pop($fields)));
 	$cells = array();
 	/*
-	 * 見出しの行は、行の末尾の h か、1 行目のセルが全部見出しのセル (~) のとき。
-	 * Markdown の表で見出しにできるのは 1 行目だけ
+	 * Markdown の表は 1 行目が必ず見出しの行 (見出しの行の無い表は書けない)。
+	 * wiki で見出しの行 (行の末尾の h か、セルが全部見出しのセル ~) でなければ、
+	 * 1 行目の見え方が変わるので落ちるものに数える。2 行目からはふつうの行
 	 */
-	$is_header = (strpos($format, 'h') !== false || wiki_markdown_table_all_header_cells($fields)) &&
-	    is_null($header) && empty($rows);
+	$is_header = is_null($header);
+	if($is_header && strpos($format, 'h') === false && !wiki_markdown_table_all_header_cells($fields))
+	    wiki_markdown_lost($state, l('Tables without a header row (made the first row the header)'));
 	foreach($fields as $field) {
 	    $field = wiki_markdown_strip_line_tokens($field);
 	    if(!empty($field) && $field[0] instanceof WikiSymbolToken && $field[0]->t === '~') {
@@ -621,21 +662,7 @@ function wiki_markdown_table(&$state, &$context, $block) {
 	else
 	    $rows[] = $cells;
     }
-    $columns = max(1, is_null($header) ? 0 : count($header));
-    foreach($rows as $row)
-	$columns = max($columns, count($row));
-    if(is_null($header))
-	$header = array();
-    $lines = array(wiki_markdown_table_row($header, $columns));
-    $separators = array();
-    for($i = 0; $i < $columns; $i++) {
-	$align = isset($aligns[$i]) ? $aligns[$i] : (empty($aligns) ? '' : end($aligns));
-	$separators[] = $align === 'c' ? ':---:' : ($align === 'r' ? '---:' : ($align === 'l' ? ':---' : '---'));
-    }
-    $lines[] = '| ' . implode(' | ', $separators) . ' |';
-    foreach($rows as $row)
-	$lines[] = wiki_markdown_table_row($row, $columns);
-    return implode("\n", $lines);
+    return wiki_markdown_table_lines(is_null($header) ? array() : $header, $rows, $aligns);
 }
 
 /* 行のセルが全部、見出しのセル (先頭が ~) か */
@@ -650,31 +677,57 @@ function wiki_markdown_table_all_header_cells($fields) {
     return true;
 }
 
-function wiki_markdown_table_row($cells, $columns) {
-    $cells = array_pad($cells, $columns, '');
-    $line = '|';
-    foreach($cells as $cell)
-	$line .= $cell === '' ? '  |' : ' ' . $cell . ' |';
-    return $line;
+/*
+ * 表の行を並べる。wiki 記法の保存 (wiki_normalize()) と同じく原文の桁をそろえる
+ * (幅は common_strwidth()。全角は 2)。区切り行は - を伸ばしてそろえる。
+ * $aligns は列ごとの c l r n (足りない列は最後のものを使う)。
+ */
+function wiki_markdown_table_lines($header, $rows, $aligns) {
+    $columns = count($header);
+    foreach($rows as $row)
+	$columns = max($columns, count($row));
+    $widths = array_fill(0, max(1, $columns), 3);
+    foreach(array_merge(array($header), $rows) as $cells)
+	foreach($cells as $i => $cell)
+	    $widths[$i] = max($widths[$i], common_strwidth($cell));
+
+    $separators = array();
+    foreach($widths as $i => $width) {
+	$align = isset($aligns[$i]) ? $aligns[$i] : (empty($aligns) ? '' : end($aligns));
+	$left = ($align === 'c' || $align === 'l') ? ':' : '';
+	$right = ($align === 'c' || $align === 'r') ? ':' : '';
+	$separators[] = $left . str_repeat('-', $width - strlen($left . $right)) . $right;
+    }
+    $lines = array(wiki_markdown_table_row($header, $widths),
+		   '| ' . implode(' | ', $separators) . ' |');
+    foreach($rows as $row)
+	$lines[] = wiki_markdown_table_row($row, $widths);
+    return implode("\n", $lines);
 }
 
-/* CSV 形式の表 (行頭の ,)。1 行目を見出しの行にはしない (wiki 記法でも見出しではない) */
+function wiki_markdown_table_row($cells, $widths) {
+    $fields = array();
+    foreach(array_pad($cells, count($widths), '') as $i => $cell)
+	$fields[] = $cell . str_repeat(' ', $widths[$i] - common_strwidth($cell));
+    return '| ' . implode(' | ', $fields) . ' |';
+}
+
+/*
+ * CSV 形式の表 (行頭の ,)。wiki 記法では見出しの行が無いが、Markdown の表は 1 行目が
+ * 必ず見出しの行になる (wiki_markdown_table() と同じく落ちるものに数える)
+ */
 function wiki_markdown_csv(&$state, $block) {
     $rows = array();
-    $columns = 1;
     foreach($block->children as $tree) {
 	$text = wiki_markdown_raw_text(wiki_markdown_strip_line_tokens($tree->target));
 	$cells = array();
 	foreach(str_getcsv($text, ',', '"', '\\') as $cell)
 	    $cells[] = str_replace('|', '\\|', wiki_markdown_escape(trim((string)$cell)));
 	$rows[] = $cells;
-	$columns = max($columns, count($cells));
     }
-    $lines = array(wiki_markdown_table_row(array(), $columns),
-		   '|' . str_repeat(' --- |', $columns));
-    foreach($rows as $row)
-	$lines[] = wiki_markdown_table_row($row, $columns);
-    return implode("\n", $lines);
+    wiki_markdown_lost($state, l('Tables without a header row (made the first row the header)'));
+    $header = empty($rows) ? array() : array_shift($rows);
+    return wiki_markdown_table_lines($header, $rows, array());
 }
 
 /* 木の原文 (コードの枠で残すもの)。位置が分からなければトークンから組み立てる */
@@ -793,9 +846,10 @@ function wiki_markdown_title(&$state, &$context, $tree) {
 
 /*
  * &include(対象, 指定){キャプション} → ![|指定](パス "キャプション")。
- * 対象が無い・読めない形なら null (原文の枠で残す)。
+ * 対象が無い・読めない形なら null (原文の枠で残す)。$extra_options は指定の後ろに足す語
+ * (リンクの中に置く縮小画像の !link。wiki_markdown_link_image())。
  */
-function wiki_markdown_include(&$state, &$context, $tree) {
+function wiki_markdown_include(&$state, &$context, $tree, $extra_options = array()) {
     $path = null;
     $options = array();
     global $WIKI_OPERATOR_INCLUDE_URI_HANDLERS;
@@ -822,6 +876,7 @@ function wiki_markdown_include(&$state, &$context, $tree) {
     }
     if(is_null($path))
 	return null;
+    $options = array_merge($options, $extra_options);
     /* キャプションはタイトルの欄 (素の文字)。表示と同じ文字にし、\ と " をエスケープする */
     $caption = wiki_markdown_rendered_text($context, wiki_markdown_strip_line_tokens($tree->target));
     $destination = str_replace(array(' ', '(', ')', '<', '>'), array('%20', '%28', '%29', '%3C', '%3E'), $path);
@@ -909,27 +964,43 @@ function wiki_markdown_inline_tokens(&$state, &$context, $tokens, $append_line_h
 
 function wiki_markdown_inline_items(&$state, &$context, $items) {
     $output = '';
+    /*
+     * 続いた文字のトークンはまとめてからエスケープする。&&copy; は & と copy; の
+     * 2 つのトークンになり、1 つずつでは文字実体参照に見えるものを見逃していた
+     */
+    $text = '';
     $n = count($items);
     for($i = 0; $i < $n; $i++) {
 	$item = $items[$i];
+	if($item instanceof WikiToken && !($item instanceof WikiLineHeadToken) &&
+	   !($item instanceof WikiLineTailToken) && !($item instanceof WikiURIToken) &&
+	   !wiki_markdown_is_symbol($item, '~')) {
+	    $text .= $item->t;
+	    continue;
+	}
+	$output .= wiki_markdown_escape($text);
+	$text = '';
 	if($item instanceof WikiLineHeadToken)
 	    continue;
 	if($item instanceof WikiLineTailToken) {
 	    $output .= "\n";
 	    continue;
 	}
-	if($item instanceof WikiSymbolToken && $item->t === '~' && $i + 1 < $n &&
-	   $items[$i + 1] instanceof WikiLineTailToken) {
-	    $output .= "\\";
+	if(wiki_markdown_is_symbol($item, '~')) {
+	    if($i + 1 < $n && $items[$i + 1] instanceof WikiLineTailToken)
+		$output .= "\\";
+	    /*
+	     * 行末の ~ (改行) で、行末の印を落とした中身の最後にあるもの (1 行の項目や見出し)。
+	     * 塊の最後の改行は表示に出ないので書かない (書くと ~ が文字で出る)
+	     */
+	    else if($i + 1 < $n || !wiki_markdown_is_line_end($state, $item))
+		$output .= wiki_markdown_escape($item->t);
 	    continue;
 	}
 	if($item instanceof WikiURIToken) {
-	    /* <URL> で書く。素のまま書くと、末尾の _ などがリンクから外れ、file: なども効かない */
+	    /* <URL> で書く。素のまま書くと、末尾の _ などがリンクから外れる */
+	    wiki_markdown_url_lost($state, $item->t);
 	    $output .= '<' . $item->t . '>';
-	    continue;
-	}
-	if($item instanceof WikiToken) {
-	    $output .= wiki_markdown_escape($item->t);
 	    continue;
 	}
 	if($item instanceof WikiTextTree) {
@@ -939,17 +1010,37 @@ function wiki_markdown_inline_items(&$state, &$context, $items) {
 	if($item instanceof WikiApplyTree)
 	    $output .= wiki_markdown_inline_apply($state, $context, $item);
     }
-    return $output;
+    return $output . wiki_markdown_escape($text);
+}
+
+function wiki_markdown_is_symbol($item, $symbol) {
+    return $item instanceof WikiSymbolToken && $item->t === $symbol;
+}
+
+/* 原文でそのトークンのすぐ後ろが行末 (改行か原文の終わり) か */
+function wiki_markdown_is_line_end(&$state, $token) {
+    $next = substr($state['source'], $token->position + $token->length, 1);
+    return $next === '' || $next === "\n" || $next === "\r";
+}
+
+/* file: の URL は Markdown ではリンクにならない (allow_unsafe_links が false。handler/markdown.inc) */
+function wiki_markdown_url_lost(&$state, $url) {
+    if(preg_match('/^file:/i', $url))
+	wiki_markdown_lost($state, l('Links to file: URLs (not links in Markdown)'));
 }
 
 function wiki_markdown_inline_apply(&$state, &$context, $tree) {
     switch($tree->id) {
+    /*
+     * 強調などの中身は、表示 (wiki_append_element()) と同じく行頭のトークンを足さずに読む。
+     * 足すと ''-a'' の - が箇条書きの記号として読まれ、文字が消えていた
+     */
     case 'em':
-	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target), '*');
+	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target, false), '*');
     case 'strong':
-	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target), '**');
+	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target, false), '**');
     case 'del':
-	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target), '~~');
+	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target, false), '~~');
     case 'bracelink':
 	return wiki_markdown_bracelink($state, $context, $tree);
     case 'entity': case 'entity_number':
@@ -1074,10 +1165,12 @@ function wiki_markdown_code_span($text) {
 /*
  * &link(対象, 指定){表示名}。対象は URL か [[ページ]] の引数 (ほかは raw・open などの印や、
  * ページの画面の名前)。ページの画面 (edit など) へのリンクは Markdown に写さず原文で残す。
+ * raw (ファイルそのもの。&direct はこれの別名) は wiki_markdown_direct_link()。
  */
 function wiki_markdown_link_function(&$state, &$context, $tree, $original) {
     $url = null;
     $pagename = null;
+    $is_raw = false;
     $actions = array();
     foreach((array)$tree->parameters as $tokens) {
 	$param = trim(wiki_tokens_to_string($tokens));
@@ -1087,19 +1180,158 @@ function wiki_markdown_link_function(&$state, &$context, $tree, $original) {
 	    $pagename = trim($matches[1]);
 	else if($param === 'open')
 	    wiki_markdown_lost($state, l('Opening in a new tab (>>)'));
-	else if($param !== '' && $param !== 'raw' && !preg_match('/^charset=/', $param))
+	else if($param === 'raw')
+	    $is_raw = true;
+	else if($param !== '' && !preg_match('/^charset=/', $param))
 	    $actions[] = $param;
     }
     if(!is_null($url)) {
+	wiki_markdown_url_lost($state, $url);
+	$destination = str_replace(array(' ', ')'), array('%20', '%29'), $url);
+	/* 表示名が縮小画像だけのときだけ変える (外部の画像と文字を並べたものは今までどおり写せる) */
+	$image = wiki_markdown_link_image($state, $context, $tree->target, $destination);
+	if(is_string($image))
+	    return $image;
 	$name = trim(wiki_markdown_inline_tokens($state, $context, $tree->target));
 	if($name === '')
 	    return '<' . $url . '>';
-	return '[' . $name . '](' . str_replace(array(' ', ')'), array('%20', '%29'), $url) . ')';
+	return '[' . $name . '](' . $destination . ')';
     }
-    if(!is_null($pagename) && empty($actions))
-	return wiki_markdown_page_link($pagename, wiki_markdown_plain_name($tree->target));
+    if(!is_null($pagename) && empty($actions)) {
+	$image = wiki_markdown_link_image($state, $context, $tree->target,
+					  wiki_markdown_link_destination($pagename), $pagename, $is_raw);
+	if(is_string($image))
+	    return $image;
+	if($image !== null) {
+	    $name = wiki_markdown_plain_name($tree->target);
+	    if($is_raw)
+		return wiki_markdown_direct_link($state, $context, $pagename, $name);
+	    return wiki_markdown_page_link($pagename, $name);
+	}
+    }
     wiki_markdown_kept($state, '&' . $original->id);
     return wiki_markdown_code_span(wiki_markdown_raw($state, $original));
+}
+
+/*
+ * wiki の [[行き先]] が指す、いまの人が読めるページ。無い・読めない・見出しを付けた
+ * 行き先なら null。
+ */
+function wiki_markdown_readable_page(&$context, $locate) {
+    if(strpos($locate, '#') !== false)
+	return null;
+    $pagename = page_path_to_pagename($locate, $context['page']['name'], false);
+    if($pagename === '' || !page_is_exists($pagename) || !auth_has_permission($pagename, 'read'))
+	return null;
+    return page_read($pagename);
+}
+
+/* 種別 file のページの、埋め込みの関数の名前 (画像なら file_image_embed)。file でなければ '' */
+function wiki_markdown_file_embed($page) {
+    if(is_null($page) || page_get_type($page) !== 'file')
+	return '';
+    $content_type_handler = &file_get_content_type_handler($page);
+    return isset($content_type_handler['embed']) ? $content_type_handler['embed'] : '';
+}
+
+/*
+ * &direct([[行き先]]){説明} (&link の raw)。ファイルそのものを開く文字のリンク。
+ *
+ * Markdown でファイルそのものへの文字のリンクになるのは ![説明](行き先) だけで、そうなるのは
+ * 埋め込みが文字のリンクになる種類 (PDF・テキスト・種類の分からないもの・添付 HTML・md。
+ * embed_label の印) に限られる (handler/markdown/image.inc)。md は描画した画面への
+ * リンクになる (ダウンロードではなくなる。利用者の判断 2026-10-19)。
+ *
+ * 画像・音声・動画は ![..](..) だと本文に画像や再生の枠が出るので、[説明](行き先) で
+ * ファイルのページへの文字のリンクにする (見た目を変えない)。ふつうのページ・まだ無い
+ * ページ・読めないページも同じ (ふつうのページを ![..](..) にすると取り込みになる)。
+ * どちらも落ちるものとして数える。
+ */
+function wiki_markdown_direct_link(&$state, &$context, $locate, $name) {
+    $locate = trim($locate);
+    $name = trim($name);
+    $page = wiki_markdown_readable_page($context, $locate);
+    if(!is_null($page) && page_get_type($page) === 'file') {
+	$content_type_handler = &file_get_content_type_handler($page);
+	if(!empty($content_type_handler['embed_label'])) {
+	    /* 説明の末尾の |… は大きさなどの指定として読まれるので、| は全角にする */
+	    return '![' . wiki_markdown_escape(str_replace('|', '｜', $name)) . '](' .
+		wiki_markdown_link_destination($locate) . ')';
+	}
+    }
+    wiki_markdown_lost($state, l('Direct links to images, audio, video and pages (&direct) (made links to the page)'));
+    /* 説明が無ければ、![](x.pdf) と同じくファイル名 (最後の部分) を出す */
+    if($name === '')
+	$name = page_get_simplename(page_path_to_pagename($locate, $context['page']['name']));
+    return '[' . wiki_markdown_escape($name) . '](' . wiki_markdown_link_destination($locate) . ')';
+}
+
+/*
+ * リンクの表示名が &include の画像 1 つだけのとき (縮小画像を押すと元の画像が開く書き方)、
+ * その画像をリンクにした Markdown。表示名に &include が無ければ false (ふつうの表示名)。
+ * 画像でない・ほかの文字と並んでいるなど、Markdown で書けなければ null (原文の枠で残す)。
+ *
+ *   &direct([[./a.png]]){&include([[./a.png]],100x100);}
+ *       → ![|100x100](./a.png)
+ *         同じ画像なら、添付の画像の埋め込みそのもの (押すと画像そのもの) と同じになる
+ *   &link([[行き先]]){&include([[./小.png]]);}  (行き先は URL でもよい)
+ *       → [![|!link](./小.png)](行き先)
+ *         !link で画像の側のリンクを外す (リンクの中にリンクを入れない)。&direct で
+ *         別の画像なら、行き先のファイルのページへのリンクになる (落ちるものに数える)
+ *
+ * $destination は Markdown の行き先。$locate は wiki の [[行き先]] (URL なら null)。
+ */
+function wiki_markdown_link_image(&$state, &$context, $tokens, $destination, $locate = null,
+				  $is_raw = false) {
+    $items = array();
+    $has_include = false;
+    $blocks = wiki_markdown_parse_tokens($context, wiki_markdown_strip_line_tokens($tokens), false, true);
+    foreach(wiki_markdown_flatten_blocks($blocks) as $item) {
+	if(wiki_markdown_is_line_token($item) ||
+	   ($item instanceof WikiToken && trim($item->t) === '') ||
+	   ($item instanceof WikiTextTree && wiki_tokens_is_whitespace($item->target)))
+	    continue;
+	if($item instanceof WikiApplyTree) {
+	    $item = wiki_markdown_resolve_alias($context, $item);
+	    if($item->id === 'include')
+		$has_include = true;
+	}
+	$items[] = $item;
+    }
+    if(!$has_include)
+	return false;
+    if(count($items) !== 1)
+	return null;
+    $include = $items[0];
+
+    /* 取り込む先が画像か。添付は種類で、URL は &include と同じ正規表現で見る */
+    global $WIKI_OPERATOR_INCLUDE_URI_HANDLERS;
+    $parameters = array_values((array)$include->parameters);
+    $first = empty($parameters) ? array() : $parameters[0];
+    $is_url = count($first) == 1 && $first[0] instanceof WikiURIToken;
+    if($is_url) {
+	if(!preg_match($WIKI_OPERATOR_INCLUDE_URI_HANDLERS['image']['regex'], $first[0]->t))
+	    return null;
+	$image_page = null;
+    } else {
+	if(!preg_match('/^\[\[(.*)\]\]$/', trim(wiki_tokens_to_string($first)), $matches))
+	    return null;
+	$image_page = wiki_markdown_readable_page($context, trim($matches[1]));
+	if(wiki_markdown_file_embed($image_page) !== 'file_image_embed')
+	    return null;
+    }
+
+    if($is_raw && !is_null($image_page) && !is_null($locate)) {
+	$target = wiki_markdown_readable_page($context, trim($locate));
+	if(!is_null($target) && $target['name'] === $image_page['name'])
+	    return wiki_markdown_include($state, $context, $include);
+    }
+    $image = wiki_markdown_include($state, $context, $include, $is_url ? array() : array('!link'));
+    if(is_null($image))
+	return null;
+    if($is_raw)
+	wiki_markdown_lost($state, l('Direct links to images, audio, video and pages (&direct) (made links to the page)'));
+    return '[' . $image . '](' . $destination . ')';
 }
 
 /* ページへのリンク。[[行き先|表示名]] は wiki と同じ行き先の規則なので、並べ替えるだけ */
@@ -1184,7 +1416,9 @@ function wiki_markdown_bracelink(&$state, &$context, $tree) {
 
     if(count($locate_tokens) == 1 && $locate_tokens[0] instanceof WikiURIToken) {
 	$url = $locate_tokens[0]->t;
-	$name = trim(wiki_markdown_inline_tokens($state, $context, $name_tokens));
+	wiki_markdown_url_lost($state, $url);
+	/* 表示の名前も行頭のトークンを足さずに読む (wiki_operator_bracelink()) */
+	$name = trim(wiki_markdown_inline_tokens($state, $context, $name_tokens, false));
 	if($name === '')
 	    return '<' . $url . '>';
 	return '[' . $name . '](' . str_replace(array(' ', ')'), array('%20', '%29'), $url) . ')';
@@ -1201,8 +1435,13 @@ function wiki_markdown_bracelink(&$state, &$context, $tree) {
  */
 function wiki_markdown_escape($text) {
     $text = preg_replace('/([\\\\`*_\[\]<>|~@])/u', '\\\\$1', $text);
-    /* www. で始まる語は GFM の自動リンクになるので、. をエスケープする */
+    /*
+     * www. で始まる語と http:// などは GFM の自動リンクになるので、. と : をエスケープする。
+     * wiki でリンクになる URL は字句解析で別のトークン (<URL> で書く) なので、ここに来るのは
+     * wiki でリンクにならない文字 (""..."" の中・引用の中など)
+     */
     $text = preg_replace('/\b(www)\./i', '$1\\\\.', $text);
+    $text = preg_replace('/\b(https?|ftp)(:\/\/)/i', '$1\\\\$2', $text);
     /* 文字実体参照に見えるもの (&amp; など) は & をエスケープする */
     return preg_replace('/&(?=#?[A-Za-z0-9]+;)/', '\\\\&', $text);
 }

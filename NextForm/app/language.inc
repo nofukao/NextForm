@@ -298,6 +298,10 @@ $LANGUAGE['ja'] = array(
     'Line numbers and wrapping of preformatted text' => '整形済みテキストの行番号と折り返し',
     'Cell merges, colors, widths and calculations of tables' => '表のセル結合・色・幅・計算',
     'Footer rows of tables (made ordinary rows)' => '表のフッターの行 (ふつうの行にした)',
+    'Tables without a header row (made the first row the header)' => '見出しの行の無い表 (1行目を見出しにした)',
+    'Line breaks in headings' => '見出しの中の改行',
+    'Links and decorations in folding headings (only the text remains)' => '折りたたみの見出しのリンクや装飾 (文字だけ残した)',
+    'Links to file: URLs (not links in Markdown)' => 'file: のリンク (Markdown ではリンクにならない)',
     'Excerpt marks (&more)' => '抜粋の区切り (&more)',
     'Some options of &include' => '&include の一部の指定',
     'Fields of page lists (shown by page name)' => 'ページの一覧の項目 (ページ名で出す)',
@@ -311,6 +315,8 @@ $LANGUAGE['ja'] = array(
     'Line breaks in table cells' => '表のセルの中の改行',
     'Notation not in Markdown (shown as text)' => 'Markdown に無い記法 (文字のまま出した)',
     'Pages pulled in in the middle of a sentence (made links)' => '文中のページの取り込み (リンクにした)',
+    'Direct links to images, audio, video and pages (&direct) (made links to the page)' =>
+    '画像・音声・動画・ページを直接開くリンク (&direct。そのページへのリンクにした)',
     'Restore an old version of $pagename$' => '$pagename$ を前の版に戻す',
     'Overwrite the current $pagename$ with the text and the type ($type$) of the version at $time$. The current content is kept in the history, so this can be undone in the same way.' =>
     '今の $pagename$ を，$time$時点の版の本文と種別($type$)で上書きします．今の内容は履歴に残るので，同じ方法で元に戻せます．',

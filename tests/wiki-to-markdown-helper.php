@@ -8,6 +8,7 @@
  *   guest <権限>              ログインしていない利用者の権限を決める (read / write)
  *   write-wiki <名前> <ファイル> 種別 wiki のページを書く (画面から保存したときと同じく normalize を通す)
  *   write-wiki-guest <名前> <ファイル> 同じく、ログインしていない利用者として書く
+ *   attach <名前> <ファイル> <Content-type> 種別 file のページ (添付) を書く
  *   set-tags <名前> <タグ..>   タグの画面と同じ経路でタグを付ける
  *   set-meta-title <名前> <題名> メタ情報の画面と同じ経路で題名を付ける
  *   meta <名前> <項目>        meta の値 (meta=...)
@@ -77,6 +78,22 @@ case 'write-wiki':
     $normalize = handler_function($page, 'normalize');
     if($normalize !== false)
 	$contents = $normalize($page, $contents);
+    $ticket = default_value($page['meta']['ticket'], '');
+    printf("written=%d\n", page_write($page, $contents, $ticket) ? 1 : 0);
+    break;
+
+case 'attach':
+    /* tests/markdown-helper.php の attach と同じ */
+    $page = page_create($rest[0]);
+    storage_page_read($page);
+    page_setup($page);
+    $page['meta']['type'] = 'file';
+    $page['meta']['Content-type'] = $rest[2];
+    $page['meta']['original_filename'] = page_get_simplename($rest[0]);
+    $contents = array('upload_file' => $rest[1]);
+    $content_type_handler = &file_get_content_type_handler($page);
+    if(!empty($content_type_handler['write']) && function_exists($content_type_handler['write']))
+	$content_type_handler['write']($page, $contents);
     $ticket = default_value($page['meta']['ticket'], '');
     printf("written=%d\n", page_write($page, $contents, $ticket) ? 1 : 0);
     break;
