@@ -339,12 +339,22 @@ function wiki_markdown_rendered_text(&$context, $tokens) {
  * (入れ子の箇条書きや段落を保つ)。無ければ文中として。どちらも行ごとにエスケープ済み。
  */
 function wiki_markdown_item_blocks(&$state, &$context, $tokens) {
-    $tokens = wiki_markdown_strip_line_tokens($tokens);
-    if(!wiki_markdown_has_newline($tokens)) {
-	$text = trim(wiki_markdown_inline_tokens($state, $context, $tokens));
+    $stripped = wiki_markdown_strip_line_tokens($tokens);
+    /* 改行は { の直後のものも数える (-{ の次の行から書いた中身は、行頭の記法が効く) */
+    $lines = $tokens;
+    while(!empty($lines) && wiki_markdown_is_line_token(end($lines)))
+	array_pop($lines);
+    if(!wiki_markdown_has_newline($lines)) {
+	$text = trim(wiki_markdown_inline_tokens($state, $context, $stripped));
 	return $text === '' ? array() : array(wiki_markdown_escape_lines($text));
     }
-    return wiki_markdown_blocks($state, $context, wiki_markdown_parse_tokens($context, $tokens));
+    /*
+     * ブロックとして読むときは、表示 (項目は wiki_convert_from_tokens() の文中) と同じく
+     * 行頭・行末の印を落とさずに読み、中身が空白で始まるなら行頭のトークンを足さない。
+     * 落としてから読むと、-{ https://… の 1 行目が整形済みになり、-{ の次の行の
+     * 行頭の空白 (表示では整形済み) がふつうの文になっていた。
+     */
+    return wiki_markdown_blocks($state, $context, wiki_markdown_parse_tokens($context, $tokens, false, true));
 }
 
 /* ブロックの並びを、1 行目は $first の後ろに、2 行目からは $indent 桁下げてつなぐ */
