@@ -2530,8 +2530,9 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |箇条書きの中の空行|そこで箇条書きが''終わります''|終わりません．1つの箇条書きのままです|Wiki記法で2つに分けたいときは空行を入れます．Markdown記法では片方の記号を変えます(""- "" と ""* "")．どちらの記法でも，空行を入れた所だけが同じだけ空きます|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
 |表の書式指定|行末の h f c l r n など|区切り行で列の揃えを指定|Markdown記法で指定できるのは列の揃えだけです|
+|表の見出しの行|行末の h (無くてもよい)|1行目が必ず見出しの行(2行目に区切り行が要る)|Markdown記法では，見出しの行の無い表は書けません|
 |表のセル結合|&< &> &^ &_|なし|Markdown記法にセル結合はありません|
-|表の桁揃え|保存時に自動でそろえる|そろえない|Markdown記法の原文は書いたとおりに残します|
+|表の桁揃え|保存時に自動でそろえる|そろえない|Markdown記法の原文は書いたとおりに残します(Wiki記法から変換した表は，そろえて書き出します)|
 |コードのハイライト|行頭スペースのあとに (code)|""$bq$$bq$$bq$php""|Wiki記法は色分けまで行われます．Markdown記法は言語名が記録されるだけで，色分けはされません|
 |チェックボックス|なし|""- [ ] 項目""|Markdown記法だけの機能です|
 |脚注|なし|""本文[^1]"" と ""[^1]: 中身""|同上|
@@ -2574,6 +2575,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 縮小画像が別の画像のときは ""[![|!link](./小.png)](./写真.png)"" にします．押すと写真.png のファイルのページが開きます．
 ""&link(https://example.com/){&include([[./バナー.png]]);}"" のように外部のサイトへのリンクにした縮小画像も，""[![|!link](./バナー.png)](https://example.com/)"" にします．
 -&&color や &&size などの装飾は，中の文字だけを残します．
+-表は1行目を見出しの行にします(Markdown記法の表には見出しの行が要るため)．見出しの行(行末の h)の無かった表は，1行目の見え方が変わるので落ちるものに出ます．表の桁はそろえて書き出します．
 -&[&[表示名:ページ名&]&] は &[&[ページ名&|表示名&]&] に並べ替えます．行き先の決まりは同じなので，行き先は書き換えません．
 
 変換前の版は履歴に残り，本文の末尾に「このページは、wikiページから変換して作りました。(変換前の版)」とその版へのリンクが付きます．
@@ -2630,8 +2632,9 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |empty line inside a list|the list ''ends'' there|it does not end; it stays one list|In Wiki notation an empty line is how you split a list in two. In Markdown notation you change the marker of one of them (""- "" and ""* ""). In both notations only the place with the empty line gets a gap, of the same width|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
 |table formatting|h f c l r n and so on at the end of the row|column alignment in the separator row|All you can set in Markdown notation is the column alignment|
+|header row of a table|h at the end of the row (may be left out)|the first row is always the header row (the second row must be a separator row)|Markdown notation cannot write a table without a header row|
 |merging table cells|&< &> &^ &_|none|Markdown notation cannot merge cells|
-|lining up table columns|done automatically when saved|not done|The source in Markdown notation stays exactly as written|
+|lining up table columns|done automatically when saved|not done|The source in Markdown notation stays exactly as written (tables converted from Wiki notation are written out lined up)|
 |highlighting code|(code) after the leading space|""$bq$$bq$$bq$php""|Wiki notation colours the code. Markdown notation only records the language name; it is not coloured|
 |checkbox|none|""- [ ] item""|Only Markdown notation has this|
 |footnote|none|""text[^1]"" and ""[^1]: the note""|as above|
@@ -2675,6 +2678,7 @@ The rules are as follows.
 When the thumbnail is a different image, it becomes ""[![|!link](./small.png)](./photo.png)"". Pressing it opens the page of the file photo.png.
 A thumbnail made a link to another site, as in ""&link(https://example.com/){&include([[./banner.png]]);}"", becomes ""[![|!link](./banner.png)](https://example.com/)"" too.
 -Decorations such as &&color and &&size keep only the text inside.
+-The first row of a table becomes its header row (a table in Markdown notation needs one). For a table that had no header row (h at the end of the row), the first row looks different, so it is listed among the things that are dropped. The columns of tables are written out lined up.
 -&[&[display name:page name&]&] is reordered to &[&[page name&|display name&]&]. Where it points is decided in the same way, so the destination is not rewritten.
 
 The version before conversion is kept in the history, and a sentence with a link to that version is added at the end of the text.
