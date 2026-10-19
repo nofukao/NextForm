@@ -2,27 +2,27 @@
 
 ## 強調やリンクの中身の頭
 
-**マイナス** と *縦棒\|* と ~~カンマ~~ と [カンマの名前](https://example.com/x)
+**-マイナス** と *\|縦棒\|* と ~~,カンマ~~ と [,カンマの名前](https://example.com/x)
 
 ## 文字のままのもの
 
-&copy; と &heart; と https://example.com/plain と www\.example.com
+\&copy; と \&heart; と https\://example.com/plain と www\.example.com
 
-> 引用の中の https://example.com/quote
+> 引用の中の https\://example.com/quote
 
 ## file: のリンク
 
 <file://localhost/tmp/x> と [名前](file://localhost/tmp/y)
 
-## 行末の改行\~
+## 行末の改行
 
-- 項目の行末\~
+- 項目の行末
 - 次の項目
 
-行頭のチルダの行末\~
+行頭のチルダの行末
 
-## 見出しの\ 改行
+## 見出しの 改行
 
-:::details ## リンク と の見出し~
+:::details ## リンク と © の見出し
 中身
 :::

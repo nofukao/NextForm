@@ -269,16 +269,28 @@ function wiki_markdown_section(&$state, &$context, $tree) {
     $is_optional = in_array('optional', $params, true);
     $children = wiki_markdown_blocks($state, $context, $tree->children);
 
+    $target = wiki_markdown_strip_line_tokens($tree->target);
     if(!$is_optional) {
-	$text = trim(str_replace("\n", ' ', wiki_markdown_inline_tokens($state, $context,
-									  wiki_markdown_strip_line_tokens($tree->target))));
+	$text = wiki_markdown_inline_tokens($state, $context, $target);
+	/* Markdown の見出しは 1 行。&br; などの改行は空白にする (\ を残すと文字で出る) */
+	if(strpos($text, "\\\n") !== false)
+	    wiki_markdown_lost($state, l('Line breaks in headings'));
+	$text = trim(str_replace(array("\\\n", "\n"), ' ', $text));
 	$blocks = array();
 	if($text !== '')
 	    $blocks[] = str_repeat('#', $level) . ' ' . wiki_markdown_heading_text($text);
 	return array_merge($blocks, $children);
     }
-    /* 折りたたみの見出しは記法を読まない素の文字。表示と同じ文字にする (記号は落とす) */
-    $text = wiki_markdown_rendered_text($context, wiki_markdown_strip_line_tokens($tree->target));
+    /*
+     * 折りたたみの見出しは記法を読まない素の文字。表示と同じ文字にする (記号は落とす)。
+     * リンクや強調があれば、文字だけ残るので落ちるものに数える。行末の ~ (改行) は書かない
+     */
+    if(!empty($target) && wiki_markdown_is_symbol(end($target), '~') &&
+       wiki_markdown_is_line_end($state, end($target)))
+	array_pop($target);
+    if(wiki_markdown_has_markup($context, $target))
+	wiki_markdown_lost($state, l('Links and decorations in folding headings (only the text remains)'));
+    $text = wiki_markdown_rendered_text($context, $target);
 
     /* 折りたたみ。入れ子は外側のコロンを長くする */
     $inner = implode("\n\n", $children);
@@ -324,14 +336,31 @@ function wiki_markdown_has_newline($tokens) {
     return false;
 }
 
-/* 表示と同じ読み方で、対象の文字だけを取る (折りたたみの見出し・キャプション。記号は落ちる) */
+/*
+ * 表示と同じ読み方で、対象の文字だけを取る (折りたたみの見出し・キャプション。記号は落ちる)。
+ * 文字実体参照 (&copy;) は DOM では中身の無い参照なので、HTML にしてから文字に戻す
+ */
 function wiki_markdown_rendered_text(&$context, $tokens) {
     if(empty($tokens))
 	return '';
     $dom = dom_create_document();
     $sub_context = wiki_modify_context($context, array('display' => 'inline'), 1);
     wiki_convert_from_tokens($sub_context, $dom, $tokens, array('display' => 'inline', 'append_line_head' => false), 0);
-    return trim(preg_replace('/\s+/u', ' ', dom_text($dom)));
+    $text = html_entity_decode(strip_tags(dom_save_html($dom)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return trim(preg_replace('/\s+/u', ' ', $text));
+}
+
+/* 対象にリンク・強調・ファンクションなど、文字でないものがあるか (文字実体参照は文字) */
+function wiki_markdown_has_markup(&$context, $tokens) {
+    if(empty($tokens))
+	return false;
+    foreach(wiki_markdown_flatten_blocks(wiki_markdown_parse_tokens($context, $tokens, false, true, false)) as $item) {
+	if($item instanceof WikiURIToken)
+	    return true;
+	if($item instanceof WikiApplyTree && !in_array($item->id, array('entity', 'entity_number', 'plain'), true))
+	    return true;
+    }
+    return false;
 }
 
 /*
@@ -935,27 +964,43 @@ function wiki_markdown_inline_tokens(&$state, &$context, $tokens, $append_line_h
 
 function wiki_markdown_inline_items(&$state, &$context, $items) {
     $output = '';
+    /*
+     * 続いた文字のトークンはまとめてからエスケープする。&&copy; は & と copy; の
+     * 2 つのトークンになり、1 つずつでは文字実体参照に見えるものを見逃していた
+     */
+    $text = '';
     $n = count($items);
     for($i = 0; $i < $n; $i++) {
 	$item = $items[$i];
+	if($item instanceof WikiToken && !($item instanceof WikiLineHeadToken) &&
+	   !($item instanceof WikiLineTailToken) && !($item instanceof WikiURIToken) &&
+	   !wiki_markdown_is_symbol($item, '~')) {
+	    $text .= $item->t;
+	    continue;
+	}
+	$output .= wiki_markdown_escape($text);
+	$text = '';
 	if($item instanceof WikiLineHeadToken)
 	    continue;
 	if($item instanceof WikiLineTailToken) {
 	    $output .= "\n";
 	    continue;
 	}
-	if($item instanceof WikiSymbolToken && $item->t === '~' && $i + 1 < $n &&
-	   $items[$i + 1] instanceof WikiLineTailToken) {
-	    $output .= "\\";
+	if(wiki_markdown_is_symbol($item, '~')) {
+	    if($i + 1 < $n && $items[$i + 1] instanceof WikiLineTailToken)
+		$output .= "\\";
+	    /*
+	     * 行末の ~ (改行) で、行末の印を落とした中身の最後にあるもの (1 行の項目や見出し)。
+	     * 塊の最後の改行は表示に出ないので書かない (書くと ~ が文字で出る)
+	     */
+	    else if($i + 1 < $n || !wiki_markdown_is_line_end($state, $item))
+		$output .= wiki_markdown_escape($item->t);
 	    continue;
 	}
 	if($item instanceof WikiURIToken) {
-	    /* <URL> で書く。素のまま書くと、末尾の _ などがリンクから外れ、file: なども効かない */
+	    /* <URL> で書く。素のまま書くと、末尾の _ などがリンクから外れる */
+	    wiki_markdown_url_lost($state, $item->t);
 	    $output .= '<' . $item->t . '>';
-	    continue;
-	}
-	if($item instanceof WikiToken) {
-	    $output .= wiki_markdown_escape($item->t);
 	    continue;
 	}
 	if($item instanceof WikiTextTree) {
@@ -965,17 +1010,37 @@ function wiki_markdown_inline_items(&$state, &$context, $items) {
 	if($item instanceof WikiApplyTree)
 	    $output .= wiki_markdown_inline_apply($state, $context, $item);
     }
-    return $output;
+    return $output . wiki_markdown_escape($text);
+}
+
+function wiki_markdown_is_symbol($item, $symbol) {
+    return $item instanceof WikiSymbolToken && $item->t === $symbol;
+}
+
+/* 原文でそのトークンのすぐ後ろが行末 (改行か原文の終わり) か */
+function wiki_markdown_is_line_end(&$state, $token) {
+    $next = substr($state['source'], $token->position + $token->length, 1);
+    return $next === '' || $next === "\n" || $next === "\r";
+}
+
+/* file: の URL は Markdown ではリンクにならない (allow_unsafe_links が false。handler/markdown.inc) */
+function wiki_markdown_url_lost(&$state, $url) {
+    if(preg_match('/^file:/i', $url))
+	wiki_markdown_lost($state, l('Links to file: URLs (not links in Markdown)'));
 }
 
 function wiki_markdown_inline_apply(&$state, &$context, $tree) {
     switch($tree->id) {
+    /*
+     * 強調などの中身は、表示 (wiki_append_element()) と同じく行頭のトークンを足さずに読む。
+     * 足すと ''-a'' の - が箇条書きの記号として読まれ、文字が消えていた
+     */
     case 'em':
-	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target), '*');
+	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target, false), '*');
     case 'strong':
-	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target), '**');
+	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target, false), '**');
     case 'del':
-	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target), '~~');
+	return wiki_markdown_wrap($state, wiki_markdown_inline_tokens($state, $context, $tree->target, false), '~~');
     case 'bracelink':
 	return wiki_markdown_bracelink($state, $context, $tree);
     case 'entity': case 'entity_number':
@@ -1121,6 +1186,7 @@ function wiki_markdown_link_function(&$state, &$context, $tree, $original) {
 	    $actions[] = $param;
     }
     if(!is_null($url)) {
+	wiki_markdown_url_lost($state, $url);
 	$destination = str_replace(array(' ', ')'), array('%20', '%29'), $url);
 	/* 表示名が縮小画像だけのときだけ変える (外部の画像と文字を並べたものは今までどおり写せる) */
 	$image = wiki_markdown_link_image($state, $context, $tree->target, $destination);
@@ -1350,7 +1416,9 @@ function wiki_markdown_bracelink(&$state, &$context, $tree) {
 
     if(count($locate_tokens) == 1 && $locate_tokens[0] instanceof WikiURIToken) {
 	$url = $locate_tokens[0]->t;
-	$name = trim(wiki_markdown_inline_tokens($state, $context, $name_tokens));
+	wiki_markdown_url_lost($state, $url);
+	/* 表示の名前も行頭のトークンを足さずに読む (wiki_operator_bracelink()) */
+	$name = trim(wiki_markdown_inline_tokens($state, $context, $name_tokens, false));
 	if($name === '')
 	    return '<' . $url . '>';
 	return '[' . $name . '](' . str_replace(array(' ', ')'), array('%20', '%29'), $url) . ')';
@@ -1367,8 +1435,13 @@ function wiki_markdown_bracelink(&$state, &$context, $tree) {
  */
 function wiki_markdown_escape($text) {
     $text = preg_replace('/([\\\\`*_\[\]<>|~@])/u', '\\\\$1', $text);
-    /* www. で始まる語は GFM の自動リンクになるので、. をエスケープする */
+    /*
+     * www. で始まる語と http:// などは GFM の自動リンクになるので、. と : をエスケープする。
+     * wiki でリンクになる URL は字句解析で別のトークン (<URL> で書く) なので、ここに来るのは
+     * wiki でリンクにならない文字 (""..."" の中・引用の中など)
+     */
     $text = preg_replace('/\b(www)\./i', '$1\\\\.', $text);
+    $text = preg_replace('/\b(https?|ftp)(:\/\/)/i', '$1\\\\$2', $text);
     /* 文字実体参照に見えるもの (&amp; など) は & をエスケープする */
     return preg_replace('/&(?=#?[A-Za-z0-9]+;)/', '\\\\&', $text);
 }
