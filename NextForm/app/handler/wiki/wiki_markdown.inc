@@ -584,11 +584,13 @@ function wiki_markdown_table(&$state, &$context, $block) {
 	$format = wiki_markdown_text(wiki_markdown_strip_line_tokens(array_pop($fields)));
 	$cells = array();
 	/*
-	 * 見出しの行は、行の末尾の h か、1 行目のセルが全部見出しのセル (~) のとき。
-	 * Markdown の表で見出しにできるのは 1 行目だけ
+	 * Markdown の表は 1 行目が必ず見出しの行 (見出しの行の無い表は書けない)。
+	 * wiki で見出しの行 (行の末尾の h か、セルが全部見出しのセル ~) でなければ、
+	 * 1 行目の見え方が変わるので落ちるものに数える。2 行目からはふつうの行
 	 */
-	$is_header = (strpos($format, 'h') !== false || wiki_markdown_table_all_header_cells($fields)) &&
-	    is_null($header) && empty($rows);
+	$is_header = is_null($header);
+	if($is_header && strpos($format, 'h') === false && !wiki_markdown_table_all_header_cells($fields))
+	    wiki_markdown_lost($state, l('Tables without a header row (made the first row the header)'));
 	foreach($fields as $field) {
 	    $field = wiki_markdown_strip_line_tokens($field);
 	    if(!empty($field) && $field[0] instanceof WikiSymbolToken && $field[0]->t === '~') {
@@ -621,21 +623,7 @@ function wiki_markdown_table(&$state, &$context, $block) {
 	else
 	    $rows[] = $cells;
     }
-    $columns = max(1, is_null($header) ? 0 : count($header));
-    foreach($rows as $row)
-	$columns = max($columns, count($row));
-    if(is_null($header))
-	$header = array();
-    $lines = array(wiki_markdown_table_row($header, $columns));
-    $separators = array();
-    for($i = 0; $i < $columns; $i++) {
-	$align = isset($aligns[$i]) ? $aligns[$i] : (empty($aligns) ? '' : end($aligns));
-	$separators[] = $align === 'c' ? ':---:' : ($align === 'r' ? '---:' : ($align === 'l' ? ':---' : '---'));
-    }
-    $lines[] = '| ' . implode(' | ', $separators) . ' |';
-    foreach($rows as $row)
-	$lines[] = wiki_markdown_table_row($row, $columns);
-    return implode("\n", $lines);
+    return wiki_markdown_table_lines(is_null($header) ? array() : $header, $rows, $aligns);
 }
 
 /* 行のセルが全部、見出しのセル (先頭が ~) か */
@@ -650,31 +638,57 @@ function wiki_markdown_table_all_header_cells($fields) {
     return true;
 }
 
-function wiki_markdown_table_row($cells, $columns) {
-    $cells = array_pad($cells, $columns, '');
-    $line = '|';
-    foreach($cells as $cell)
-	$line .= $cell === '' ? '  |' : ' ' . $cell . ' |';
-    return $line;
+/*
+ * 表の行を並べる。wiki 記法の保存 (wiki_normalize()) と同じく原文の桁をそろえる
+ * (幅は common_strwidth()。全角は 2)。区切り行は - を伸ばしてそろえる。
+ * $aligns は列ごとの c l r n (足りない列は最後のものを使う)。
+ */
+function wiki_markdown_table_lines($header, $rows, $aligns) {
+    $columns = count($header);
+    foreach($rows as $row)
+	$columns = max($columns, count($row));
+    $widths = array_fill(0, max(1, $columns), 3);
+    foreach(array_merge(array($header), $rows) as $cells)
+	foreach($cells as $i => $cell)
+	    $widths[$i] = max($widths[$i], common_strwidth($cell));
+
+    $separators = array();
+    foreach($widths as $i => $width) {
+	$align = isset($aligns[$i]) ? $aligns[$i] : (empty($aligns) ? '' : end($aligns));
+	$left = ($align === 'c' || $align === 'l') ? ':' : '';
+	$right = ($align === 'c' || $align === 'r') ? ':' : '';
+	$separators[] = $left . str_repeat('-', $width - strlen($left . $right)) . $right;
+    }
+    $lines = array(wiki_markdown_table_row($header, $widths),
+		   '| ' . implode(' | ', $separators) . ' |');
+    foreach($rows as $row)
+	$lines[] = wiki_markdown_table_row($row, $widths);
+    return implode("\n", $lines);
 }
 
-/* CSV 形式の表 (行頭の ,)。1 行目を見出しの行にはしない (wiki 記法でも見出しではない) */
+function wiki_markdown_table_row($cells, $widths) {
+    $fields = array();
+    foreach(array_pad($cells, count($widths), '') as $i => $cell)
+	$fields[] = $cell . str_repeat(' ', $widths[$i] - common_strwidth($cell));
+    return '| ' . implode(' | ', $fields) . ' |';
+}
+
+/*
+ * CSV 形式の表 (行頭の ,)。wiki 記法では見出しの行が無いが、Markdown の表は 1 行目が
+ * 必ず見出しの行になる (wiki_markdown_table() と同じく落ちるものに数える)
+ */
 function wiki_markdown_csv(&$state, $block) {
     $rows = array();
-    $columns = 1;
     foreach($block->children as $tree) {
 	$text = wiki_markdown_raw_text(wiki_markdown_strip_line_tokens($tree->target));
 	$cells = array();
 	foreach(str_getcsv($text, ',', '"', '\\') as $cell)
 	    $cells[] = str_replace('|', '\\|', wiki_markdown_escape(trim((string)$cell)));
 	$rows[] = $cells;
-	$columns = max($columns, count($cells));
     }
-    $lines = array(wiki_markdown_table_row(array(), $columns),
-		   '|' . str_repeat(' --- |', $columns));
-    foreach($rows as $row)
-	$lines[] = wiki_markdown_table_row($row, $columns);
-    return implode("\n", $lines);
+    wiki_markdown_lost($state, l('Tables without a header row (made the first row the header)'));
+    $header = empty($rows) ? array() : array_shift($rows);
+    return wiki_markdown_table_lines($header, $rows, array());
 }
 
 /* 木の原文 (コードの枠で残すもの)。位置が分からなければトークンから組み立てる */

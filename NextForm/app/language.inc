@@ -298,6 +298,7 @@ $LANGUAGE['ja'] = array(
     'Line numbers and wrapping of preformatted text' => '整形済みテキストの行番号と折り返し',
     'Cell merges, colors, widths and calculations of tables' => '表のセル結合・色・幅・計算',
     'Footer rows of tables (made ordinary rows)' => '表のフッターの行 (ふつうの行にした)',
+    'Tables without a header row (made the first row the header)' => '見出しの行の無い表 (1行目を見出しにした)',
     'Excerpt marks (&more)' => '抜粋の区切り (&more)',
     'Some options of &include' => '&include の一部の指定',
     'Fields of page lists (shown by page name)' => 'ページの一覧の項目 (ページ名で出す)',
