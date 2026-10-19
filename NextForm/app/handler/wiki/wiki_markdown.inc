@@ -1203,7 +1203,7 @@ function wiki_markdown_link_function(&$state, &$context, $tree, $original) {
 	if(is_string($image))
 	    return $image;
 	if($image !== null) {
-	    $name = wiki_markdown_plain_name($tree->target);
+	    $name = wiki_markdown_plain_name($context, $tree->target);
 	    if($is_raw)
 		return wiki_markdown_direct_link($state, $context, $pagename, $name);
 	    return wiki_markdown_page_link($pagename, $name);
@@ -1361,10 +1361,13 @@ function wiki_markdown_link_destination($locate) {
     return str_replace(array(' ', '(', ')', '<', '>'), array('%20', '%28', '%29', '%3C', '%3E'), $path . $section);
 }
 
-/* 表示名の文字。[[..|..]] の表示名は装飾が効かないので、記号を落とした文字だけ */
-function wiki_markdown_plain_name($tokens) {
-    $text = wiki_markdown_raw_text(wiki_markdown_strip_line_tokens($tokens));
-    return str_replace(array("'''", "''", '%%'), '', $text);
+/*
+ * 表示名の文字。[[..|..]] の表示名は装飾が効かない素の文字なので、表示と同じ文字にする
+ * (強調などの記号は落ち、&& は & に、&copy; は © になる)。原文のままにすると
+ * [[&&link:ページ]] が「&&link」と出ていた
+ */
+function wiki_markdown_plain_name(&$context, $tokens) {
+    return wiki_markdown_rendered_text($context, wiki_markdown_strip_line_tokens($tokens));
 }
 
 /*
@@ -1424,7 +1427,7 @@ function wiki_markdown_bracelink(&$state, &$context, $tree) {
 	return '[' . $name . '](' . str_replace(array(' ', ')'), array('%20', '%29'), $url) . ')';
     }
     return wiki_markdown_page_link(wiki_tokens_to_string($locate_tokens),
-				   empty($name_tokens) ? '' : wiki_markdown_plain_name($name_tokens));
+				   empty($name_tokens) ? '' : wiki_markdown_plain_name($context, $name_tokens));
 }
 
 /* ---- エスケープ ----------------------------------------------------- */
