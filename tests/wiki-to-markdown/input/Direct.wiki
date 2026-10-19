@@ -22,4 +22,6 @@ raw を書いた link でも &link([[./a.pdf]],raw,open){開く}。
 
 ふつうのページへ &link([[WikiMdTest/Clean]]){&include([[./thumb.png]]);}
 
+外部のサイトへ &link(https://example.com/){&include([[./thumb.png]]);}
+
 画像でないもの &direct([[./a.pdf]]){&include([[./a.pdf]]);}

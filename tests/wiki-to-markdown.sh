@@ -315,6 +315,8 @@ check_eq "縮小画像: 別の画像は、押すと行き先のファイルの�
          "$(printf '%s\n' "$images" | sed -n 2p | sed -E 's/&amp;width=.*//')"
 check_eq "縮小画像: &link の行き先 (添付・ふつうのページ)" "?${D}/a.png|?WikiMdTest/Clean" \
          "$(printf '%s\n' "$images" | sed -n 3p | cut -d' ' -f1)|$(printf '%s\n' "$images" | sed -n 4p | cut -d' ' -f1)"
+check_eq "縮小画像: 外部のサイトへのリンク" "https://example.com/ ?${D}/thumb.png${RAW}" \
+         "$(printf '%s\n' "$images" | sed -n 5p | sed -E 's/&amp;width=.*//')"
 check_eq "縮小画像: リンクの中にリンクを入れない" "0" "$(grep -c '<a [^>]*><a ' "$WORK/direct")"
 echo
 

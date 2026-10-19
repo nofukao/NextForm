@@ -793,9 +793,10 @@ function wiki_markdown_title(&$state, &$context, $tree) {
 
 /*
  * &include(対象, 指定){キャプション} → ![|指定](パス "キャプション")。
- * 対象が無い・読めない形なら null (原文の枠で残す)。
+ * 対象が無い・読めない形なら null (原文の枠で残す)。$extra_options は指定の後ろに足す語
+ * (リンクの中に置く縮小画像の !link。wiki_markdown_link_image())。
  */
-function wiki_markdown_include(&$state, &$context, $tree) {
+function wiki_markdown_include(&$state, &$context, $tree, $extra_options = array()) {
     $path = null;
     $options = array();
     global $WIKI_OPERATOR_INCLUDE_URI_HANDLERS;
@@ -822,6 +823,7 @@ function wiki_markdown_include(&$state, &$context, $tree) {
     }
     if(is_null($path))
 	return null;
+    $options = array_merge($options, $extra_options);
     /* キャプションはタイトルの欄 (素の文字)。表示と同じ文字にし、\ と " をエスケープする */
     $caption = wiki_markdown_rendered_text($context, wiki_markdown_strip_line_tokens($tree->target));
     $destination = str_replace(array(' ', '(', ')', '<', '>'), array('%20', '%28', '%29', '%3C', '%3E'), $path);
@@ -1074,10 +1076,12 @@ function wiki_markdown_code_span($text) {
 /*
  * &link(対象, 指定){表示名}。対象は URL か [[ページ]] の引数 (ほかは raw・open などの印や、
  * ページの画面の名前)。ページの画面 (edit など) へのリンクは Markdown に写さず原文で残す。
+ * raw (ファイルそのもの。&direct はこれの別名) は wiki_markdown_direct_link()。
  */
 function wiki_markdown_link_function(&$state, &$context, $tree, $original) {
     $url = null;
     $pagename = null;
+    $is_raw = false;
     $actions = array();
     foreach((array)$tree->parameters as $tokens) {
 	$param = trim(wiki_tokens_to_string($tokens));
@@ -1087,19 +1091,157 @@ function wiki_markdown_link_function(&$state, &$context, $tree, $original) {
 	    $pagename = trim($matches[1]);
 	else if($param === 'open')
 	    wiki_markdown_lost($state, l('Opening in a new tab (>>)'));
-	else if($param !== '' && $param !== 'raw' && !preg_match('/^charset=/', $param))
+	else if($param === 'raw')
+	    $is_raw = true;
+	else if($param !== '' && !preg_match('/^charset=/', $param))
 	    $actions[] = $param;
     }
     if(!is_null($url)) {
+	$destination = str_replace(array(' ', ')'), array('%20', '%29'), $url);
+	/* 表示名が縮小画像だけのときだけ変える (外部の画像と文字を並べたものは今までどおり写せる) */
+	$image = wiki_markdown_link_image($state, $context, $tree->target, $destination);
+	if(is_string($image))
+	    return $image;
 	$name = trim(wiki_markdown_inline_tokens($state, $context, $tree->target));
 	if($name === '')
 	    return '<' . $url . '>';
-	return '[' . $name . '](' . str_replace(array(' ', ')'), array('%20', '%29'), $url) . ')';
+	return '[' . $name . '](' . $destination . ')';
     }
-    if(!is_null($pagename) && empty($actions))
-	return wiki_markdown_page_link($pagename, wiki_markdown_plain_name($tree->target));
+    if(!is_null($pagename) && empty($actions)) {
+	$image = wiki_markdown_link_image($state, $context, $tree->target,
+					  wiki_markdown_link_destination($pagename), $pagename, $is_raw);
+	if(is_string($image))
+	    return $image;
+	if($image !== null) {
+	    $name = wiki_markdown_plain_name($tree->target);
+	    if($is_raw)
+		return wiki_markdown_direct_link($state, $context, $pagename, $name);
+	    return wiki_markdown_page_link($pagename, $name);
+	}
+    }
     wiki_markdown_kept($state, '&' . $original->id);
     return wiki_markdown_code_span(wiki_markdown_raw($state, $original));
+}
+
+/*
+ * wiki の [[行き先]] が指す、いまの人が読めるページ。無い・読めない・見出しを付けた
+ * 行き先なら null。
+ */
+function wiki_markdown_readable_page(&$context, $locate) {
+    if(strpos($locate, '#') !== false)
+	return null;
+    $pagename = page_path_to_pagename($locate, $context['page']['name'], false);
+    if($pagename === '' || !page_is_exists($pagename) || !auth_has_permission($pagename, 'read'))
+	return null;
+    return page_read($pagename);
+}
+
+/* 種別 file のページの、埋め込みの関数の名前 (画像なら file_image_embed)。file でなければ '' */
+function wiki_markdown_file_embed($page) {
+    if(is_null($page) || page_get_type($page) !== 'file')
+	return '';
+    $content_type_handler = &file_get_content_type_handler($page);
+    return isset($content_type_handler['embed']) ? $content_type_handler['embed'] : '';
+}
+
+/*
+ * &direct([[行き先]]){説明} (&link の raw)。ファイルそのものを開く文字のリンク。
+ *
+ * Markdown でファイルそのものへの文字のリンクになるのは ![説明](行き先) だけで、そうなるのは
+ * 埋め込みが文字のリンクになる種類 (PDF・テキスト・種類の分からないもの・添付 HTML・md。
+ * embed_label の印) に限られる (handler/markdown/image.inc)。md は描画した画面への
+ * リンクになる (ダウンロードではなくなる。利用者の判断 2026-10-19)。
+ *
+ * 画像・音声・動画は ![..](..) だと本文に画像や再生の枠が出るので、[説明](行き先) で
+ * ファイルのページへの文字のリンクにする (見た目を変えない)。ふつうのページ・まだ無い
+ * ページ・読めないページも同じ (ふつうのページを ![..](..) にすると取り込みになる)。
+ * どちらも落ちるものとして数える。
+ */
+function wiki_markdown_direct_link(&$state, &$context, $locate, $name) {
+    $locate = trim($locate);
+    $name = trim($name);
+    $page = wiki_markdown_readable_page($context, $locate);
+    if(!is_null($page) && page_get_type($page) === 'file') {
+	$content_type_handler = &file_get_content_type_handler($page);
+	if(!empty($content_type_handler['embed_label'])) {
+	    /* 説明の末尾の |… は大きさなどの指定として読まれるので、| は全角にする */
+	    return '![' . wiki_markdown_escape(str_replace('|', '｜', $name)) . '](' .
+		wiki_markdown_link_destination($locate) . ')';
+	}
+    }
+    wiki_markdown_lost($state, l('Direct links to images, audio, video and pages (&direct) (made links to the page)'));
+    /* 説明が無ければ、![](x.pdf) と同じくファイル名 (最後の部分) を出す */
+    if($name === '')
+	$name = page_get_simplename(page_path_to_pagename($locate, $context['page']['name']));
+    return '[' . wiki_markdown_escape($name) . '](' . wiki_markdown_link_destination($locate) . ')';
+}
+
+/*
+ * リンクの表示名が &include の画像 1 つだけのとき (縮小画像を押すと元の画像が開く書き方)、
+ * その画像をリンクにした Markdown。表示名に &include が無ければ false (ふつうの表示名)。
+ * 画像でない・ほかの文字と並んでいるなど、Markdown で書けなければ null (原文の枠で残す)。
+ *
+ *   &direct([[./a.png]]){&include([[./a.png]],100x100);}
+ *       → ![|100x100](./a.png)
+ *         同じ画像なら、添付の画像の埋め込みそのもの (押すと画像そのもの) と同じになる
+ *   &link([[行き先]]){&include([[./小.png]]);}  (行き先は URL でもよい)
+ *       → [![|!link](./小.png)](行き先)
+ *         !link で画像の側のリンクを外す (リンクの中にリンクを入れない)。&direct で
+ *         別の画像なら、行き先のファイルのページへのリンクになる (落ちるものに数える)
+ *
+ * $destination は Markdown の行き先。$locate は wiki の [[行き先]] (URL なら null)。
+ */
+function wiki_markdown_link_image(&$state, &$context, $tokens, $destination, $locate = null,
+				  $is_raw = false) {
+    $items = array();
+    $has_include = false;
+    $blocks = wiki_markdown_parse_tokens($context, wiki_markdown_strip_line_tokens($tokens), false, true);
+    foreach(wiki_markdown_flatten_blocks($blocks) as $item) {
+	if(wiki_markdown_is_line_token($item) ||
+	   ($item instanceof WikiToken && trim($item->t) === '') ||
+	   ($item instanceof WikiTextTree && wiki_tokens_is_whitespace($item->target)))
+	    continue;
+	if($item instanceof WikiApplyTree) {
+	    $item = wiki_markdown_resolve_alias($context, $item);
+	    if($item->id === 'include')
+		$has_include = true;
+	}
+	$items[] = $item;
+    }
+    if(!$has_include)
+	return false;
+    if(count($items) !== 1)
+	return null;
+    $include = $items[0];
+
+    /* 取り込む先が画像か。添付は種類で、URL は &include と同じ正規表現で見る */
+    global $WIKI_OPERATOR_INCLUDE_URI_HANDLERS;
+    $parameters = array_values((array)$include->parameters);
+    $first = empty($parameters) ? array() : $parameters[0];
+    $is_url = count($first) == 1 && $first[0] instanceof WikiURIToken;
+    if($is_url) {
+	if(!preg_match($WIKI_OPERATOR_INCLUDE_URI_HANDLERS['image']['regex'], $first[0]->t))
+	    return null;
+	$image_page = null;
+    } else {
+	if(!preg_match('/^\[\[(.*)\]\]$/', trim(wiki_tokens_to_string($first)), $matches))
+	    return null;
+	$image_page = wiki_markdown_readable_page($context, trim($matches[1]));
+	if(wiki_markdown_file_embed($image_page) !== 'file_image_embed')
+	    return null;
+    }
+
+    if($is_raw && !is_null($image_page) && !is_null($locate)) {
+	$target = wiki_markdown_readable_page($context, trim($locate));
+	if(!is_null($target) && $target['name'] === $image_page['name'])
+	    return wiki_markdown_include($state, $context, $include);
+    }
+    $image = wiki_markdown_include($state, $context, $include, $is_url ? array() : array('!link'));
+    if(is_null($image))
+	return null;
+    if($is_raw)
+	wiki_markdown_lost($state, l('Direct links to images, audio, video and pages (&direct) (made links to the page)'));
+    return '[' . $image . '](' . $destination . ')';
 }
 
 /* ページへのリンク。[[行き先|表示名]] は wiki と同じ行き先の規則なので、並べ替えるだけ */
