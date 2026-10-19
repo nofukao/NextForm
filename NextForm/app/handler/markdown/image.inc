@@ -192,7 +192,7 @@ function markdown_image_html($url, $alt, $title, $is_alone = false) {
 	$page = page_read($pagename);
 	if(page_get_type($page) !== 'file' && $is_alone) {
 	    /* ふつうのページ。今と同じリンクに印を付け、変換のあとで取り込む */
-	    $a = dom_append_page_link($document, $alt !== '' ? $alt : $url, $pagename);
+	    $a = dom_append_page_link($document, $alt !== '' ? $alt : rawurldecode($url), $pagename);
 	    dom_set_attribute($a, 'data-markdown-embed', markdown_embed_register($pagename, $params, $caption));
 	    return dom_save_html($document);
 	}
@@ -235,8 +235,10 @@ function markdown_image_html($url, $alt, $title, $is_alone = false) {
      * 埋め込めないもの (まだ無い / 種別が file でない / 読む権限が無い) は
      * ページへのリンクにする。存在しなければ a.not_exists が付くので、
      * そこから作りに行ける。画像が出ないまま黙って壊れるよりよい。
+     * 説明が無ければ書いた行き先を出す。ライブラリが渡す URL は符号化されている
+     * (./図.png が ./%E5%9B%B3.png になる) ので戻す。
      */
-    dom_append_page_link($document, $alt !== '' ? $alt : $url, $pagename);
+    dom_append_page_link($document, $alt !== '' ? $alt : rawurldecode($url), $pagename);
     return dom_save_html($document);
 }
 ?>
