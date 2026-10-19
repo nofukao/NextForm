@@ -350,7 +350,24 @@ check_eq "空白で始まる項目は文のまま (入れ子の項目も残る)"
          "$(grep -c '<code[^>]*>空白で始まる項目' "$WORK/listitem")|$(grep -q '入れ子の項目' "$WORK/listitem" && echo yes || echo no)"
 echo
 
-echo "11. PHP の警告が出ていないこと"
+echo "11. 中身の頭の記号・文字のままの記号を、表示と同じに写すこと"
+CX=WikiMdTest/Context
+open_confirm "$CX" > /dev/null
+convert_page "$CX" "$(confirm_ticket)" > /dev/null
+check_eq "変換した" "markdown" "$(value_of "$(helper meta "$CX" type)" meta)"
+curl -sk -o "$WORK/context" "${WIKI_MD_TEST_URL}/?${CX}"
+has() { grep -qF -- "$1" "$WORK/context" && echo yes || echo no; }
+check_eq "強調・打ち消し・リンクの中身の頭の記号が残る" "yes|yes|yes|yes" \
+         "$(has '<strong>-マイナス</strong>')|$(has '<em>|縦棒|</em>')|$(has '<del>,カンマ</del>')|$(has '>,カンマの名前</a>')"
+check_eq "&&copy; は文字のまま (実体参照にしない)" "yes|yes" "$(has '&amp;copy;')|$(has '&amp;heart;')"
+check_eq "文字のままの URL・引用の中の URL はリンクにしない" "no|no|no" \
+         "$(has 'href="https://example.com/plain"')|$(has 'href="http://www.example.com"')|$(has 'href="https://example.com/quote"')"
+check_eq "行末の ~ は文字にしない" "no|no|no" "$(has '項目の行末~')|$(has 'チルダの行末~')|$(has '行末の改行~')"
+check_eq "見出しの中の改行を \\ にしない" "no" "$(has '見出しの\')"
+check_eq "折りたたみの見出しの実体参照は文字にする" "yes" "$(has 'リンク と © の見出し')"
+echo
+
+echo "12. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F "$WIKI_MD_TEST_SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"
