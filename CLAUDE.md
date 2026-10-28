@@ -40,6 +40,7 @@
 | `docs/development/` | **開発者向け** (`project-overview.md` `workflow.md` `setup.md` `upgrade-check.md`) |
 | `tests/` | ゴールデンマスター + スモークテスト |
 | `deploy/scripts/` | デプロイ、テストデータ生成 |
+| `plugins/nextform/` `.claude-plugin/` | AI 向けのスキル (`SKILL.md`) と、Claude Code のプラグインとして配る目録。**配布物には入らない**。`app/tool/page` の使い方を変えたらスキルも合わせる |
 | `tmp/` | スクラッチ(追跡しない) |
 
 > 上流は PukiWiki レイアウトでは**ない**。`plugin/` `skin/` `wiki/` `attach/`
@@ -90,6 +91,7 @@
 ./tests/page-lists.sh      # 削除されたページ・タグ一覧に出るものと件数 (複製サイトを作る。要 sudo)
 ./tests/wiki-to-markdown.sh # Wiki 記法から Markdown への変換。--update で期待値を更新 (複製サイトを作る。要 sudo)
 ./tests/syntax-survey.sh    # wiki 記法の棚卸しツール (複製サイトを作る。要 sudo)
+./tests/page-tool.sh        # ページを読み書きする道具 app/tool/page (複製サイトを作る。要 sudo)
 ```
 
 - ゴールデンマスター(`tests/golden/`)+ HTTP スモーク(`tests/smoke.sh`)が主軸。
