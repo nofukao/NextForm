@@ -1,0 +1,14 @@
+{
+  "name": "nextform",
+  "owner": {
+    "name": "nofukao"
+  },
+  "description": "NextForm (ToraToraWiki の fork の wiki エンジン) を AI から使うためのスキル",
+  "plugins": [
+    {
+      "name": "nextform",
+      "source": "./plugins/nextform",
+      "description": "NextForm のページを、サイトのサーバーの上で app/tool/page を使って読み書きするスキル (NextForm 0.17.0 以降)"
+    }
+  ]
+}
