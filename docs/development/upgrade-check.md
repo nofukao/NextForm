@@ -1199,13 +1199,13 @@ v0.15.0 の配布物で 0.15.0 に上げて索引を作り直した (852 ペー�
 
 **目で見る項目 (利用者が確かめる)**
 
-- [ ] 公開したあと、`/plugin marketplace add nofukao/NextForm` と
+- [x] 公開したあと、`/plugin marketplace add nofukao/NextForm` と
       `/plugin install nextform@nextform` でスキルが入り、`/nextform:nextform-pages` が見える
 
 #### 結果
 
 **2026-10-28 — ツールの実走と、HTTP と CLI で見られる項目まで。**
-目で見る項目 (プラグインからスキルを入れる) は、公開したあとに利用者が確かめる。
+目で見る項目 (プラグインからスキルを入れる) は、公開したあとに利用者が確かめた (問題なし)。
 
 対象は実データのサイトの写し (NextForm 0.16.0、2026-10-20 時点のデータ) から作った複製
 (`rsync --max-size=1m`。409MB、691 ページ。元は 927 ページ)。元の写しは読んだだけ。
