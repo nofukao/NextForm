@@ -123,6 +123,62 @@ php NextForm/app/tool/upgrade /var/www/html/mywiki/index.php --dry-run
 
 ---
 
+## AI でページを編集する
+
+NextForm 0.17.0 から、ページを読み書きするコマンドラインの道具 **`app/tool/page`** を
+同梱しています。Web の画面を使わずに、サーバーの上でページの一覧・読み出し・書き込みが
+できます。AI (Claude Code など) に作業の記録をページへ残させる、といった使い方を想定しています。
+
+```bash
+sudo -u apache php /var/www/html/wiki/app/tool/page /var/www/html/wiki/index.php \
+    write 作業記録/2026-10 --user editor --dry-run < 原稿.md
+```
+
+- 画面から保存したときと同じ扱いで書きます (題名とタグが本文から取られます)
+- 既にあるページは `--overwrite` を付けたときだけ書き換え、前の版は必ず履歴に残します
+- 結果は JSON で出します。使い方は **[docs/page-tool.md](docs/page-tool.md)** にあります
+
+AI にこの道具の使い方を教えるスキル (`SKILL.md`) も用意しています。接続先
+(SSH の別名、サイトの場所、サイトの所有者、書き手の名前) は推測せずに利用者に聞き、
+書く前に必ず確認を求めます。入れ方は 2 通りです。
+
+### Claude Code のプラグインとして入れる
+
+```
+/plugin marketplace add nofukao/NextForm
+/plugin install nextform@nextform
+```
+
+- Claude Code 2.1.275 以降なら `/plugin install nextform --marketplace nofukao/NextForm`
+  の 1 行でも入ります。
+- NextForm のページを扱う場面で自動で呼ばれます。明示して呼ぶときは `/nextform:nextform-pages` です。
+- 更新は自動では届きません (公式以外のマーケットプレイスは自動更新が既定で切れています)。
+  `/plugin` の Marketplaces から自動更新を有効にするか、
+  `claude plugin marketplace update nextform` のあと `claude plugin update nextform@nextform` を
+  実行してください。
+- 版を固定するときは `/plugin marketplace add nofukao/NextForm#v0.17.0` のようにタグを付けます。
+
+### SKILL.md をフォルダーに写す
+
+スキルは [plugins/nextform/skills/nextform-pages/SKILL.md](plugins/nextform/skills/nextform-pages/SKILL.md)
+の 1 ファイルだけです。読み込む AI ツールのスキルのフォルダーに写します。
+
+```bash
+mkdir -p ~/.claude/skills/nextform-pages
+curl -fsSL https://raw.githubusercontent.com/nofukao/NextForm/main/plugins/nextform/skills/nextform-pages/SKILL.md \
+    -o ~/.claude/skills/nextform-pages/SKILL.md
+```
+
+| AI ツール | 写す先 |
+|---|---|
+| Claude Code | `~/.claude/skills/nextform-pages/` (リポジトリごとなら `.claude/skills/nextform-pages/`) |
+| OpenAI Codex・GitHub Copilot・Gemini CLI・Cursor | `~/.agents/skills/nextform-pages/` |
+
+`SKILL.md` は AI ツールに共通の形式 ([Agent Skills](https://agentskills.io/)) で書いています。
+更新は自分で写し直してください。
+
+---
+
 ## 配布物の構成
 
 ```
@@ -136,7 +192,7 @@ NextForm/
 │   ├── option/        画面 (42 種)
 │   ├── theme/         テーマの**ソース**
 │   ├── plugin/        利用者が追加するプラグインの置き場
-│   └── tool/          CLI ツール (upgrade / update_wiki など)
+│   └── tool/          CLI ツール (upgrade / update_wiki / page など)
 └── resource/          JavaScript や画像
 ```
 
