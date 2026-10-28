@@ -7,7 +7,9 @@
  * 検査名:
  *   guest <権限>               ログインしていない利用者の権限を決める (read / write)
  *   set-user <名前> <権限> [<パスワード>]
- *                              利用者を足す。パスワードを渡せばダイジェストも保存する
+ *                              利用者を足す。パスワードを渡せばダイジェストも保存する。
+ *                              権限は read などの名前か、ページの型ごとの JSON
+ *                              ({"Secret":"keepout","*":"write"})
  *   digest-leaked <ファイル>   どれかの利用者のダイジェストがファイルに出ているか (leaked=1/0)
  *   meta <名前>                meta を JSON で 1 行に。保存のたびに変わるもの
  *                              (ticket・btime・更新者・作成者) は除く
@@ -60,7 +62,7 @@ case 'guest':
 case 'set-user':
     /* パスワードはテストが毎回作る使い捨てで、リポジトリには置かない */
     global $AUTH_PERMISSIONS;
-    $AUTH_PERMISSIONS[$rest[0]] = $rest[1];
+    $AUTH_PERMISSIONS[$rest[0]] = ($rest[1][0] === '{') ? json_decode($rest[1], true) : $rest[1];
     $saved = auth_save_permissions();
     if(isset($rest[2]))
 	$saved = $saved && setup_write('auth_digest_' . $rest[0],

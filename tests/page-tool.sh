@@ -117,6 +117,15 @@ uri() {
     jq -rn --arg s "$1" '$s|@uri'
 }
 
+# 画面に文字があるか。$1 URL  $2 探す文字
+# **curl を grep -q にパイプでつながない。** grep が見つけた時点で終わると、
+# まだ書いている curl が SIGPIPE で落ち、pipefail がそれを「無い」に変える
+# (大きい画面ほど起きる。deploy/scripts/make-dist.sh の list_has() と同じ罠)。
+page_has() {
+    curl -sk -o "$WORK/page" "$1"
+    grep -qF "$2" "$WORK/page" && echo yes || echo no
+}
+
 # Web の画面から保存したときと同じ要求を送る。$1 ページ名  $2 種別  $3 ファイル
 web_write() {
     curl -sk -o /dev/null -w '%{http_code}' -X POST -H "Origin: ${ORIGIN}" \
@@ -169,6 +178,7 @@ log_before="${log_before:-0}"
 # 検証用の利用者。パスワードは毎回作る使い捨て (ダイジェストが出ないことを見るため)
 helper set-user nfwriter write "$(head -c 12 /dev/urandom | base64)" > /dev/null
 helper set-user nfreader read > /dev/null
+helper set-user nfpartial '{"PageToolSecret":"keepout","*":"write"}' > /dev/null
 
 # 本文
 cat > "$WORK/md.txt" <<'EOF'
@@ -217,10 +227,10 @@ check_eq "  list に題名で出る" "道具で書いた題名" \
          "$(j '.[] | select(.name == "PageToolTest/Md") | .title')"
 tool_in "$WORK/list.txt" write PageToolList --type wiki --user "$WIKI_ADMIN"
 check_eq "  子ページの一覧 (&pages) に題名で出る" "yes" \
-         "$(curl -sk "${URL}/?PageToolList" | grep -qF '道具で書いた題名' && echo yes || echo no)"
+         "$(page_has "${URL}/?PageToolList" '道具で書いた題名')"
 check_eq "  検索の結果に題名で出る" "yes" \
-         "$(curl -sk "${URL}/?option=search&query=$(uri 'ぺーじつーるけんさく')" \
-                | grep -qF '道具で書いた題名 (PageToolTest/Md)' && echo yes || echo no)"
+         "$(page_has "${URL}/?option=search&query=$(uri 'ぺーじつーるけんさく')" \
+                     '道具で書いた題名 (PageToolTest/Md)')"
 tool_in "$WORK/md-heading.txt" write PageToolTest/Heading --user "$WIKI_ADMIN"
 check_eq "  先頭の # も題名になる" '"見出しから取る題名"' \
          "$(value_of "$(helper meta PageToolTest/Heading)" meta | jq -c .title)"
@@ -297,6 +307,15 @@ check_eq "  本文は変わらない" "$before" "$(value_of "$(helper body-sha P
 tool_in "$WORK/plain.txt" write PageToolTest/ByWriter --user nfwriter
 check_eq "write の権限があれば書ける" "0|nfwriter" "$rc|$(j .user)"
 refuse "組み込みマニュアル" manual write NextFormManual/ja --user "$WIKI_ADMIN" --overwrite
+# 本文が参照するページ (&mtime の引数) を読めないと、変換の途中で auth_check() が
+# 認証の画面を出して終わる。画面の代わりに JSON を出し、何も書かないこと
+tool_in "$WORK/plain.txt" write PageToolSecret --user "$WIKI_ADMIN"
+printf '%s\n' '&mtime([[PageToolSecret]]);' > "$WORK/mtime.txt"
+chmod 644 "$WORK/mtime.txt"
+tool_in "$WORK/mtime.txt" write PageToolTest/Mtime --type wiki --user nfpartial
+check_eq "参照するページを読めない: 終了コード 1、理由は interrupted" "1|interrupted" "$rc|$(j .error)"
+check_eq "  HTML を出さない" "no" "$(has_html)"
+check_eq "  ページはできていない" "0" "$(value_of "$(helper exists PageToolTest/Mtime)" exists)"
 tool list --user no-such-user
 check_eq "list でも実在しない名前は断る" "1|unknown_user" "$rc|$(j .error)"
 helper guest keepout > /dev/null
@@ -321,18 +340,21 @@ echo
 
 echo "5. Web からは呼べないこと"
 check_eq ".htaccess が app/tool/page を拒否する (403)" "403" "$(code "${URL}/app/tool/page")"
-# 道具の側の検査を見るため、.htaccess の外 (サイトの直下) から読み込む .php を置いて叩く。
+# 道具の側の検査を見るため、道具を読み込む .php を置いて Web から叩く。
+# .htaccess が通すのは index.php という名前だけなので、ディレクトリを切ってそこに置く。
 # 検査が無ければ、users の一覧がそのまま出る
-sudo tee "${SITE}/page-tool-probe.php" > /dev/null <<EOF
+sudo mkdir -p "${SITE}/page-tool-probe"
+sudo tee "${SITE}/page-tool-probe/index.php" > /dev/null <<EOF
 <?php
-\$_SERVER['argv'] = array('page', __DIR__ . '/index.php', 'users');
+\$_SERVER['argv'] = array('page', dirname(__DIR__) . '/index.php', 'users');
 \$argv = \$_SERVER['argv'];
-include(__DIR__ . '/app/tool/page');
+include(dirname(__DIR__) . '/app/tool/page');
+echo 'probe-end';
 EOF
-sudo chown "$SITE_OWNER" "${SITE}/page-tool-probe.php"
-probe=$(curl -sk "${URL}/page-tool-probe.php")
-check_eq "道具を Web から読み込んでも何も出さない" "" "$probe"
-sudo rm -f "${SITE}/page-tool-probe.php"
+sudo chown -R "$SITE_OWNER" "${SITE}/page-tool-probe"
+probe=$(curl -sk "${URL}/page-tool-probe/index.php")
+check_eq "道具を Web から読み込むと、何も出さずに終わる" "" "$probe"
+sudo rm -rf "${SITE}/page-tool-probe"
 echo
 
 
