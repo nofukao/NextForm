@@ -1,0 +1,418 @@
+<?php
+/*
+ * ページを読み書きする。AI (Claude Code など) や人が、Web の画面を使わずに
+ * サーバーの上でページを扱うための道具。
+ *
+ *   php NextForm/app/tool/page /path/to/wiki/index.php <操作> [引数..]
+ *
+ *     users                    利用者の名前と権限 (ダイジェストは出さない)
+ *     list [<ページ名>]        ページの一覧。ページ名を渡すと、そのページと配下だけ
+ *          [--user <名前>]
+ *     read <ページ名>          meta と本文。--body なら本文だけをそのまま出す
+ *          [--body] [--user <名前>]
+ *     write <ページ名>         本文を標準入力から受け取って書く
+ *          --user <名前> [--type markdown|wiki|text] [--overwrite] [--dry-run]
+ *
+ * サイトの所有者として動かす (sudo -u <所有者> など)。ほかの利用者 (root など)
+ * で動かすと断る。root で書くと、Web から書き換えられないファイルが storage に
+ * できるため。
+ *
+ * --user を省くと、ログインしていない利用者の権限で読む。write では必ず要る。
+ *
+ * 出力は JSON 1 つ (read --body を除く)。断ったときも JSON で、error に理由の語、
+ * message に説明を入れる。使い方の誤り (引数の数など) だけは標準エラーに使い方を出す。
+ *
+ * write の決まり:
+ *
+ *   - 画面から保存したときと同じ経路を通す。本文の制御文字 (CR を含む) を落とし
+ *     (args_get() と同じ)、種別の normalize で題名とタグを本文から取り、page_write()
+ *     で書く。meta は画面から保存したときと同じになる
+ *   - 既にあるページは --overwrite のときだけ書く。上書きの前の版は、同じ人が
+ *     続けて書いても必ず履歴に残す (画面からの保存は 15 分以内だと残さない)
+ *   - --user は利用者の一覧に実在し、guest でなく、そのページを読み書きできること。
+ *     ロック中のページは、ロックを外せる人だけ
+ *   - 新しいページの種別は --type (既定は markdown)。既にあるページの種別は変えない
+ *     (違う --type を渡すと断る)。種別 file (添付) には書かない
+ *   - 空の本文は断る (画面では空で保存するとページが消えるが、ここでは消さない)
+ *   - --dry-run は何も書かずに、書いたときの結果 (新規か上書きか、書き手と権限、
+ *     題名とタグ、本文が今と同じか) と、断られるならその理由を出す
+ *
+ * 終了コード:
+ *   0 = 成功 (--dry-run なら「書ける」)
+ *   1 = 断った。何も変えていない (名前が無い、権限が無い、既にある、ロック中、種別が違う)
+ *   2 = 使い方の誤り (引数、ページ名、本文が空・UTF-8 でない、サイトの所有者でない)
+ *   3 = ページが無い (read)
+ *   4 = 書こうとしたが保存できなかった (ディスク、ページ名が長すぎる など)
+ *
+ * 使い方の説明は docs/page-tool.md。
+ */
+
+/* Web からは動かさない。.htaccess でも拒否しているが、道具の側でも断る */
+if(PHP_SAPI !== 'cli')
+    exit(1);
+
+/* PHP の警告を JSON に混ぜない */
+ini_set('display_errors', 'stderr');
+
+define('PAGE_TOOL_EXIT_REFUSED', 1);
+define('PAGE_TOOL_EXIT_USAGE', 2);
+define('PAGE_TOOL_EXIT_NOT_FOUND', 3);
+define('PAGE_TOOL_EXIT_FAILED', 4);
+define('PAGE_TOOL_DEFAULT_TYPE', 'markdown');
+
+/* 操作ごとの、ページ名の数と使えるオプション */
+$PAGE_TOOL_OPERATIONS = array(
+    'users' => array('min' => 0, 'max' => 0, 'options' => array()),
+    'list'  => array('min' => 0, 'max' => 1, 'options' => array('user')),
+    'read'  => array('min' => 1, 'max' => 1, 'options' => array('user', 'body')),
+    'write' => array('min' => 1, 'max' => 1,
+		     'options' => array('user', 'type', 'overwrite', 'dry-run')),
+    );
+$PAGE_TOOL_VALUE_OPTIONS = array('--user' => 'user', '--type' => 'type');
+$PAGE_TOOL_FLAG_OPTIONS = array('--body' => 'body', '--overwrite' => 'overwrite',
+				'--dry-run' => 'dry-run');
+
+$argv = $_SERVER['argv'];
+
+function usage() {
+    fprintf(STDERR, "Usage: php page <path/to/wiki/index.php> users\n");
+    fprintf(STDERR, "       php page <path/to/wiki/index.php> list [<pagename>] [--user <name>]\n");
+    fprintf(STDERR, "       php page <path/to/wiki/index.php> read <pagename> [--body] [--user <name>]\n");
+    fprintf(STDERR, "       php page <path/to/wiki/index.php> write <pagename> --user <name>\n");
+    fprintf(STDERR, "                [--type markdown|wiki|text] [--overwrite] [--dry-run] < contents\n");
+    exit(PAGE_TOOL_EXIT_USAGE);
+}
+
+/*
+ * 結果を出す。それまでに溜まった出力は捨てる (page_tool_shutdown() を見よ)。
+ */
+$PAGE_TOOL_IS_DONE = false;
+function page_tool_output($value) {
+    global $PAGE_TOOL_IS_DONE;
+    while(ob_get_level() > 0)
+	ob_end_clean();
+    printf("%s\n", json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE |
+			       JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE));
+    $PAGE_TOOL_IS_DONE = true;
+}
+
+/* 断って終わる。$result はそこまでにわかった結果 (--dry-run で見せるため) */
+function page_tool_fail($exit_code, $error, $message, $result = array()) {
+    page_tool_output($result + array('error' => $error, 'message' => $message));
+    exit($exit_code);
+}
+
+/*
+ * 途中で終わったとき。本文の変換 (normalize と索引の更新) は、本文が参照する
+ * ページ (&mtime などの引数) を読む権限が無いと、auth_check() が認証の画面の
+ * HTML を出してその場で終わる。出力は溜めておき、結果を出さずに終わったら、
+ * HTML の代わりに JSON を出す。終了コードは終わらせた側のもの (auth_check() なら 1)。
+ *
+ * 変換は書く前の normalize で 1 度走るので、ふつうはそこで止まり、何も書かない。
+ * 書いたあとの索引の更新で止まることもありえるので、read で確かめるよう促す。
+ */
+function page_tool_shutdown() {
+    global $PAGE_TOOL_IS_DONE;
+    if($PAGE_TOOL_IS_DONE)
+	return;
+    page_tool_output(array(
+			 'error' => 'interrupted',
+			 'message' => '途中で終わりました。本文が参照するページを、この利用者が読めないときなどに起きます。' .
+			 '書けたかどうかは read で確かめてください。'));
+}
+
+/*
+ * いま動いている利用者の uid。getmyuid() はスクリプトのファイルの所有者を
+ * 返すので使えない (root で動かしても、サイトの所有者が返る)。
+ * posix 拡張が無いサーバーもあるので、そのときは一時ファイルの所有者を見る。
+ */
+function page_tool_euid() {
+    if(function_exists('posix_geteuid'))
+	return posix_geteuid();
+    $path = tempnam(sys_get_temp_dir(), 'nextform-page-');
+    if($path === false)
+	return false;
+    $uid = fileowner($path);
+    unlink($path);
+    return $uid;
+}
+
+function page_tool_check_site_owner($index_path) {
+    $euid = page_tool_euid();
+    if($euid === false)
+	page_tool_fail(PAGE_TOOL_EXIT_USAGE, 'not_site_owner',
+		       '動かしている利用者を確かめられません (一時ファイルを作れません)。');
+    if($euid !== fileowner($index_path))
+	page_tool_fail(PAGE_TOOL_EXIT_USAGE, 'not_site_owner',
+		       'サイトの所有者 (index.php の所有者) として動かしてください。');
+}
+
+/*
+ * 画面がページ名を整える関数 (page_path_to_pagename()) を通しても変わらない名前
+ * だけを受け付ける。'../' や先頭の '/'、'//' は、通すと別のページを指すので、
+ * 黙って直さずに断る。制御文字と UTF-8 でないもの (args_get() が落とすもの) も同じ。
+ */
+function page_tool_check_pagename($pagename) {
+    if($pagename === '' || normalize_string($pagename) !== $pagename ||
+       page_path_to_pagename($pagename, '', false) !== $pagename)
+	page_tool_fail(PAGE_TOOL_EXIT_USAGE, 'invalid_name',
+		       'ページ名に使えない形です (先頭や末尾の /、//、./、../、制御文字など)。',
+		       array('name' => $pagename));
+}
+
+/*
+ * CLI にはセッションが無いので、--user を認証の結果として差し込む。
+ * 一覧に無い名前は guest の権限に落ちる (auth_get_permission()) ため、
+ * 名前を間違えても気づけない。ここで実在を確かめ、guest も断る。
+ */
+function page_tool_set_user($user) {
+    global $AUTH_PERMISSIONS;
+    if(is_null($user)) {
+	$GLOBALS['AUTH_GET_USER_CACHE'] = false;
+	return;
+    }
+    if($user === AUTH_GUEST_USERNAME)
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'guest_user',
+		       'ログインしていない利用者 (guest) としては書けません。',
+		       array('user' => $user));
+    if(!isset($AUTH_PERMISSIONS[$user]))
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'unknown_user',
+		       'その利用者はいません。users で名前を確かめてください。',
+		       array('user' => $user));
+    $GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $user, 'method' => 'cli');
+}
+
+function page_tool_meta(&$page, $name) {
+    if(isset($page['meta'][$name]) && $page['meta'][$name] !== '')
+	return $page['meta'][$name];
+    return null;
+}
+
+function page_tool_summary(&$page) {
+    $mtime = isset($page['mtime']) ? $page['mtime'] : page_get_mtime($page['name']);
+    return array(
+	'name' => $page['name'],
+	'type' => page_get_type($page),
+	'title' => page_tool_meta($page, 'title'),
+	'last_modify_user' => page_tool_meta($page, 'last_modify_user'),
+	'mtime' => $mtime ? date('c', $mtime) : null,
+	);
+}
+
+function page_tool_summary_compare($a, $b) {
+    return strcmp($a['name'], $b['name']);
+}
+
+/* page_write() が断った理由 (message_error() に入る) */
+function page_tool_messages() {
+    global $messages_dom;
+    $texts = array();
+    foreach($messages_dom->childNodes as $li)
+	$texts[] = $li->textContent;
+    return implode(' ', $texts);
+}
+
+function page_tool_users() {
+    global $AUTH_PERMISSIONS;
+    $users = array();
+    foreach($AUTH_PERMISSIONS as $name => $permission)
+	$users[] = array('name' => (string)$name, 'permission' => $permission,
+			 'guest' => $name === AUTH_GUEST_USERNAME);
+    page_tool_output($users);
+}
+
+function page_tool_list($base_pagename) {
+    if($base_pagename !== '')
+	page_tool_check_pagename($base_pagename);
+    /* page_find() が返すのは配下だけで、読めないページは入らない */
+    $pages = page_find($base_pagename, array());
+    if($base_pagename !== '' && storage_page_is_exists($base_pagename) &&
+       auth_has_permission($base_pagename, 'read'))
+	$pages[] = page_read($base_pagename);
+
+    $summaries = array();
+    foreach($pages as &$page)
+	$summaries[] = page_tool_summary($page);
+    usort($summaries, 'page_tool_summary_compare');
+    page_tool_output($summaries);
+}
+
+function page_tool_read($pagename, $is_body) {
+    page_tool_check_pagename($pagename);
+    /* page_read() は読む権限が無いと認証の画面を出すので、先に確かめる */
+    if(!auth_has_permission($pagename, 'read'))
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'no_permission', 'このページを読む権限がありません。',
+		       array('name' => $pagename));
+    if(!page_is_exists($pagename))
+	page_tool_fail(PAGE_TOOL_EXIT_NOT_FOUND, 'not_found', 'ページがありません。',
+		       array('name' => $pagename));
+
+    $page = page_read($pagename);
+    $contents = page_get_contents($page);
+    if($is_body) {
+	global $PAGE_TOOL_IS_DONE;
+	while(ob_get_level() > 0)
+	    ob_end_clean();
+	fwrite(STDOUT, (string)$contents);
+	$PAGE_TOOL_IS_DONE = true;
+	return;
+    }
+    $result = page_tool_summary($page);
+    $result['meta'] = (object)$page['meta'];
+    /* 種別 file などで UTF-8 でない本文は JSON に入らない。--body で取る */
+    $result['body'] = (is_string($contents) && preg_match('//u', $contents)) ? $contents : null;
+    page_tool_output($result);
+}
+
+function page_tool_write($pagename, $options) {
+    global $HANDLERS, $AUTH_PERMISSIONS;
+    $user = $options['user'];
+    $is_dry_run = !empty($options['dry-run']);
+
+    page_tool_check_pagename($pagename);
+    if(isset($options['type']) &&
+       (empty($HANDLERS[$options['type']]) || !page_type_is_text_base($options['type'])))
+	page_tool_fail(PAGE_TOOL_EXIT_USAGE, 'invalid_type',
+		       '種別は markdown・wiki・text のどれかです。', array('name' => $pagename));
+
+    /* 画面から送られた本文と同じく、制御文字 (CR を含む) を落とす (args_get()) */
+    $contents = stream_get_contents(STDIN);
+    if($contents === false || !preg_match('//u', $contents))
+	page_tool_fail(PAGE_TOOL_EXIT_USAGE, 'invalid_encoding', '本文が UTF-8 ではありません。',
+		       array('name' => $pagename));
+    $contents = normalize_string($contents);
+    if($contents === '')
+	page_tool_fail(PAGE_TOOL_EXIT_USAGE, 'empty_body', '本文が空です。',
+		       array('name' => $pagename));
+
+    /* page_read() は読む権限が無いと認証の画面を出すので、storage から直に読む */
+    $page = page_create($pagename);
+    storage_page_read($page);
+    $is_exists = !empty($page['is_exists']);
+    if($is_exists)
+	$type = default_value($page['meta']['type'], DEFAULT_PAGE_TYPE);
+    else
+	$type = default_value($options['type'], PAGE_TOOL_DEFAULT_TYPE);
+
+    $result = array(
+	'name' => $pagename,
+	'action' => $is_exists ? 'overwrite' : 'create',
+	'type' => $type,
+	'user' => $user,
+	'permission' => $AUTH_PERMISSIONS[$user],
+	'written' => false,
+	);
+
+    if(page_is_manual($pagename))
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'manual', '組み込みのマニュアルは書き換えられません。',
+		       $result);
+    /* page_write() は書いたあとに page_read() で読み直すので、読む権限も要る */
+    if(!auth_has_permission($pagename, 'write') || !auth_has_permission($pagename, 'read'))
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'no_permission',
+		       'この利用者には、このページを書く権限がありません。', $result);
+    if(!page_type_is_text_base($type))
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'not_text',
+		       "種別 $type のページには書けません。", $result);
+    if(isset($options['type']) && $options['type'] !== $type)
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'type_mismatch',
+		       "既にあるページの種別は $type です。種別は変えません。", $result);
+
+    /* 題名とタグを本文から取る。normalize は種別で引く (clone_write_text() と同じ) */
+    $page['meta']['type'] = $type;
+    $normalize = handler_function($page, 'normalize');
+    if($normalize !== false)
+	$contents = $normalize($page, $contents);
+    if(isset($page['title']))
+	$result['title'] = $page['title'] === '' ? null : $page['title'];
+    else
+	$result['title'] = page_tool_meta($page, 'title');
+    $tag_page = $page;
+    if(isset($page['write_tag']))
+	$tag_page['meta']['tag'] = $page['write_tag'];
+    $result['tags'] = tag_get_page_tags($tag_page);
+    $result['same_body'] = $is_exists ? page_get_contents($page) === $contents : null;
+
+    if(!empty($page['meta']['lock']) && !lock_has_permission($page))
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'locked', 'ロック中のページです。', $result);
+    if($is_exists && empty($options['overwrite']))
+	page_tool_fail(PAGE_TOOL_EXIT_REFUSED, 'exists',
+		       '既にあるページです。上書きするときは --overwrite を付けてください。', $result);
+
+    if(!$is_dry_run) {
+	/* 上書きの前の版を必ず残す。画面からの保存は、同じ人が 15 分以内に続けると残さない */
+	if($is_exists)
+	    $page['backup_now'] = true;
+	$ticket = default_value($page['meta']['ticket'], '');
+	if(!page_write($page, $contents, $ticket))
+	    page_tool_fail(PAGE_TOOL_EXIT_FAILED, 'write_failed',
+			   '保存できませんでした。' . page_tool_messages(), $result);
+	$result['written'] = true;
+    }
+    page_tool_output($result);
+}
+
+if(count($argv) < 3)
+    usage();
+$index_path = $argv[1];
+$operation = $argv[2];
+$operands = array();
+$options = array();
+for($i = 3; $i < count($argv); $i++) {
+    $arg = $argv[$i];
+    if(isset($PAGE_TOOL_VALUE_OPTIONS[$arg])) {
+	if(!isset($argv[$i + 1]))
+	    usage();
+	$options[$PAGE_TOOL_VALUE_OPTIONS[$arg]] = $argv[++$i];
+    } else if(isset($PAGE_TOOL_FLAG_OPTIONS[$arg])) {
+	$options[$PAGE_TOOL_FLAG_OPTIONS[$arg]] = true;
+    } else if(strpos($arg, '--') === 0) {
+	usage();
+    } else {
+	$operands[] = $arg;
+    }
+}
+if(!isset($PAGE_TOOL_OPERATIONS[$operation]))
+    usage();
+$spec = $PAGE_TOOL_OPERATIONS[$operation];
+if(count($operands) < $spec['min'] || count($operands) > $spec['max'] ||
+   count(array_diff(array_keys($options), $spec['options'])) > 0)
+    usage();
+if($operation === 'write' && !isset($options['user']))
+    usage();
+
+if(!is_file($index_path))
+    page_tool_fail(PAGE_TOOL_EXIT_USAGE, 'invalid_site', 'index.php がありません。');
+page_tool_check_site_owner($index_path);
+
+require_once(dirname(dirname(__FILE__)) . '/tool/common');
+/* 所有者は page_tool_check_site_owner() が、動かしている利用者で確かめた */
+eval_index_php($index_path, false);
+define('APP_DIR_PATH', dirname(dirname(__FILE__)));
+require_once(APP_DIR_PATH . '/main.inc');
+
+ob_start();
+register_shutdown_function('page_tool_shutdown');
+/* 本文の変換は &pre(code) などで head_tags_add_javascript() を呼ぶ (update_wiki と同じ) */
+head_tags_init();
+/* page_write() が断った理由を受け取る */
+message_init();
+
+switch($operation) {
+case 'users':
+    page_tool_users();
+    break;
+case 'list':
+    page_tool_set_user(default_value($options['user'], null));
+    page_tool_list(default_value($operands[0], ''));
+    break;
+case 'read':
+    page_tool_set_user(default_value($options['user'], null));
+    page_tool_read($operands[0], !empty($options['body']));
+    break;
+case 'write':
+    page_tool_set_user($options['user']);
+    page_tool_write($operands[0], $options);
+    break;
+}
+exit(0);
+?>
