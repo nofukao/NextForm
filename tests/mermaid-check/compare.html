@@ -192,6 +192,12 @@ function security(frame) {
   var external = win.performance.getEntriesByType('resource').filter(function(e) { return /example\.invalid/.test(e.name); }).length;
   var styleText = 0;
   doc.querySelectorAll('section.markdown pre.diagram style').forEach(function(s) { if(/example\.invalid/.test(s.textContent)) styleText++; });
+  /* 部分編集が範囲を探すときに見る属性。ラベルから付けられると、別の範囲が開く */
+  var editAttributes = inDiagrams('[data-twp], [data-twl], [data-twll], [data-twlp], [data-pagename], [data-ticket]');
+  var spill = 0;
+  doc.querySelectorAll('section.markdown pre.diagram').forEach(function(pre) {
+    if(win.getComputedStyle(pre).overflowX === 'visible') spill++;
+  });
   var drawn = doc.querySelectorAll('section.markdown pre.diagram').length;
   var errors = doc.querySelectorAll('section.markdown p.diagram_error').length;
   var rows = [
@@ -202,7 +208,9 @@ function security(frame) {
     ['javascript: のリンク', links === 0, links + ' 個'],
     ['ページを覆う箱 (position: fixed)', fixed === 0, fixed + ' 個'],
     ['外部への読み込み (example.invalid)', external === 0, external + ' 件'],
-    ['図の CSS に外部の URL (themeCSS・fontFamily)', styleText === 0, styleText + ' 個']
+    ['図の CSS に外部の URL (themeCSS・fontFamily)', styleText === 0, styleText + ' 個'],
+    ['ラベルの部分編集の属性 (data-twp など)', editAttributes === 0, editAttributes + ' 個'],
+    ['本文の枠からはみ出せる図 (overflow-x: visible)', spill === 0, spill + ' 個']
   ];
   var t = table(['項目', '結果', '数']);
   var bad = 0;

@@ -103,6 +103,10 @@ rules_common() {
           "bool(re.search(r'section\.markdown\s+pre\.diagram\s*\{[^}]*border:\s*none', css, re.S))"
     check "  pre.diagram は white-space を素に戻す (ラベルの空白を変えない)" \
           "bool(re.search(r'section\.markdown\s+pre\.diagram\s*\{[^}]*white-space:\s*normal', css, re.S))"
+    # 図の中の設定 (useMaxWidth: false) で本文より広く描かれても、枠の外 (サイドの欄の上) へ
+    # はみ出さず、横に送れるように。はみ出すと、サイドのメニューに見せかけたリンクを置ける
+    check "  pre.diagram は本文の幅からはみ出さない (overflow-x: auto)" \
+          "bool(re.search(r'section\.markdown\s+pre\.diagram\s*\{[^}]*overflow-x:\s*auto', css, re.S)) and not re.search(r'section\.markdown\s+pre\.diagram\s*\{[^}]*overflow:\s*visible', css, re.S)"
     check "描けなかった図の誤り (p.diagram_error) に色がある" \
           "bool(re.search(r'section\.markdown\s+p\.diagram_error\s*\{[^}]*color:\s*#[0-9a-f]{6}', css, re.S))"
 
