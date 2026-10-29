@@ -126,6 +126,13 @@ function manual_get_pages() {
 	$pages[$pagename] = array(
 	    'body' => $manual_page['body'],
 	    'mtime' => $manual_page['mtime']);
+	/*
+	 * 題名は本文の &title の行から取る (ふつうのページを保存したときに
+	 * meta に入る値と同じ)。本文は変換しない。マニュアルの &title は
+	 * どれも記法を含まない文字。meta に題名が無いと、題名で検索に当たらない。
+	 */
+	if(preg_match('/^&title[ \t]+(.+?)[ \t]*$/m', $manual_page['body'], $m))
+	    $pages[$pagename]['title'] = $m[1];
     }
 
     /*
@@ -165,6 +172,15 @@ function manual_get_pages() {
      */
     cache_delete('', 'wiki-helper-info');
 
+    /*
+     * マニュアルのページの検索用キャッシュを消す。キャッシュはページの
+     * mtime より新しければ使われるが、マニュアルの mtime は配布物のファイルの
+     * 時刻 (リリースの時刻) なので、リリースからアップグレードまでのあいだに
+     * 作られたキャッシュが「新しい」まま残り、古い本文と題名で照合されていた。
+     */
+    foreach($pages as $pagename => $manual_page)
+	cache_delete($pagename, SEARCH_TEXTS_CACHE_KEY);
+
     manual_index_update($pages);
 
     return $MANUAL_PAGES_CACHE;
@@ -184,9 +200,30 @@ function manual_index_update(&$pages) {
      * 索引を作るには全ページの本文を読む。読む権限が無い利用者の
      * リクエストで走ると auth_check() がその場で終了させてしまうので、
      * 読めないときは何もしない。?option=search_index の再構築が拾う。
+     *
+     * ただしコマンドライン (アップグレードの道具など) は別。そこには
+     * 利用者がおらず、ログインしないとマニュアルを読めないサイトでは
+     * 毎回飛ばされて、マニュアルの索引が古いまま残っていた (後から
+     * 更新される機会も無い)。道具はサイトの持ち主として動いているので、
+     * このあいだだけ読む権限を与えて作る。権限は保存しない。
      */
-    if(!auth_has_permission(MANUAL_PAGENAME, 'read'))
+    if(!auth_has_permission(MANUAL_PAGENAME, 'read')) {
+	if(PHP_SAPI !== 'cli')
+	    return;
+	global $AUTH_PERMISSIONS, $AUTH_GET_USER_CACHE;
+	$saved_permissions = $AUTH_PERMISSIONS;
+	$saved_user = $AUTH_GET_USER_CACHE;
+	$AUTH_GET_USER_CACHE = false;
+	$AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = 'read';
+	manual_index_update_pages($pages);
+	$AUTH_PERMISSIONS = $saved_permissions;
+	$AUTH_GET_USER_CACHE = $saved_user;
 	return;
+    }
+    manual_index_update_pages($pages);
+}
+
+function manual_index_update_pages(&$pages) {
 
     $old_ngrams = cache_serialized_get('', MANUAL_INDEX_CACHE_KEY);
     if(!is_array($old_ngrams))
@@ -282,6 +319,8 @@ function manual_page_create($pagename, $manual_page) {
      * 書き込みの経路が 1 つ塞がる。
      */
     $page['manual_body'] = $manual_page['body'];
+    if(isset($manual_page['title']))
+	$page['meta']['title'] = $manual_page['title'];
     $page['meta_size'] = 0;
     $page['contents_size'] = strlen($manual_page['body']);
     $page['mtime'] = $manual_page['mtime'];
