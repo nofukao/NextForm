@@ -94,6 +94,18 @@ rules_common() {
     check "折りたたみの summary は字下げの分だけ戻す" \
           "bool(re.search(r'section\.markdown\s+details\s*>\s*summary\s*\{[^}]*margin-left:\s*-[1-9]', css, re.S))"
 
+    # 図 (```mermaid)。描けた <pre> はコードの見た目をやめて白い下地に置く。
+    # 暗い色調では Mermaid の既定の色 (白地向け、背景は透明) が沈む。テーマの
+    # pre (plain の左の線、docs の枠) より強い詳細度で打ち消す。
+    check "描けた図 (pre.diagram) は白い下地" \
+          "bool(re.search(r'section\.markdown\s+pre\.diagram\s*\{[^}]*background-color:\s*#ffffff', css, re.S))"
+    check "  pre.diagram はテーマの pre の線や枠を消す" \
+          "bool(re.search(r'section\.markdown\s+pre\.diagram\s*\{[^}]*border:\s*none', css, re.S))"
+    check "  pre.diagram は white-space を素に戻す (ラベルの空白を変えない)" \
+          "bool(re.search(r'section\.markdown\s+pre\.diagram\s*\{[^}]*white-space:\s*normal', css, re.S))"
+    check "描けなかった図の誤り (p.diagram_error) に色がある" \
+          "bool(re.search(r'section\.markdown\s+p\.diagram_error\s*\{[^}]*color:\s*#[0-9a-f]{6}', css, re.S))"
+
     # リンクで見出しに飛んだときの点滅 (nextform.js の anchorUpdate() が .anchor を
     # 付け外しする)。wiki は節の h1 に付くが、Markdown は h1〜h6 に直接付く。
     # h1.anchor だけだと、Markdown の ## 以下の見出しでは何も光らない。
