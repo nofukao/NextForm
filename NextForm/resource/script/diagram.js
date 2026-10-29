@@ -52,8 +52,13 @@
     /*
      * ラベルに書ける HTML。strict でも Mermaid はラベルを DOMPurify の既定の
      * 設定に通すだけで、フォーム・入力欄・style・外部の画像が残る。飾りと
-     * 数式 (KaTeX が出す MathML) だけにする。style と href は許さない。
-     * この設定は図の中の %%{init}%% やフロントマターからは変えられない。
+     * 数式 (KaTeX が出す MathML) だけにする。style と href と data- の属性は
+     * 許さない (data- は部分編集が範囲を探す印 data-twp などを偽れる)。
+     * この設定は図の中の %%{init}%% やフロントマターからは変えられない (SECURE_KEYS)。
+     *
+     * Mermaid の組み込みのアイコン (architecture の database など) も同じ消毒を
+     * 通るので出ない。アイコンは色を各要素の style で付けていて、出すには
+     * ラベルにも style を許すことになる (ページを覆う箱を置ける)。
      */
     var LABEL_TAGS = [
 	'b', 'strong', 'i', 'em', 'u', 's', 'del', 'ins', 'strike', 'mark', 'small',
@@ -74,12 +79,15 @@
 
     /*
      * 図の中の %%{init}%% やフロントマターで変えられない項目。Mermaid の既定の
-     * 6 つに、CSS としてそのまま差し込まれるもの (url() で外部を読める) を足す。
+     * 6 つに、CSS としてそのまま差し込まれるもの (url() で外部を読める) と、
+     * ラベルの消毒の設定を足す。dompurifyConfig は Mermaid の既定の設定に無い
+     * ので今は「知らない項目」として捨てられるが、Mermaid が既定に足すと図の
+     * 中から上書きできるようになる。版に左右されないよう、ここで止める。
      */
     var SECURE_KEYS = [
 	'secure', 'securityLevel', 'startOnLoad', 'maxTextSize',
 	'suppressErrorRendering', 'maxEdges',
-	'themeCSS', 'fontFamily', 'altFontFamily'];
+	'themeCSS', 'fontFamily', 'altFontFamily', 'dompurifyConfig'];
 
     var settings = null;
     var nextId = 0;
@@ -175,7 +183,8 @@
 	    secure: SECURE_KEYS,
 	    dompurifyConfig: {
 		ALLOWED_TAGS: LABEL_TAGS.concat(MATH_TAGS),
-		ALLOWED_ATTR: LABEL_ATTRIBUTES
+		ALLOWED_ATTR: LABEL_ATTRIBUTES,
+		ALLOW_DATA_ATTR: false
 	    }
 	});
     }
