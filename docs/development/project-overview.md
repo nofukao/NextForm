@@ -1092,7 +1092,16 @@ Markdown のリンクが、まだ無いページから作った場所とあと�
 - `gen-pages.php` は振る舞いを変えず、テストデータ専用と書いた
 - テストは `tests/page-tool.sh` (複製サイト)
 
-### v0.18 — 検索機能の高度化
+### v0.18.0 — Markdown のページで Mermaid の図を描く (作業中)
+
+**検索機能の高度化は v0.19 に送った** (2026-10-29)。利用者から、Markdown のページの
+```` ```mermaid ```` を図にする依頼が来た (作業の流れを罫線のテキストで描いていて読みにくい)。
+版数は v0.18.0 (利用者の判断 2026-10-29)。
+
+決めたことは §7 (2026-10-29 の追記) にある。設計・計測・却下した案は
+[design-markdown-mermaid.md](design-markdown-mermaid.md)。
+
+### v0.19 — 検索機能の高度化
 
 正規表現、AND/OR/NOT、タイトル/本文限定、更新日範囲。
 
@@ -1255,6 +1264,9 @@ AND は 2-gram 索引の候補の**交差**で実現している (`search_builti
 | AI 向けのスキルの置き場と配り方 (追記 2026-10-28) | **`plugins/nextform/skills/nextform-pages/SKILL.md` の 1 ファイル。中身は文書だけ。`.claude-plugin/marketplace.json` (マーケットプレイス名もプラグイン名も `nextform`、`source` は `./plugins/nextform`) で Claude Code のプラグインとして配る。`plugin.json` は置かない。フロントマターは `name` と `description` だけ。README には「プラグイン」と「SKILL.md をフォルダーに写す」の 2 通りを書く** (利用者の判断 2026-10-28。URL を示して読ませる方法は書かない)。配布物の tar.gz には入れない | プラグインの元をリポジトリの下のフォルダーにすると、入れたときに写されるのはそのフォルダーだけ (ルートを指すとリポジトリ全体が写る)。`plugin.json` が無ければ名前は marketplace の項目から取られ、`skills/` は自動で読まれる (`claude plugin validate --strict` が通ることを確かめた)。`name` と `description` だけなら Agent Skills の共通形式に収まり、Codex・GitHub Copilot・Gemini CLI・Cursor も `~/.agents/skills/` から読む。スキルは AI の手元に置くもので、サイトに置くものではない。**SKILL.md の版** — 道具が入った 0.17.0 以降が相手。道具が無いサイトでは `users` が失敗するので、そこで止まるよう書いた |
 | `gen-pages.php` (追記 2026-10-28) | **振る舞いを変えず、先頭に「テストデータ専用。題名は入らない。実際のページは `app/tool/page` で書く」と書く** (利用者の判断 2026-10-28) | ゴールデンマスターの入力 (md 5 件はすべて題名を持ち、wiki 3 件は表を持つ) が今の振る舞いを前提にしている。normalize を通すと期待値が変わる見込みで、確かめて更新する作業が増える。添付 (png) も投入するので、添付を書かない道具に寄せると 2 つのやり方が混ざる |
 | 同梱物のライセンス (追記 2026-10-29、「ライブラリの持ち方」を改める) | **原則は GPLv3 と両立するもの。置き場所は `app/vendor/` (PHP) と `resource/script/` (ブラウザで動くもの)。両立しないものは、ブラウザで動くもので、それを呼ぶ GPL のコードが NextForm で新しく書いたファイルだけであり、そのファイルに GPLv3 §7 の追加の許可を付け、`LICENSE` に名前・ライセンス・条文の場所・ソースの入手先・GPLv3 の対象外であることを書く場合に限り、利用者の承認を得て入れる** (利用者の判断 2026-10-29) | Mermaid 12 は ELK (elkjs 0.9.3 = EPL-2.0、中の EMF GWT = EPL-1.0、Xtext lib = EPL-2.0) を 1 本のファイルに埋め込んでいる。数式 (KaTeX) を使いたいので ELK を含まない tiny は採れない。上流から受け継いだコードは Mermaid を呼ばないので、組み合わさる GPL のコードを自分で書いたファイルだけに閉じ、§7 で許可を足せば解釈の幅を狭められる。設置のときに取ってくる案は「展開すれば動く」とぶつかり、組み合わせの問いも各サイトへ移るだけなので採らない。法的に確かめたものではない。詳細は [design-markdown-mermaid.md](design-markdown-mermaid.md) §2.6・§3.7 |
+| Markdown の図 (追記 2026-10-29) | **```` ```mermaid ```` のコードブロックをブラウザで図にする。Mermaid 12.2.0 の全部入り (`resource/script/mermaid/mermaid.min.js`) を同梱し、図のあるページにだけ `diagram.js` と `<meta>` を足す。`<pre>` を残して中身を SVG に差し替える。サイト設定 `MARKDOWN_DIAGRAM` (既定は描く) で止められる。プレビューでも描く。Markdown だけ** (利用者の判断 2026-10-29) | サーバーに実行環境を足さず、本文を外へ送らない。図の無いページの HTML は変えない。`<pre>` を残すので部分編集の `data-twp` がそのまま効く。分割版は全部入りより固まる時間が短いが、`.mjs` を返さないサーバーで動かず、上げるたびに古い部品が約 100 個残る。計測の結果と却下した案は [design-markdown-mermaid.md](design-markdown-mermaid.md) |
+| Mermaid と prototype.js (追記 2026-10-29) | **図のあるページでだけ、Mermaid を読む前に、一時の iframe から `Array.from`・`Array.prototype.entries`・`Object.values` を写し、組み込みの prototype に prototype.js が足したものを `enumerable: false` にする** (`diagram.js`) | prototype.js 1.7.2 がこれらを置き換え・追加しており、そのままでは 23 種類中 8〜11 種類の図が誤りで止まり、流れ図の `style` にメソッドのソースが入った。戻すと prototype.js なしと同じ図になった (Chrome・Firefox、5 候補)。NextForm のスクリプトは戻す 3 つを使っていない。全ページで直すと影響が広いので、図のあるページだけにした |
+| Mermaid のラベルの HTML (追記 2026-10-29) | **`dompurifyConfig` で飾りと数式 (MathML) のタグだけを許す。`style`・`href` は許さない。`secure` に `themeCSS`・`fontFamily`・`altFontFamily` を足す。`bindFunctions` は呼ばない** (利用者の判断 2026-10-29) | strict でもラベルは DOMPurify の既定の設定を通るだけで、`<form>`・`<input>`・`style`・外部の画像が残る (誰でも書ける wiki で偽のログイン欄を出せる)。`dompurifyConfig` は図の中の `%%{init}%%` やフロントマターから変えられない。数式は MathML で出て同じ消毒を通る |
 
 ## 8. ロックの仕様 (2026-08-03 に調査、不具合ではない)
 
