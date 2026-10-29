@@ -338,8 +338,10 @@ html=$(fetch "SearchQueryTest/Gamma&query=$(urlq 're:sqch[a-z]+')" auth)
 check_eq "開いたページにも印 (ログイン)"        "yes" "$(contains "$(printf '%s' "$html" | marks)" ':sqcherry')"
 html=$(fetch "SearchQueryTest/Gamma&query=$(urlq 're:sqch[a-z]+')")
 check_eq "  ログインしていないと印は付けない"   "no"  "$(contains "$(printf '%s' "$html" | marks)" ':sqcherry')"
-n=$(fetch "SearchQueryTest/Long&query=$(urlq 're:.')" auth | marks | wc -l)
-check_eq "  印の数に上限がある (2000 字に re:. でも 500 まで)" "yes" "$([[ $n -gt 0 && $n -le 500 ]] && echo yes || echo no)"
+html=$(fetch "SearchQueryTest/Long&query=$(urlq 're:.')" auth)
+n=$(printf '%s' "$html" | python3 -I -c 'import re, sys; m = re.search(r"<section class=\"markdown\".*?</section>", sys.stdin.read(), re.S); print(len(re.findall(r"<mark ", m.group(0))) if m else 0)')
+check_eq "  本文の印の数に上限がある (2000 字に re:. でも 500 まで)" "yes" "$([[ $n -gt 0 && $n -le 500 ]] && echo yes || echo no)"
+check_eq "  「検索キーワード:」の式の中には印を付けない" "" "$(printf '%s' "$html" | notice_of | marks)"
 html=$(fetch "SearchQueryTest/Gamma&query=$(urlq 'sqbanana -sqcherry')")
 check_eq "含まない語には印を付けない"           "no"  "$(contains "$(printf '%s' "$html" | marks)" ':sqcherry')"
 check_eq "  含む語には付ける"                   "yes" "$(contains "$(printf '%s' "$html" | marks)" ':sqbanana')"

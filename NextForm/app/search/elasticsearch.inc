@@ -92,8 +92,10 @@ function elasticsearch_search($query, $search_options) {
 	$query_data['sort'] = array(array('mtime' => 'desc'), '_score');
     else
 	$query_data['sort'] = array('_score');
-    if(!empty($search_options['is_ignore_system_page']))
-	$query_data['query']['bool']['must'][] = array('term' => array('is_system_page' => false));
+    /* マニュアルを探す範囲 (search_manual_scope())。試せる環境が無く、動きは確かめていない */
+    $scope = search_manual_scope($search_options);
+    if($scope !== 'with')
+	$query_data['query']['bool']['must'][] = array('term' => array('is_system_page' => $scope === 'only'));
 
 
     $results = elasticsearch_request('/page/_search', 'GET', json_encode($query_data));

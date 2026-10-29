@@ -175,6 +175,12 @@ set_const('SEARCH_RESULTS_PER_PAGE', 50);
  * 一致した回数だけ出るので、上限が無いと 1 ページで何十個にもなる。
  */
 set_const('SEARCH_SNIPPET_MAX', 5);
+/*
+ * 全部読む検索 (含まない・正規表現・日時だけで、索引で絞れない問い合わせ) の、
+ * 1 回あたりの時間の上限 (秒)。超えたら途中までの結果を出す。索引で絞れる
+ * 問い合わせには掛けない (docs/development/design-search-query.md §3.3)。
+ */
+set_const('SEARCH_TIME_LIMIT', 3);
 set_const('SEARCH_DEFAULT_ORDER', 'score');
 set_const('SEARCH_ENGINE', 'builtin');
 set_const('SEARCH_ELASTICSEARCH_URL', 'http://localhost:9200/nextform');
