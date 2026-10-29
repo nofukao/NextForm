@@ -18,7 +18,13 @@
 #   1. 今の書き方 (空白区切り・"..."・全角の空白・大文字小文字・1 文字・-rf だけ・
 #      端の OR・知らない xxx:・/api/) の結果・スコア・スニペットの印と、開いたページの印が
 #      変わらないこと。期待値は tests/search-query/legacy.expected (変える前の版で --update)
-#   2. PHP の警告が出ない
+#   2. OR・含まない・場所 (title: body: tag:)・日時とその組み合わせ
+#   3. 正規表現 (re:)。ログインした人だけ、読めない式・空の一致・重い式、印
+#   4. 全部読む検索の時間の上限 (打ち切りの表示・ページ送り・Shift+Enter)
+#   5. マニュアルを探す範囲 (含めない・含める・マニュアルだけ、リンク、Shift+Enter)
+#   6. マニュアルの題名 (検索に当たる、古いキャッシュ、読めないサイトの索引)
+#   7. Elasticsearch のとき、新しい書き方は案内を出して検索しない
+#   8. PHP の警告が出ない
 #
 # ページと権限を書き換えるので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -282,7 +288,120 @@ if [[ "$UPDATE" == "1" ]]; then
     exit 0
 fi
 
-echo "2. PHP の警告"
+echo "2. OR・含まない・場所・日時"
+r() { search_html "$1" "${2:-}" "${3:-}" | result_pages | tr ',' '\n' | sort | paste -sd,; }
+check_eq "a OR b はどちらかを含む"              "Alpha,Beta,Delta,Gamma,Old" "$(r 'sqapple OR sqcherry')"
+check_eq "a b OR c は a かつ (b か c)"          "Alpha,Gamma"           "$(r 'sqbanana sqapple OR sqcherry')"
+check_eq "a -b は a を含み b を含まない"        "Beta,Delta,Old"        "$(r 'sqapple -sqbanana')"
+check_eq "-b だけなら文字として探す (無い)"     ""                      "$(r '-sqbanana')"
+check_eq "-rf だけなら文字として探す"           "Beta"                  "$(r '-rf')"
+check_eq "OR が端にあれば文字"                  "Gamma"                 "$(r 'sqcherry OR')"
+check_eq "title: は題名だけ"                    "Alpha"                 "$(r 'title:手順')"
+check_eq "body: は本文だけ (題名とタグには無い)" ""                     "$(r 'body:手順')"
+check_eq "tag: はタグの完全一致"                "Alpha"                 "$(r 'tag:手順')"
+check_eq "  tag:手順書"                         "Tagged"                "$(r 'tag:手順書')"
+check_eq "title: と含まない"                    "Alpha,Delta,Old"       "$(r 'sqapple -title:下書き')"
+check_eq "\"...\" に場所を付ける"               "Alpha"                 "$(r 'body:"設定 方法"')"
+check_eq "before: はその日の終わりまで"         "Old"                   "$(r 'sqapple before:2021-01-01')"
+check_eq "after: はその日の 0 時から"           "Alpha,Beta,Delta"      "$(r 'sqapple after:2021-01-01')"
+check_eq "日時だけでも探せる"                   "Old"                   "$(r 'before:2020-01-15')"
+check_eq "  境目の日は含む (after)"             "Old"                   "$(r 'sqold after:2020-01-15')"
+check_eq "組み合わせ"                           "Alpha"                 "$(r 'title:手順 -下書き after:2021-01-01')"
+check_eq "全角の記号は文字として探す (ＯＲ)"    ""                      "$(r 'sqapple ＯＲ sqcherry')"
+check_eq "知らない名前の xxx: は文字"           "Gamma"                 "$(r 'https://example.com/sq')"
+html=$(search_html 'sqapple after:2026/10/01')
+check_eq "読めない日付は案内を出す"             "yes" "$(contains "$html" 'YYYY-MM-DD')"
+check_eq "  そのときは探さない"                 ""    "$(printf '%s' "$html" | result_pages)"
+html=$(search_html 'sqapple before:2026-02-30')
+check_eq "ない日付 (2026-02-30) も案内"         "yes" "$(contains "$html" 'YYYY-MM-DD')"
+echo
+
+echo "3. 正規表現 (re:)"
+check_eq "ログインすると re: で探せる"          "Alpha,Beta,Delta,Gamma,Old" "$(r 're:sq(apple|cherry)' '' auth)"
+check_eq "  式の記号が効く"                     "Alpha"                 "$(r 're:v[0-9]\.[0-9]' '' auth)"
+check_eq "  場所と組み合わせる"                 "Beta"                  "$(r 'title:re:ベ.タ' '' auth)"
+check_eq "  含まないと組み合わせる"             "Beta,Delta,Old"        "$(r 'sqapple -re:sqban.na' '' auth)"
+html=$(search_html 're:sq(apple|cherry)')
+check_eq "ログインしていないと案内が出る"       "yes" "$(contains "$html" 'ログインすると正規表現で探せます')"
+check_eq "  そのときは探さない"                 ""    "$(printf '%s' "$html" | result_pages)"
+html=$(search_html 're:sq(apple' '' auth)
+check_eq "読めない式は案内を出す"               "yes" "$(contains "$html" '正規表現が読めません')"
+check_eq "  そのときは探さない"                 ""    "$(printf '%s' "$html" | result_pages)"
+check_eq "空の一致しかない式は当たらない"       ""    "$(r 're:q{0}' '' auth)"
+check_eq "/ を含む式も読める"                   "Gamma" "$(r 're:/api/v[0-9]/' '' auth)"
+start=$(date +%s)
+html=$(search_html 're:(.*)*x' '' auth)
+check_eq "重い式でも 10 秒以内に返る"           "yes" "$([[ $(( $(date +%s) - start )) -lt 10 ]] && echo yes || echo no)"
+html=$(search_html 're:sqch[a-z]+' '' auth)
+check_eq "スニペットで一致した所に印"           "yes" "$(contains "$(printf '%s' "$html" | marks)" ':sqcherry')"
+html=$(fetch "SearchQueryTest/Gamma&query=$(urlq 're:sqch[a-z]+')" auth)
+check_eq "開いたページにも印 (ログイン)"        "yes" "$(contains "$(printf '%s' "$html" | marks)" ':sqcherry')"
+html=$(fetch "SearchQueryTest/Gamma&query=$(urlq 're:sqch[a-z]+')")
+check_eq "  ログインしていないと印は付けない"   "no"  "$(contains "$(printf '%s' "$html" | marks)" ':sqcherry')"
+n=$(fetch "SearchQueryTest/Long&query=$(urlq 're:.')" auth | marks | wc -l)
+check_eq "  印の数に上限がある (2000 字に re:. でも 500 まで)" "yes" "$([[ $n -gt 0 && $n -le 500 ]] && echo yes || echo no)"
+html=$(fetch "SearchQueryTest/Gamma&query=$(urlq 'sqbanana -sqcherry')")
+check_eq "含まない語には印を付けない"           "no"  "$(contains "$(printf '%s' "$html" | marks)" ':sqcherry')"
+check_eq "  含む語には付ける"                   "yes" "$(contains "$(printf '%s' "$html" | marks)" ':sqbanana')"
+echo
+
+echo "4. 全部読む検索の時間の上限"
+index_php_with "define('SEARCH_TIME_LIMIT', '0.000001');"
+# 索引で絞れない (正規表現だけ) ので全部読む
+html=$(search_html 're:sqapple' '' auth)
+check_eq "打ち切ったら案内を出す"               "yes" "$(contains "$html" '途中で打ち切りました')"
+check_eq "  件数は「途中まで」"                 "yes" "$(contains "$html" '途中まで')"
+check_eq "  ページ送りは出さない"               "no"  "$(contains "$html" '<nav class="pages">')"
+code=$(curl -sk -o /dev/null -w '%{http_code}' --digest -u "${TEST_USER}:${TEST_PASS}" -b login=1 \
+       "${URL}/?option=search&top=1&query=$(urlq 're:sqapple')")
+check_eq "  Shift+Enter (top=1) でも移らない"   "200" "$code"
+check_eq "索引で絞れる書き方には掛けない"       "Alpha,Beta,Delta,Old" "$(r 'sqapple')"
+index_php_with ""
+echo
+
+echo "5. マニュアルを探す範囲"
+html=$(search_html '検索')
+check_eq "既定ではマニュアルを含めない"         "0"   "$(printf '%s' "$html" | manual_count)"
+check_eq "  「マニュアルも含めて探す」のリンク" "yes" "$(contains "$html" 'manual=with')"
+check_eq "  「マニュアルだけを探す」のリンク"   "yes" "$(contains "$html" 'manual=only')"
+check_eq "  選択の欄がある"                     "yes" "$(contains "$html" 'name="manual"')"
+html=$(search_html '検索' '&manual=with')
+check_eq "含めるとマニュアルが出る"             "yes" "$([[ $(printf '%s' "$html" | manual_count) -gt 0 ]] && echo yes || echo no)"
+check_eq "  「マニュアルを除いて探す」のリンク" "yes" "$(contains "$html" 'マニュアルを除いて探す')"
+html=$(search_html '検索' '&manual=only')
+check_eq "マニュアルだけ: マニュアルが出る"     "yes" "$([[ $(printf '%s' "$html" | manual_count) -gt 0 ]] && echo yes || echo no)"
+check_eq "  マニュアルでないページは出ない"     "0"   "$(printf '%s' "$html" | other_count)"
+check_eq "  「マニュアルも含めて探す」のリンク" "yes" "$(contains "$html" 'manual=with')"
+check_eq "前の ignore_system_page=on でも含めない" "0" "$(search_html '検索' '&ignore_system_page=on' | manual_count)"
+location=$(curl -sk -o /dev/null -w '%{redirect_url}' "${URL}/?option=search&top=1&manual=only&query=$(urlq '検索')")
+check_eq "Shift+Enter はその範囲の一番上へ"     "yes" "$(contains "$location" 'NextFormManual')"
+echo
+
+echo "6. マニュアルの題名"
+check_eq "マニュアルのページに題名がある"       "サイトの管理" "$(value_of "$(helper manual-title NextFormManual/ja/Administration)" title)"
+html=$(search_html 'title:サイトの管理' '&manual=only')
+check_eq "題名で検索に当たる"                   "yes" "$(contains "$html" 'data-link-pagename="NextFormManual/ja/Administration"')"
+helper manual-stale-cache NextFormManual/ja/Administration > /dev/null
+helper manual-rebuild > /dev/null
+check_eq "作り直すと、古い検索用キャッシュを消す" "(none)" "$(value_of "$(helper manual-cache NextFormManual/ja/Administration)" title)"
+helper guest '{"NextFormManual*":"keepout","*":"read"}' > /dev/null
+helper index-forget NextFormManual/ja/Administration > /dev/null
+check_eq "  (索引から外した)"                   "0" "$(value_of "$(helper index-has サイトの管理 NextFormManual/ja/Administration)" has)"
+helper manual-rebuild > /dev/null
+check_eq "読めないサイトでも、CLI で作り直すと索引に入る" "1" "$(value_of "$(helper index-has サイトの管理 NextFormManual/ja/Administration)" has)"
+helper guest read > /dev/null
+echo
+
+echo "7. Elasticsearch"
+index_php_with "define('SEARCH_ENGINE', 'elasticsearch'); define('SEARCH_ELASTICSEARCH_URL', 'http://127.0.0.1:9/nextform');"
+start=$(date +%s)
+html=$(search_html 'sqapple -sqbanana')
+check_eq "新しい書き方には案内を出す"           "yes" "$(contains "$html" '使えない書き方')"
+check_eq "  そのときは問い合わせない (すぐ返る)" "yes" "$([[ $(( $(date +%s) - start )) -lt 3 ]] && echo yes || echo no)"
+index_php_with ""
+echo
+
+echo "8. PHP の警告"
 if [[ -n "$LOG_START" ]]; then
     warnings=$(sudo tail -n +"$(( LOG_START + 1 ))" "$PHP_ERROR_LOG" | grep -cF "$SITE")
     check_eq "この検証サイトの警告" "0" "$warnings"
