@@ -110,12 +110,20 @@
   `docs/development/project-overview.md` の v0.1 の節。
 - PHPUnit は **`require-dev` のみ**。`vendor/` は配布物に含めない。
 - **ランタイム依存を増やさない。** 「tar.gz を展開するだけで動く」配布形式を守る。
-  **例外は同梱 (`NextForm/app/vendor/`) のみ**。条件は 3 つ:
-  ① 利用者に `composer install` を要求しない ② 取り込みが再現可能
-  (`deploy/scripts/update-vendor.sh` + `composer.lock`) ③ 上流の脆弱性に追随し、
-  NextForm のリリースに乗せて配る。`composer.json` / `composer.lock` /
+  **例外は同梱のみ**。置き場所は `NextForm/app/vendor/` (PHP) と
+  `NextForm/resource/script/` (ブラウザで動くもの)。条件は 3 つ:
+  ① 利用者に `composer install` などを要求しない ② 取り込みが再現可能
+  (`deploy/scripts/update-vendor.sh` + `composer.lock`、
+  `deploy/scripts/update-mermaid.sh` + `deploy/scripts/mermaid.lock`) ③ 上流の脆弱性に
+  追随し、NextForm のリリースに乗せて配る。`composer.json` / `composer.lock` /
   リポジトリ直下の `vendor/` は**開発用で、配布物には入らない**。
-  同梱物のライセンスは `LICENSE` に列挙する (GPLv3 と両立するものだけ)。
+  同梱物のライセンスは `LICENSE` に列挙する。**原則は GPLv3 と両立するもの。**
+  両立しないものは、次をすべて満たすときに限り、利用者の承認を得て入れる:
+  ブラウザで動くもの (`resource/script/` の下) / それを呼ぶ GPL のコードが NextForm で
+  新しく書いたファイルだけで、そのファイルに GPLv3 §7 の追加の許可を付ける /
+  `LICENSE` に名前・ライセンス・条文の場所・ソースの入手先・GPLv3 の対象外であることを書く
+  (2026-10-29。Mermaid 12 が含む ELK・EMF の EPL。
+  `docs/development/design-markdown-mermaid.md` §2.6・§3.7)。
 - **`search-index.sh` は複製したサイトを作ってから走る。** 索引をわざと壊す検査を
   含むので、複製元 (`NF_SITE`) には触らない。リポジトリの作業ツリーを rsync して
   から検証するので、`deploy.sh` を先に走らせる必要はない。
