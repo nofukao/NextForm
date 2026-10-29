@@ -175,6 +175,12 @@ set_const('SEARCH_RESULTS_PER_PAGE', 50);
  * 一致した回数だけ出るので、上限が無いと 1 ページで何十個にもなる。
  */
 set_const('SEARCH_SNIPPET_MAX', 5);
+/*
+ * 全部読む検索 (含まない・日時だけで、索引で絞れない問い合わせ) と、正規表現を
+ * 含む検索の、1 回あたりの時間の上限 (秒)。超えたら途中までの結果を出す。
+ * 今までの書き方 (索引で絞れる) には掛けない (docs/development/design-search-query.md §3.3)。
+ */
+set_const('SEARCH_TIME_LIMIT', 3);
 set_const('SEARCH_DEFAULT_ORDER', 'score');
 set_const('SEARCH_ENGINE', 'builtin');
 set_const('SEARCH_ELASTICSEARCH_URL', 'http://localhost:9200/nextform');
@@ -333,6 +339,7 @@ function setup_read($name) {
 |{SEARCH_RESULTS_PER_PAGE|50|検索結果を1画面に出す件数(0で全件)|}
 |{SEARCH_SNIPPET_MAX|5|検索結果1件に出す本文スニペットの上限(0で無制限)|}
 |{SEARCH_DEFAULT_ORDER|score|検索結果の順序 score:単語の出現頻度(スコア)順, mtime:更新日時順|}
+|{SEARCH_TIME_LIMIT|3|正規表現を使う検索と，「含まない」・日付だけの検索の時間の上限(秒)．超えると途中までの結果を出す|}
 |{SEARCH_ENGINE|builtin|使用する検索エンジン builtin:NextForm内蔵の検索エンジン, elasticsearch: Elasticsearchを使用|}
 |{SEARCH_ELASTICSEARCH_URL|http://localhost:9200/nextform|ElasticsearchのURL|}
 |{FEED_DEFAULT_PAGE_NUM|20|フィードのデフォルトの件数|}
@@ -396,6 +403,7 @@ function setup_read($name) {
 |{SEARCH_RESULTS_PER_PAGE|50|how many search results are shown on one screen (0 for all)|}
 |{SEARCH_SNIPPET_MAX|5|the limit on snippets shown for one search result (0 for no limit)|}
 |{SEARCH_DEFAULT_ORDER|score|the order of search results. score: by how often the words appear, mtime: by the time of modification|}
+|{SEARCH_TIME_LIMIT|3|the time limit (seconds) for a search with a regular expression, or with only exclusion or dates. Beyond it, the results found so far are shown|}
 |{SEARCH_ENGINE|builtin|the search engine to use. builtin: the search engine inside NextForm, elasticsearch: use Elasticsearch|}
 |{SEARCH_ELASTICSEARCH_URL|http://localhost:9200/nextform|the URL of Elasticsearch|}
 |{FEED_DEFAULT_PAGE_NUM|20|the default number of entries in a feed|}

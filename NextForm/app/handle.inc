@@ -91,8 +91,17 @@ function handle(&$page, $dom, $action = '') {
 	    message_notice(l('Page already exists.'));
 
 	if($action == 'show' && isset($args['query'])) {
-	    $query = search_parse_query($args['query']);
+	    /*
+	     * 印を付ける語は「含む」文字の語と、正規表現がこのページで一致した
+	     * 文字 (ログインしているときだけ)。「含まない」語には付けない。
+	     */
+	    $search_query = search_query_parse($args['query']);
+	    $query = search_page_highlights($page, $search_query);
 	    $page['query'] = &$query;
+	    if(!empty($search_query['operators'])) {
+		$page['query_text'] = $search_query['text'];
+		$page['query_notice_words'] = search_query_words($search_query);
+	    }
 	    search_notice_query($page, $dom);
 	}
 

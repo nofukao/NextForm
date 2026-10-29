@@ -16,34 +16,145 @@ define('SEARCH_INDEX_REBUILD_KEY_PREFIX', 'search_rebuild_');
 $SEARCH_ENGINES = array();
 require_once(APP_DIR_PATH . '/search/elasticsearch.inc');
 
+/*
+ * 利用者が書いた正規表現を 1 回呼ぶときの pcre.backtrack_limit。
+ * (.*)*x のような式は、既定の 100 万では 1 回で数ミリ秒〜数十ミリ秒かかり、
+ * 全ページに掛けると数秒になる (実データ 926 ページで 4.5 秒)。下げすぎると、
+ * ふつうの式 (foo.*?bar) が長い塊 (数十 KB の 1 行) で確かめきれなくなる
+ * (2 万では 30KB の 1 行で外れた)。確かめきれなかった塊は search_term_match()
+ * が「分からない」として扱う。
+ */
+define('SEARCH_REGEX_BACKTRACK_LIMIT', 100000);
+/* 正規表現の一致から作る、印を付ける文字の種類の上限 (1 ページあたり) */
+define('SEARCH_REGEX_HIGHLIGHT_MAX', 100);
+/*
+ * 1 つの問い合わせに書ける語の数の上限。正規表現は語ごとに形を確かめるので、
+ * 語を何百も並べると 1 回の要求で CPU を秒単位で使えてしまう。
+ */
+define('SEARCH_QUERY_TERM_MAX', 50);
+
+/*
+ * 検索する。$query は search_query_parse() の戻り値。
+ * 今までの平らな語の配列 (search_parse_query() の戻り値) も受け取る。
+ *
+ * $search_options:
+ *   manual  'without' (マニュアルを含めない) / 'with' (含める、既定) / 'only' (マニュアルだけ)
+ *           画面は既定で 'without' を渡す。ここの既定が 'with' なのは、
+ *           今まで (is_ignore_system_page を渡さないと含めた) と揃えるため
+ *   is_ignore_system_page  今までの書き方。真なら 'without'
+ *   order   'score' / 'mtime'
+ *
+ * 問い合わせの誤り・案内は $query['errors'] に、打ち切ったことは
+ * $query['is_partial'] に入る (平らな配列で呼んだときは入らない)。
+ */
 function search(&$query, $search_options = array()) {
+    if(isset($query['clauses']))
+	$parsed = &$query;
+    else
+	$parsed = search_query_from_words($query);
+
     if(SEARCH_ENGINE === 'builtin')
-	return search_builtin($query, $search_options);
-    else if(($engine = search_engine()) !== false)
-	return $engine['search']($query, $search_options);
+	return search_builtin($parsed, $search_options);
+    else if(($engine = search_engine()) !== false) {
+	/*
+	 * 新しい書き方は builtin だけ。記号を落として渡すと「含まない」が
+	 * 「含む」になるなど、意味が変わるので、問い合わせずに知らせる。
+	 */
+	if(!empty($parsed['operators'])) {
+	    $parsed['errors'][] = l('This search engine does not support this way of writing.');
+	    return array();
+	}
+	$words = search_query_words($parsed);
+	return $engine['search']($words, $search_options);
+    }
+}
+
+/*
+ * マニュアルを探す範囲。'without' / 'with' / 'only'。
+ */
+function search_manual_scope($search_options) {
+    if(isset($search_options['manual']) &&
+       in_array($search_options['manual'], array('without', 'with', 'only'), true))
+	return $search_options['manual'];
+    if(!empty($search_options['is_ignore_system_page']))
+	return 'without';
+    return 'with';
+}
+
+function search_scope_includes($scope, $pagename) {
+    if($scope === 'with')
+	return true;
+    $is_manual = page_is_system_page($pagename);
+    return $scope === 'only' ? $is_manual : !$is_manual;
+}
+
+/* 正規表現 (re:) を使えるのはログインした人だけ (設計メモ §4 の 2) */
+function search_regex_is_allowed() {
+    return auth_get_user() !== false;
 }
 
 function search_builtin(&$query, $search_options = array()) {
-    global $SEARCH_SUBSTR, $SEARCH_STRLEN;
+    $search_results = array();
+    $scope = search_manual_scope($search_options);
 
-    $query_num = count($query);
+    if(!empty($query['errors']))
+	return $search_results;
+    if(!empty($query['has_regex']) && !search_regex_is_allowed()) {
+	$query['errors'][] = l('Regular expressions can be used after logging in.');
+	return $search_results;
+    }
+    if(empty($query['clauses']) && $query['after'] === null && $query['before'] === null)
+	return $search_results;
 
-    $candidate_pagenames = array();
-    foreach($query as $word) {
-	search_word($word, $candidate_pagenames);
+    /*
+     * 候補を索引で絞る。「含む」語だけで正規表現を含まない節は、語ごとの
+     * 候補の和 (OR) を取り、そういう節どうしは交差 (AND) を取る。今の
+     * 書き方 (語を並べるだけ) は必ずここを通り、今までと同じ候補になる。
+     */
+    $candidates = null;
+    foreach($query['clauses'] as $clause) {
+	if(!search_clause_is_indexable($clause))
+	    continue;
+	$union = array();
+	foreach($clause as $term)
+	    $union += search_word_pages($term['value']);
+	$candidates = $candidates === null ? $union : array_intersect_key($candidates, $union);
     }
 
-    $search_results = array();
-    foreach($candidate_pagenames as $pagename => $count) {
-	if(!empty($search_options['is_ignore_system_page']) && page_is_system_page($pagename))
+    /*
+     * 絞れる節が無いとき (含まない・正規表現・日時だけ) は全ページを読む。
+     * 実測 (926 ページ) でキャッシュがあれば 50 ms 前後。大きなサイトや
+     * 重い正規表現に備えて時間の上限を掛ける。
+     */
+    $deadline = null;
+    if($candidates === null) {
+	$candidates = array();
+	foreach(search_index_target_pages() as $found)
+	    $candidates[$found['name']] = true;
+	$deadline = microtime(true) + (float)SEARCH_TIME_LIMIT;
+    }
+    /*
+     * 正規表現は、索引で絞れても候補のほぼ全部に掛かることがある
+     * (e re:(\w+\s?)+$)。式の重さは語で絞っても変わらないので、上限を掛ける。
+     */
+    if(!empty($query['has_regex']))
+	$deadline = microtime(true) + (float)SEARCH_TIME_LIMIT;
+
+    foreach($candidates as $pagename => $dummy) {
+	$pagename = (string)$pagename;
+	if(!search_scope_includes($scope, $pagename))
 	    continue;
-	
-	if($count == $query_num) {
-	    $result = search_page_match($pagename, $query);
-	    if($result !== false) {
-		$search_results[$pagename] = $result;
-	    }
+	if($deadline !== null && microtime(true) > $deadline) {
+	    $query['is_partial'] = true;
+	    break;
 	}
+	$result = search_page_match($pagename, $query, $deadline);
+	if($result === null) {
+	    $query['is_partial'] = true;
+	    break;
+	}
+	if($result !== false)
+	    $search_results[$pagename] = $result;
     }
     if(isset($search_options['order']) && $search_options['order'] === 'mtime')
 	uasort($search_results, 'search_result_compare_mtime');
@@ -51,6 +162,14 @@ function search_builtin(&$query, $search_options = array()) {
 	uasort($search_results, 'search_result_compare_score');
 
     return $search_results;
+}
+
+function search_clause_is_indexable($clause) {
+    foreach($clause as $term) {
+	if($term['not'] || $term['type'] !== 'text')
+	    return false;
+    }
+    return true;
 }
 
 function search_result_compare_score($result_a, $result_b) {
@@ -69,7 +188,11 @@ function search_result_compare_mtime($result_a, $result_b) {
     return strcmp($result_a['pagename'], $result_b['pagename']);
 }
 
-function search_word($word, &$candidate_pagenames) {
+/*
+ * その語の 2-gram が全部入っているページ (候補)。`ページ名 => true`。
+ * 1 文字の語は、その文字で始まる 2-gram のどれかを持つページ。
+ */
+function search_word_pages($word) {
     global $SEARCH_SUBSTR, $SEARCH_STRLEN;
     
     $candidate1_pagenames = array();
@@ -113,14 +236,12 @@ function search_word($word, &$candidate_pagenames) {
 	    }
 	}
     }
+    $pages = array();
     foreach($candidate1_pagenames as $pagename => $count) {
-	if($count == $match_page_count) {
-	    if(empty($candidate_pagenames[$pagename]))
-		$candidate_pagenames[$pagename] = 1;
-	    else
-		$candidate_pagenames[$pagename]++;
-	}
+	if($count == $match_page_count)
+	    $pages[$pagename] = true;
     }
+    return $pages;
 }
 
 function search_page_ngram(&$page) {
@@ -488,12 +609,42 @@ function search_page_texts_cached(&$page) {
     return $texts;
 }
 
-function search_page_match($pagename, $query) {
+/*
+ * 1 ページを問い合わせと照合する。当たればスニペットとスコアを返し、
+ * 当たらなければ false、時間の上限 ($deadline) を過ぎたら null を返す。
+ *
+ * 確かめる順は「読む権限 → 日時 → 文字」。権限の無いページは中身を読まない。
+ */
+function search_page_match($pagename, $query, $deadline = null) {
     global $SEARCH_STRLEN;
+    if(!isset($query['clauses']))
+	$query = search_query_from_words($query);
     if(!auth_has_permission($pagename, 'read'))
 	return false;
 
     $page = page_read($pagename);
+    if(empty($page['is_exists']))
+	return false;
+    if($query['after'] !== null && $page['mtime'] < $query['after'])
+	return false;
+    if($query['before'] !== null && $page['mtime'] > $query['before'])
+	return false;
+
+    /* 日時だけの問い合わせは本文を読まない (キャッシュが無いと全ページの変換になる) */
+    if(empty($query['clauses'])) {
+	$result = array(
+	    'pagename' => $pagename,
+	    'mtime' => $page['mtime'],
+	    'snippets' => array(),
+	    'highlights' => array(),
+	    'match_title' => false,
+	    'count' => 0,
+	    'score' => 0);
+	if(isset($page['meta']['title']))
+	    $result['title'] = $page['meta']['title'];
+	return $result;
+    }
+
     $page_texts_info = search_page_texts_cached($page);
     $page_texts = $page_texts_info['body'];
     $matches = array();
@@ -512,30 +663,62 @@ function search_page_match($pagename, $query) {
     $snippets = array();
     $texts = array();
 
+    /*
+     * $texts はスニペットを作るための並び (本文の文字のあいだに ' ' を挟む。
+     * 今までと同じ)。照合には挟んだ ' ' を入れない ($pieces)。入れると
+     * re:\s がどのページにも当たってしまう。
+     */
+    $pieces = array();
+    foreach($page_texts as &$text) {
+	$words = preg_split(LANGUAGE_SEARCH_SPLIT_REGEX, $text, -1, PREG_SPLIT_NO_EMPTY);
+	$texts = array_merge($texts, $words);
+	$pieces = array_merge($pieces, $words);
+	$texts[] = ' ';
+    }
+    unset($text);
+
+    /*
+     * 節を全部確かめる。1 つでも外れたら当たらない。正規表現の一致した
+     * 文字は、スニペットと印のために集める (「含まない」語のものは除く)。
+     */
+    $regex_words = array();
+    foreach($query['clauses'] as $clause) {
+	$is_clause_match = false;
+	foreach($clause as $term) {
+	    $hit = search_term_match($term, $page_texts_info, $pieces, $regex_words, $deadline);
+	    if($hit === null)
+		return null;
+	    if($hit !== $term['not'])
+		$is_clause_match = true;
+	}
+	if(!$is_clause_match)
+	    return false;
+    }
+
+    /*
+     * スニペットとスコアは今までと同じ作り。印を付ける語は「含む」語の
+     * 並び (今までの平らな配列と同じ) に、正規表現の一致した文字を足したもの。
+     */
+    $highlights = search_highlights_merge(search_query_words($query), array_keys($regex_words));
+
     if(isset($page_texts_info['title']) && $page_texts_info['title'] !== '') {
 	$title = $page_texts_info['title'];
-	if(search_text_match($page_texts_info['title'], $query, $matches)) {
+	if(search_text_match($page_texts_info['title'], $highlights, $matches)) {
 	    $snippets[] = l('Title') . ': ' . $page_texts_info['title'];
 	    $match_title = true;
 	}
     }
 
     if(isset($page_texts_info['description']) && $page_texts_info['description'] !== '') {
-	if(search_text_match($page_texts_info['description'], $query, $matches, $match_description_num)) {
+	if(search_text_match($page_texts_info['description'], $highlights, $matches, $match_description_num)) {
 	    $snippets[] = l('Description') . ': ' . $page_texts_info['description'];
 	}
     }
 
     if(isset($page_texts_info['tag'])) {
-	if(search_text_match($page_texts_info['tag'], $query, $matches, $match_tag_num)) {
+	if(search_text_match($page_texts_info['tag'], $highlights, $matches, $match_tag_num)) {
 	    $snippets[] = l('Tags') . ': ' . $page_texts_info['tag'];
 	}
-    }
-
-    foreach($page_texts as &$text) {
-	$words = preg_split(LANGUAGE_SEARCH_SPLIT_REGEX, $text, -1, PREG_SPLIT_NO_EMPTY);
-	$texts = array_merge($texts, $words);
-	$texts[] = ' ';
     }
 
     /*
@@ -552,7 +735,7 @@ function search_page_match($pagename, $query) {
     $position = 0; 
     $positions = array();
     for($i = 0; $i < $texts_num; $i++) {
-	if(search_text_match($texts[$i], $query, $matches, $count, $position, $positions)) {
+	if(search_text_match($texts[$i], $highlights, $matches, $count, $position, $positions)) {
 	    $snippet = $pre_snippet = $texts[$i];
 	    $j = 1;
 	    $s = $e = $i;
@@ -562,7 +745,7 @@ function search_page_match($pagename, $query) {
 		if($s >= 0)
 		    $snippet = $texts[$s] . $snippet;
 		if($e < $texts_num) {
-		    search_text_match($texts[$e], $query, $matches, $count, $position, $positions);
+		    search_text_match($texts[$e], $highlights, $matches, $count, $position, $positions);
 		    $snippet = $snippet . $texts[$e];
 		}
 		$j++;
@@ -577,34 +760,107 @@ function search_page_match($pagename, $query) {
 	}
     }
 
-    if(count($matches) == count($query)) {
-	/*
-	$deviation = 0;
-	$positions_num = count($positions);
-	if($positions_num > 1) {
-	    $mean_position = array_sum($positions) / $positions_num;
-	    foreach($positions as $position)
-		$deviation += pow($position - $mean_position, 2);
-	    $deviation /= $positions_num;
-	    $deviation = sqrt($deviation);
-	}
-	$score = ($match_title ? 1 : 0) * 100 + $count - min($deviation / 1000, 1);
-	*/
+    $score = ($match_title ? 1 : 0) * 100 + $match_description_num * 5 + $match_tag_num * 10 + $count;
+    $result = array(
+	'pagename' => $pagename,
+	'mtime' => $page['mtime'],
+	'snippets' => $snippets,
+	'highlights' => $highlights,
+	'match_title' => $match_title,
+	'count' => $count,
+	'score' => $score);
+    if(isset($page['meta']['title']))
+	$result['title'] = $page['meta']['title'];
+    return $result;
+}
 
-	$score = ($match_title ? 1 : 0) * 100 + $match_description_num * 5 + $match_tag_num * 10 + $count;
-	$result = array(
-	    'pagename' => $pagename,
-	    'mtime' => $page['mtime'],
-	    'snippets' => $snippets,
-	    'match_title' => $match_title,
-	    'count' => $count,
-	    'score' => $score);
-	if(isset($page['meta']['title']))
-	    $result['title'] = $page['meta']['title'];
-	return $result;
-    } else {
-	return false;
+/*
+ * 語 1 つを、場所の文字と照合する。当たれば true、当たらなければ false、
+ * 時間の上限を過ぎたら null。「含まない」の反転は呼び出し側で行う。
+ *
+ * 本文は句読点と改行で分けた塊ごとに見る ($pieces)。今までの語と同じく、
+ * 正規表現も「。、．，」と改行をまたがない。
+ */
+function search_term_match($term, $texts_info, $pieces, &$regex_words, $deadline) {
+    $fields = array();
+    if($term['field'] === '' || $term['field'] === 'title') {
+	if(isset($texts_info['title']) && $texts_info['title'] !== '')
+	    $fields[] = $texts_info['title'];
     }
+    if($term['field'] === '') {
+	if(isset($texts_info['description']) && $texts_info['description'] !== '')
+	    $fields[] = $texts_info['description'];
+	if(isset($texts_info['tag']))
+	    $fields[] = $texts_info['tag'];
+    }
+    if($term['field'] === 'tag') {
+	/* タグは 1 つずつ。文字の語は完全一致 (&pages(tag=..) と同じ) */
+	$tags = isset($texts_info['tag']) ? explode(' ', $texts_info['tag']) : array();
+	if($term['type'] === 'text') {
+	    foreach($tags as $tag) {
+		if($tag !== '' && strtolower($tag) === strtolower($term['value']))
+		    return true;
+	    }
+	    return false;
+	}
+	$fields = $tags;
+    }
+    if($term['field'] === '' || $term['field'] === 'body')
+	$fields = array_merge($fields, $pieces);
+
+    $is_match = false;
+    $is_unknown = false;
+    foreach($fields as $text) {
+	if($term['type'] === 'text') {
+	    if(stripos($text, $term['value']) !== false)
+		return true;
+	    continue;
+	}
+	if($deadline !== null && microtime(true) > $deadline)
+	    return null;
+	$found = search_regex_matches($term['pattern'], $text);
+	if($found === null) {
+	    $is_unknown = true;
+	    continue;
+	}
+	foreach($found as $matched) {
+	    $is_match = true;
+	    if(!$term['not'] && count($regex_words) < SEARCH_REGEX_HIGHLIGHT_MAX)
+		$regex_words[$matched] = true;
+	}
+    }
+    /*
+     * 手数の上限で確かめきれなかった塊があり、ほかで当たっていないときは
+     * 「分からない」。「含む」なら当たらないとし、「含まない」なら含むとして
+     * 除く (含んでいるかもしれないページを「含まない」の結果に入れない)。
+     */
+    if(!$is_match && $is_unknown)
+	return $term['not'];
+    return $is_match;
+}
+
+/*
+ * 利用者の正規表現を 1 回掛け、一致した空でない文字を返す。
+ * 手数の上限は**この呼び出しの前後だけ**下げる。検索全体で下げると、
+ * キャッシュの無いページの本文の変換 (wiki・Markdown の部品も正規表現を
+ * 使う) まで途中で失敗し、誤った中身がキャッシュに残る。
+ * 上限に当たったとき・文字が UTF-8 でないときは null (確かめきれない)。
+ */
+function search_regex_matches($pattern, $text) {
+    $limit = ini_get('pcre.backtrack_limit');
+    ini_set('pcre.backtrack_limit', (string)SEARCH_REGEX_BACKTRACK_LIMIT);
+    $num = @preg_match_all($pattern, $text, $matches);
+    ini_set('pcre.backtrack_limit', $limit);
+    if($num === false)
+	return null;
+    if($num === 0)
+	return array();
+    $found = array();
+    foreach($matches[0] as $matched) {
+	if($matched !== '')
+	    $found[] = $matched;
+    }
+    return $found;
 }
 
 function search_text_match($text, $query, &$matches = array(), &$count = 0, &$position = 0, &$positions = array()) {
@@ -683,24 +939,317 @@ function search_ngram_key($ngram) {
     return chr(($k1 + $k2 + $k3) & 0xff);
 }
 
-function search_parse_query($query_text) {
-    preg_match_all(LANGUAGE_SEARCH_QUERY_REGEX, language_sanitize($query_text), $matches);
-    $query = array();
-    foreach($matches[1] as $m) {
-	$m = trim($m, '"');
-	if($m !== '') {
-	    $query[] = $m;
+/*
+ * 検索欄の問い合わせを読む (docs/development/design-search-query.md §3.1)。
+ *
+ *   語1 語2              両方を含む (今までと同じ)
+ *   "..."                空白ごと 1 つの語 (今までと同じ)
+ *   語1 OR 語2           どちらかを含む。隣どうしだけで、括弧は無い
+ *   -語                  含まない。ほかに条件 (含む語か日時) が無ければ文字として探す
+ *   title: body: tag:    探す場所 (題名とページ名 / 本文 / タグの完全一致)
+ *   re:式                正規表現 (大文字小文字を区別しない)
+ *   after: before:       更新日時 (YYYY-MM-DD。その日を含む)
+ *
+ * 頭に付けるものの順は - → 場所 → re:。値は "..." でもよい。演算子の記号は
+ * 半角だけ。知らない名前の xxx: や、値の無いもの (title: after:) はふつうの語。
+ * 語は SEARCH_QUERY_TERM_MAX まで。
+ *
+ * 戻り値:
+ *   text       入力 (全角の空白を揃えたもの)
+ *   clauses    節 (AND) の並び。節は語 (OR) の並び。語は
+ *              type ('text' / 'regex')・value・field ('' / 'title' / 'body' / 'tag')・
+ *              not・raw (入力の 1 語)・pattern (正規表現のとき)
+ *   after / before  更新日時の範囲 (UNIX 時刻、無ければ null)
+ *   errors     画面に出す誤り (読めない日付・読めない式)
+ *   operators  新しい書き方を使ったか
+ *   has_regex  正規表現を含むか
+ */
+function search_query_parse($query_text) {
+    $text = language_sanitize($query_text);
+    $query = array(
+	'text' => $text,
+	'clauses' => array(),
+	'after' => null,
+	'before' => null,
+	'errors' => array(),
+	'operators' => false,
+	'has_regex' => false,
+	);
+
+    /*
+     * 切り出しは今までの LANGUAGE_SEARCH_QUERY_REGEX と同じく "..." か空白を
+     * 含まない並び。演算子の頭 (-・場所・re:) の後ろの "..." も 1 つの語にする。
+     */
+    preg_match_all('/((?:-?(?:(?:title|body|tag):)?(?:re:)?)?".*?"|[^\s]+)/', $text, $matches);
+    if(count($matches[1]) > SEARCH_QUERY_TERM_MAX) {
+	$query['errors'][] = lf('Too many words (up to $max$).', array('max' => SEARCH_QUERY_TERM_MAX));
+	return $query;
+    }
+    $items = array();
+    foreach($matches[1] as $token) {
+	if($token === 'OR') {
+	    $items[] = 'OR';
+	    continue;
 	}
+	if(preg_match('/^(after|before):(.+)$/s', $token, $m)) {
+	    $time = search_query_date($m[2], $m[1] === 'before');
+	    if($time === false) {
+		$query['errors'][] = l('Write dates as YYYY-MM-DD.');
+		continue;
+	    }
+	    if($m[1] === 'after')
+		$query['after'] = $query['after'] === null ? $time : max($query['after'], $time);
+	    else
+		$query['before'] = $query['before'] === null ? $time : min($query['before'], $time);
+	    $query['operators'] = true;
+	    continue;
+	}
+	$term = search_query_term($token);
+	if($term['value'] === '')
+	    continue;
+	$items[] = $term;
+    }
+
+    /* OR は前後の語を 1 つの節にまとめる。端や続いた OR はふつうの語 */
+    $item_num = count($items);
+    for($i = 0; $i < $item_num; $i++) {
+	$item = $items[$i];
+	if($item === 'OR') {
+	    if($i > 0 && $items[$i - 1] !== 'OR' && !empty($query['clauses']) &&
+	       $i + 1 < $item_num && $items[$i + 1] !== 'OR') {
+		$i++;
+		$query['clauses'][count($query['clauses']) - 1][] = $items[$i];
+		$query['operators'] = true;
+		continue;
+	    }
+	    $item = search_query_term('OR');
+	}
+	$query['clauses'][] = array($item);
+    }
+
+    /*
+     * ほかに条件が無いときの「含まない」は、今までどおり文字として探す。
+     * `-rf` や `--force` だけで探すと、ほぼ全ページが出てしまうため。
+     */
+    $has_positive = $query['after'] !== null || $query['before'] !== null;
+    foreach($query['clauses'] as $clause)
+	foreach($clause as $term)
+	    if(!$term['not'])
+		$has_positive = true;
+    if(!$has_positive) {
+	/* 今までと同じ切り出しで読み直す (-"a b" は -"a と b" の 2 語) */
+	preg_match_all(LANGUAGE_SEARCH_QUERY_REGEX, $text, $matches);
+	$query['clauses'] = array();
+	foreach($matches[1] as $token) {
+	    $term = search_query_literal($token);
+	    if($term['value'] !== '')
+		$query['clauses'][] = array($term);
+	}
+	$query['operators'] = false;
+    }
+
+    foreach($query['clauses'] as &$clause) {
+	foreach($clause as &$term) {
+	    if($term['is_operator'])
+		$query['operators'] = true;
+	    if($term['type'] !== 'regex')
+		continue;
+	    $query['has_regex'] = true;
+	    /* ログインしていない人の式は確かめない (search_builtin() がログインの案内を出す) */
+	    if(!search_regex_is_allowed()) {
+		$term['pattern'] = '';
+		continue;
+	    }
+	    /*
+	     * 区切りは制御文字 (\x01)。/ を含む式 (/api/v1/) をそのまま書ける。
+	     * 読めない式は、警告を出さずに 1 回だけ確かめる (誰でもログを
+	     * 埋められないように)。
+	     */
+	    $term['pattern'] = "\x01" . $term['value'] . "\x01iu";
+	    if(@preg_match($term['pattern'], '') === false) {
+		$error = error_get_last();
+		error_clear_last();
+		$detail = $error !== null ? preg_replace('/^preg_match\(\): /', '', $error['message']) : '';
+		$query['errors'][] = lf('Could not read the regular expression: $error$',
+					array('error' => $detail));
+	    }
+	}
+    }
+    unset($clause, $term);
+    return $query;
+}
+
+/* 入力の 1 語を、場所・含まない・正規表現に分ける */
+function search_query_term($token) {
+    $term = search_query_literal($token);
+    $rest = $token;
+    $is_operator = false;
+    $not = false;
+    $field = '';
+    $type = 'text';
+    if(strlen($rest) > 1 && $rest[0] === '-') {
+	$not = true;
+	$rest = substr($rest, 1);
+	$is_operator = true;
+    }
+    if(preg_match('/^(title|body|tag):(.+)$/s', $rest, $m)) {
+	$field = $m[1];
+	$rest = $m[2];
+	$is_operator = true;
+    }
+    if(strlen($rest) > 3 && substr($rest, 0, 3) === 're:') {
+	$type = 'regex';
+	$rest = substr($rest, 3);
+	$is_operator = true;
+    }
+    if(!$is_operator)
+	return $term;
+    if(strlen($rest) >= 2 && $rest[0] === '"' && substr($rest, -1) === '"')
+	$rest = substr($rest, 1, -1);
+    if($rest === '')
+	return $term;
+    $term['type'] = $type;
+    $term['value'] = $rest;
+    $term['field'] = $field;
+    $term['not'] = $not;
+    $term['is_operator'] = true;
+    return $term;
+}
+
+/* 今までと同じ、文字として探す語。前後の " は外す */
+function search_query_literal($token) {
+    return array(
+	'type' => 'text',
+	'value' => trim($token, '"'),
+	'field' => '',
+	'not' => false,
+	'raw' => $token,
+	'is_operator' => false,
+	);
+}
+
+/*
+ * YYYY-MM-DD を UNIX 時刻にする (サイトのタイムゾーン)。$is_end なら
+ * その日の終わり。読めない日付 (2026/10/01、2026-02-30) は false。
+ */
+function search_query_date($text, $is_end) {
+    if(!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $text, $m) ||
+       !checkdate((int)$m[2], (int)$m[3], (int)$m[1]))
+	return false;
+    if($is_end)
+	return mktime(23, 59, 59, (int)$m[2], (int)$m[3], (int)$m[1]);
+    return mktime(0, 0, 0, (int)$m[2], (int)$m[3], (int)$m[1]);
+}
+
+/* 今までの平らな語の配列を、問い合わせの形にする */
+function search_query_from_words($words) {
+    $query = array(
+	'text' => implode(' ', $words),
+	'clauses' => array(),
+	'after' => null,
+	'before' => null,
+	'errors' => array(),
+	'operators' => false,
+	'has_regex' => false,
+	);
+    foreach($words as $word) {
+	$term = search_query_literal($word);
+	$term['value'] = $word;
+	$query['clauses'][] = array($term);
     }
     return $query;
 }
 
+/*
+ * 印を付ける語の並び。「含む」文字の語を、書いた順に。今までの書き方では
+ * 今までの平らな配列と同じになる (印の色 keyword_N の番号もこの順)。
+ */
+function search_query_words($query) {
+    $words = array();
+    foreach($query['clauses'] as $clause)
+	foreach($clause as $term)
+	    if(!$term['not'] && $term['type'] === 'text')
+		$words[] = $term['value'];
+    return $words;
+}
+
+/*
+ * 今までの、平らな語の配列を返す読み方。新しい書き方の語は「含む」文字の
+ * 語だけが残る。
+ */
+function search_parse_query($query_text) {
+    return search_query_words(search_query_parse($query_text));
+}
+
+/*
+ * 結果を開いたページで印を付ける語。「含む」文字の語に、正規表現が
+ * このページで一致した文字を足す (ログインしているときだけ。種類に上限)。
+ */
+function search_page_highlights($page, $query) {
+    $words = search_query_words($query);
+    if(empty($query['has_regex']) || !empty($query['errors']) || !search_regex_is_allowed())
+	return $words;
+    if(empty($page['is_exists']) || !auth_has_permission($page['name'], 'read'))
+	return $words;
+    $texts_info = search_page_texts_cached($page);
+    $texts = array();
+    foreach(array('title', 'description', 'tag') as $key)
+	if(isset($texts_info[$key]) && $texts_info[$key] !== '')
+	    $texts[] = $texts_info[$key];
+    foreach($texts_info['body'] as $text)
+	$texts = array_merge($texts, preg_split(LANGUAGE_SEARCH_SPLIT_REGEX, $text, -1, PREG_SPLIT_NO_EMPTY));
+    $found = array();
+    $deadline = microtime(true) + (float)SEARCH_TIME_LIMIT;
+    foreach($query['clauses'] as $clause) {
+	foreach($clause as $term) {
+	    if($term['not'] || $term['type'] !== 'regex')
+		continue;
+	    foreach($texts as $text) {
+		if(microtime(true) > $deadline)
+		    break 3;
+		$matches = search_regex_matches($term['pattern'], $text);
+		foreach($matches === null ? array() : $matches as $matched) {
+		    $found[$matched] = true;
+		    if(count($found) >= SEARCH_REGEX_HIGHLIGHT_MAX)
+			break 4;
+		}
+	    }
+	}
+    }
+    return search_highlights_merge($words, array_keys($found));
+}
+
+/*
+ * 印を付ける語の並びに、正規表現の一致した文字を足す。文字の語と大文字小文字
+ * だけが違うもの・同じものは足さない。足すと印の色 (keyword_N) が後の番号に
+ * 変わり、本文で印が入れ子になる。
+ */
+function search_highlights_merge($words, $regex_words) {
+    $seen = array();
+    foreach($words as $word)
+	$seen[strtolower($word)] = true;
+    foreach($regex_words as $word) {
+	$key = strtolower($word);
+	if(isset($seen[$key]))
+	    continue;
+	$seen[$key] = true;
+	$words[] = $word;
+    }
+    return $words;
+}
+
+/*
+ * 「検索キーワード:」。今までの書き方では語を空白でつないだもの (今までと
+ * 同じ)、新しい書き方では入力をそのまま出し、「含む」文字の語に印を付ける
+ * (正規表現がページで一致した文字には付けない。式の中の文字に当たるだけ)。
+ */
 function search_notice_query(&$page, $dom) {
-    $query = &$page['query'];
+    $query = isset($page['query_notice_words']) ? $page['query_notice_words'] : $page['query'];
+    $text = isset($page['query_text']) ? $page['query_text'] : implode(' ', $query);
     $p = dom_append_child($dom, 'p', 'search_query');
     $a = dom_append_link($p, url_make($page['name']), '', 'button');
     dom_append_ref($a, 'times');
     dom_append_text($p, l('Search keywords') . ':');
-    dom_append_hightlighted_text($p, implode(' ', $query), $query);
+    dom_append_hightlighted_text($p, $text, $query);
 }
 ?>

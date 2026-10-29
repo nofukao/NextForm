@@ -80,6 +80,7 @@
 ./tests/upgrade.sh          # tora2 の複製に対してアップグレードを実走 (要 sudo)
 ./tests/search-index.sh     # 検索インデックスの整合 (複製サイトを作る。要 sudo)
 ./tests/search-cache.sh     # 検索のテキストキャッシュ (複製サイトを作る。要 sudo)
+./tests/search-query.sh     # 検索の書き方 (OR・含まない・場所・re:・日時、マニュアルの範囲。複製サイトを作る。要 sudo)
 ./tests/csrf.sh             # CSRF 対策 (複製サイトを作る。要 sudo)
 ./tests/post-encoding.sh    # Base64 に包んだ POST を戻す (WAF 対策。複製サイトを作る。要 sudo)
 ./tests/attach-download.sh  # 添付画面からのダウンロードと ZIP (複製サイトを作る。要 sudo)

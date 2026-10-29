@@ -32,17 +32,18 @@ function search_show(&$args, $dom) {
 
     $form = dom_append_search($dom, $query_text);
 
+    /*
+     * マニュアルを探す範囲 (含めない / 含める / マニュアルだけ)。既定は含めない
+     * (ページの一覧・&pages・フィードと同じ)。前の「マニュアルは除く」
+     * (ignore_system_page) は読まない。既定と同じ結果になる。
+     */
+    $manual = search_manual_arg($args);
     if(page_is_exists(MANUAL_PAGENAME)) {
 	$label = dom_append_child($form, 'label');
-	$attributes = array(
-	    'type' => 'checkbox',
-	    'name' => 'ignore_system_page',
-	    'value' => 'on',
-	    );
-	if(!empty($args['ignore_system_page']))
-	    $attributes['checked'] = 'checked';
-	$check = dom_append_child($label, 'input', '', $attributes);
-	dom_append_text($label, l('Ignore manual pages'));
+	dom_append_text($label, l('Manual'));
+	dom_append_selector($label, 'manual',
+			    array('' => l('Exclude'), 'with' => l('Include'), 'only' => l('Only the manual')),
+			    $manual);
     }
     
     $order = default_value($args['order'], SEARCH_DEFAULT_ORDER);
@@ -53,16 +54,28 @@ function search_show(&$args, $dom) {
     $label = dom_append_child($form, 'label');
     dom_append_text($label, l('Sort'));
     dom_append_selector($label, 'order', $options, $order);
+    search_append_help($dom);
 
     if(isset($args['query']) && $args['query'] !== '') {
-	$query = search_parse_query($query_text);
+	$query = search_query_parse($query_text);
 	$search_results = search($query,
 				 array(
-				     'is_ignore_system_page' => !empty($args['ignore_system_page']),
+				     'manual' => $manual === '' ? 'without' : $manual,
 				     'order' => $order
 				     ));
 
-	if(!empty($args['top']) && !empty($search_results)) {
+	/* 読めない日付・式、ログインが要る書き方、使えない書き方 */
+	if(!empty($query['errors'])) {
+	    foreach($query['errors'] as $error) {
+		$notice = dom_append_child($dom, 'p', 'search_notice');
+		dom_append_text($notice, $error);
+	    }
+	    return;
+	}
+	$is_partial = !empty($query['is_partial']);
+
+	/* 途中までの結果では、一番上が本当の一番上とは限らないので移らない */
+	if(!empty($args['top']) && !empty($search_results) && !$is_partial) {
 	    $pagename = array_key_first($search_results);
 	    header('Location: ' . url_make($pagename, array('query' => $args['query'])));
 	    exit(0);
@@ -73,18 +86,30 @@ function search_show(&$args, $dom) {
 	 * 実測で 1077 件のとき 9.6MB あり、ブラウザ側が固まる。
 	 * 照合は全件に対して行う (スコア順に並べるため件数が要る)。
 	 * ここで絞るのは表示だけ。
+	 *
+	 * 打ち切ったときは 1 ページ目だけを出す。次のページを開くと検索を
+	 * やり直すので、打ち切る位置がずれて件数や並びが変わってしまう。
 	 */
 	$result_num = count($search_results);
 	$each = SEARCH_RESULTS_PER_PAGE;
-	$offset = max(0, (int)default_value($args['pages'], 0));
-	$last_offset = $each > 0 ? max(0, (int)ceil($result_num / $each) - 1) : 0;
+	$offset = $is_partial ? 0 : max(0, (int)default_value($args['pages'], 0));
+	$last_offset = $each > 0 && !$is_partial ? max(0, (int)ceil($result_num / $each) - 1) : 0;
 	if($offset > $last_offset)
 	    $offset = $last_offset;
 	if($each > 0)
 	    $search_results = array_slice($search_results, $offset * $each, $each, true);
 
 	$p = dom_append_child($dom, 'p', 'search_summary');
-	dom_append_text($p, lf('$num$ result(s)', array('num' => $result_num)));
+	dom_append_text($p, lf($is_partial ? '$num$ result(s) (partial)' : '$num$ result(s)', array('num' => $result_num)));
+
+	/*
+	 * 打ち切ったことを知らせる。全体の件数 (読んだページの数など) は出さない。
+	 * 読めないページの数が分かってしまう (下の未ログインの案内と同じ方針)。
+	 */
+	if($is_partial) {
+	    $notice = dom_append_child($dom, 'p', 'search_notice');
+	    dom_append_text($notice, l('The search took too long and was stopped partway. Add conditions to narrow it down.'));
+	}
 
 	/*
 	 * 検索結果は search_page_match() が読み取り権限で絞っている。
@@ -105,6 +130,8 @@ function search_show(&$args, $dom) {
 				   array('start' => $offset * $each + 1,
 					 'end' => $offset * $each + count($search_results))));
 	}
+	if(page_is_exists(MANUAL_PAGENAME))
+	    search_append_manual_links($dom, $args, $manual);
 
 	$ul = dom_append_child($dom, 'ul', 'search_result');
 	foreach($search_results as $pagename => &$search_result) {
@@ -124,12 +151,65 @@ function search_show(&$args, $dom) {
 	    dom_append_text($span, '(' . lf('score: $score$', array('score' => round($search_result['score'], 2))) . ')');
 
 	    
+	    /*
+	     * 印を付ける語は結果ごと (正規表現の一致した文字を含む)。外部の検索
+	     * エンジンの結果には無いので、問い合わせの語にする (今までと同じ)。
+	     */
 	    if(isset($search_result['snippets']) && $search_result['snippets'] !== '') {
 		$p = dom_append_child($li, 'pre');
-		dom_append_hightlighted_text($p, implode("\n", $search_result['snippets']), $query);
+		$highlights = isset($search_result['highlights']) ?
+		    $search_result['highlights'] : search_query_words($query);
+		dom_append_hightlighted_text($p, implode("\n", $search_result['snippets']), $highlights);
 	    }
 	}
-	search_append_pagination($dom, $args, $offset, $last_offset);
+	if(!$is_partial)
+	    search_append_pagination($dom, $args, $offset, $last_offset);
+    }
+}
+
+/* 画面の引数のマニュアルの範囲。'' (含めない) / 'with' / 'only' */
+function search_manual_arg($args) {
+    $manual = default_value($args['manual'], '');
+    return in_array($manual, array('with', 'only'), true) ? $manual : '';
+}
+
+/*
+ * 選んでいないほうの 2 つの範囲で探し直すリンク。マニュアルで使い方を
+ * 探したい人が、既定 (含めない) から 1 回で移れるように。
+ */
+function search_append_manual_links($dom, $args, $manual) {
+    $links = array(
+	'' => l('Search excluding the manual'),
+	'with' => l('Search including the manual'),
+	'only' => l('Search only the manual'),
+	);
+    $p = dom_append_child($dom, 'p', 'search_manual');
+    $link_args = array('option' => 'search', 'query' => $args['query']);
+    if(isset($args['order']))
+	$link_args['order'] = $args['order'];
+    $is_first = true;
+    foreach($links as $value => $label) {
+	if($value === $manual)
+	    continue;
+	if(!$is_first)
+	    dom_append_text($p, ' ');
+	$is_first = false;
+	$link_args['manual'] = $value;
+	if($value === '')
+	    unset($link_args['manual']);
+	dom_append_link($p, url_make('', $link_args), $label);
+    }
+}
+
+/* 欄の下に、書き方の例 1 行とマニュアルへのリンク */
+function search_append_help($dom) {
+    $p = dom_append_child($dom, 'p', 'search_help');
+    dom_append_text($p, l('How to write: word1 OR word2 / -word to exclude / title:word / tag:tag / after:2026-01-01 / re:regular expression (when logged in)'));
+    $manual_page_name = MANUAL_PAGENAME . '/' . LANG . '/SiteMenu';
+    if(page_is_exists($manual_page_name)) {
+	dom_append_text($p, ' ');
+	dom_append_link($p, url_make($manual_page_name) . '#' . page_get_section_id($manual_page_name, l('Search')),
+			l('Details'));
     }
 }
 
