@@ -116,6 +116,30 @@ sudo -u apache php NextForm/app/tool/update_wiki /var/www/html/nextform/index.ph
 管理画面の `?option=admin_setup` で「テーマ」を無変更のまま「適用」しても
 同じことが起きます。
 
+### 3.4 同梱物を取り直すとき
+
+NextForm は利用者に `composer install` などを求めず、使うライブラリを配布物に
+同梱しています (CLAUDE.md の同梱物の規約)。取り直す道具は 2 つです。
+
+| 置き場所 | 中身 | 道具 | 版の固定 |
+|---|---|---|---|
+| `NextForm/app/vendor/` | PHP のライブラリ (league/commonmark など) | `deploy/scripts/update-vendor.sh` (composer が要る) | `composer.lock` |
+| `NextForm/resource/script/mermaid/` | Mermaid (Markdown の図) | `deploy/scripts/update-mermaid.sh` (curl と python3) | `deploy/scripts/mermaid.lock` |
+
+Mermaid を上げるときは次の順にします。
+
+1. `./deploy/scripts/update-mermaid.sh --pin <版>` で取り直す。npm の登録所の tgz を
+   sha512 で確かめ、`mermaid.min.js` を手を加えずに置き、中に組み込まれた部品の
+   ライセンスを `THIRD-PARTY-LICENSES.txt` に書き出す。**認めていないライセンスが
+   混ざっていたら止まる** (EPL は elkjs とその中の部品だけ認めている)
+2. `./tests/mermaid.sh` を流し、出てきたページをブラウザで開いて確かめる。とくに
+   「prototype.js と一緒に描けるか」(Mermaid が組み込みの使い方を変えると、ここで分かる)
+   と「安全」のページ
+3. `git add deploy/scripts/mermaid.lock NextForm/resource/script/mermaid` でコミットする
+
+版を変えずに作り直すだけなら `--pin` を付けずに流します。`mermaid.lock` の sha512 と
+合わなければ止まります。
+
 ---
 
 ## 4. 上流と比べられるようにする

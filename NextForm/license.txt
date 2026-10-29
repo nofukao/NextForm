@@ -9,6 +9,25 @@ Based on:
 ToraToraWiki
 Copyright (C) 2013 terus, www.toratorawiki.net
 
+Bundled browser components (under resource/script/mermaid/, redistributed
+unmodified):
+
+  mermaid 12.2.0                   MIT            resource/script/mermaid/LICENSE
+
+  mermaid.min.js contains about 80 other packages. Their names, versions,
+  licenses and full texts are in resource/script/mermaid/THIRD-PARTY-LICENSES.txt.
+  All of them are compatible with GPLv3 except the Eclipse Layout Kernel
+  (elkjs 0.9.3, EPL-2.0) and the libraries compiled into it (EMF for GWT
+  2.12.4, EPL-1.0; the Xtend/Xbase runtime library 2.28.0, EPL-2.0).
+  These EPL parts are not covered by the GNU General Public License of
+  NextForm and remain under their own licenses. They are distributed in
+  object code form; where to obtain their source code is listed in
+  THIRD-PARTY-LICENSES.txt.
+
+  The only part of NextForm that calls Mermaid is resource/script/diagram.js.
+  That file carries an additional permission under section 7 of the GNU GPL
+  version 3 to combine it with Mermaid and the components bundled in it.
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
