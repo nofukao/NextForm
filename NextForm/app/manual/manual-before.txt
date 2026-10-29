@@ -1745,14 +1745,15 @@ GitHubやObsidianと同じ書き方なので，そちらで書いた図もその
      A["$$x^2 + y^2 = r^2$$"] --> B["$$\frac{a}{b}$$"]
  $bq$$bq$$bq$
 
--図はブラウザの中で，NextFormに同梱したMermaidで描きます．外部のサーバーには何も送りません．
+-図はブラウザの中で，NextFormに同梱したMermaidで描きます(Mermaidを外部のサーバーから読み込むことはありません)．図の中に外部の画像のURLを書いたとき(""img:"" の形など)は，Markdownの画像と同じく，見る人のブラウザがそのサーバーから画像を読み込みます．
 -書き方に誤りがあると，コードのまま表示され，その下に誤りの文が出ます．
 -1つの図は50,000文字までです．
 -図をダブルクリックすると，その図の原文を部分編集できます．編集画面の''プレビュー''でも図が描かれます．
--ラベルに書けるHTMLは，太字・斜体・下線・打ち消し・上付き・下付き・コード・改行(""<b>"" ""<i>"" ""<u>"" ""<s>"" ""<sup>"" ""<sub>"" ""<code>"" ""<br>"" など)だけです．それ以外のタグと属性(色や大きさを決める ""style""，リンク，画像，フォームなど)は消えます．図の色はMermaidの ""style"" や ""classDef"" の行で付けてください．
+-閉じた[[折りたたみ:.#折りたたみ]]の中の図は，開いたときに描かれます．
+-ラベルに書けるHTMLは，太字・斜体・下線・打ち消し・上付き・下付き・コード・改行(""<b>"" ""<i>"" ""<u>"" ""<s>"" ""<sup>"" ""<sub>"" ""<code>"" ""<br>"" など)だけです．それ以外のタグと属性(色や大きさを決める ""style""，リンク，画像，フォームなど)は消えます．図の色はMermaidの ""style"" や ""classDef"" の行で付けてください．同じ理由で，Mermaidの組み込みのアイコン(architecture図の ""database"" など)は表示されません(箱と線は出ます)．
 -図の中から関数を呼ぶ書き方(""click"" の ""call"" など)は効きません．
--JavaScriptが無効のときや，古いブラウザ(Safari 17.4より前など)では，コードのまま表示されます．
--Wiki記法のページでは図になりません．また，サイドページの図は，表示しているページの本文にも図があるときだけ描かれます．
+-JavaScriptが無効のときは，コードのまま表示されます．古いブラウザ(Safari 17.4より前など)では，コードのまま表示されるか，図の種類によっては誤りの文が出ます．
+-Wiki記法で書いたコードは図になりません(Wiki記法のページに取り込んだMarkdownのページの図は描かれます)．また，サイドページの図は，表示しているページの本文にも図があるときだけ描かれます．
 
 **図でブラウザが固まるとき
 とても大きな図や込み入った図があると，ページを開いたときにブラウザが固まることがあります．
@@ -2358,14 +2359,15 @@ In the labels of flowcharts and sequence diagrams, math can be written between "
      A["$$x^2 + y^2 = r^2$$"] --> B["$$\frac{a}{b}$$"]
  $bq$$bq$$bq$
 
--Diagrams are drawn in the browser by the copy of Mermaid bundled with NextForm. Nothing is sent to an outside server.
+-Diagrams are drawn in the browser by the copy of Mermaid bundled with NextForm (Mermaid is never loaded from an outside server). When a diagram contains the URL of an outside image (such as the ""img:"" shape), the viewer's browser loads the image from that server, the same as an image in Markdown.
 -If the notation has an error, the code is shown as it is, with the error below it.
 -A diagram can be up to 50,000 characters.
 -Double-click a diagram to edit its source as a partial edit. ''Preview'' on the edit screen also draws diagrams.
--The only HTML allowed in labels is bold, italic, underline, strikethrough, superscript, subscript, code and line breaks (""<b>"" ""<i>"" ""<u>"" ""<s>"" ""<sup>"" ""<sub>"" ""<code>"" ""<br>"" and so on). Other tags and attributes (""style"" for colors and sizes, links, images, forms and so on) are removed. Color a diagram with Mermaid's own ""style"" and ""classDef"" lines.
+-A diagram inside a closed [[folding:.#Folding]] is drawn when it is opened.
+-The only HTML allowed in labels is bold, italic, underline, strikethrough, superscript, subscript, code and line breaks (""<b>"" ""<i>"" ""<u>"" ""<s>"" ""<sup>"" ""<sub>"" ""<code>"" ""<br>"" and so on). Other tags and attributes (""style"" for colors and sizes, links, images, forms and so on) are removed. Color a diagram with Mermaid's own ""style"" and ""classDef"" lines. For the same reason, Mermaid's built-in icons (such as ""database"" in architecture diagrams) are not shown (the boxes and lines are).
 -Calling a function from a diagram (such as ""call"" in ""click"") does not work.
--With JavaScript turned off, or in an old browser (such as Safari before 17.4), the code is shown as it is.
--Pages in Wiki notation do not draw diagrams. A diagram in the side page is drawn only when the text of the page being shown also has a diagram.
+-With JavaScript turned off, the code is shown as it is. In an old browser (such as Safari before 17.4), the code is shown as it is, or an error appears for some kinds of diagrams.
+-Code written in Wiki notation does not become a diagram (diagrams in a Markdown page included in a Wiki page are drawn). A diagram in the side page is drawn only when the text of the page being shown also has a diagram.
 
 **When a diagram freezes the browser
 A very large or complicated diagram can freeze the browser when the page opens.

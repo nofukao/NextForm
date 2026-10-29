@@ -157,6 +157,7 @@ docs/wiki/作業記録/2026-10.md → ページ 作業記録/2026-10
 - **図**は言語名 `mermaid` のコードブロックに Mermaid の記法で書く (NextForm 0.18.0 以降。
   それより前の版ではコードのまま出る)。ラベルの HTML は `<b>` `<br>` などの飾りだけが残り、
   `style`・リンク・画像は消える。色は Mermaid の `style` や `classDef` の行で付ける。
+  Mermaid の組み込みのアイコン (architecture 図の `database` など) も出ない。
 
 ## 6. 終了コード
 
