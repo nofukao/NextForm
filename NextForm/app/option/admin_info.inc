@@ -98,7 +98,7 @@ function admin_info_show(&$args, $dom) {
     
     admin_info_dom_append_section($dom, l('Options'), array_keys($OPTIONS));
 
-    $section = admin_info_dom_append_section($dom, l('Wiki'));
+    $section = admin_info_dom_append_section($dom, l('Wiki notation'));
     admin_info_dom_append_section($section, l('Wiki inline operator'), array_keys($WIKI_OPERATORS_INLINE));
     admin_info_dom_append_section($section, l('Wiki line head operator'), array_keys($WIKI_OPERATORS_LINE_HEAD));
     admin_info_dom_append_section($section, l('Wiki function operator'), array_keys($WIKI_OPERATORS_FUNCTION));
