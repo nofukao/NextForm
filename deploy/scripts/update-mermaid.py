@@ -48,7 +48,9 @@ DEST = os.path.join(REPO_ROOT, 'NextForm', 'resource', 'script', 'mermaid')
 
 REGISTRY = 'https://registry.npmjs.org'
 MAVEN = 'https://repo1.maven.org/maven2'
-SPDX_TEXT = 'https://raw.githubusercontent.com/spdx/license-list-data/main/text/'
+# 包みに条文が無いときに使う標準の条文。動く枝 (main) から取ると、取り直すたびに
+# THIRD-PARTY-LICENSES.txt が変わりうるので、版のタグに固定する
+SPDX_TEXT = 'https://raw.githubusercontent.com/spdx/license-list-data/v3.29.0/text/'
 
 # GPLv3 と両立するもの。SPDX の OR は、どれか 1 つがここにあればよい
 ALLOWED = {'MIT', 'ISC', 'BSD-2-Clause', 'BSD-3-Clause', 'Apache-2.0', 'MPL-2.0', '0BSD'}
@@ -259,6 +261,8 @@ def main():
     if args.pin:
         meta = npm_metadata('mermaid', args.pin)
         lock = {'version': args.pin, 'tgz': meta['dist']['integrity'], 'js': ''}
+    if not lock.get('version') or not lock.get('tgz'):
+        fail('mermaid.lock に version= か tgz= の行がありません')
     version = lock['version']
 
     workdir = tempfile.mkdtemp(prefix='nf-mermaid-')
@@ -276,6 +280,8 @@ def main():
             fail('tgz に dist/mermaid.min.js・dist/mermaid.js・LICENSE のどれかがありません')
         if args.pin:
             lock['js'] = sha512_hex(minified)
+        elif not lock.get('js'):
+            fail('mermaid.lock に js= の行がありません')
         elif sha512_hex(minified) != lock['js']:
             fail('mermaid.min.js の sha512 が mermaid.lock と合いません')
 
