@@ -1280,5 +1280,5 @@ v0.15.0 の配布物で 0.15.0 に上げて索引を作り直した (852 ペー�
 
 **目で見る項目 (利用者が確かめる)**
 
-- [ ] ブラウザで図の確かめのページ (`BROWSER=1 ./tests/mermaid.sh` が作る) がすべて ok
+- [x] ブラウザで図の確かめのページ (`BROWSER=1 ./tests/mermaid.sh` が作る) がすべて ok
       (Chrome・Firefox・iPhone の Safari。見直しの修正のあとにもう一度)
