@@ -97,6 +97,11 @@ head_of() {
     printf '%s' "$1" | tr '\n' '\r' | sed -n 's/.*<head>\(.*\)<\/head>.*/\1/p' | tr '\r' '\n'
 }
 
+# $1 <head>。<title> を除いたもの (題名にはページ名が入り、ページごとに違う)
+without_title() {
+    printf '%s' "$1" | sed 's#<title>.*</title>##'
+}
+
 # $1 <head>。図のために足すもの (diagram.js と <meta>) の数を「script,meta」で返す
 diagram_tags() {
     local scripts metas
@@ -205,8 +210,8 @@ HEAD_WITHOUT="$(head_of "$HTML_WITHOUT")"
 echo "1. 図のあるページにだけ、<head> に diagram.js と <meta> を足す"
 check_eq "図のあるページ: diagram.js と <meta> が 1 つずつ" "1,1" "$(diagram_tags "$HEAD_WITH")"
 check_eq "図の無いページ: どちらも無い" "0,0" "$(diagram_tags "$HEAD_WITHOUT")"
-check_eq "  <head> の違いはその 2 つだけ" \
-         "$HEAD_WITHOUT" "$(without_diagram_tags "$HEAD_WITH")"
+check_eq "  <head> の違いはその 2 つだけ (<title> のページ名を除く)" \
+         "$(without_title "$HEAD_WITHOUT")" "$(without_title "$(without_diagram_tags "$HEAD_WITH")")"
 check_eq "  diagram.js は prototype.js と nextform.js より後" "yes" \
          "$(printf '%s' "$HEAD_WITH" | tr '\n' ' ' \
             | grep -q 'prototype\.js.*nextform\.js.*diagram\.js' && echo yes || echo no)"
