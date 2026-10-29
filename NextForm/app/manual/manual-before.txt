@@ -445,18 +445,25 @@ URLの下のチェックボックスで，何を写すかを選べます．
 画面の上の検索欄に語を入れて''検索''を押します(検索欄を出さない設定のときや，画面の幅が狭いときは，サイトメニューの''検索''から開けます)．
 :語を並べる|空白(全角でも半角でも)で区切って並べると，''すべての語を含む''ページを探します．語は題名(ページ名を含む)・説明・タグ・本文のどこにあってもかまいません．
 :"..."|ダブルクォートで囲むと，空白も含めて1つの語として探します．
-:大文字と小文字|英字の大文字と小文字は区別しません．
-「どれかを含む」(OR)や「含まない」(除外)の書き方はありません．
-本文は表示したときの文字で探します．句読点(。、．，)と改行をまたぐ語は見つかりません．
+:""語1 OR 語2""|''どちらかを含む''ページを探します．""OR""は半角の大文字で，前後の語だけをまとめます(""設定 手順 OR 方法""は，「設定」を含み，「手順」か「方法」を含むページ)．括弧はありません．
+:""-語""|その語を''含まない''ページにします(""手順 -下書き"")．ほかに探す語や日付が無いときは，""-rf""のような文字として探します．
+:""title:語""|題名(ページ名を含む)だけで探します．""body:語""は本文だけで探し，""tag:タグ""はそのタグが付いたページ(タグの名前が全部一致するもの)を探します．""-title:語""のように「含まない」とも組み合わせられます．
+:""after:2026-10-01""|その日以降に更新されたページにします．""before:2026-10-31""はその日までに更新されたページです．どちらもその日を含みます．日付は年-月-日の形で書きます．
+:""re:正規表現""|正規表現で探します(ログインしているときだけ)．例: ""re:v[0-9]+\.[0-9]+""．空白を含む式は，re: のあとをダブルクォートで囲みます．
+:大文字と小文字|英字の大文字と小文字は区別しません(正規表現では全角の英字も区別しません)．
+書き方は組み合わせられます(""title:手順 -下書き after:2026-10-01"")．記号は半角で書きます．""OR""や""-rf""のような語をそのまま探したいときは，ダブルクォートで囲みます．
+本文は表示したときの文字で探します．句読点(。、．，)と改行をまたぐ語は見つかりません(正規表現も同じです)．
 添付ファイルは，中身ではなく，ファイル名・説明・タグで探します．
+「含まない」・正規表現・日付だけで探すときは，すべてのページを読むので時間がかかることがあります．3秒を超えると途中で打ち切り，それまでに見つかったページだけを出します．語を足して絞ってください．
 
 結果の画面では次のことを選べます．
 :順序|''出現頻度''(はじめの選択)は，語がよく出るページほど上にします．題名・タグ・説明・本文の順に重く数えます．''更新日時''は新しい順です．
-:マニュアルは除く|オンにすると，このマニュアルのページを結果から除きます．
+:マニュアル|''含めない''(はじめの選択)・''含める''・''マニュアルだけ''から選びます．結果の上の''マニュアルも含めて探す''などのリンクでも切り替えられます．マニュアルのページは題名でも探せます．マニュアルの更新日時はNextFormの版を出した日です．
 -結果は50件ずつ出ます．
 -読む権限の無いページは結果に出ません．ログインしていないときに見つからなければ，ログインすると見つかることがあります．
--結果を押して開いたページでは，探した語に印が付きます．''検索キーワード:''の横の×を押すと消えます．
--検索欄でShiftキーを押しながらEnterキーを押すと，結果の一番上のページを直接開きます．
+-結果を押して開いたページでは，探した語(正規表現なら一致した文字)に印が付きます．「含まない」語には付きません．''検索キーワード:''の横の×を押すと消えます．
+-検索欄でShiftキーを押しながらEnterキーを押すと，結果の一番上のページを直接開きます(途中で打ち切ったときは開きません)．
+-画面の上の検索欄と[[&&search:../Wiki/Function/search]]の検索欄は，マニュアルを含めずに探します．
 
 *個人設定
 :アカウント設定|''パスワード設定''と''メールアドレス設定''です．NextFormのログインでログインしているときだけ出ます．メールアドレスは，パスワードを忘れたときの再設定に使います．
@@ -1000,18 +1007,25 @@ Pages you cannot read and pages deleted completely with ''Delete history too'' a
 Enter words in the search box at the top of the screen and press ''Search'' (when the search box is hidden by the settings or the screen is narrow, open ''Search'' in the site menu).
 :Several words|Words separated by spaces (full-width or half-width) find pages that ''contain all the words''. Each word may be in the title (including the page name), the description, the tags or the text.
 :"..."|Enclosing words in double quotes searches for them as one word, spaces included.
-:Upper and lower case|Upper and lower case letters are not distinguished.
-There is no way to write "any of" (OR) or "not containing" (exclusion).
-The text is searched as it is displayed. A word that spans punctuation (。、．，) or a line break is not found.
+:""word1 OR word2""|Finds pages that contain ''either'' word. ""OR"" is in upper case half-width letters and joins only the words just before and after it (""setup step OR way"" finds pages that contain "setup" and either "step" or "way"). There are no parentheses.
+:""-word""|Leaves out pages that ''contain'' the word (""steps -draft""). When there is no other word or date to search for, it is searched as the characters, as in ""-rf"".
+:""title:word""|Searches only the title (including the page name). ""body:word"" searches only the text, and ""tag:tag"" finds pages with that tag (the whole tag name must match). It also combines with exclusion, as in ""-title:word"".
+:""after:2026-10-01""|Keeps pages updated on or after that day. ""before:2026-10-31"" keeps pages updated on or before that day. Write dates as year-month-day.
+:""re:regular expression""|Searches with a regular expression (only while logged in). Example: ""re:v[0-9]+\.[0-9]+"". For an expression with spaces, enclose the part after re: in double quotes.
+:Upper and lower case|Upper and lower case letters are not distinguished (a regular expression does not distinguish full-width letters either).
+These can be combined (""title:steps -draft after:2026-10-01""). Write the symbols in half-width. To search for words such as ""OR"" or ""-rf"" as they are, enclose them in double quotes.
+The text is searched as it is displayed. A word that spans punctuation (。、．，) or a line break is not found (nor is a match of a regular expression).
 Attached files are searched by their file names, descriptions and tags, not by their contents.
+Searching only with exclusion, a regular expression or dates reads every page and can take time. After 3 seconds the search stops and shows the pages found so far. Add words to narrow it down.
 
 The result screen offers the following.
 :Sort|''Frequency'' (chosen at first) puts pages where the words appear more often higher. Matches in the title count most, then the tags, the description and the text. ''Last updated'' is newest first.
-:Ignore manual pages|Turn it on to leave the pages of this manual out of the results.
+:Manual|Choose from ''Exclude'' (chosen at first), ''Include'' and ''Only the manual''. Links such as ''Search including the manual'' above the results also switch it. Manual pages can be found by their titles. The time a manual page was updated is the day the NextForm version was released.
 -Results are shown 50 at a time.
 -Pages you cannot read are not in the results. When you find nothing without logging in, logging in may find them.
--On a page opened from the results, the searched words are marked. Press the × beside ''Search keywords'' to clear them.
--Pressing the Enter key with the Shift key held in the search box opens the first page of the results directly.
+-On a page opened from the results, the searched words (for a regular expression, the matching characters) are marked. Words to exclude are not marked. Press the × beside ''Search keywords'' to clear them.
+-Pressing the Enter key with the Shift key held in the search box opens the first page of the results directly (not when the search was stopped partway).
+-The search box at the top of the screen and the one of &&search search without the manual.
 
 *Preferences
 :Account preferences|''Password settings'' and ''Email address settings''. Shown only when you are logged in with the login of NextForm. The email address is used to reset the password when you forget it.
