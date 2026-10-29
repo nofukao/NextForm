@@ -449,12 +449,12 @@ URLの下のチェックボックスで，何を写すかを選べます．
 :""-語""|その語を''含まない''ページにします(""手順 -下書き"")．ほかに探す語や日付が無いときは，""-rf""のような文字として探します．
 :""title:語""|題名(ページ名を含む)だけで探します．""body:語""は本文だけで探し，""tag:タグ""はそのタグが付いたページ(タグの名前が全部一致するもの)を探します．""-title:語""のように「含まない」とも組み合わせられます．
 :""after:2026-10-01""|その日以降に更新されたページにします．""before:2026-10-31""はその日までに更新されたページです．どちらもその日を含みます．日付は年-月-日の形で書きます．
-:""re:正規表現""|正規表現で探します(ログインしているときだけ)．例: ""re:v[0-9]+\.[0-9]+""．空白を含む式は，re: のあとをダブルクォートで囲みます．
+:""re:正規表現""|正規表現で探します(ログインしているときだけ)．例: ""re:v[0-9]+\.[0-9]+""．空白を含む式は，re: のあとをダブルクォートで囲みます．とても長い文の塊(数十KBの1行など)では，式によっては確かめきれず，当たらないことがあります(「含まない」で使ったときは，そのページを除きます)．
 :大文字と小文字|英字の大文字と小文字は区別しません(正規表現では全角の英字も区別しません)．
-書き方は組み合わせられます(""title:手順 -下書き after:2026-10-01"")．記号は半角で書きます．""OR""や""-rf""のような語をそのまま探したいときは，ダブルクォートで囲みます．
+書き方は組み合わせられます(""title:手順 -下書き after:2026-10-01"")．記号は半角で書きます．語は50個まで並べられます．""OR""や""-rf""のような語をそのまま探したいときは，ダブルクォートで囲みます．
 本文は表示したときの文字で探します．句読点(。、．，)と改行をまたぐ語は見つかりません(正規表現も同じです)．
 添付ファイルは，中身ではなく，ファイル名・説明・タグで探します．
-「含まない」・正規表現・日付だけで探すときは，すべてのページを読むので時間がかかることがあります．3秒を超えると途中で打ち切り，それまでに見つかったページだけを出します．語を足して絞ってください．
+正規表現を使うときや，「含まない」・日付だけで探すときは，多くのページを読むので時間がかかることがあります．3秒を超えると途中で打ち切り，それまでに見つかったページだけを出します．語を足して絞ってください．
 
 結果の画面では次のことを選べます．
 :順序|''出現頻度''(はじめの選択)は，語がよく出るページほど上にします．題名・タグ・説明・本文の順に重く数えます．''更新日時''は新しい順です．
@@ -1011,12 +1011,12 @@ Enter words in the search box at the top of the screen and press ''Search'' (whe
 :""-word""|Leaves out pages that ''contain'' the word (""steps -draft""). When there is no other word or date to search for, it is searched as the characters, as in ""-rf"".
 :""title:word""|Searches only the title (including the page name). ""body:word"" searches only the text, and ""tag:tag"" finds pages with that tag (the whole tag name must match). It also combines with exclusion, as in ""-title:word"".
 :""after:2026-10-01""|Keeps pages updated on or after that day. ""before:2026-10-31"" keeps pages updated on or before that day. Write dates as year-month-day.
-:""re:regular expression""|Searches with a regular expression (only while logged in). Example: ""re:v[0-9]+\.[0-9]+"". For an expression with spaces, enclose the part after re: in double quotes.
+:""re:regular expression""|Searches with a regular expression (only while logged in). Example: ""re:v[0-9]+\.[0-9]+"". For an expression with spaces, enclose the part after re: in double quotes. In a very long run of text (such as a line of tens of KB), some expressions cannot be checked to the end and do not match (used with exclusion, such a page is left out).
 :Upper and lower case|Upper and lower case letters are not distinguished (a regular expression does not distinguish full-width letters either).
-These can be combined (""title:steps -draft after:2026-10-01""). Write the symbols in half-width. To search for words such as ""OR"" or ""-rf"" as they are, enclose them in double quotes.
+These can be combined (""title:steps -draft after:2026-10-01""). Write the symbols in half-width. Up to 50 words can be given. To search for words such as ""OR"" or ""-rf"" as they are, enclose them in double quotes.
 The text is searched as it is displayed. A word that spans punctuation (。、．，) or a line break is not found (nor is a match of a regular expression).
 Attached files are searched by their file names, descriptions and tags, not by their contents.
-Searching only with exclusion, a regular expression or dates reads every page and can take time. After 3 seconds the search stops and shows the pages found so far. Add words to narrow it down.
+Searching with a regular expression, or only with exclusion or dates, reads many pages and can take time. After 3 seconds the search stops and shows the pages found so far. Add words to narrow it down.
 
 The result screen offers the following.
 :Sort|''Frequency'' (chosen at first) puts pages where the words appear more often higher. Matches in the title count most, then the tags, the description and the text. ''Last updated'' is newest first.
