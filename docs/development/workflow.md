@@ -338,8 +338,13 @@ v0.8.0 の配布物を、折りたたみを実装したあとのサイトに入�
 
 1. 該当バージョンの全項目が終わっていることを確認する
 2. `NextForm/app/version.inc` の `NEXTFORM_VERSION` を上げる
-3. `./tests/golden.sh` `./tests/smoke.sh` `./tests/css-rules.sh` `./tests/upgrade.sh`
-   `./tests/search-index.sh` が通ることを確認する
+3. **`CLAUDE.md` の「テスト」の一覧を、上から順にすべて流して通ることを確認する**
+   (`setup-fixtures.sh` から始める)。1 本ずつ流し、並行で走らせない (多くのテストが
+   PHP のエラーログの増えた分を見るので、ほかのテストの警告で落ちる)。
+   終わったら PHP のエラーログ (`/var/log/php-fpm/www-error.log`) に新しい警告が無いことも見る。
+   以前は golden・smoke・css-rules・upgrade・search-index だけを流していて、v0.16.0 で
+   編集画面の札が「Wiki記法」に変わったのを、`markdown.sh` だけが見ていたので
+   v0.17.0 まで気づかなかった
 4. 開発検証サイトで全機能を手動で巡回する
    (GET だけでは踏めない POST 経路 — 編集・添付・ロック・管理画面)
 5. `docs/project-overview.md` のロードマップを更新する

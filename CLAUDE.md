@@ -84,6 +84,8 @@
 ./tests/post-encoding.sh    # Base64 に包んだ POST を戻す (WAF 対策。複製サイトを作る。要 sudo)
 ./tests/attach-download.sh  # 添付画面からのダウンロードと ZIP (複製サイトを作る。要 sudo)
 ./tests/attach-link.sh      # 添付へのリンクと md の描画 (複製サイトを作る。要 sudo)
+./tests/file-html.sh        # 添付した HTML を動かす (FILE_ALLOW_HTML。複製サイトを作る。要 sudo)
+./tests/export.sh           # エクスポート (静的書き出し。複製サイトを作る。要 sudo)
 ./tests/markdown-link-path.sh # Markdown のリンクの行き先の規則と確認の道具 (複製サイトを作る。要 sudo)
 ./tests/clone.sh            # 他の NextForm のページのクローン (複製サイトを 2 つ作る。要 sudo)
 ./tests/dispatch.sh         # 不正な action で 500 にならないか (複製サイトを作る。要 sudo)
@@ -95,6 +97,8 @@
 ```
 
 - ゴールデンマスター(`tests/golden/`)+ HTTP スモーク(`tests/smoke.sh`)が主軸。
+- **リリースの前には、上の一覧を上から順にすべて流す** (`docs/development/workflow.md` §6)。
+  テストを足したら、この一覧にも足す。並行で走らせない。
 - フィクスチャは **`GoldenMaster/` 配下に隔離**してある。それ以外のページは
   手動テストで自由に作ってよい。内容依存の一覧 (`?option=allpage` など) を
   ゴールデンマスターの対象にしないこと。
