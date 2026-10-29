@@ -51,6 +51,17 @@ $SETUP_CONSTANTS['MARKDOWN_ALLOW_HTML'] = array(
     'type' => 'select',
     'options' => array('false' => 'Escape', 'true' => 'Allow'),
     'note' => 'allowing it lets anyone who can edit run scripts');
+/*
+ * Markdown のページの図 (```mermaid。handler/markdown.inc の markdown_diagram_setup())。
+ * 描くのはブラウザで、止めるとコードのまま出る。Mermaid に勧告が出て、
+ * NextForm の新しい版を待つあいだ止められるように設定にした。
+ */
+$SETUP_CONSTANTS['MARKDOWN_DIAGRAM'] = array(
+    'description' => 'Diagrams in Markdown pages',
+    'default' => 'true',
+    'type' => 'select',
+    'options' => array('true' => 'Draw', 'false' => 'Show as code'),
+    'note' => 'draws code blocks written as ```mermaid in the browser. Turn it off to show them as code, for example while waiting for a fix to a security advisory for Mermaid');
 $SETUP_CONSTANTS['FILE_ALLOW_HTML'] = array(
     'description' => 'Attached HTML files',
     'default' => 'false',
