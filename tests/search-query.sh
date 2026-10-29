@@ -314,6 +314,11 @@ check_eq "読めない日付は案内を出す"             "yes" "$(contains "$
 check_eq "  そのときは探さない"                 ""    "$(printf '%s' "$html" | result_pages)"
 html=$(search_html 'sqapple before:2026-02-30')
 check_eq "ない日付 (2026-02-30) も案内"         "yes" "$(contains "$html" 'YYYY-MM-DD')"
+html=$(search_html 'after:')
+check_eq "値の無い after: はふつうの語 (案内しない)" "no" "$(contains "$html" 'YYYY-MM-DD')"
+many=$(python3 -I -c 'print(" ".join("sqw%d" % i for i in range(60)))')
+html=$(search_html "$many")
+check_eq "語が多すぎるときは案内を出す"         "yes" "$(contains "$html" '語が多すぎます')"
 echo
 
 echo "3. 正規表現 (re:)"
@@ -324,10 +329,23 @@ check_eq "  含まないと組み合わせる"             "Beta,Delta,Old"     
 html=$(search_html 're:sq(apple|cherry)')
 check_eq "ログインしていないと案内が出る"       "yes" "$(contains "$html" 'ログインすると正規表現で探せます')"
 check_eq "  そのときは探さない"                 ""    "$(printf '%s' "$html" | result_pages)"
+html=$(search_html 're:sq(apple')
+check_eq "ログインしていないと、読めない式でも確かめずにログインの案内" "yes,no" \
+         "$(contains "$html" 'ログインすると正規表現で探せます'),$(contains "$html" '正規表現が読めません')"
 html=$(search_html 're:sq(apple' '' auth)
 check_eq "読めない式は案内を出す"               "yes" "$(contains "$html" '正規表現が読めません')"
 check_eq "  そのときは探さない"                 ""    "$(printf '%s' "$html" | result_pages)"
 check_eq "空の一致しかない式は当たらない"       ""    "$(r 're:q{0}' '' auth)"
+check_eq "本文の塊のあいだの空白には当たらない" ""    "$(r 'sqapple re:^\s+$' '' auth)"
+# (.+)+あ$ は Long (2000 字の 1 つの塊、末尾は お) で手数の上限に当たる
+check_eq "手数の上限で確かめられないページは、含むの側に入れない"   ""     "$(r 'あいうえお re:(.+)+あ$' '' auth)"
+check_eq "  含まないの側にも残さない"           ""    "$(r 'あいうえお -re:(.+)+あ$' '' auth)"
+check_eq "  確かめられた式なら含まないの側に残る" "Long" "$(r 'あいうえお -re:(.*)*x' '' auth)"
+html=$(search_html 'sqapple re:sqap+le' '' auth)
+check_eq "同じ文字の印は 1 つで、色は文字の語のもの" "yes,0" \
+         "$(contains "$(printf '%s' "$html" | marks)" 'keyword_0:sqapple'),$(printf '%s' "$html" | grep -c '<mark [^>]*><mark')"
+check_eq "開いたページの印を作っても、表示中のページを書き換えない" "1" \
+         "$(value_of "$(helper highlights-keep SearchQueryTest/Alpha)" kept)"
 check_eq "/ を含む式も読める"                   "Gamma" "$(r 're:/api/v[0-9]/' '' auth)"
 start=$(date +%s)
 html=$(search_html 're:(.*)*x' '' auth)
@@ -358,6 +376,8 @@ code=$(curl -sk -o /dev/null -w '%{http_code}' --digest -u "${TEST_USER}:${TEST_
        "${URL}/?option=search&top=1&query=$(urlq 're:sqapple')")
 check_eq "  Shift+Enter (top=1) でも移らない"   "200" "$code"
 check_eq "索引で絞れる書き方には掛けない"       "Alpha,Beta,Delta,Old" "$(r 'sqapple')"
+html=$(search_html 'sqapple re:sq' '' auth)
+check_eq "索引で絞れても、正規表現があれば掛ける" "yes" "$(contains "$html" '途中で打ち切りました')"
 index_php_with ""
 echo
 
@@ -380,7 +400,10 @@ check_eq "Shift+Enter はその範囲の一番上へ"     "yes" "$(contains "$lo
 echo
 
 echo "6. マニュアルの題名"
+# 複製元のマニュアルのキャッシュは複製元のコードで作られている。作業ツリーのコードで作り直す
+helper manual-rebuild > /dev/null
 check_eq "マニュアルのページに題名がある"       "サイトの管理" "$(value_of "$(helper manual-title NextFormManual/ja/Administration)" title)"
+check_eq "  題名の &&名前 は画面と同じ &名前 にする" "&alias" "$(value_of "$(helper manual-title NextFormManual/ja/Wiki/Function/alias)" title)"
 html=$(search_html 'title:サイトの管理' '&manual=only')
 check_eq "題名で検索に当たる"                   "yes" "$(contains "$html" 'data-link-pagename="NextFormManual/ja/Administration"')"
 helper manual-stale-cache NextFormManual/ja/Administration > /dev/null

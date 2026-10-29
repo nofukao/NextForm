@@ -21,6 +21,9 @@
  *                                  マニュアルの題名が索引に入ったかを見る
  *   index-forget <ページ名>        そのページを索引から外し、マニュアルの索引の控えも消す
  *                                  (次にマニュアルを作り直すと、全部を入れ直す)
+ *   highlights-keep <ページ名>     検索用キャッシュを消してから、開いたページの印を作る
+ *                                  (search_page_highlights)。表示中のページの題名や &calc の
+ *                                  値を書き換えないか (kept=1/0)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  *
@@ -160,6 +163,16 @@ case 'index-forget':
     search_index_remove($rest[0], $all);
     cache_delete('', MANUAL_INDEX_CACHE_KEY);
     printf("removed=%d\n", count($all));
+    break;
+
+case 'highlights-keep':
+    cache_delete($rest[0], SEARCH_TEXTS_CACHE_KEY);
+    $page = page_read($rest[0]);
+    $page['title'] = 'kept-title';
+    $page['calc'] = array('vars' => array('kept' => 1));
+    search_page_highlights($page, search_query_parse('re:sq'));
+    printf("kept=%d\n", isset($page['title']) && $page['title'] === 'kept-title' &&
+	   isset($page['calc']['vars']) && $page['calc']['vars'] === array('kept' => 1) ? 1 : 0);
     break;
 
 default:
