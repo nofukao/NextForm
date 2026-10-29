@@ -197,6 +197,9 @@ section.markdown details > summary {
  * 変えるので素に戻す。
  *
  * 広い図は Mermaid の既定 (useMaxWidth) で本文の幅に縮むので、印刷でも切れない。
+ * 図の中の設定で縮めないようにされても、枠の外 (サイドの欄の上) にはみ出さず、
+ * 横に送れるようにする (overflow-x: auto)。はみ出すと、サイドのメニューに
+ * 見せかけたリンクを図で置ける。
  * 詳細度はテーマの pre (0,0,1) より強い。テーマの .theme.css はこのあとに読まれる。
  */
 section.markdown pre.diagram {
@@ -209,7 +212,7 @@ section.markdown pre.diagram {
     line-height: normal;
     white-space: normal;
     overflow-wrap: normal;
-    overflow: visible;
+    overflow-x: auto;
     text-align: center;
 }
 
