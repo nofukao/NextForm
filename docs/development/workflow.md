@@ -337,24 +337,32 @@ v0.8.0 の配布物を、折りたたみを実装したあとのサイトに入�
 ## 6. リリース
 
 1. 該当バージョンの全項目が終わっていることを確認する
-2. `NextForm/app/version.inc` の `NEXTFORM_VERSION` を上げる
-3. `./tests/golden.sh` `./tests/smoke.sh` `./tests/css-rules.sh` `./tests/upgrade.sh`
+2. **同梱の Mermaid に安全上の勧告や新しい版が出ていないか見る**
+   (`gh api repos/mermaid-js/mermaid/security-advisories`、
+   `gh release list -R mermaid-js/mermaid`)。勧告は年に何度も出る。
+   直した版があれば `deploy/scripts/update-mermaid.sh --pin 版` で取り直し、
+   `BROWSER=1 ./tests/mermaid.sh` でブラウザでも確かめる (`setup.md` §3.4)。
+   新しい版が elkjs 0.12 以上を含むなら、ELK 本体は GPLv3 と両立する
+   (EPL-2.0 OR GPL-3.0-or-later)。`LICENSE` と
+   `design-markdown-mermaid.md` §2.6 を見直す (中の EMF・Xtext は EPL のまま)
+3. `NextForm/app/version.inc` の `NEXTFORM_VERSION` を上げる
+4. `./tests/golden.sh` `./tests/smoke.sh` `./tests/css-rules.sh` `./tests/upgrade.sh`
    `./tests/search-index.sh` が通ることを確認する
-4. 開発検証サイトで全機能を手動で巡回する
+5. 開発検証サイトで全機能を手動で巡回する
    (GET だけでは踏めない POST 経路 — 編集・添付・ロック・管理画面)
-5. `docs/project-overview.md` のロードマップを更新する
-6. `main` に tag を打つ: `git tag v0.1 && git push origin v0.1`
-7. 配布物を作る: `./deploy/scripts/make-dist.sh v0.1`
-8. **配布物を展開してインストールが通ることを確認する**
+6. `docs/project-overview.md` のロードマップを更新する
+7. `main` に tag を打つ: `git tag v0.1 && git push origin v0.1`
+8. 配布物を作る: `./deploy/scripts/make-dist.sh v0.1`
+9. **配布物を展開してインストールが通ることを確認する**
    リポジトリで動いていても配布物で動くとは限らない。実際 v0.1 で、
    git が空ディレクトリを追跡しないために `app/plugin/` が
    配布物から抜けているのを、この手順で見つけている
-9. **配布物からのアップグレードを実サイトで確認する**
-   → [upgrade-check.md](upgrade-check.md)
-   `tests/upgrade.sh` は作業ツリーを使い、ページが 2 枚しかない複製が相手なので、
-   件数・サイズ・古い書き方は見ていない。tar.gz を展開して、実データの入った
-   サイトの**複製**に当てる (元のサイトは読むだけ)。何を確かめるかは版ごとに
-   違うので、手順書側に記録を残す
+10. **配布物からのアップグレードを実サイトで確認する**
+    → [upgrade-check.md](upgrade-check.md)
+    `tests/upgrade.sh` は作業ツリーを使い、ページが 2 枚しかない複製が相手なので、
+    件数・サイズ・古い書き方は見ていない。tar.gz を展開して、実データの入った
+    サイトの**複製**に当てる (元のサイトは読むだけ)。何を確かめるかは版ごとに
+    違うので、手順書側に記録を残す
 
 ### v0.1 完成後の公開前チェック
 
