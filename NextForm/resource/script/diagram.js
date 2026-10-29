@@ -270,18 +270,70 @@
 	});
     }
 
-    function renderAll(mermaid, blocks) {
-	var index = 0;
-	var next = function() {
-	    if(index >= blocks.length) {
-		document.documentElement.setAttribute('data-diagrams', 'done');
+    /*
+     * 描く順番待ち。Mermaid には 1 つずつ渡す。図と図のあいだで処理を譲る
+     * (図の多いページでも画面が長く固まらないように)。待ちが空になるたびに
+     * data-diagrams="done" を付ける (ブラウザの確かめのページが待つ印)。
+     */
+    var queue = [];
+    var rendering = false;
+    function enqueue(mermaid, block) {
+	queue.push(block);
+	if(!rendering)
+	    renderNext(mermaid);
+    }
+
+    function renderNext(mermaid) {
+	if(queue.length === 0) {
+	    rendering = false;
+	    document.documentElement.setAttribute('data-diagrams', 'done');
+	    return;
+	}
+	rendering = true;
+	render(mermaid, queue.shift(), function() {
+	    setTimeout(function() { renderNext(mermaid); }, 0);
+	});
+    }
+
+    /* 図を囲む、閉じた折りたたみ (:::details の <details>)。無ければ null */
+    function closedDetails(element) {
+	for(var node = element.parentNode; node && node.nodeType === 1; node = node.parentNode) {
+	    if(node.nodeName === 'DETAILS' && !node.open)
+		return node;
+	}
+	return null;
+    }
+
+    /*
+     * 閉じた折りたたみの中の図は、開くまで描かない。閉じているあいだは幅も
+     * 文字の大きさも測れず、描くとノードが潰れたり重なったりする。入れ子なら、
+     * 外が開いたあとで内側の閉じたものを待ち直す。
+     */
+    function enqueueWhenOpen(mermaid, block) {
+	var details = closedDetails(block.pre);
+	if(!details) {
+	    enqueue(mermaid, block);
+	    return;
+	}
+	var onToggle = function() {
+	    if(!details.open)
 		return;
-	    }
-	    var block = blocks[index++];
-	    /* 図と図のあいだで処理を譲る。図の多いページでも画面が長く固まらないように */
-	    render(mermaid, block, function() { setTimeout(next, 0); });
+	    details.removeEventListener('toggle', onToggle);
+	    enqueueWhenOpen(mermaid, block);
 	};
-	next();
+	details.addEventListener('toggle', onToggle);
+    }
+
+    function renderAll(mermaid, blocks) {
+	var waiting = 0;
+	for(var i = 0; i < blocks.length; i++) {
+	    if(closedDetails(blocks[i].pre))
+		waiting++;
+	    enqueueWhenOpen(mermaid, blocks[i]);
+	}
+	/* どれも閉じた折りたたみの中なら、描くものが無いまま終わる */
+	if(waiting === blocks.length)
+	    document.documentElement.setAttribute('data-diagrams', 'done');
     }
 
     function start() {
