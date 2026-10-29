@@ -51,6 +51,17 @@ $SETUP_CONSTANTS['MARKDOWN_ALLOW_HTML'] = array(
     'type' => 'select',
     'options' => array('false' => 'Escape', 'true' => 'Allow'),
     'note' => 'allowing it lets anyone who can edit run scripts');
+/*
+ * Markdown のページの図 (```mermaid。handler/markdown.inc の markdown_diagram_setup())。
+ * 描くのはブラウザで、止めるとコードのまま出る。Mermaid に勧告が出て、
+ * NextForm の新しい版を待つあいだ止められるように設定にした。
+ */
+$SETUP_CONSTANTS['MARKDOWN_DIAGRAM'] = array(
+    'description' => 'Diagrams in Markdown pages',
+    'default' => 'true',
+    'type' => 'select',
+    'options' => array('true' => 'Draw', 'false' => 'Show as code'),
+    'note' => 'draws code blocks written as ```mermaid in the browser. Turn it off to show them as code, for example while waiting for a fix to a security advisory for Mermaid');
 $SETUP_CONSTANTS['FILE_ALLOW_HTML'] = array(
     'description' => 'Attached HTML files',
     'default' => 'false',
@@ -295,6 +306,7 @@ function setup_read($name) {
 |{PASSWORD_REMINDER_EMAIL_FROM|(自動)|パスワード再設定メールの送信者メールアドレス|}
 |{MANUAL_PAGENAME|NextFormManual|マニュアルページのページ名|}
 |{MARKDOWN_ALLOW_HTML|false|種別Markdownのページで生のHTMLをそのまま通すか．trueにすると編集できる人が誰でもスクリプトを埋め込める|}
+|{MARKDOWN_DIAGRAM|true|種別Markdownのページの ""$bq$$bq$$bq$mermaid"" のコードブロックをブラウザで図にするか．falseにするとコードのまま出る．Mermaidに安全上の問題が見つかり，直したNextFormの版を待つあいだなどに止める．サイト設定の「種別Markdownのページの図」でも選べる．詳しくは[[図:../../Markdown/Extra#図]]|}
 |{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか．falseならダウンロードになる．trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
 |{POST_ENCODING|none|フォームの送り方．ConoHa WINGなど，WAFのある共用サーバーで，本文に""'--""や""<script>""を書くと保存が「閲覧できません (Forbidden access)」で止まる場合はbase64にする．サイト設定の「フォームの送り方」でも選べる．詳しくは[[サイトの管理:..]]|}
 |{CLONE_ALLOWED_HOSTS||クローン元として許すホスト(1行に1つ．ホスト名かサイトのURLで，URLはホストの部分だけを見る)．プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできる．サイト設定でも書ける．詳しくは[[他のNextFormのページをクローンする:../../SiteMenu#他のNextFormのページをクローンする]]|}
@@ -357,6 +369,7 @@ function setup_read($name) {
 |{PASSWORD_REMINDER_EMAIL_FROM|(automatic)|the sender address of the password reset mail|}
 |{MANUAL_PAGENAME|NextFormManual|the page name of the manual pages|}
 |{MARKDOWN_ALLOW_HTML|false|whether raw HTML passes through in pages of type Markdown. Setting it true lets anyone who can edit embed a script|}
+|{MARKDOWN_DIAGRAM|true|whether code blocks written as ""$bq$$bq$$bq$mermaid"" in pages of type Markdown are drawn as diagrams in the browser. With false they are shown as code. Turn it off, for example, while waiting for a NextForm release that fixes a security problem found in Mermaid. It can also be chosen as "Diagrams in Markdown pages" in the site settings. See [[Diagrams:../../Markdown/Extra#Diagrams]] for details|}
 |{FILE_ALLOW_HTML|false|whether an attached HTML file runs when it is opened. With false it is downloaded. Setting it true runs it isolated from the wiki, but lets anyone who can edit show any page under the URL of this site|}
 |{POST_ENCODING|none|how forms are sent. On a shared server with a WAF, such as ConoHa WING, where saving a page with ""'--"" or ""<script>"" in it stops at "Forbidden access", set it to base64. It can also be chosen as "How forms are sent" in the site settings. See [[Site administration:..]] for details|}
 |{CLONE_ALLOWED_HOSTS||hosts allowed as clone sources (one per line, as a host name or the URL of the site; only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here. It can also be written in the site settings. See [[Cloning a page of another NextForm:../../SiteMenu#Cloning a page of another NextForm]] for details|}

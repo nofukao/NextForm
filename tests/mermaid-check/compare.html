@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<title>図の確かめ</title>
+<!--
+  tests/mermaid.sh (BROWSER=1) が検証サイトの resource/mermaid-check/ に置く。
+  配布物には入らない。
+
+  1. 互換: 「互換」のページ (prototype.js あり、diagram.js が組み込みを戻す) と、
+     同じページから prototype.js などを抜いた写し (clean.html) を描き比べる。
+  2. 組み込み: 互換のページで、prototype.js に置き換えられたままの組み込みを並べる。
+  3. 安全: 「安全」のページの図の中に、スクリプトの跡・フォーム・外部の読み込み・
+     ページを覆う箱が無いことを調べる。
+-->
+<style>
+body { font-family: sans-serif; margin: 16px; line-height: 1.6; color: #222; background: #fff; }
+table { border-collapse: collapse; margin: 8px 0; font-size: 14px; }
+th, td { border: 1px solid #bbb; padding: 3px 8px; text-align: left; vertical-align: top; }
+.ok { color: #1a7f37; font-weight: bold; }
+.ng { color: #c62828; font-weight: bold; }
+.note { color: #555; font-size: 14px; }
+.frames { display: flex; gap: 8px; flex-wrap: wrap; }
+.frames div { flex: 1 1 480px; }
+iframe { width: 100%; height: 640px; border: 1px solid #bbb; }
+</style>
+</head>
+<body>
+<h1>図の確かめ</h1>
+<p id="status" class="note">描き終わるのを待っています…</p>
+<div id="result"></div>
+<h2>描いたもの</h2>
+<p class="note">左が実際のページ (prototype.js あり)、右が prototype.js を読まない写し。</p>
+<div class="frames">
+  <div><iframe id="real"></iframe></div>
+  <div><iframe id="clean"></iframe></div>
+</div>
+<iframe id="security" style="height: 480px"></iframe>
+<script>
+/* 「なし」同士でも描くたびに変わる図 (乱数の id・属性の並び)。目で比べる */
+var RANDOM = ['class', 'er', 'gitgraph', 'architecture', 'requirement', 'journey'];
+var SITE = new URL('../../', location.href).href;
+
+function pageUrl(name) {
+  return SITE + '?' + name.split('/').map(encodeURIComponent).join('/');
+}
+
+function waitDone(frame) {
+  return new Promise(function(resolve, reject) {
+    var started = Date.now();
+    (function poll() {
+      var doc = frame.contentDocument;
+      if(doc && doc.documentElement && doc.documentElement.getAttribute('data-diagrams') === 'done')
+        return resolve(frame);
+      if(Date.now() - started > 90000)
+        return reject(new Error('描き終わりませんでした: ' + frame.src));
+      setTimeout(poll, 200);
+    })();
+  });
+}
+
+function load(frame, url) {
+  frame.src = url;
+  return waitDone(frame);
+}
+
+/* 本文の図を順に。[{name, status, svg}] */
+function diagrams(doc) {
+  var list = [];
+  var name = '';
+  var nodes = doc.querySelectorAll('section.markdown > h2, section.markdown > pre');
+  for(var i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    if(node.tagName === 'H2') { name = node.textContent.trim(); continue; }
+    var code = node.querySelector('code');
+    if(!node.classList.contains('diagram') && !(code && /language-mermaid/i.test(code.className)))
+      continue;
+    var error = node.nextElementSibling;
+    var status = node.classList.contains('diagram') ? '描けた'
+      : '誤り: ' + (error && error.classList.contains('diagram_error') ? error.textContent : '(誤りの文が無い)');
+    list.push({name: name, status: status, svg: node.classList.contains('diagram') ? node.innerHTML : ''});
+  }
+  return list;
+}
+
+function cell(text, cls) {
+  var td = document.createElement('td');
+  td.textContent = text;
+  if(cls) td.className = cls;
+  return td;
+}
+
+function table(headers) {
+  var t = document.createElement('table');
+  var tr = document.createElement('tr');
+  headers.forEach(function(h) { var th = document.createElement('th'); th.textContent = h; tr.appendChild(th); });
+  t.appendChild(tr);
+  return t;
+}
+
+function section(title, note) {
+  var h = document.createElement('h2');
+  h.textContent = title;
+  document.getElementById('result').appendChild(h);
+  if(note) {
+    var p = document.createElement('p');
+    p.className = 'note';
+    p.textContent = note;
+    document.getElementById('result').appendChild(p);
+  }
+}
+
+function compat(real, clean) {
+  section('1. 互換', '同じ: 描いたものが 1 文字も違わない。乱数の図は描くたびに変わるので、下の画面で目で比べる。');
+  var a = diagrams(real.contentDocument), b = diagrams(clean.contentDocument);
+  var t = table(['図', 'prototype.js あり', 'prototype.js なし', '結果']);
+  var bad = 0;
+  for(var i = 0; i < Math.max(a.length, b.length); i++) {
+    var x = a[i] || {name: '-', status: '(無い)', svg: ''}, y = b[i] || {name: '-', status: '(無い)', svg: ''};
+    var same = x.status === y.status && x.svg === y.svg;
+    var random = RANDOM.indexOf(x.name) >= 0 && x.status === y.status;
+    var verdict = same ? '同じ' : random ? '違う (乱数の図。目で比べる)' : '違う';
+    if(!same && !random) bad++;
+    var tr = document.createElement('tr');
+    tr.appendChild(cell(x.name));
+    tr.appendChild(cell(x.status));
+    tr.appendChild(cell(y.status));
+    tr.appendChild(cell(verdict, same ? 'ok' : random ? '' : 'ng'));
+    t.appendChild(tr);
+  }
+  document.getElementById('result').appendChild(t);
+  return bad;
+}
+
+function builtins(real) {
+  section('2. 組み込み', '互換のページで、prototype.js に置き換えられたままの組み込み。Array.from・entries・Object.values は戻してあるはず。');
+  var fresh = document.createElement('iframe');
+  fresh.style.display = 'none';
+  document.body.appendChild(fresh);
+  var clean = fresh.contentWindow, page = real.contentWindow;
+  var replaced = [];
+  [['Array', 'Array'], ['Object', 'Object'], ['String', 'String'], ['Array.prototype', 'Array.prototype'],
+   ['String.prototype', 'String.prototype'], ['Function.prototype', 'Function.prototype'],
+   ['Number.prototype', 'Number.prototype'], ['Date.prototype', 'Date.prototype']].forEach(function(pair) {
+    var get = function(w) { return pair[0].split('.').reduce(function(o, k) { return o[k]; }, w); };
+    var c = get(clean), p = get(page);
+    Object.getOwnPropertyNames(c).forEach(function(k) {
+      var f;
+      try { f = p[k]; } catch(e) { return; }
+      if(typeof f === 'function' && !/\[native code\]/.test(Function.prototype.toString.call(f)))
+        replaced.push(pair[0] + '.' + k);
+    });
+  });
+  var pageEnumerable = page.eval('(function() { var a = []; for(var k in []) a.push(k); return a; })()');
+  var t = table(['項目', '結果']);
+  var restored = ['Array.from', 'Array.prototype.entries', 'Object.values'];
+  var bad = restored.filter(function(n) { return replaced.indexOf(n) >= 0; });
+  var tr = document.createElement('tr');
+  tr.appendChild(cell('戻した 3 つ (Array.from・entries・Object.values)'));
+  tr.appendChild(cell(bad.length ? '置き換わったまま: ' + bad.join(', ') : 'ブラウザの組み込みのまま', bad.length ? 'ng' : 'ok'));
+  t.appendChild(tr);
+  tr = document.createElement('tr');
+  tr.appendChild(cell('配列を for...in で回すと拾うもの'));
+  tr.appendChild(cell(pageEnumerable.length ? pageEnumerable.join(', ') : '無い', pageEnumerable.length ? 'ng' : 'ok'));
+  t.appendChild(tr);
+  tr = document.createElement('tr');
+  tr.appendChild(cell('置き換わったままの組み込み (参考。Mermaid を上げたら、ここに効くものが増えていないか見る)'));
+  tr.appendChild(cell(replaced.filter(function(n) { return restored.indexOf(n) < 0; }).join(', ') || '無い'));
+  t.appendChild(tr);
+  document.getElementById('result').appendChild(t);
+  return bad.length + pageEnumerable.length;
+}
+
+function security(frame) {
+  section('3. 安全', '「安全」のページの図を調べる。');
+  var doc = frame.contentDocument, win = frame.contentWindow;
+  var inDiagrams = function(selector) {
+    var n = 0;
+    doc.querySelectorAll('section.markdown pre.diagram').forEach(function(pre) { n += pre.querySelectorAll(selector).length; });
+    return n;
+  };
+  var links = 0;
+  doc.querySelectorAll('section.markdown pre.diagram a').forEach(function(a) {
+    var href = a.getAttribute('href') || a.getAttribute('xlink:href') || '';
+    if(/^\s*javascript:/i.test(href)) links++;
+  });
+  var fixed = 0;
+  doc.querySelectorAll('section.markdown pre.diagram *').forEach(function(e) {
+    if(win.getComputedStyle(e).position === 'fixed') fixed++;
+  });
+  var external = win.performance.getEntriesByType('resource').filter(function(e) { return /example\.invalid/.test(e.name); }).length;
+  var styleText = 0;
+  doc.querySelectorAll('section.markdown pre.diagram style').forEach(function(s) { if(/example\.invalid/.test(s.textContent)) styleText++; });
+  /* 部分編集が範囲を探すときに見る属性。ラベルから付けられると、別の範囲が開く */
+  var editAttributes = inDiagrams('[data-twp], [data-twl], [data-twll], [data-twlp], [data-pagename], [data-ticket]');
+  var spill = 0;
+  doc.querySelectorAll('section.markdown pre.diagram').forEach(function(pre) {
+    if(win.getComputedStyle(pre).overflowX === 'visible') spill++;
+  });
+  var drawn = doc.querySelectorAll('section.markdown pre.diagram').length;
+  var errors = doc.querySelectorAll('section.markdown p.diagram_error').length;
+  var rows = [
+    ['スクリプトが動いていない (window.__nfProbe)', win.__nfProbe === undefined, String(win.__nfProbe)],
+    ['フォーム・入力欄・ボタン', inDiagrams('form, input, button, textarea, select') === 0, inDiagrams('form, input, button, textarea, select') + ' 個'],
+    ['script・iframe・object・embed', inDiagrams('script, iframe, object, embed') === 0, inDiagrams('script, iframe, object, embed') + ' 個'],
+    ['外部の画像 (img)', inDiagrams('img') === 0, inDiagrams('img') + ' 個'],
+    ['javascript: のリンク', links === 0, links + ' 個'],
+    ['ページを覆う箱 (position: fixed)', fixed === 0, fixed + ' 個'],
+    ['外部への読み込み (example.invalid)', external === 0, external + ' 件'],
+    ['図の CSS に外部の URL (themeCSS・fontFamily)', styleText === 0, styleText + ' 個'],
+    ['ラベルの部分編集の属性 (data-twp など)', editAttributes === 0, editAttributes + ' 個'],
+    ['本文の枠からはみ出せる図 (overflow-x: visible)', spill === 0, spill + ' 個']
+  ];
+  var t = table(['項目', '結果', '数']);
+  var bad = 0;
+  rows.forEach(function(r) {
+    if(!r[1]) bad++;
+    var tr = document.createElement('tr');
+    tr.appendChild(cell(r[0]));
+    tr.appendChild(cell(r[1] ? 'ok' : 'NG', r[1] ? 'ok' : 'ng'));
+    tr.appendChild(cell(r[2]));
+    t.appendChild(tr);
+  });
+  document.getElementById('result').appendChild(t);
+  var p = document.createElement('p');
+  p.className = 'note';
+  p.textContent = '描けた図 ' + drawn + ' 個、誤りになった図 ' + errors + ' 個 (誤りになるものがあってよい)。';
+  document.getElementById('result').appendChild(p);
+  return bad;
+}
+
+Promise.all([
+  load(document.getElementById('real'), pageUrl('MermaidCheck/互換')),
+  load(document.getElementById('clean'), new URL('clean.html', location.href).href),
+  load(document.getElementById('security'), pageUrl('MermaidCheck/安全'))
+]).then(function(frames) {
+  var bad = compat(frames[0], frames[1]) + builtins(frames[0]) + security(frames[2]);
+  var status = document.getElementById('status');
+  status.textContent = bad ? 'NG が ' + bad + ' 件あります。' : 'すべて ok です。乱数の図は下の画面で目で比べてください。';
+  status.className = bad ? 'ng' : 'ok';
+}, function(error) {
+  document.getElementById('status').textContent = String(error);
+  document.getElementById('status').className = 'ng';
+});
+</script>
+</body>
+</html>

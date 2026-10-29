@@ -1,0 +1,10 @@
+# 同梱する Mermaid の版を固定する (deploy/scripts/update-mermaid.sh が読む)
+#
+# version  npm の mermaid の版
+# tgz      その tgz の sha512 (npm の登録所の dist.integrity と同じ形)
+# js       取り出した dist/mermaid.min.js の sha512 (16 進)
+#
+# 版を変えるときは手で書き換えず、update-mermaid.sh --pin <版> を使う。
+version=12.2.0
+tgz=sha512-w7nr/SFrLO7BaVTs3dQTvYSV6nYSBj0Yy9DjBhsIJtAcHqRzXSq4Pg32ujHZ/AdWsAMNEvvhbm5dt9E2tOiHzw==
+js=5f45db85e0acc1f9edec044b02030cbfff92e5ed05b1d0263efc16ac2aec6dd149fe5efe2381ff4e729288bcc6f50871789a30b5a60ea16dd7c251cdea052ba2

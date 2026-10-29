@@ -615,6 +615,58 @@ function markdown_move_code_positions($dom) {
 }
 
 /*
+ * 図 (```mermaid のコードブロック) があれば、ブラウザで描くためのものを
+ * <head> に足す。描くのは resource/script/diagram.js で、本文はコードブロック
+ * のまま出す (JavaScript が無効でも、読み込めなくても、コードとして読める)。
+ *
+ * 図の無いページには何も足さない (読み込むものを増やさない)。
+ * サイト設定 MARKDOWN_DIAGRAM が true でなければ足さない。Mermaid に勧告が出て、
+ * NextForm の新しい版を待つあいだ止められるように。
+ *
+ * <meta> で渡すもの:
+ *   content  同梱した Mermaid の URL。ファイルが変わったときだけ変わる
+ *            (head_tags_asset_url()。上げても古い Mermaid がキャッシュに残らない)
+ *   data-*   画面の文言。diagram.js は nextform.js の l() を呼ばない (diagram.js の冒頭)
+ *
+ * 表示・プレビュー・取り込み (![](ページ)、&include)・添付した md の表示は、
+ * どれも markdown_convert() を通るので同じ扱いになる。言語名の大文字小文字は
+ * 区別しない (```Mermaid も図にする。GitHub と同じ)。
+ */
+function markdown_diagram_setup($dom) {
+    global $head_tags_added;
+    /*
+     * 足すのは 1 ページに 1 回。head_tags_init() が控えを作り直すので、
+     * 1 つの処理で多くのページを描く道具でも、ページごとに数え直される
+     */
+    if(!empty($head_tags_added['resource/script/diagram.js']))
+	return;
+    if(defined('MARKDOWN_DIAGRAM') && MARKDOWN_DIAGRAM !== 'true')
+	return;
+
+    $has_diagram = false;
+    foreach($dom->getElementsByTagName('code') as $code) {
+	$pre = $code->parentNode;
+	if(!($pre instanceof DOMElement) || strtolower($pre->nodeName) !== 'pre')
+	    continue;
+	if(preg_match('/(^|\s)language-mermaid(\s|$)/i', $code->getAttribute('class'))) {
+	    $has_diagram = true;
+	    break;
+	}
+    }
+    if(!$has_diagram)
+	return;
+
+    head_tags_add_meta(array(
+			   'name' => 'nextform-mermaid',
+			   'content' => head_tags_asset_url('resource/script/mermaid/mermaid.min.js'),
+			   'data-error' => l('Could not draw the diagram:'),
+			   'data-unsupported' => l('This browser cannot draw diagrams. Showing the code instead.'),
+			   'data-too-large' => l('The diagram is too large (up to 50,000 characters).')
+			   ));
+    head_tags_add_javascript('resource/script/diagram.js');
+}
+
+/*
  * $is_positioned が false なら、ブロックに原文の位置 (data-twp) を付けない。
  * 位置が無ければ部分編集の欄が出ない。添付した md を読むだけの画面が使う。
  */
@@ -649,6 +701,7 @@ function markdown_convert(&$page, $dom, $contents = null, $is_positioned = true)
 	$title_heading->parentNode->removeChild($title_heading);
 
     markdown_move_code_positions($section);
+    markdown_diagram_setup($section);
     /*
      * [TOC] と [PAGES] は検索語の印より先に置き換える。印 (mark) が付くと、
      * 目印が「文字だけの段落」でなくなる。

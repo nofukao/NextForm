@@ -61,6 +61,10 @@ TARGETS=(
     # 記法の例 (:::example)。ソースと表示の対・入れ子・コードブロックの中の :::・
     # 引用と箇条書きの中・example 以外は素通し、をまとめて 1 枚で固定する。
     "MarkdownExample=?GoldenMaster/MarkdownExample"
+    # Mermaid の図。描くのはブラウザなので、本文の HTML はコードブロックのまま
+    # (<pre data-twp> と code.language-mermaid) であることを固定する。
+    # 図のあるページで <head> に足すものは tests/mermaid.sh が見る。
+    "MarkdownMermaid=?GoldenMaster/MarkdownMermaid"
 )
 
 # 比較対象を <article class="main"> の中だけに絞り、実行のたびに変わる値を潰す。
