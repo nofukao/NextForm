@@ -129,10 +129,11 @@ function manual_get_pages() {
 	/*
 	 * 題名は本文の &title の行から取る (ふつうのページを保存したときに
 	 * meta に入る値と同じ)。本文は変換しない。マニュアルの &title は
-	 * どれも記法を含まない文字。meta に題名が無いと、題名で検索に当たらない。
+	 * 文字だけで、記法は &&名前 (画面では &名前) だけなので、そこだけ直す。
+	 * meta に題名が無いと、題名で検索に当たらない。
 	 */
 	if(preg_match('/^&title[ \t]+(.+?)[ \t]*$/m', $manual_page['body'], $m))
-	    $pages[$pagename]['title'] = $m[1];
+	    $pages[$pagename]['title'] = str_replace('&&', '&', $m[1]);
     }
 
     /*
@@ -205,7 +206,8 @@ function manual_index_update(&$pages) {
      * 利用者がおらず、ログインしないとマニュアルを読めないサイトでは
      * 毎回飛ばされて、マニュアルの索引が古いまま残っていた (後から
      * 更新される機会も無い)。道具はサイトの持ち主として動いているので、
-     * このあいだだけ読む権限を与えて作る。権限は保存しない。
+     * このあいだだけマニュアルを読む権限を与えて作る。権限は保存しない。
+     * Web (php-fpm) からは届かない (PHP_SAPI が cli のときだけ)。
      */
     if(!auth_has_permission(MANUAL_PAGENAME, 'read')) {
 	if(PHP_SAPI !== 'cli')
@@ -214,7 +216,7 @@ function manual_index_update(&$pages) {
 	$saved_permissions = $AUTH_PERMISSIONS;
 	$saved_user = $AUTH_GET_USER_CACHE;
 	$AUTH_GET_USER_CACHE = false;
-	$AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = 'read';
+	$AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = array(MANUAL_PAGENAME . '*' => 'read');
 	manual_index_update_pages($pages);
 	$AUTH_PERMISSIONS = $saved_permissions;
 	$AUTH_GET_USER_CACHE = $saved_user;

@@ -477,6 +477,7 @@ $LANGUAGE['ja'] = array(
     'Could not read the regular expression: $error$' => '正規表現が読めません: $error$',
     'Regular expressions can be used after logging in.' => 'ログインすると正規表現で探せます。',
     'This search engine does not support this way of writing.' => 'この検索エンジンでは使えない書き方です。',
+    'Too many words (up to $max$).' => '語が多すぎます ($max$ 個まで)。',
     'score: $score$' => 'スコア: $score$',
     'Sort' => '順序',
     'Frequency' => '出現頻度',

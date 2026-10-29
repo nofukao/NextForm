@@ -151,10 +151,15 @@ function search_show(&$args, $dom) {
 	    dom_append_text($span, '(' . lf('score: $score$', array('score' => round($search_result['score'], 2))) . ')');
 
 	    
+	    /*
+	     * 印を付ける語は結果ごと (正規表現の一致した文字を含む)。外部の検索
+	     * エンジンの結果には無いので、問い合わせの語にする (今までと同じ)。
+	     */
 	    if(isset($search_result['snippets']) && $search_result['snippets'] !== '') {
 		$p = dom_append_child($li, 'pre');
-		dom_append_hightlighted_text($p, implode("\n", $search_result['snippets']),
-					     default_value($search_result['highlights'], array()));
+		$highlights = isset($search_result['highlights']) ?
+		    $search_result['highlights'] : search_query_words($query);
+		dom_append_hightlighted_text($p, implode("\n", $search_result['snippets']), $highlights);
 	    }
 	}
 	if(!$is_partial)
