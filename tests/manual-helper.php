@@ -9,6 +9,7 @@
  *   page-exists <名前>        page_is_exists() の答え (exists=1/0)
  *   page-head <名前>          本文の先頭 200 バイト (head=...)
  *   page-mtime <名前>         page_get_mtime() の答え (mtime=...)
+ *   page-meta <名前>          種別と題名 (type=... title=...)
  *   stored-exists <名前>      storage に写しがあるか (stored=1/0)
  *   manual-count              マニュアルのページ数 (count=...)
  *   manual-list               マニュアルの全ページ名 (page=... の行が並ぶ)
@@ -21,6 +22,7 @@
  *   backup-count <名前>       版の数 (count=...)
  *   search <語>               検索の結果件数とマニュアルの件数
  *                             (total=... manual=...)
+ *   search-has <語> <名前>    検索の結果にそのページがあるか (found=1/0)
  *   index-has <名前>          索引にそのページが載っているか (indexed=1/0)
  *   index-ghosts              索引にあって実在しないページの数 (ghosts=...)
  *   cleanup                   このヘルパが作ったページを消す
@@ -80,6 +82,12 @@ case 'page-head':
 
 case 'page-mtime':
     printf("mtime=%s\n", (string)page_get_mtime($rest[0]));
+    break;
+
+case 'page-meta':
+    $page = page_read($rest[0]);
+    printf("type=%s\n", isset($page['meta']['type']) ? $page['meta']['type'] : '');
+    printf("title=%s\n", isset($page['meta']['title']) ? $page['meta']['title'] : '');
     break;
 
 case 'stored-exists':
@@ -144,6 +152,12 @@ case 'search':
 	if(test_is_manual($pagename))
 	    $manual++;
     printf("total=%d\nmanual=%d\n", count($results), $manual);
+    break;
+
+case 'search-has':
+    $query = array($rest[0]);	/* search() は参照で受ける */
+    $results = search($query, array());
+    printf("found=%d\n", isset($results[$rest[1]]) ? 1 : 0);
     break;
 
 case 'index-has':
