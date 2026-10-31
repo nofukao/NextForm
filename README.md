@@ -138,9 +138,26 @@ sudo -u apache php /var/www/html/wiki/app/tool/page /var/www/html/wiki/index.php
 - 既にあるページは `--overwrite` を付けたときだけ書き換え、前の版は必ず履歴に残します
 - 結果は JSON で出します。使い方は **[docs/page-tool.md](docs/page-tool.md)** にあります
 
-AI にこの道具の使い方を教えるスキル (`SKILL.md`) も用意しています。接続先
+AI 向けの手順 (スキル `SKILL.md`) も用意しています。接続先
 (SSH の別名、サイトの場所、サイトの所有者、書き手の名前) は推測せずに利用者に聞き、
-書く前に必ず確認を求めます。入れ方は 2 通りです。
+書く前に必ず確認を求めます。AI への渡し方は 3 通りです。
+
+AI はサイトのサーバーの上で道具を動かして書きます (Web の画面からは書きません)。
+**サイトのサーバーに SSH で入れることが前提**で、SSH で入れないサイトには書けません。
+
+### サイトのマニュアルの URL を渡す (NextForm 0.20.0 以降)
+
+同じ手順が、サイトの組み込みマニュアル `NextFormManual/AI` にあります。AI には、
+たとえば次のように頼みます。手元に何も入れずに済み、手順はそのサイトの版に合います。
+
+> https://〈サイト〉/?〈ページ名〉 に○○を書いてください。書き方は
+> https://〈サイト〉/?NextFormManual/AI を読んでください。
+> サーバーには SSH の別名 〈別名〉 でつながります。
+
+- **0.20.0 以降のサイトの URL を渡してください。** それより前の版では `NextFormManual/AI` が
+  組み込みのページではなく、書く権限のある人なら誰でも普通のページとして作れます。
+- ログインしないと読めないサイトでは、AI は Web から手順を読めません。下の 2 つの
+  どちらかで手元に入れてください。
 
 ### Claude Code のプラグインとして入れる
 
@@ -162,6 +179,8 @@ AI にこの道具の使い方を教えるスキル (`SKILL.md`) も用意して
 
 スキルは [plugins/nextform/skills/nextform-pages/SKILL.md](plugins/nextform/skills/nextform-pages/SKILL.md)
 の 1 ファイルだけです。読み込む AI ツールのスキルのフォルダーに写します。
+本文はサイトのマニュアル `NextFormManual/AI` と同じです
+(正本は [NextForm/app/manual/AI.md](NextForm/app/manual/AI.md))。
 
 ```bash
 mkdir -p ~/.claude/skills/nextform-pages
