@@ -391,14 +391,44 @@ awk 'NR == 1 && $0 == "---" { fm = 1; next }
 check_eq "SKILL.md の本文 (先頭の name / description を除く) が AI.md と同じ" "yes" \
          "$(cmp -s "${WORK_DIR}/skill-body.txt" "$AI_MD" && echo yes || echo no)"
 
-# 入口。日本語と英語のトップから、切れていないリンクがある
-for top in "$MJA" "${M}/en"; do
-    top_links=$(curl -sk "${MANUAL_TEST_URL}/?${top}" | grep -o '<a[^>]*>' \
-                | grep "data-link-pagename=\"${MAI}\"")
-    check_eq "?${top} から ${MAI} へのリンクがある" "yes" \
-             "$([[ -n "$top_links" ]] && echo yes || echo no)"
-    check_eq "  not_exists が付かない" "no" "$(contains "$top_links" 'not_exists')"
+# 入口。マニュアルの入口 (NextFormManual) には日本語・英語と並べて置く。
+# 日本語・英語のトップでは、本文の 1 行目 (最初の見出しより前) に、もう一方の言語と
+# 並べて置く。「やりたいこと別の案内」の表は各言語の子ページを指す表なので、
+# 言語の木の外にある AI のページは載せない (利用者の指摘 2026-11-01)。
+MEN="${M}/en"
+# $1 説明に出す場所  $2 HTML  $3 リンク先のページ名
+check_link() {
+    local a
+    a=$(printf '%s' "$2" | grep -o '<a[^>]*>' | grep "data-link-pagename=\"$3\"")
+    check_eq "$1 から $3 へのリンクがある" "yes" "$([[ -n "$a" ]] && echo yes || echo no)"
+    check_eq "  not_exists が付かない" "no" "$(contains "$a" 'not_exists')"
+}
+# ページの本文のうち、最初の見出しより前の HTML
+page_lead() {
+    printf '%s' "$2" | python3 -I -c '
+import sys
+text = sys.stdin.read()
+start = text.find("data-pagename=\"" + sys.argv[1] + "\"")
+if start >= 0:
+    end = text.find("<h1 data-twp", start)
+    print(text[start:end if end >= 0 else len(text)])' "$1"
+}
+# $1 HTML  $2 リンク先のページ名
+count_links() {
+    printf '%s' "$1" | grep -o "data-link-pagename=\"$2\"" | grep -c .
+}
+top_html=$(curl -sk "${MANUAL_TEST_URL}/?${M}")
+for dest in "$MJA" "$MEN" "$MAI"; do
+    check_link "?${M}" "$(page_lead "$M" "$top_html")" "$dest"
 done
+ja_html=$(curl -sk "${MANUAL_TEST_URL}/?${MJA}")
+en_html=$(curl -sk "${MANUAL_TEST_URL}/?${MEN}")
+check_link "?${MJA} の 1 行目" "$(page_lead "$MJA" "$ja_html")" "$MEN"
+check_link "?${MJA} の 1 行目" "$(page_lead "$MJA" "$ja_html")" "$MAI"
+check_link "?${MEN} の 1 行目" "$(page_lead "$MEN" "$en_html")" "$MJA"
+check_link "?${MEN} の 1 行目" "$(page_lead "$MEN" "$en_html")" "$MAI"
+check_eq "?${MJA} の ${MAI} へのリンクは 1 行目の 1 つだけ" "1" "$(count_links "$ja_html" "$MAI")"
+check_eq "?${MEN} の ${MAI} へのリンクは 1 行目の 1 つだけ" "1" "$(count_links "$en_html" "$MAI")"
 
 check_eq "索引に載っている" "1" "$(value_of "$(helper index-has "$MAI")" indexed)"
 check_eq "題名の語で検索に当たる" "1" "$(value_of "$(helper search-has '読み書きする手順' "$MAI")" found)"
