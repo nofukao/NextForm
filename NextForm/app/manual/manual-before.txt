@@ -2,12 +2,15 @@
 @manual $manualpage$
 -[[Japanese:./ja]]
 -[[English:./en]]
+-[[For AI:./AI]]
 */
 
 /**
 @manual $manualpage$/en
 
 &title NextForm Manual
+&align(right); [[Japanese:../ja]] | [[for AI:../AI]]
+
 *What NextForm is
 NextForm ([[official site:`OFFICIAL_URL`]]) is a wiki engine.
 A wiki engine provides the functions to edit, show and manage web pages.
@@ -125,6 +128,8 @@ The name ''Side'' can be changed in the settings.
 @manual $manualpage$/ja
 
 &title NextFormマニュアル
+&align(right); [[English:../en]] | [[for AI:../AI]]
+
 *NextFormとは
 NextForm([[公式サイト:`OFFICIAL_URL`]])とはWikiエンジンのひとつです．
 WikiエンジンはWebページの編集, 表示, 管理等の機能を提供します．

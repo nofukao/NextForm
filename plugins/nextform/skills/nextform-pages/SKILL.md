@@ -3,18 +3,57 @@ name: nextform-pages
 description: NextForm (ToraToraWiki の fork の wiki) のページを、サイトのサーバーの上で app/tool/page を使って読み書きする手順。NextForm のサイトのページを一覧する・読む・新しく書く・書き直すとき、作業の記録を wiki のページに残すときに使う。Use when reading, listing, creating or updating pages on a NextForm wiki site.
 ---
 
-# NextForm のページを読み書きする
+# AI が NextForm のページを読み書きする手順
+
+AI (Claude Code など) が、NextForm のサイトのページを一覧する・読む・新しく書く・
+書き直すための手順。
 
 NextForm のサイトには、ページを読み書きするコマンドラインの道具 `app/tool/page` が
 入っている (**NextForm 0.17.0 以降**)。ページはこの道具だけで扱う。Web の画面を
 操作したり、`storage/` のファイルを直に読み書きしたりしない。
 
+道具はサイトのサーバーの上で動かす。サイトが手元に無ければ、**サイトのサーバーに
+SSH で入れることが前提**。SSH で入れないサイトには、この手順では書けない。
+
 道具の詳しい説明は NextForm のリポジトリの `docs/page-tool.md`。
+
+## この手順の受け取り方
+
+人は AI に、たとえば次のように頼む。
+
+> https://〈サイト〉/?〈ページ名〉 に○○を書いてください。書き方は
+> https://〈サイト〉/?NextFormManual/AI を読んでください。
+> サーバーには SSH の別名 〈別名〉 でつながります。
+
+- この手順は、サイトの組み込みマニュアル `?NextFormManual/AI` にある (NextForm 0.20.0 以降)。
+  サイトの NextForm と一緒に新しくなるので、そのサイトの版に合った手順が読める。
+- Web の読み込みが要約して、細部 (コマンドの引用符など) が落ちることがある。そのときは
+  本文をそのまま取る。`curl -s 'https://〈サイト〉/?NextFormManual/AI&action=source'` の
+  `<pre>` の中身が本文 (`&lt;` `&gt;` `&amp;` `&quot;` を元の文字に戻す)。
+- ログインしないと読めないサイトでは、§1 で接続先を決めてから、SSH の先で
+  `read NextFormManual/AI --user <書き手> --body` を使う (§3。`--user` を省くと
+  ログインしていない人として読むので断られる)。
+- 何度も使うなら、AI の手元に入れておける。Claude Code ではプラグイン
+  (`/plugin marketplace add nofukao/NextForm` → `/plugin install nextform@nextform`。
+  明示して呼ぶときは `/nextform:nextform-pages`)。ほかの AI ツールでは、この手順を
+  `SKILL.md` としてスキルのフォルダーに写す (NextForm の README)。**入れるかどうかは
+  利用者が決める。** 手元に入れたものは自動では新しくならない。
 
 ## 1. 接続先を決める (推測しない)
 
-次の値は**利用者に聞くか、利用者が示す台帳 (ファイルなど) から読む**。名前の似た
-ものから推測したり、サーバーの中を探し回ったりしない。
+**ページ名**は、依頼にページの URL があればそこから取る。URL は `〈サイトの URL〉?〈ページ名〉`
+の形で、ページ名は `?` のあとから最初の `&` (無ければ `#`) の手前まで。`/` で区切った
+1 つずつが URL エンコードされている (`+` は空白)。それを戻す。
+
+```
+https://〈サイト〉/?%E4%BD%9C%E6%A5%AD%E8%A8%98%E9%8C%B2/2026-10  →  作業記録/2026-10
+```
+
+短縮 URL (`?option=shorturl&key=...`) にはページ名が入っていないので、利用者に聞く。
+
+URL からは、サイトのサーバーの場所はわからない。次の値は**利用者に聞くか、
+利用者が示す台帳 (ファイルなど) から読む**。名前の似たものから推測したり、
+サーバーの中を探し回ったりしない。
 
 | 値 | 例 (形だけ) |
 |---|---|

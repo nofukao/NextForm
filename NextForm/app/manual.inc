@@ -15,6 +15,9 @@
  * 読み取り専用の仮想ページで、page.inc が解決する。正本は app/ の 1 つだけに
  * なり、アップグレードで app/ が入れ替わればマニュアルも自動的に新しくなる。
  * 取り残される生成物が存在しない。
+ *
+ * 0.20.0 で、Markdown のページも置けるようにした。manual/*.md の 1 ファイルが
+ * MANUAL_PAGENAME/<ファイル名> の 1 ページになる (manual_markdown_files())。
  */
 $TOOLS['site']['manual'] = array(
     'order' => 50,
@@ -76,6 +79,19 @@ function manual_source_files() {
 }
 
 /*
+ * Markdown で書いたマニュアルのページ。1 ファイルが 1 ページで、ページ名は
+ * MANUAL_PAGENAME/<拡張子を除いたファイル名>。
+ *
+ * 注釈 (manual_parse()) とは別の経路にしてある。注釈の中の ` は PHP の式として
+ * 評価されるので、コマンドの多い文章をそのまま置けない。こちらはファイルを
+ * そのまま本文にする。AI 向けの手順 (AI.md) は AI 向けのスキル (SKILL.md) と
+ * 同じ本文で、どちらにも同じ文字が並ぶ必要がある (tests/manual.sh)。
+ */
+function manual_markdown_files() {
+    return glob_array(APP_DIR_PATH . '/manual/*.md');
+}
+
+/*
  * 元になるファイルのうち最も新しい更新時刻。
  *
  * キャッシュを作り直すかどうかの判定に使う。アップグレードで app/ が
@@ -87,7 +103,7 @@ function manual_source_mtime() {
 	return $MANUAL_SOURCE_MTIME_CACHE;
 
     $mtime = 0;
-    foreach(manual_source_files() as $manual_file) {
+    foreach(array_merge(manual_source_files(), manual_markdown_files()) as $manual_file) {
 	$file_mtime = @filemtime($manual_file);
 	if($file_mtime !== false && $file_mtime > $mtime)
 	    $mtime = $file_mtime;
@@ -113,9 +129,16 @@ function manual_get_pages() {
     }
 
     $source_mtime = manual_source_mtime();
+    /*
+     * Markdown のファイルは名前の一覧も見る。足したファイルの時刻がほかより
+     * 古いと (rsync -a で時刻を保ったまま入れたときなど)、更新時刻だけでは
+     * 足したことに気づかない。消したときも同じ。
+     */
+    $markdown_names = array_map('basename', manual_markdown_files());
     $cached = cache_serialized_get('', MANUAL_CACHE_KEY);
     if(is_array($cached) && isset($cached['pages']) &&
        isset($cached['source_mtime']) && $cached['source_mtime'] == $source_mtime &&
+       isset($cached['markdown_names']) && $cached['markdown_names'] === $markdown_names &&
        isset($cached['version']) && $cached['version'] === NEXTFORM_VERSION) {
 	$MANUAL_PAGES_CACHE = $cached['pages'];
 	return $MANUAL_PAGES_CACHE;
@@ -126,6 +149,11 @@ function manual_get_pages() {
 	$pages[$pagename] = array(
 	    'body' => $manual_page['body'],
 	    'mtime' => $manual_page['mtime']);
+	if(isset($manual_page['type'])) {
+	    /* Markdown のページ。題名はあとで取る (下のメモに入れたあと) */
+	    $pages[$pagename]['type'] = $manual_page['type'];
+	    continue;
+	}
 	/*
 	 * 題名は本文の &title の行から取る (ふつうのページを保存したときに
 	 * meta に入る値と同じ)。本文は変換しない。マニュアルの &title は
@@ -146,6 +174,26 @@ function manual_get_pages() {
     $MANUAL_PAGES_CACHE = $pages;
 
     /*
+     * Markdown のページの題名。保存のときと同じ markdown_normalize() で取る
+     * (フロントマターの title:、無ければ本文の先頭の # 見出し)。本文を変換するので、
+     * 上と同じ理由でメモに入れたあとでなければならない。
+     */
+    $has_markdown_title = false;
+    foreach($pages as $pagename => $manual_page) {
+	if(!isset($manual_page['type']) || $manual_page['type'] !== 'markdown' ||
+	   !function_exists('markdown_normalize'))
+	    continue;
+	$page = page_create($pagename);
+	markdown_normalize($page, $manual_page['body']);
+	if(isset($page['title']) && $page['title'] !== '') {
+	    $pages[$pagename]['title'] = $page['title'];
+	    $has_markdown_title = true;
+	}
+    }
+    if($has_markdown_title)
+	$MANUAL_PAGES_CACHE = $pages;
+
+    /*
      * 焼き付けていた頃は、ここで wiki_normalize() を通していた
      * (表の桁を揃える整形)。もう通さない。
      *
@@ -162,6 +210,7 @@ function manual_get_pages() {
     /* cache_serialized_create() は第 3 引数を参照で取るので、変数に入れて渡す */
     $entry = array('version' => NEXTFORM_VERSION,
 		   'source_mtime' => $source_mtime,
+		   'markdown_names' => $markdown_names,
 		   'pages' => $pages);
     cache_serialized_create('', MANUAL_CACHE_KEY, $entry);
 
@@ -309,7 +358,7 @@ function manual_cleanup_generated(&$kept = array()) {
  */
 function manual_page_create($pagename, $manual_page) {
     $page = page_create($pagename);
-    $page['meta']['type'] = 'wiki';
+    $page['meta']['type'] = isset($manual_page['type']) ? $manual_page['type'] : 'wiki';
     /*
      * 施錠されているものとして見せる。編集の UI が今までと同じ見え方になる。
      * 実際の書き込みは page.inc が名前空間で弾く。
@@ -433,6 +482,22 @@ function manual_parse() {
 		}
 	    }
 	}
+    }
+
+    /*
+     * Markdown のページ (manual_markdown_files())。ファイルをそのまま本文にする。
+     * 注釈と同じ名前のページは作らないこと (こちらが勝つ)。
+     */
+    foreach(manual_markdown_files() as $markdown_file) {
+	$contents = file_get_contents($markdown_file);
+	if($contents === false)
+	    continue;
+	$pagename = MANUAL_PAGENAME . '/' . basename($markdown_file, '.md');
+	$manual_pages[$pagename] = array(
+	    'vars' => array('manual' => $pagename),
+	    'type' => 'markdown',
+	    'body' => $contents,
+	    'mtime' => filemtime($markdown_file));
     }
 
     return $manual_pages;

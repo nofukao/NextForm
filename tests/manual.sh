@@ -24,6 +24,8 @@
 #   4. 書き換えられないこと (編集・削除・改名・施錠のすべて)
 #   5. 検索の対象に残っていること。かつ一覧には出ないこと
 #   6. 全ページが警告なしで描画でき、マニュアル内部のリンクが切れていないこと
+#   7. AI 向けのページ (NextFormManual/AI) が app/manual/AI.md の本文そのままの
+#      Markdown のページであること。AI 向けのスキル (SKILL.md) と本文が同じこと
 #
 # 権限を書き換えるので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -45,7 +47,11 @@ MANUAL_PAGEID="4e657874466f726d4d616e75616c"
 fail=0
 total=0
 
+# 本文をファイルで比べるための置き場 (末尾の改行まで比べたいので変数に受けない)
+WORK_DIR=$(mktemp -d)
+
 cleanup() {
+    rm -rf "$WORK_DIR"
     if [[ "${KEEP:-0}" != "1" ]]; then
         sudo rm -rf "$MANUAL_TEST_SITE" 2>/dev/null
     else
@@ -304,6 +310,13 @@ check_eq "ソースを touch すると mtime が進む" "yes" \
          "$([[ "$after_mtime" -gt "$before_mtime" ]] && echo yes || echo no)"
 check_eq "  作り直した後も索引に載っている" "1" "$(value_of "$(helper index-has "$MJA")" indexed)"
 check_eq "  作り直しても実体はできない" "0" "$(storage_manual_dirs)"
+# Markdown のマニュアル (app/manual/*.md) も同じように追随する
+before_mtime=$(value_of "$(helper page-mtime "${M}/AI")" mtime)
+# 上の touch と同じ 1 秒に入ると、更新時刻の最大が変わらず作り直されない。少し先にする
+sudo touch -c -d '+2 seconds' "${MANUAL_TEST_SITE}/app/manual/AI.md"
+after_mtime=$(value_of "$(helper page-mtime "${M}/AI")" mtime)
+check_eq "AI.md を touch すると AI のページの mtime が進む" "yes" \
+         "$([[ "$after_mtime" -gt "$before_mtime" ]] && echo yes || echo no)"
 echo
 
 echo "9. 廃止した画面が 500 にならないこと"
@@ -314,7 +327,116 @@ check_eq "管理ツールに項目が無い" "no" \
          "$(contains "$(curl -sk "${MANUAL_TEST_URL}/?option=admin")" 'admin_manual')"
 echo
 
-echo "10. 全ページが警告なしで描画でき、リンクが切れていないこと"
+echo "10. AI 向けのページ (Markdown のマニュアル)"
+# 正本は app/manual/AI.md の 1 ファイル。変換せずにそのまま本文にする。
+# AI 向けのスキル (SKILL.md) は、先頭の name / description のあとに同じ本文を置く。
+# 別のマシンの AI には、このページの URL を渡して読ませる
+# (docs/development/design-ai-manual.md)。
+MAI="${M}/AI"
+AI_MD="${REPO_ROOT}/NextForm/app/manual/AI.md"
+SKILL_MD="${REPO_ROOT}/plugins/nextform/skills/nextform-pages/SKILL.md"
+before=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
+check_eq "page_is_exists('${MAI}')" "1" "$(value_of "$(helper page-exists "$MAI")" exists)"
+ai_meta=$(helper page-meta "$MAI")
+check_eq "  種別は markdown" "markdown" "$(value_of "$ai_meta" type)"
+check_eq "  題名は AI.md の先頭の # 見出し" \
+         "$(sed -n 's/^# //p' "$AI_MD" 2>/dev/null | head -1)" "$(value_of "$ai_meta" title)"
+check_eq "?${MAI} が 200" "200" "$(code "${MANUAL_TEST_URL}/?${MAI}")"
+ai_html=$(curl -sk "${MANUAL_TEST_URL}/?${MAI}")
+check_eq "  Markdown として描かれる (コードブロックが pre になる)" "yes" \
+         "$(contains "$ai_html" '<pre')"
+# '?NextFormManual/AI' はこの画面のメニューの URL にも出るので、本文にしかない語で見る
+check_eq "  頼み方の例が載っている" "yes" "$(contains "$ai_html" 'サーバーには SSH の別名')"
+
+# 本文をそのまま取る経路 (AI.md の「この手順を正確に読む」に書いた 2 つ)
+curl -sk "${MANUAL_TEST_URL}/?${MAI}&action=source" -o "${WORK_DIR}/source.html"
+python3 -I -c '
+import html, re, sys
+text = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r"<pre[^>]*>(.*?)</pre>", text, re.S)
+open(sys.argv[2], "w", encoding="utf-8", newline="").write(html.unescape(m.group(1)) if m else "")
+' "${WORK_DIR}/source.html" "${WORK_DIR}/source.txt"
+check_eq "&action=source の本文が AI.md と同じ" "yes" \
+         "$(cmp -s "${WORK_DIR}/source.txt" "$AI_MD" && echo yes || echo no)"
+sudo -u "$SITE_OWNER" php "${MANUAL_TEST_SITE}/app/tool/page" "${MANUAL_TEST_SITE}/index.php" \
+     read "$MAI" --body > "${WORK_DIR}/tool.txt" 2>/dev/null
+check_eq "app/tool/page の read --body が AI.md と同じ" "yes" \
+         "$(cmp -s "${WORK_DIR}/tool.txt" "$AI_MD" && echo yes || echo no)"
+# ログインしないと読めないサイトでは --user を付けて読む (AI.md に書いた読み方)
+sudo -u "$SITE_OWNER" php "${MANUAL_TEST_SITE}/app/tool/page" "${MANUAL_TEST_SITE}/index.php" \
+     read "$MAI" --user "$WIKI_ADMIN" --body > "${WORK_DIR}/tool-user.txt" 2>/dev/null
+check_eq "  --user を付けても同じ" "yes" \
+         "$(cmp -s "${WORK_DIR}/tool-user.txt" "$AI_MD" && echo yes || echo no)"
+
+# 書き換えられないこと (道具・関数・HTTP)
+tool_out=$(printf '乗っ取り\n' | sudo -u "$SITE_OWNER" php "${MANUAL_TEST_SITE}/app/tool/page" \
+           "${MANUAL_TEST_SITE}/index.php" write "$MAI" --user "$WIKI_ADMIN" --overwrite 2>/dev/null)
+check_eq "app/tool/page の write は manual で断る" "manual" \
+         "$(printf '%s' "$tool_out" | python3 -I -c 'import json,sys
+try: print(json.load(sys.stdin).get("error", ""))
+except Exception: print("")')"
+check_eq "page_write() が拒否する" "0" "$(value_of "$(helper write-try "$MAI" "乗っ取り")" written)"
+post_same_origin -d "action=write" -d "ticket=" \
+                 --data-urlencode "contents=乗っ取り" "${MANUAL_TEST_URL}/?${MAI}" > /dev/null
+check_eq "HTTP の action=write でも変わらない" "no" \
+         "$(contains "$(value_of "$(helper page-head "$MAI")" head)" '乗っ取り')"
+check_eq "  storage に実体ができない" "0" "$(storage_manual_dirs)"
+
+# スキルと本文が同じこと。直すときは AI.md を直して deploy/scripts/sync-skill.sh を流す
+awk 'NR == 1 && $0 == "---" { fm = 1; next }
+     fm && $0 == "---" { fm = 0; skip = 1; next }
+     fm { next }
+     skip && $0 == "" { skip = 0; next }
+     { skip = 0; print }' "$SKILL_MD" > "${WORK_DIR}/skill-body.txt" 2>/dev/null
+check_eq "SKILL.md の本文 (先頭の name / description を除く) が AI.md と同じ" "yes" \
+         "$(cmp -s "${WORK_DIR}/skill-body.txt" "$AI_MD" && echo yes || echo no)"
+
+# 入口。マニュアルの入口 (NextFormManual) には日本語・英語と並べて置く。
+# 日本語・英語のトップでは、本文の 1 行目 (最初の見出しより前) に、もう一方の言語と
+# 並べて置く。「やりたいこと別の案内」の表は各言語の子ページを指す表なので、
+# 言語の木の外にある AI のページは載せない (利用者の指摘 2026-11-01)。
+MEN="${M}/en"
+# $1 説明に出す場所  $2 HTML  $3 リンク先のページ名
+check_link() {
+    local a
+    a=$(printf '%s' "$2" | grep -o '<a[^>]*>' | grep "data-link-pagename=\"$3\"")
+    check_eq "$1 から $3 へのリンクがある" "yes" "$([[ -n "$a" ]] && echo yes || echo no)"
+    check_eq "  not_exists が付かない" "no" "$(contains "$a" 'not_exists')"
+}
+# ページの本文のうち、最初の見出しより前の HTML
+page_lead() {
+    printf '%s' "$2" | python3 -I -c '
+import sys
+text = sys.stdin.read()
+start = text.find("data-pagename=\"" + sys.argv[1] + "\"")
+if start >= 0:
+    end = text.find("<h1 data-twp", start)
+    print(text[start:end if end >= 0 else len(text)])' "$1"
+}
+# $1 HTML  $2 リンク先のページ名
+count_links() {
+    printf '%s' "$1" | grep -o "data-link-pagename=\"$2\"" | grep -c .
+}
+top_html=$(curl -sk "${MANUAL_TEST_URL}/?${M}")
+for dest in "$MJA" "$MEN" "$MAI"; do
+    check_link "?${M}" "$(page_lead "$M" "$top_html")" "$dest"
+done
+ja_html=$(curl -sk "${MANUAL_TEST_URL}/?${MJA}")
+en_html=$(curl -sk "${MANUAL_TEST_URL}/?${MEN}")
+check_link "?${MJA} の 1 行目" "$(page_lead "$MJA" "$ja_html")" "$MEN"
+check_link "?${MJA} の 1 行目" "$(page_lead "$MJA" "$ja_html")" "$MAI"
+check_link "?${MEN} の 1 行目" "$(page_lead "$MEN" "$en_html")" "$MJA"
+check_link "?${MEN} の 1 行目" "$(page_lead "$MEN" "$en_html")" "$MAI"
+check_eq "?${MJA} の ${MAI} へのリンクは 1 行目の 1 つだけ" "1" "$(count_links "$ja_html" "$MAI")"
+check_eq "?${MEN} の ${MAI} へのリンクは 1 行目の 1 つだけ" "1" "$(count_links "$en_html" "$MAI")"
+
+check_eq "索引に載っている" "1" "$(value_of "$(helper index-has "$MAI")" indexed)"
+check_eq "題名の語で検索に当たる" "1" "$(value_of "$(helper search-has '読み書きする手順' "$MAI")" found)"
+after=$(sudo wc -l "${PHP_ERROR_LOG:-/var/log/php-fpm/www-error.log}" 2>/dev/null | awk "{print \$1}")
+check_eq "エラーログが増えない" "$before" "$after"
+echo
+
+echo "11. 全ページが警告なしで描画でき、リンクが切れていないこと"
 # ページ名は組み込みの一覧から取る。ここで数えるのは
 #   - 全ページが HTTP 200 で開くこと
 #   - マニュアル名前空間へのリンクに not_exists が付いていないこと

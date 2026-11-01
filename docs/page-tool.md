@@ -3,8 +3,10 @@
 > **このドキュメントの読者**
 > Web の画面を使わずに、サーバーの上で NextForm のページを読んだり書いたり
 > したい方。AI (Claude Code など) に作業の記録をページへ残させたい方も、
-> まずここを読んでください。AI に渡す手順は
-> [plugins/nextform/skills/nextform-pages/SKILL.md](../plugins/nextform/skills/nextform-pages/SKILL.md) にあります。
+> まずここを読んでください。AI に渡す手順は、サイトの組み込みマニュアル
+> `?NextFormManual/AI` (NextForm 0.20.0 以降) と、同じ本文のスキル
+> [plugins/nextform/skills/nextform-pages/SKILL.md](../plugins/nextform/skills/nextform-pages/SKILL.md)
+> にあります。渡し方は README の「AI でページを編集する」にあります。
 
 `app/tool/page` は **NextForm 0.17.0 から**配布物に入っています。サイトの中の
 `app/tool/page` がその道具です。

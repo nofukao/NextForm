@@ -40,7 +40,7 @@
 | `docs/development/` | **開発者向け** (`project-overview.md` `workflow.md` `setup.md` `upgrade-check.md`) |
 | `tests/` | ゴールデンマスター + スモークテスト |
 | `deploy/scripts/` | デプロイ、テストデータ生成 |
-| `plugins/nextform/` `.claude-plugin/` | AI 向けのスキル (`SKILL.md`) と、Claude Code のプラグインとして配る目録。**配布物には入らない**。`app/tool/page` の使い方を変えたらスキルも合わせる |
+| `plugins/nextform/` `.claude-plugin/` | AI 向けのスキル (`SKILL.md`) と、Claude Code のプラグインとして配る目録。**配布物には入らない**。スキルの本文の正本は組み込みマニュアルの `NextForm/app/manual/AI.md` で、直したら `deploy/scripts/sync-skill.sh` で写す (`tests/manual.sh` が食い違いを止める)。`app/tool/page` の使い方を変えたら手順も合わせる |
 | `tmp/` | スクラッチ(追跡しない) |
 
 > 上流は PukiWiki レイアウトでは**ない**。`plugin/` `skin/` `wiki/` `attach/`
