@@ -84,8 +84,8 @@ SSH で入れないサイトには書けない。HTTPS で書ける入口は作�
 ### 3.3 入口
 
 - マニュアルの入口 (`NextFormManual`) に、Japanese・English と並べて `For AI` を足す。
-- 日本語のトップ (`NextFormManual/ja`) の本文の 1 行目に、右寄せで「英語マニュアル | AI向けマニュアル」を
-  置く。英語のトップ (`NextFormManual/en`) にも同じ形で「Japanese manual | Manual for AI」を置く。
+- 日本語のトップ (`NextFormManual/ja`) の本文の 1 行目に、右寄せで「English | for AI」を
+  置く。英語のトップ (`NextFormManual/en`) にも同じ形で「Japanese | for AI」を置く (表示は利用者の指定 2026-11-01)。
 - 「やりたいこと別の案内」の表には載せない。表のほかのリンクはどれも各言語の子ページを指していて、
   言語の木の外にある AI のページだけが異質になる (利用者の指摘 2026-11-01。最初は表に 1 行足していた)。
 - README に 3 つ目の入れ方として「URL を渡す」を書く。`docs/page-tool.md` からも案内する。
