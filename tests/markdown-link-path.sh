@@ -300,7 +300,7 @@ check_eq "--quiet なら何も出さない" "" "$(check_tool --quiet)"
 echo
 
 echo "8. AI 向けの手順 (app/manual/AI.md §5) が勧める書き方"
-# 近いページ (子孫・親・兄弟とその子) は相対パス、遠いページは / から。
+# 近いページ (子孫・親・兄弟とその子孫) は相対パス、遠いページは / から。
 # 入れ子のページから書いて、マニュアルの表のとおりに行き先が決まることを見る。
 # markdown_link_check (--base $P) に拾われないよう、$P の外の木に置く
 R="LinkPathRel"
@@ -321,6 +321,8 @@ check_eq ".. は親"                       "$R"              "$(link_target "$HT
 check_eq "../兄弟 は兄弟"                "$R/兄弟"         "$(link_target "$HTML" '兄弟')"
 check_eq "../兄弟/子 は兄弟の子"         "$R/兄弟/子"      "$(link_target "$HTML" '兄弟の子')"
 check_eq "/名前/名前 はトップの階層から" "$T/遠い"         "$(link_target "$HTML" '遠いページ')"
+check_eq "  サイトのトップページの名前が取れている (空どうしで比べない)" "yes" \
+         "$([[ -n "$top_page" ]] && echo yes || echo no)"
 check_eq "トップの階層のページの .. はサイトのトップページ (親は無い)" \
                                           "$top_page"       "$(link_target "$(page_html "$R")" 'トップの階層の親')"
 echo
