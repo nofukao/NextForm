@@ -147,7 +147,13 @@ function wiki_markdown_convert(&$page, $source) {
  * 囲んでいない値の両端の引用符を落とし、よそのツールは # で始まる値をコメントとして読むため。
  */
 function wiki_markdown_front_matter_value($value) {
-    if(!preg_match('/^[\-?:,\[\]{}#&*!|>\'"%@`]|: | #|:$|[\'"]$/u', $value))
+    /*
+     * 文字でない値に読まれるもの (null・真偽値・数・日付や時刻) も囲む。NextForm は文字として
+     * 読むが、よそのツール (YAML) では型の付いた値になる。
+     */
+    if(!preg_match('/^[\-?:,\[\]{}#&*!|>\'"%@`]|: | #|:$|[\'"]$/u', $value) &&
+       !preg_match('/^(?:null|~|true|false|yes|no|on|off|y|n)$/i', $value) &&
+       !preg_match('/^[-+]?[0-9.][0-9._:eE+\-]*$/', $value))
 	return $value;
     return '"' . str_replace(array('\\', '"'), array('\\\\', '\\"'), $value) . '"';
 }
