@@ -18,6 +18,8 @@
  *                                 記録されたページ (views=<空白区切り>)
  *   to-markdown <名前>            Wiki 記法から Markdown への変換の結果
  *                                 (markdown=<改行を \n に直したもの>)
+ *   keepout <ページ名..>          ログインしていない利用者にそのページだけ読ませない
+ *                                 (ほかは read。saved=1/0)
  *   cleanup                       このヘルパが作ったページを消す (removed=...)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -121,6 +123,17 @@ case 'to-markdown':
     $page = page_read($rest[0]);
     $result = wiki_markdown_convert($page, page_get_contents($page));
     printf("markdown=%s\n", str_replace("\n", '\n', $result['markdown']));
+    break;
+
+case 'keepout':
+    /* ページごとの権限は先に書いたものから当てはめられるので、'*' を最後に置く */
+    global $AUTH_PERMISSIONS;
+    $permission = array();
+    foreach($rest as $pagename)
+	$permission[$pagename] = 'keepout';
+    $permission['*'] = 'read';
+    $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = $permission;
+    printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
     break;
 
 case 'cleanup':

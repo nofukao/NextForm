@@ -24,8 +24,10 @@
 #   6. メタ情報の画面に欄と断り書きが出ること。本文が決めているときは画面の値を使わない。
 #      text のページでは付けられ、空にすると消える
 #   7. 「この版に戻す」で短いタイトルも戻ること。&meta(short_title) が出ること。
-#      Wiki 記法から Markdown への変換で、メタ情報の画面の値も short_title: になること
-#   8. PHP の警告が出ないこと
+#      取り込んだページの短いタイトルが外側のページに入らないこと。
+#      Wiki 記法から Markdown への変換で、メタ情報の画面の値も short_title: になること。
+#      読めないページは目次の一覧に出ないこと
+#   8. PHP の警告が出ないこと (PHP-FPM のログと、CLI のヘルパの標準エラー)
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -47,6 +49,7 @@ fail=0
 total=0
 
 cleanup() {
+    rm -f "${HELPER_ERR:-}"
     if [[ "${KEEP:-0}" != "1" ]]; then
         sudo rm -rf "$SITE" 2>/dev/null
     else
@@ -67,9 +70,12 @@ check_eq() {
     fi
 }
 
+# ヘルパの標準エラーは捨てずに貯める。保存・メタ情報の画面・この版に戻す・変換は CLI の
+# ヘルパで走るので、PHP-FPM のログには出ない警告をここで拾う (§8)
+HELPER_ERR="$(mktemp)"
 helper() {
     sudo -u "$SITE_OWNER" php -d memory_limit=512M \
-        "${SITE}/short-title-helper.php" "${SITE}/index.php" "$WIKI_ADMIN" "$@" 2>/dev/null
+        "${SITE}/short-title-helper.php" "${SITE}/index.php" "$WIKI_ADMIN" "$@" 2>>"$HELPER_ERR"
 }
 
 value_of() {
@@ -308,6 +314,11 @@ helper meta-screen "$P/MdPlain" "画面の値" > /dev/null
 check_eq "本文が決めていなければ画面の値が入る" "画面の値" "$(meta_of "$P/MdPlain" short_title)"
 helper write "$P/MdPlain" markdown "$(printf -- '本文を直した\n')" > /dev/null
 check_eq "  本文を保存すると消える (本文が正)" "0" "$(isset_of "$P/MdPlain" short_title)"
+helper write "$P/WikiPlain" wiki "$(printf -- '*節\n本文\n')" > /dev/null
+helper meta-screen "$P/WikiPlain" "画面の値" > /dev/null
+check_eq "Wiki でも本文が決めていなければ画面の値が入る" "画面の値" "$(meta_of "$P/WikiPlain" short_title)"
+helper write "$P/WikiPlain" wiki "$(printf -- '*節\n本文を直した\n')" > /dev/null
+check_eq "  本文を保存すると消える (本文が正)" "0" "$(isset_of "$P/WikiPlain" short_title)"
 echo
 
 echo "7. この版に戻す・&meta・変換"
@@ -316,6 +327,11 @@ T="$(value_of "$(helper backup-now "$P/Restore")" backuptime)"
 helper write "$P/Restore" markdown "$(printf -- '---\nshort_title: 今の短いタイトル\n---\n\n本文\n')" > /dev/null
 helper restore "$P/Restore" "$T" > /dev/null
 check_eq "Markdown のページは本文から戻る" "前の短いタイトル" "$(meta_of "$P/Restore" short_title)"
+helper write "$P/RestoreWiki" wiki "$(printf -- '&title(short){前の Wiki}\n本文\n')" > /dev/null
+T="$(value_of "$(helper backup-now "$P/RestoreWiki")" backuptime)"
+helper write "$P/RestoreWiki" wiki "$(printf -- '本文だけ\n')" > /dev/null
+helper restore "$P/RestoreWiki" "$T" > /dev/null
+check_eq "Wiki 記法のページも本文から戻る" "前の Wiki" "$(meta_of "$P/RestoreWiki" short_title)"
 helper write "$P/RestoreText" text "$(printf -- '本文\n')" > /dev/null
 helper meta-screen "$P/RestoreText" "前のテキスト" > /dev/null
 T="$(value_of "$(helper backup-now "$P/RestoreText")" backuptime)"
@@ -325,16 +341,29 @@ check_eq "text のページは版の meta から戻る" "前のテキスト" "$(
 helper write "$P/Meta" wiki "$(printf -- '短いタイトル: &meta([[%s/2026-08-05]],short_title);\n' "$D")" > /dev/null
 check_eq "&meta(short_title) が出る" "yes" \
          "$(contains "$(main_html "$P/Meta")" '短いタイトル: 短いタイトル wiki')"
+# 取り込んだページ・中身ごとの一覧に出したページの短いタイトルは、外側のページに入らない
+helper write "$P/Include" wiki "$(printf -- '&include([[%s/2026-08-05]]);\n&pages([[%s/]],show=contents,limit=3);\n' "$D" "$D")" > /dev/null
+check_eq "&include・show=contents の先の短いタイトルは外側に入らない" "0" "$(isset_of "$P/Include" short_title)"
 helper write "$P/Conv" wiki "$(printf -- '*節\n本文\n')" > /dev/null
 helper meta-screen "$P/Conv" "画面の短いタイトル" > /dev/null
 check_eq "変換: 本文に無ければメタ情報の値を short_title: にする" "yes" \
          "$(contains "$(value_of "$(helper to-markdown "$P/Conv")" markdown)" '---\nshort_title: 画面の短いタイトル\n---')"
+
+# 読めないページ。カレンダーは日のページが 1 つでも読めないとページ全体が読めなくなる
+# (設計メモ §9。直していない) ので、ここでは一覧だけを見る。最後に行う
+check_eq "読めないページは目次の一覧に出ない (権限を保存)" "1" \
+         "$(value_of "$(helper keepout "$D/2026-08-03")" saved)"
+LIST="$(main_html "$P/List")"
+check_eq "  そのページの項目も目次も出ない" "no|no" \
+         "$(contains "$LIST" "data-ref-pagename=\"$D/2026-08-03\"")|$(contains "$LIST" "?$D/2026-08-03#")"
+check_eq "  ほかのページは出る" "yes" "$(contains "$LIST" "data-ref-pagename=\"$D/2026-08-05\"")"
 echo
 
 echo "8. PHP の警告が出ていないこと"
 log_new=$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null \
               | grep -F "$SITE" || true)
 check_eq "検証サイトの警告が増えていない" "" "$log_new"
+check_eq "ヘルパ (保存・メタ情報の画面・戻す・変換) の警告が無い" "" "$(cat "$HELPER_ERR")"
 echo
 
 helper cleanup > /dev/null
