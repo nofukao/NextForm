@@ -25,14 +25,16 @@ function pagelist_append($dom, &$list_pages, $list_options = array(), $args = ar
     /*
      * 何画面目か (?pages=) は URL なので、誰でも書き換えられる。数字でない値をそのまま
      * 掛け算に使うと PHP 8 では TypeError (500) になるので、整数にして負は 1 画面目にする。
+     * 件数より先の画面は空なので、件数で抑える (大きすぎる値の掛け算が整数からあふれると、
+     * これも TypeError になる)。
      * 1 画面の件数 (each=) も本文に書く値なので整数にする (数字でなければ 0 = 全件)。
      */
-    $offset = max(0, (int)default_value($args['pages'], 0));
+    $pagenum = count($list_pages);
+    $offset = min(max(0, (int)default_value($args['pages'], 0)), $pagenum);
     $show = default_value($list_options['show'], 'list');
     if($show === 'toc' && !isset($list_options['each']))
 	$list_options['each'] = PAGELIST_TOC_EACH;
     $each = (int)default_value($list_options['each'], 0);
-    $pagenum = count($list_pages);
     if($each > 0)
 	$pages = array_slice($list_pages, $offset * $each, $each);
     else
@@ -392,8 +394,9 @@ function pagelist_apply_rules(&$pages, &$list_options, $args, &$placeholders) {
 	usort($pages, 'pagelist_page_compare');
     }
 
-    if(!empty($list_options['limit'])) {
-	$pages = array_slice($pages, 0, $list_options['limit']);
+    /* 本文に書く値なので整数にする (数字でなければ 0 = 抑えない。each= と同じ) */
+    if((int)default_value($list_options['limit'], 0) > 0) {
+	$pages = array_slice($pages, 0, (int)$list_options['limit']);
     }
 
     $list_options['hidden_num'] = $hidden_num;
