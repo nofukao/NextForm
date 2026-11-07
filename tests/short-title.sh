@@ -276,11 +276,14 @@ check_eq "知らない値も今のまま" "yes|no" \
 # 週表示の範囲は URL で指定できる。上限なしだと誰でも重い表示を走らせられるので、URL の値は
 # 0〜12 週に収める (docs/development/design-review-fixes.md の 6)
 W="$P/Cal&calendar=2026-08-05&calendar_mode=weeks"
-WEEKS_MAX="$(week_rows "$(main_html "$W&calendar_behind=12&calendar_ahead=0")")"
-check_eq "週表示: URL の範囲は上限に収める (200 で、前後 12 週・後ろ 0 週と同じ週の数)" "200|$WEEKS_MAX" \
-         "$(curl -sk -m 60 -o /dev/null -w '%{http_code}' "${URL}/?$W&calendar_behind=100000&calendar_ahead=-3")|$(week_rows "$(curl -sk -m 60 "${URL}/?$W&calendar_behind=100000&calendar_ahead=-3")")"
+# (URL の 0 は「書いていない」と同じで既定の週の数になるので、上限は 12 と比べる)
+WEEKS_MAX="$(week_rows "$(main_html "$W&calendar_behind=12&calendar_ahead=12")")"
+check_eq "週表示: URL の範囲は上限に収める (200 で、前後 12 週と同じ週の数)" "200|$WEEKS_MAX" \
+         "$(curl -sk -m 60 -o /dev/null -w '%{http_code}' "${URL}/?$W&calendar_behind=100000&calendar_ahead=100000")|$(week_rows "$(curl -sk -m 60 "${URL}/?$W&calendar_behind=100000&calendar_ahead=100000")")"
 check_eq "  上限より狭い範囲はそのまま" "yes" \
          "$([[ "$(week_rows "$(main_html "$W&calendar_behind=2&calendar_ahead=1")")" -lt "$WEEKS_MAX" ]] && echo yes || echo no)"
+check_eq "  負の値は 0 週 (表が描ける。警告は §8 で見る)" "200|yes" \
+         "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$W&calendar_behind=-5&calendar_ahead=-3")|$([[ "$(week_rows "$(main_html "$W&calendar_behind=-5&calendar_ahead=-3")")" -ge 1 ]] && echo yes || echo no)"
 echo
 
 echo "4. &pages(show=toc)"
