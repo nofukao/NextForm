@@ -22,11 +22,16 @@ function pagelist_append($dom, &$list_pages, $list_options = array(), $args = ar
     if(!isset($list_options['context']))
 	$list_options['context'] = array();
     $context = $list_options['context'];
-    $offset = default_value($args['pages'], 0);
+    /*
+     * 何画面目か (?pages=) は URL なので、誰でも書き換えられる。数字でない値をそのまま
+     * 掛け算に使うと PHP 8 では TypeError (500) になるので、整数にして負は 1 画面目にする。
+     * 1 画面の件数 (each=) も本文に書く値なので整数にする (数字でなければ 0 = 全件)。
+     */
+    $offset = max(0, (int)default_value($args['pages'], 0));
     $show = default_value($list_options['show'], 'list');
     if($show === 'toc' && !isset($list_options['each']))
 	$list_options['each'] = PAGELIST_TOC_EACH;
-    $each = default_value($list_options['each'], 0);
+    $each = (int)default_value($list_options['each'], 0);
     $pagenum = count($list_pages);
     if($each > 0)
 	$pages = array_slice($list_pages, $offset * $each, $each);
