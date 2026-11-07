@@ -38,7 +38,8 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 
     $args = page_args($context['page']);
 
-    if(!empty($args['calendar'])) {
+    /* URL の値。calendar[]=.. のような並びは文字ではないので使わない (trim() が TypeError になる) */
+    if(!empty($args['calendar']) && is_string($args['calendar'])) {
 	$d = $args['calendar'];
 	$d = trim($d, ' - /');
 	$d = str_replace('/', '-', $d);
