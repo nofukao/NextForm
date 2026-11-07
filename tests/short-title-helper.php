@@ -8,8 +8,9 @@
  *   write <名前> <種別> <本文>    normalize を通して保存する (written=1/0)
  *   write-many <接頭辞> <数>      <接頭辞>/001 .. を種別 markdown で書く (written=数)
  *   meta <名前> <キー>            meta の 1 項目 (isset=1/0 value=...)
- *   meta-screen <名前> <短いタイトル> [タイトル]
+ *   meta-screen <名前> <短いタイトル> [タイトル] [説明]
  *                                 メタ情報の画面の保存 (meta_write) をそのまま呼ぶ。
+ *                                 タイトルと説明を省くと今の値を送る。
  *                                 うまくいくと meta_write が exit するので何も出ない。
  *                                 失敗したときだけ failed=1
  *   backup-now <名前>             今の版を履歴に残す (backuptime=その時刻)
@@ -20,6 +21,8 @@
  *                                 (markdown=<改行を \n に直したもの>)
  *   keepout <ページ名..>          ログインしていない利用者にそのページだけ読ませない
  *                                 (ほかは read。saved=1/0)
+ *   pageview <名前> <数>          閲覧数 (通算) を入れる (&popularpages の並びに使う)
+ *   index-stale <名前>            索引に残っているのに今のページには無い ngram の数 (stale=...)
  *   cleanup                       このヘルパが作ったページを消す (removed=...)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
@@ -91,7 +94,7 @@ case 'meta-screen':
     $args = array('pagename' => $rest[0],
 		  'short_title' => $rest[1],
 		  'title' => isset($rest[2]) ? $rest[2] : default_value($page['meta']['title'], ''),
-		  'description' => default_value($page['meta']['description'], ''));
+		  'description' => isset($rest[3]) ? $rest[3] : default_value($page['meta']['description'], ''));
     meta_write($args, dom_create_document());
     printf("failed=1\n");
     break;
@@ -134,6 +137,23 @@ case 'keepout':
     $permission['*'] = 'read';
     $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = $permission;
     printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
+    break;
+
+case 'pageview':
+    /* app/tool/analyze_weblog_writer が書くのと同じ鍵 */
+    $count = (int)$rest[1];
+    cache_create('', ANALYZE_PAGEVIEW_KEY_TOTAL . '-' . $rest[0], $count);
+    printf("saved=1\n");
+    break;
+
+case 'index-stale':
+    /* tests/markdown-helper.php と同じ (search_index_check の stale) */
+    $collected = search_index_collect(true);
+    $page = page_read($rest[0]);
+    $should = search_page_ngram($page);
+    $actual = isset($collected['page_ngrams'][$rest[0]]) ?
+	$collected['page_ngrams'][$rest[0]] : array();
+    printf("stale=%d\n", count(array_diff_key($actual, $should)));
     break;
 
 case 'cleanup':

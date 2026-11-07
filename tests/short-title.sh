@@ -29,6 +29,10 @@
 #      読めないページは目次の一覧に出ないこと
 #   8. PHP の警告が出ないこと (PHP-FPM のログと、CLI のヘルパの標準エラー)
 #
+# 作業中に見つけた別の問題の直し (docs/development/design-review-fixes.md) も、同じ複製で見る:
+# &popularpages の区切り、メタ情報の画面で題名・説明を消す、読めない日のページがあるカレンダー、
+# URL で指定する週表示の範囲の上限
+#
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
 
@@ -114,6 +118,25 @@ m = re.search(r"<td[^>]*data-ref-pagename=\"%s\"[^>]*>(.*?)</td>" % re.escape(sy
               sys.stdin.read(), re.S)
 print(m.group(1) if m else "")
 ' "$2"
+}
+
+# カレンダーの HTML $1 から、日のページ $2 のセル (<td>) の class
+td_class_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+m = re.search(r"<td([^>]*data-ref-pagename=\"%s\"[^>]*)>" % re.escape(sys.argv[1]), sys.stdin.read())
+c = re.search(r"class=\"([^\"]*)\"", m.group(1)) if m else None
+print(c.group(1) if c else "")
+' "$2"
+}
+
+# カレンダーの HTML $1 の週の数 (tbody の行)
+week_rows() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+m = re.search(r"<table class=\"calendar[^\"]*\">.*?<tbody>(.*?)</tbody>", sys.stdin.read(), re.S)
+print(len(re.findall(r"<tr\b", m.group(1))) if m else -1)
+'
 }
 
 # 一覧の HTML $1 から、ページ $2 の項目。項目の中の目次の li には data-ref-pagename が
@@ -250,6 +273,14 @@ check_eq "show を書かなければ今のまま (目次)" "yes|no" \
 C="$(cell_of "$(main_html "$P/CalUnknown&calendar=2026-08")" "$D/2026-08-03")"
 check_eq "知らない値も今のまま" "yes|no" \
          "$(contains "$C" 'class="summary"')|$(contains "$C" '短いタイトル md')"
+# 週表示の範囲は URL で指定できる。上限なしだと誰でも重い表示を走らせられるので、URL の値は
+# 0〜12 週に収める (docs/development/design-review-fixes.md の 6)
+W="$P/Cal&calendar=2026-08-05&calendar_mode=weeks"
+WEEKS_MAX="$(week_rows "$(main_html "$W&calendar_behind=12&calendar_ahead=0")")"
+check_eq "週表示: URL の範囲は上限に収める (200 で、前後 12 週・後ろ 0 週と同じ週の数)" "200|$WEEKS_MAX" \
+         "$(curl -sk -m 60 -o /dev/null -w '%{http_code}' "${URL}/?$W&calendar_behind=100000&calendar_ahead=-3")|$(week_rows "$(curl -sk -m 60 "${URL}/?$W&calendar_behind=100000&calendar_ahead=-3")")"
+check_eq "  上限より狭い範囲はそのまま" "yes" \
+         "$([[ "$(week_rows "$(main_html "$W&calendar_behind=2&calendar_ahead=1")")" -lt "$WEEKS_MAX" ]] && echo yes || echo no)"
 echo
 
 echo "4. &pages(show=toc)"
@@ -288,6 +319,15 @@ check_eq "each=0 なら全件" "52|no" \
          "$(count_items "$H" "$P/Many/")|$(contains "$H" 'class="next"')"
 check_eq "each=3 なら 3 件" "3" "$(count_items "$(main_html "$P/ManyThree")" "$P/Many/")"
 # 「次」のリンクの番号 (?pages=) は URL なので誰でも書き換えられる。数字でなければ 1 画面目
+# &popularpages も同じ部品で区切る。「次」はそのページを指し、2 画面目が出ること
+helper pageview "$D/2026-08-05" 20 > /dev/null
+helper pageview "$D/2026-08-04" 10 > /dev/null
+helper write "$P/Popular" wiki "$(printf -- '&popularpages([[%s/]],each=1,limit=3);\n' "$D")" > /dev/null
+H="$(main_html "$P/Popular")"
+check_eq "&popularpages の区切り: 1 画面目は 1 位、「次」はそのページの 2 画面目" "yes|yes" \
+         "$(contains "$H" "data-ref-pagename=\"$D/2026-08-05\"")|$(contains "$H" "href=\"?$P/Popular&amp;pages=1\"")"
+check_eq "  2 画面目は 2 位" "yes|no" \
+         "$(contains "$(main_html "$P/Popular&pages=1")" "data-ref-pagename=\"$D/2026-08-04\"")|$(contains "$(main_html "$P/Popular&pages=1")" "data-ref-pagename=\"$D/2026-08-05\"")"
 for q in abc "" -1; do
     H="$(main_html "$P/ManyDefault&pages=$q")"
     check_eq "  ?pages=$q でも 1 画面目 (500 にしない)" "200|50|yes" \
@@ -320,6 +360,15 @@ helper meta-screen "$P/MdPlain" "画面の値" > /dev/null
 check_eq "本文が決めていなければ画面の値が入る" "画面の値" "$(meta_of "$P/MdPlain" short_title)"
 helper write "$P/MdPlain" markdown "$(printf -- '本文を直した\n')" > /dev/null
 check_eq "  本文を保存すると消える (本文が正)" "0" "$(isset_of "$P/MdPlain" short_title)"
+# メタ情報の画面で題名と説明を空にすると消える。消した語は索引にも残らない
+helper write "$P/MetaClear" wiki "$(printf -- '*節\n本文\n')" > /dev/null
+helper meta-screen "$P/MetaClear" "" "消える題名ほげ" "消える説明ふが" > /dev/null
+check_eq "画面で題名と説明を付けられる" "消える題名ほげ|消える説明ふが" \
+         "$(meta_of "$P/MetaClear" title)|$(meta_of "$P/MetaClear" description)"
+helper meta-screen "$P/MetaClear" "" "" "" > /dev/null
+check_eq "  空にすると題名も説明も消える" "0|0" \
+         "$(isset_of "$P/MetaClear" title)|$(isset_of "$P/MetaClear" description)"
+check_eq "  消した語が検索の索引に残らない" "0" "$(value_of "$(helper index-stale "$P/MetaClear")" stale)"
 helper write "$P/WikiPlain" wiki "$(printf -- '*節\n本文\n')" > /dev/null
 helper meta-screen "$P/WikiPlain" "画面の値" > /dev/null
 check_eq "Wiki でも本文が決めていなければ画面の値が入る" "画面の値" "$(meta_of "$P/WikiPlain" short_title)"
@@ -355,14 +404,22 @@ helper meta-screen "$P/Conv" "画面の短いタイトル" > /dev/null
 check_eq "変換: 本文に無ければメタ情報の値を short_title: にする" "yes" \
          "$(contains "$(value_of "$(helper to-markdown "$P/Conv")" markdown)" '---\nshort_title: 画面の短いタイトル\n---')"
 
-# 読めないページ。カレンダーは日のページが 1 つでも読めないとページ全体が読めなくなる
-# (設計メモ §9。直していない) ので、ここでは一覧だけを見る。最後に行う
+# 読めないページ (ログインしていない利用者に読ませない)。権限を変えるので最後に行う
 check_eq "読めないページは目次の一覧に出ない (権限を保存)" "1" \
          "$(value_of "$(helper keepout "$D/2026-08-03")" saved)"
 LIST="$(main_html "$P/List")"
 check_eq "  そのページの項目も目次も出ない" "no|no" \
          "$(contains "$LIST" "data-ref-pagename=\"$D/2026-08-03\"")|$(contains "$LIST" "?$D/2026-08-03#")"
 check_eq "  ほかのページは出る" "yes" "$(contains "$LIST" "data-ref-pagename=\"$D/2026-08-05\"")"
+# カレンダーは、日のページが 1 つ読めないだけでページ全体が読めなくなっていた
+# (docs/development/design-review-fixes.md の 5)。読めない日は無いページと同じに描く
+check_eq "読めない日のページがあってもカレンダーのページを開ける" "200" \
+         "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/Cal&calendar=2026-08")"
+CAL="$(main_html "$P/Cal&calendar=2026-08")"
+C="$(cell_of "$CAL" "$D/2026-08-03")"
+check_eq "  読めない日のマスは空 (exists も短いタイトルも ticket も出さない)" "no|no|no" \
+         "$(contains " $(td_class_of "$CAL" "$D/2026-08-03") " ' exists ')|$(contains "$C" '短いタイトル md')|$(contains "$(printf '%s' "$CAL" | grep -o "<td[^>]*data-ref-pagename=\"$D/2026-08-03\"[^>]*>")" 'data-ref-ticket')"
+check_eq "  ほかの日は出る" "yes" "$(contains "$(cell_of "$CAL" "$D/2026-08-05")" '>短いタイトル wiki</a>')"
 echo
 
 echo "8. PHP の警告が出ていないこと"
