@@ -369,7 +369,7 @@ Markdownの編集欄には，左に太い線も付きます．
 ページの''タイトル''(題名)と''短いタイトル''と''説明''を決めます．
 :タイトル|ページ名とは別に表示する題名です．本文に題名が書いてあるとき(Wiki記法の[[&&title:../Wiki/Function/title]]，Markdown記法の ""title:"" か先頭の ""#"" 見出し)はそちらが使われ，ここで入れた題名は使われません．本文に題名が無いときはここで付けられますが，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．
 :短いタイトル|タイトルから，置き場所で分かること(日付など)を除いたものです．カレンダー([[&&calendar(show=title):../Wiki/Function/calendar]])のセルに出ます．本文に書いてあるとき(Wiki記法の&&title(short)，Markdown記法の ""short_title:"")はそちらが使われます．ほかはタイトルと同じ扱いで，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．サイトの検索の対象にはなりません．
-:説明|ページの説明です．検索エンジン向けの説明になり，サイトの検索の対象にもなります．本文を保存しても，''この版に戻す''をしても消えません．
+:説明|ページの説明です．検索エンジン向けの説明になり，サイトの検索の対象にもなります．本文を保存しても，''この版に戻す''をしても消えません．消すときは，欄を空にして保存します．
 */
 
 /**
@@ -931,7 +931,7 @@ Enabling it in the site settings lets you run it in the browser as it is
 Sets the ''Title'', the ''Short title'' and the ''Description'' of the page.
 :Title|A title shown apart from the page name. When the text sets a title ([[&&title:../Wiki/Function/title]] in Wiki notation, ""title:"" or a single ""#"" heading at the top in Markdown notation), that one is used and the title entered here is not. When the text has no title you can set one here, but on pages of type wiki and Markdown it disappears the next time the text is saved.
 :Short title|The title without what its place already tells (a date, for example). It is shown in the cells of a calendar ([[&&calendar(show=title):../Wiki/Function/calendar]]). When the text sets one (&&title(short) in Wiki notation, ""short_title:"" in Markdown notation), that one is used. Otherwise it works like the title: on pages of type wiki and Markdown it disappears the next time the text is saved. It is not searched by the site search.
-:Description|A description of the page. It becomes the description for search engines and is also searched by the site search. It is kept when the text is saved and when ''Restore this version'' is used.
+:Description|A description of the page. It becomes the description for search engines and is also searched by the site search. It is kept when the text is saved and when ''Restore this version'' is used. To remove it, empty the field and save.
 */
 
 /**
@@ -1978,6 +1978,14 @@ Wiki記法の &&title{} と同じで，ページ名とは別に表示される�
 タグは半角スペースで区切って保存されるので，''タグ自体に空白は入れられません''．
 「議事録 2026」と書くと2個のタグになります．
 
+*値の引用符
+値の両端の引用符(&" と ')は落とします．
+引用符で始まる・終わる値や，# で始まる値をそのまま使いたいときは，値の全体を &" で囲みます．
+囲んだ中の &" と \ は，その前に \ を付けて書きます．
+
+ title: "'90s の音楽"
+ short_title: "#123 の修正"
+
 *書いていないものは消えます
 題名・短いタイトル・タグは，''ソースに書いてあるとおり''になります．
 ""title:"" (と，その代わりになる先頭の # 見出し) を消して保存すれば題名も消え，
@@ -2615,6 +2623,14 @@ Any of the following ways of writing them will do.
 
 Tags are saved separated by spaces, so ''a tag cannot contain a space''.
 Writing "minutes 2026" gives two tags.
+
+*Quotes around values
+Quotes (&" and ') at both ends of a value are dropped.
+To keep a value that starts or ends with a quote, or one that starts with #, wrap the
+whole value in &". Inside it, write &" and \ with a \ before them.
+
+ title: "'90s music"
+ short_title: "#123 fix"
 
 *What is not written is removed
 The title, the short title and the tags become ''exactly what the source says''.

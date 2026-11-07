@@ -517,7 +517,7 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 :month|一般的なカレンダーのように月を表示します．デフォルトで指定されています．
 :weeks|今週を基準に前後に数週間分表示します．表示する週はbehind,aheadパラメータで指定できます．
 :behind=N|weeksが指定された際にN週分過去の週を表示します(Nは整数)．
-:ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．
+:ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．画面の▲▼で広げられるのは，前後それぞれ12週までです．
 :{show=title|各マスに，要約(見出しの一覧)の代わりにその日のページの''短いタイトル''を出します．
 短いタイトルが無いページはタイトルを，どちらも無いページは要約を出します．
 短いタイトルは，タイトルから日付を除いたものなど，マスの場所で分かることを除いて書きます
@@ -625,7 +625,7 @@ Double clicking a box of the calendar edits the child page straight away.
 :month|show a month, like an ordinary calendar. Set by default.
 :weeks|show a few weeks around this week. Which weeks are shown is set by the behind and ahead parameters.
 :behind=N|with weeks set, show N weeks into the past (N is a whole number).
-:ahead=N|with weeks set, show N weeks into the future (N is a whole number).
+:ahead=N|with weeks set, show N weeks into the future (N is a whole number). The ▲ and ▼ buttons on the screen widen it up to 12 weeks each way.
 :{show=title|show the ''short title'' of the page for the day in each box, instead of
 its summary (the list of headings).
 A page without a short title shows its title, and a page with neither shows its summary.
