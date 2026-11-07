@@ -47,6 +47,7 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
     }
 
     $basepagename = $context['page']['name'];
+    $show = '';
     wiki_parse_parameters(
 	$context, $tree,
 	array(
@@ -54,6 +55,7 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	    'equalities' => array(
 		'behind' => &$behind,
 		'ahead' => &$ahead,
+		'show' => &$show,
 		),
 	    'long_flags' => array(
 		'month' => array(&$calendar_mode, 'month'),
@@ -195,7 +197,12 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		$page = page_read($day['pagename']);
 		if(!empty($page['meta']['ticket']))
 		    dom_set_attribute($td, 'data-ref-ticket', $page['meta']['ticket']);
-		handle($page, $dd, 'summary');
+		$cell_title = (trim($show) === 'title') ? wiki_operator_calendar_cell_title($page) : '';
+		if($cell_title !== '') {
+		    $a = dom_append_page_link($dd, $cell_title, $day['pagename']);
+		    dom_append_class($a, 'title');
+		} else
+		    handle($page, $dd, 'summary');
 	    } else {
 		dom_append_text($dd, '');
 	    }
@@ -296,6 +303,19 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
     $a = dom_append_link($form, url_make(url_pagename($context['page'])), l('Back'), 'button');
     //if(!isset($args['calendar']))
     //dom_append_class($a, 'disabled');
+}
+
+/*
+ * show=title のときにセルに出す文字。短いタイトル → タイトル の順に選ぶ。
+ * どちらも無ければ空文字で、呼び出し側は今までどおり目次を出す (ページ名を出すと
+ * 日付と重なるため)。meta を読むだけで、本文は描かない。
+ */
+function wiki_operator_calendar_cell_title(&$page) {
+    foreach(array('short_title', 'title') as $key) {
+	if(isset($page['meta'][$key]) && trim($page['meta'][$key]) !== '')
+	    return trim($page['meta'][$key]);
+    }
+    return '';
 }
 
 function wiki_operator_calendar_get_dayrules($rules_text) {
