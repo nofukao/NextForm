@@ -287,6 +287,12 @@ H="$(main_html "$P/ManyAll")"
 check_eq "each=0 なら全件" "52|no" \
          "$(count_items "$H" "$P/Many/")|$(contains "$H" 'class="next"')"
 check_eq "each=3 なら 3 件" "3" "$(count_items "$(main_html "$P/ManyThree")" "$P/Many/")"
+# 「次」のリンクの番号 (?pages=) は URL なので誰でも書き換えられる。数字でなければ 1 画面目
+for q in abc "" -1; do
+    H="$(main_html "$P/ManyDefault&pages=$q")"
+    check_eq "  ?pages=$q でも 1 画面目 (500 にしない)" "200|50|yes" \
+             "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/ManyDefault&pages=$q")|$(count_items "$H" "$P/Many/")|$(contains "$H" "data-ref-pagename=\"$P/Many/001\"")"
+done
 echo
 
 echo "6. メタ情報の画面"
