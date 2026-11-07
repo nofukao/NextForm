@@ -1980,8 +1980,9 @@ Wiki記法の &&title{} と同じで，ページ名とは別に表示される�
 
 *値の引用符
 値の両端の引用符(&" と ')は落とします．
-引用符で始まる・終わる値や，# で始まる値をそのまま使いたいときは，値の全体を &" で囲みます．
+題名や短いタイトルを，引用符で始まる・終わる値や # で始まる値にしたいときは，値の全体を &" で囲みます．
 囲んだ中の &" と \ は，その前に \ を付けて書きます．
+タグの引用符は，囲んでも落とします．
 
  title: "'90s の音楽"
  short_title: "#123 の修正"
@@ -2626,8 +2627,9 @@ Writing "minutes 2026" gives two tags.
 
 *Quotes around values
 Quotes (&" and ') at both ends of a value are dropped.
-To keep a value that starts or ends with a quote, or one that starts with #, wrap the
-whole value in &". Inside it, write &" and \ with a \ before them.
+To make the title or the short title a value that starts or ends with a quote, or one
+that starts with #, wrap the whole value in &". Inside it, write &" and \ with a \ before
+them. Quotes around tags are dropped even when wrapped.
 
  title: "'90s music"
  short_title: "#123 fix"
