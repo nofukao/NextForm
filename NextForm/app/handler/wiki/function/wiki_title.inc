@@ -2,17 +2,30 @@
 $WIKI_OPERATORS_FUNCTION['title'] = true;
 function wiki_operator_title(&$context, $dom, $tree) {
     $is_show = false;
+    $is_short = false;
     wiki_parse_parameters(
 	$context, $tree,
 	array(
 	    'long_flags' => array(
 		'show' => &$is_show,
+		'short' => &$is_short,
 		)
 	    )
 	);
 
     if($is_show)
 	wiki_convert_from_tokens($context, $dom, $tree->target);
+
+    if($is_short) {
+	/*
+	 * 短いタイトル。ページの題名と見出しには触らず、meta['short_title'] にだけ書く
+	 * (page_write)。本文から消せば消える (wiki_normalize)。
+	 */
+	$short_dom = dom_create_document();
+	wiki_convert_from_tokens($context, $short_dom, $tree->target);
+	$context['page']['short_title'] = trim(preg_replace('/\s+/u', ' ', dom_text($short_dom)));
+	return;
+    }
 
     $title_dom = dom_create_document();
     $context['page']['title_dom'] = $title_dom;

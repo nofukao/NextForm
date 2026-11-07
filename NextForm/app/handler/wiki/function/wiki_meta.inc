@@ -13,7 +13,7 @@ function wiki_operator_meta(&$context, $dom, $tree) {
 		)));
     $meta_name = array_pop($meta_names);
 
-    $fields = array('type', 'title', 'description', 'tag', 'create_user', 'last_modify_user',
+    $fields = array('type', 'title', 'short_title', 'description', 'tag', 'create_user', 'last_modify_user',
 		    'Content-type', 'original_filename',
 		    'image_width', 'image_height', 
 		    'audio_duration',
@@ -56,6 +56,7 @@ $WIKI_ALIASES['description'] = '&meta(description, <PARAMS>);';
 *パラメータ
 :&[&[ページ名&]&]|指定したページの情報を表示します．省略された場合は現在のページの情報になります．
 :title|指定したページのタイトルを表示します．
+:short_title|指定したページの短いタイトル (&&title(short)，フロントマターのshort_title:) を表示します．
 :description|指定したページの説明を表示します．
 :tag|指定したページのタグを表示します．
 :{separator=記号|複数のタグを列挙するときに使用する区切り記号を指定します．

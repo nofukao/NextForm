@@ -144,6 +144,7 @@ function compare_show(&$args, $dom) {
     $meta_showes = array(
 	'type' => array('name' => 'Type'),
 	'title' => array('name' => 'Title'),
+	'short_title' => array('name' => 'Short title'),
 	'description' => array('name' => 'Description'),
 	'type' => array('name' => 'Type'),
 	'btime' => array('name' => 'Birth time', 'time' => true),

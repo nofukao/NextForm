@@ -236,6 +236,7 @@ function markdown_apply_front_matter(&$page, $front_matter, $is_write = false,
     if(!is_array($front_matter))
 	$front_matter = array();
     markdown_set_title($page, $front_matter, $is_write, $heading_title);
+    markdown_set_short_title($page, $front_matter, $is_write);
     markdown_set_tags($page, $front_matter, $is_write);
 }
 
@@ -274,9 +275,34 @@ function markdown_set_title(&$page, $front_matter, $is_clearable = false,
 }
 
 function markdown_front_matter_title($front_matter) {
-    if(is_array($front_matter) && isset($front_matter['title']) &&
-       !is_array($front_matter['title']))
-	return trim((string)$front_matter['title']);
+    return markdown_front_matter_string($front_matter, 'title');
+}
+
+/*
+ * 短いタイトル (short_title:)。カレンダーのセルなど、場所で分かること (日付など) を
+ * 除いて出すところに使う。題名を title: で書いても、本文の先頭の # で書いても、
+ * これとは別に読む。page_write() が meta['short_title'] に書く (空文字は「消す」)。
+ *
+ * 表示の経路では、書いてあるときだけ立てる。メタ情報の画面は、立っているかで
+ * 「本文が決めている」かを見る (meta_write)。
+ */
+function markdown_set_short_title(&$page, $front_matter, $is_clearable = false) {
+    $short_title = markdown_front_matter_short_title($front_matter);
+    if($short_title !== '')
+	$page['short_title'] = $short_title;
+    else if($is_clearable)
+	$page['short_title'] = '';
+}
+
+function markdown_front_matter_short_title($front_matter) {
+    return markdown_front_matter_string($front_matter, 'short_title');
+}
+
+/* フロントマターの 1 行の文字。並び (配列) で書かれた値は使わない */
+function markdown_front_matter_string($front_matter, $key) {
+    if(is_array($front_matter) && isset($front_matter[$key]) &&
+       !is_array($front_matter[$key]))
+	return trim((string)$front_matter[$key]);
     return '';
 }
 
@@ -1277,7 +1303,7 @@ function markdown_append_summary_list(&$page, $summary, &$headings) {
  * 往復したときに差分が出る。この関数が無いと insert / replace / listedit /
  * templateedit の 4 画面が Markdown ページで動かないので、素通しで用意する。
  *
- * 本文は返すだけだが、**フロントマターの title と tags はここで拾う**。
+ * 本文は返すだけだが、**フロントマターの title・short_title・tags はここで拾う**。
  * wiki 記法の &title{} も wiki_normalize() の中の変換で拾われており、
  * 保存の経路 (write / insert / replace / listedit / templateedit) が
  * どれでも題名が付くのはそのため。同じ場所に置いて経路を揃える。
