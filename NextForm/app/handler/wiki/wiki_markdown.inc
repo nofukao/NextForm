@@ -127,7 +127,7 @@ function wiki_markdown_convert(&$page, $source) {
     $head = array();
     $front_matter = array();
     if($short_title !== '')
-	$front_matter[] = 'short_title: ' . $short_title;
+	$front_matter[] = 'short_title: ' . wiki_markdown_front_matter_value($short_title);
     $tags = tag_get_page_tags($page);
     if(!empty($tags))
 	$front_matter[] = wiki_markdown_front_matter_tags($tags);
@@ -139,6 +139,17 @@ function wiki_markdown_convert(&$page, $source) {
     $markdown = empty($blocks) ? '' : implode("\n\n", $blocks) . "\n";
     /* フロントマターは本文の先頭に --- が要る。題名の前の空行を詰める */
     return array('markdown' => $markdown, 'lost' => $state['lost'], 'kept' => $state['kept']);
+}
+
+/*
+ * フロントマターの 1 行の値。YAML で囲みが要る値 (記号で始まる、": " や " #" を含む、":" で
+ * 終わる) と、引用符で終わる値は "…" で囲み、\ と " を \ で逃がす。読む側 (MarkdownFrontMatterParser) は、
+ * 囲んでいない値の両端の引用符を落とし、よそのツールは # で始まる値をコメントとして読むため。
+ */
+function wiki_markdown_front_matter_value($value) {
+    if(!preg_match('/^[\-?:,\[\]{}#&*!|>\'"%@`]|: | #|:$|[\'"]$/u', $value))
+	return $value;
+    return '"' . str_replace(array('\\', '"'), array('\\\\', '\\"'), $value) . '"';
 }
 
 /*
