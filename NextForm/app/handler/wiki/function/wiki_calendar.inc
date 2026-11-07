@@ -490,7 +490,7 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 &title &&calendar
 
 *概要
- &calendar([[ページ名]], month, weeks, behind=N, ahead=N){
+ &calendar([[ページ名]], month, weeks, behind=N, ahead=N, show=title){
  イベント情報
  }
 カレンダーを表示します．さらにカレンダー上の1日を1ページに対応させて簡単なスケジュール帳としても利用できます．
@@ -505,6 +505,12 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 :weeks|今週を基準に前後に数週間分表示します．表示する週はbehind,aheadパラメータで指定できます．
 :behind=N|weeksが指定された際にN週分過去の週を表示します(Nは整数)．
 :ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．
+:{show=title|各マスに，要約(見出しの一覧)の代わりにその日のページの''短いタイトル''を出します．
+短いタイトルが無いページはタイトルを，どちらも無いページは要約を出します．
+短いタイトルは，タイトルから日付を除いたものなど，マスの場所で分かることを除いて書きます
+(Wiki記法の[[&&title(short):../title]]，Markdown記法のフロントマターの ""short_title:""，
+メタ情報の画面)．
+マスのタイトルは，その日のページへのリンクになります．}
 
 *対象
 対象には祝祭日等のイベントの情報が書けます．
@@ -591,7 +597,7 @@ function wiki_operator_calendar_get_day_page_info_for_external_tool($basepagenam
 &title &&calendar
 
 *Overview
- &calendar([[page name]], month, weeks, behind=N, ahead=N){
+ &calendar([[page name]], month, weeks, behind=N, ahead=N, show=title){
  event data
  }
 Shows a calendar. One day on the calendar can also be tied to one page, making a simple
@@ -607,6 +613,13 @@ Double clicking a box of the calendar edits the child page straight away.
 :weeks|show a few weeks around this week. Which weeks are shown is set by the behind and ahead parameters.
 :behind=N|with weeks set, show N weeks into the past (N is a whole number).
 :ahead=N|with weeks set, show N weeks into the future (N is a whole number).
+:{show=title|show the ''short title'' of the page for the day in each box, instead of
+its summary (the list of headings).
+A page without a short title shows its title, and a page with neither shows its summary.
+Write the short title without what the place of the box already tells, such as the date
+in the title ([[&&title(short):../title]] in Wiki notation, ""short_title:"" in the front
+matter in Markdown notation, or the meta information screen).
+The title in a box is a link to the page for the day.}
 
 *Target
 Data about events such as public holidays can be written as the target.

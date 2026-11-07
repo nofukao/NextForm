@@ -167,9 +167,18 @@ function wiki_operator_pages_parse_parameters(&$context, $tree, &$pagename, &$fi
 :show=tree|子ページを入れ子にしたツリー状の箇条書きでページを列挙します．
 :show=table|表でページ一覧を表示します．fieldsパラメータで表示したい項目を指定します．
 :show=contents|ページ名だけでなくページの内容も表示します．
+:{show=toc|箇条書きでページを列挙し，各ページの下にそのページの目次(見出しの一覧)を閉じた折りたたみで付けます．
+押すと開きます．目次の項目はその見出しへのリンクです．
+種別wikiと種別Markdownのページで，見出しがあるときだけ付きます．
+目次はページごとに本文を読んで作るので，ページが多いと表示に時間がかかります．
+eachを指定しないときは50件ずつ表示します．
+サイドページには置かないでください(サイドページはどのページを開いても表示されるため，すべてのページが遅くなります)．
+}
 }
 :limit=件数|指定した件数のみ表示します．
-:each=件数|一度に指定した件数だけ表示します．超えた分は次のページに表示されるようになります．
+:{each=件数|一度に指定した件数だけ表示します．超えた分は次のページに表示されるようになります．
+0を指定すると全件を表示します．
+}
 :{name=ページ名|上記の&[&[ページ名&]&]で指定したページの子ページのうち，
 さらにここで指定したページ名のページだけを表示します．
 &*や?などのワイルドカードが使用できます．
@@ -264,6 +273,9 @@ fields, header, footerパラメータで使用できるようになります．
 *兄弟ページ一覧(容量順)
 &pages([[..]], show=table, fields=[[basename]] size@容量 type, sort=size, withsystem, limit=5);
 }
+
+日付の子ページ(&&calendarで作る日記など)を新しい順に31件ずつ，目次つきで一覧表示する例です．
+ &pages([[日記/]], reverse, type=!file, show=toc, each=31);
 
 *(optional)高度な例
 //バグトラック風テンプレート
@@ -717,9 +729,20 @@ Write &[&[&]&] to cover every page.}
 :show=tree|list the pages as a tree, with child pages nested.
 :show=table|show the list of pages as a table. Name the fields you want with the fields parameter.
 :show=contents|show the contents of the pages as well as their names.
+:{show=toc|list the pages as a bulleted list, with the table of contents (the list of
+headings) of each page below it in a closed fold. Press it to open it. The items of the
+table of contents are links to the headings.
+It is added only for pages of type wiki and Markdown that have headings.
+The table of contents is made by reading the text of each page, so a long list takes
+time to show. Without each, 50 pages are shown at a time.
+Do not put it on the side page (the side page is shown with every page, so every page
+would become slow).
+}
 }
 :limit=number|show only the given number of pages.
-:each=number|show the given number at a time. The rest go onto the next page.
+:{each=number|show the given number at a time. The rest go onto the next page.
+Give 0 to show them all.
+}
 :{name=page name|of the child pages of the &[&[page name&]&] above, show only the pages
 whose name is given here.
 Wildcards such as &* and ? can be used.
@@ -822,6 +845,10 @@ Writing &$LAST&$ in the template uses the template used just before.
 *sibling pages (by size)
 &pages([[..]], show=table, fields=[[basename]] size@size type, sort=size, withsystem, limit=5);
 }
+
+Listing dated child pages (a journal made with &&calendar, for example), newest first,
+31 at a time, with their tables of contents:
+ &pages([[journal/]], reverse, type=!file, show=toc, each=31);
 
 *(optional)An advanced example
 //a bug tracker style template
