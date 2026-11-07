@@ -253,6 +253,14 @@ ul.pages form {
     display: inline-block;
 }
 
+/*
+ * &pages(show=toc) の各項目の下の目次。<details> はブラウザ標準なので JS は要らない。
+ * 札 (「目次」) は押せると分かるようにする。
+ */
+details.pages_toc > summary {
+    cursor: pointer;
+}
+
 article.page > header,
 article.page > footer{
     text-align: right;

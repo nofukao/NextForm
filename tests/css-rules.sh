@@ -80,6 +80,10 @@ rules_common() {
     check "アスキーアート pre.paa は折り返さない" \
           "bool(re.search(r'pre\.paa\s*\{[^}]*white-space:\s*pre\s*;', css, re.S))"
 
+    # 一覧の目次 (&pages(show=toc)) の折りたたみの札が押せると分かること。
+    check "一覧の目次の折りたたみの札が押せると分かる" \
+          "bool(re.search(r'details\.pages_toc\s*>\s*summary\s*\{[^}]*cursor:\s*pointer', css, re.S))"
+
     # 折りたたみ (:::details) の summary が押せると分かること。
     # cursor が既定のままだと、畳まれた見出しがただの太字に見えて誰も押さない。
     check "折りたたみの summary に cursor: pointer がある" \
