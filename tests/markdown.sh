@@ -1079,12 +1079,13 @@ fm_title() {
 check_eq "\"..\" の中の ' を残す" "'90s 特集" "$(fm_title "\"'90s 特集\"")"
 check_eq "\"..\" の中の \\\" と \\\\ を戻す" 'a "b" \c' "$(fm_title '"a \"b\" \\c"')"
 check_eq "'..' の中の '' を ' に戻す" "It's" "$(fm_title "'It''s'")"
-check_eq "\"..\" で囲んだ # で始まる値" "#123 の修正" "$(fm_title '"#123 の修正"')"
-check_eq "囲んでいない値は今までどおり (両端の引用符を落とす)" "90s 特集" "$(fm_title "'90s 特集")"
-check_eq "  ふつうの値" "会議メモ" "$(fm_title '会議メモ')"
-check_eq "  1 組で囲んだふつうの値" "会議メモ" "$(fm_title '"会議メモ"')"
-helper write "MarkdownTest/Quote" "$(printf -- '---\ntags:\n  - "a b"\n  - c\n---\n\n本文\n')" > /dev/null
-check_eq "並びの項目も同じ読み方 (囲んだ空白入りのタグは 2 つに分かれる)" "a b c" \
+# ここから下は今までと同じ読み方であること (変えていないことの確かめ)
+check_eq "今までどおり: \"..\" で囲んだ # で始まる値" "#123 の修正" "$(fm_title '"#123 の修正"')"
+check_eq "今までどおり: 囲んでいない値は両端の引用符を落とす" "90s 特集" "$(fm_title "'90s 特集")"
+check_eq "今までどおり: ふつうの値" "会議メモ" "$(fm_title '会議メモ')"
+check_eq "今までどおり: 1 組で囲んだふつうの値" "会議メモ" "$(fm_title '"会議メモ"')"
+helper write "MarkdownTest/Quote" "$(printf -- '---\ntags:\n  - "a b"\n  - "'"'"'c'"'"'"\n---\n\n本文\n')" > /dev/null
+check_eq "今までどおり: タグは項目ごとに引用符を落とし、空白で分ける" "a b c" \
          "$(value_of "$(helper tags "MarkdownTest/Quote")" tags)"
 echo
 

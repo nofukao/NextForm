@@ -282,6 +282,15 @@ check_eq "週表示: URL の範囲は上限に収める (200 で、前後 12 週
          "$(curl -sk -m 60 -o /dev/null -w '%{http_code}' "${URL}/?$W&calendar_behind=100000&calendar_ahead=100000")|$(week_rows "$(curl -sk -m 60 "${URL}/?$W&calendar_behind=100000&calendar_ahead=100000")")"
 check_eq "  上限より狭い範囲はそのまま" "yes" \
          "$([[ "$(week_rows "$(main_html "$W&calendar_behind=2&calendar_ahead=1")")" -lt "$WEEKS_MAX" ]] && echo yes || echo no)"
+# 本文で 12 週より広く書いた範囲は、URL (▲▼・移動) を通っても狭めない
+helper write "$P/CalWide" wiki "$(printf -- '&calendar([[%s]],weeks,behind=20);\n' "$D")" > /dev/null
+WIDE="$(week_rows "$(main_html "$P/CalWide&calendar=2026-08-05")")"
+check_eq "  本文の範囲が 12 週より広ければ、URL の上限はその値 (▲で狭まらない)" "$WIDE|$WIDE" \
+         "$(week_rows "$(main_html "$P/CalWide&calendar=2026-08-05&calendar_mode=weeks&calendar_behind=22")")|$(week_rows "$(main_html "$P/CalWide&calendar=2026-08-05&calendar_mode=weeks&calendar_behind=100000")")"
+check_eq "  本文の behind= が数字でなくても保存でき、500 にしない" "1|200" \
+         "$(value_of "$(helper write "$P/CalBad" wiki "$(printf -- '&calendar([[%s]],weeks,behind=abc,ahead=-2);\n' "$D")")" written)|$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/CalBad")"
+check_eq "  URL の calendar に並び (calendar[]=) を渡しても 500 にしない" "200" \
+         "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/Cal&calendar%5B%5D=x")"
 check_eq "  負の値は 0 週 (表が描ける。警告は §8 で見る)" "200|yes" \
          "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$W&calendar_behind=-5&calendar_ahead=-3")|$([[ "$(week_rows "$(main_html "$W&calendar_behind=-5&calendar_ahead=-3")")" -ge 1 ]] && echo yes || echo no)"
 echo
@@ -331,6 +340,13 @@ check_eq "&popularpages の区切り: 1 画面目は 1 位、「次」はその�
          "$(contains "$H" "data-ref-pagename=\"$D/2026-08-05\"")|$(contains "$H" "href=\"?$P/Popular&amp;pages=1\"")"
 check_eq "  2 画面目は 2 位" "yes|no" \
          "$(contains "$(main_html "$P/Popular&pages=1")" "data-ref-pagename=\"$D/2026-08-04\"")|$(contains "$(main_html "$P/Popular&pages=1")" "data-ref-pagename=\"$D/2026-08-05\"")"
+helper write "$P/PopularAll" wiki "$(printf -- '&popularpages([[%s/]]);\n' "$D")" > /dev/null
+check_eq "  閲覧数の無いページは ?pages_show_hidden=true でも出さない (今までどおり)" "2|2" \
+         "$(count_items "$(main_html "$P/PopularAll")" "$D/")|$(count_items "$(main_html "$P/PopularAll&pages_show_hidden=true")" "$D/")"
+check_eq "  ?pages= に大きすぎる値でも 500 にしない" "200" \
+         "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/ManyDefault&pages=9999999999999999999")"
+check_eq "  本文の limit= が数字でなくても保存でき、500 にしない" "1|200" \
+         "$(value_of "$(helper write "$P/BadLimit" wiki "$(printf -- '&pages([[%s/]],limit=abc);\n' "$D")")" written)|$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/BadLimit")"
 for q in abc "" -1; do
     H="$(main_html "$P/ManyDefault&pages=$q")"
     check_eq "  ?pages=$q でも 1 画面目 (500 にしない)" "200|50|yes" \
