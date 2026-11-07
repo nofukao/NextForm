@@ -160,7 +160,14 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		$classes[] = 'other_month';
 	    if($day['name'] == $now_date)
 		$classes[] = 'today';
-	    if(page_is_exists($day['pagename']))
+	    /*
+	     * 読めない日のページは、無いページと同じに描く (&pages が一覧から落とすのと同じ)。
+	     * page_read() は読めないページで止まる (403 かログインの要求) ので、1 つ読めない
+	     * だけでカレンダーのあるページ全体が開けなくなっていた。
+	     */
+	    $is_day_page = page_is_exists($day['pagename']) &&
+		auth_has_permission($day['pagename'], 'read');
+	    if($is_day_page)
 		$classes[] = 'exists';
 
 	    $classes[] = 'week_' . $d;
@@ -187,10 +194,10 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		dom_append_text($span, $detail_day);
 	    }
 	    dom_append_text($a, $day['day']);
-	    if(page_is_exists($day['pagename']))
+	    if($is_day_page)
 		dom_set_attribute($a, 'data-link-pagename', $day['pagename']);
 	    
-	    if(!page_is_exists($day['pagename']))
+	    if(!$is_day_page)
 		dom_set_attribute($a, 'rel', 'nofollow');
 
 	    foreach($event_names as $event_name) {
@@ -199,7 +206,7 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	    }
 
 	    $dd = dom_append_child($dl, 'dd');
-	    if(page_is_exists($day['pagename'])) {
+	    if($is_day_page) {
 		$page = page_read($day['pagename']);
 		if(!empty($page['meta']['ticket']))
 		    dom_set_attribute($td, 'data-ref-ticket', $page['meta']['ticket']);
