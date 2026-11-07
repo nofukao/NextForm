@@ -214,7 +214,7 @@ check_eq "&title(short) だけでも入る" "Wiki の短いタイトル" "$(meta
 check_eq "  タイトルは付かない" "0" "$(isset_of "$P/WikiOnly" title)"
 W_HTML="$(main_html "$P/WikiOnly")"
 check_eq "  本文にもページの見出しにも出ない" "no" "$(contains "$W_HTML" 'Wiki の短いタイトル')"
-helper write "$P/WikiOnly" wiki "$(printf -- '&title(short,show){見せる短いタイトル}\n*節\n本文\n')" > /dev/null
+helper write "$P/WikiOnly" wiki "$(printf -- '&title(short, show){見せる短いタイトル}\n*節\n本文\n')" > /dev/null
 check_eq "show を付けると本文に出る" "yes" "$(contains "$(main_html "$P/WikiOnly")" '見せる短いタイトル')"
 check_eq "  meta にも入る" "見せる短いタイトル" "$(meta_of "$P/WikiOnly" short_title)"
 helper write "$P/WikiOnly" wiki "$(printf -- '*節\n本文\n')" > /dev/null
