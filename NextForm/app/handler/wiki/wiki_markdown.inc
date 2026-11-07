@@ -35,7 +35,7 @@ $WIKI_MARKDOWN_CLASSES = array(
     'strong'        => array('a', '重要'),
     'del'           => array('a', '打ち消し'),
     'br'            => array('a', '改行'),
-    'title'         => array('a', 'ページの題名 -> 先頭の #'),
+    'title'         => array('a', 'ページの題名 -> 先頭の # (短いタイトルはフロントマターの short_title:)'),
     'entity'        => array('a', '文字'),
     'entity_number' => array('a', '文字 (番号指定)'),
     'include'       => array('a', '取り込み -> ![](..)'),
@@ -99,8 +99,8 @@ $WIKI_MARKDOWN_ENTITY_EMOJIS = array(
 function wiki_markdown_convert(&$page, $source) {
     /* &include の指定の読み方は Markdown の表示と同じ (handler/markdown/image.inc) */
     markdown_converter();
-    $state = array('source' => $source, 'title' => null, 'lost' => array(), 'kept' => array(),
-		   'depth' => 0);
+    $state = array('source' => $source, 'title' => null, 'short_title' => null,
+		   'lost' => array(), 'kept' => array(), 'depth' => 0);
     $context = wiki_default_context($page);
     $body = array();
     if(trim($source) !== '') {
@@ -118,10 +118,21 @@ function wiki_markdown_convert(&$page, $source) {
     if(is_null($title) && !empty($page['meta']['title']))
 	$title = $page['meta']['title'];
 
+    /* 短いタイトル: &title(short) が無ければ、メタ情報の画面で付けたもの (題名と同じ) */
+    $short_title = $state['short_title'];
+    if(is_null($short_title) && !empty($page['meta']['short_title']))
+	$short_title = $page['meta']['short_title'];
+    $short_title = is_null($short_title) ? '' : trim(preg_replace('/\s+/u', ' ', $short_title));
+
     $head = array();
+    $front_matter = array();
+    if($short_title !== '')
+	$front_matter[] = 'short_title: ' . $short_title;
     $tags = tag_get_page_tags($page);
     if(!empty($tags))
-	$head[] = "---\n" . wiki_markdown_front_matter_tags($tags) . "\n---";
+	$front_matter[] = wiki_markdown_front_matter_tags($tags);
+    if(!empty($front_matter))
+	$head[] = "---\n" . implode("\n", $front_matter) . "\n---";
     if(!is_null($title) && trim($title) !== '')
 	$head[] = '# ' . wiki_markdown_heading_text(wiki_markdown_escape(trim($title)));
     $blocks = array_merge($head, $body);
@@ -837,11 +848,16 @@ function wiki_markdown_kept_block(&$state, $tree, $id) {
     return wiki_markdown_fence(wiki_markdown_raw($state, $tree), 'wiki');
 }
 
-/* &title{題名}。本文の先頭の # にする (wiki_markdown_convert())。(show) は落ちる */
+/*
+ * &title{題名}。本文の先頭の # にする (wiki_markdown_convert())。(show) は落ちる。
+ * &title(short){短いタイトル} はフロントマターの short_title: にする。
+ */
 function wiki_markdown_title(&$state, &$context, $tree) {
-    if(in_array('show', wiki_get_parameters_string($tree), true))
+    $parameters = wiki_get_parameters_string($tree);
+    if(in_array('show', $parameters, true))
 	wiki_markdown_lost($state, l('Showing the title in the text (&title(show))'));
-    $state['title'] = trim(wiki_markdown_text(wiki_markdown_strip_line_tokens($tree->target)));
+    $key = in_array('short', $parameters, true) ? 'short_title' : 'title';
+    $state[$key] = trim(wiki_markdown_text(wiki_markdown_strip_line_tokens($tree->target)));
 }
 
 /*
