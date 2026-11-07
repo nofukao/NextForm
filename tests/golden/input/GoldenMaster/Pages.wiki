@@ -1,0 +1,3 @@
+*ページの一覧
+カレンダーの日のページの一覧 (既定の形)。
+&pages([[GoldenMaster/Calendar/]],reverse);
