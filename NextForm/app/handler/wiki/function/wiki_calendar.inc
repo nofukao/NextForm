@@ -1,5 +1,11 @@
 <?php
 define('WIKI_CALENDAR_ONE_DAY', 60 * 60 * 24);
+/*
+ * 週表示で URL (calendar_behind / calendar_ahead) から広げられる週の数の上限 (前後それぞれ)。
+ * URL は誰でも書き換えられるので、上限が無いと誰でも長い範囲を描かせ、日のページの数だけ
+ * 目次の変換を走らせられた。本文に書いた behind= / ahead= は書き手の値なので収めない。
+ */
+define('WIKI_CALENDAR_URL_WEEKS_MAX', 12);
 $WIKI_CALENDAR_WEEK_NAME = array('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
 $WIKI_CALENDAR_WEEK_NAME_TO_DAYOFWEEK = array(
     'sun' => 0, l('Sun') => 0,
@@ -75,9 +81,9 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	$ahead = 5;
     } else {
 	if(!empty($args['calendar_behind'])) 
-	    $behind = (int)$args['calendar_behind'];
+	    $behind = min(max((int)$args['calendar_behind'], 0), WIKI_CALENDAR_URL_WEEKS_MAX);
 	if(!empty($args['calendar_ahead'])) 
-	    $ahead = (int)$args['calendar_ahead'];
+	    $ahead = min(max((int)$args['calendar_ahead'], 0), WIKI_CALENDAR_URL_WEEKS_MAX);
     }
 
     $dayrules = wiki_operator_calendar_get_dayrules(WIKI_CALENDAR_RULES_DEFAULT . "\n" . $target);
