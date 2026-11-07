@@ -250,8 +250,13 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	else
 	    $page['meta']['short_title'] = $page['short_title'];
     }
-    if(isset($page['description']))
-	$page['meta']['description'] = $page['description'];
+    if(isset($page['description'])) {
+	/* 説明も題名と同じ約束で、空文字は「消す」(説明も索引に入る) */
+	if($page['description'] === '')
+	    unset($page['meta']['description']);
+	else
+	    $page['meta']['description'] = $page['description'];
+    }
     if(isset($page['write_meta'])) {
 	/*
 	 * 種別とそれに付く meta を書き換える (「この版に戻す」と変換)。題名と同じく、

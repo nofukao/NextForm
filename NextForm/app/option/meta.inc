@@ -89,14 +89,12 @@ function meta_write(&$args, $dom) {
 	$dummy = dom_create_document();
 	handle($page, $dummy, 'show');
     }
-    if(isset($args['title'])) {
-	if(!isset($page['title_dom'])) {
-	    if($args['title'] === '') {
-		unset($page['title']);
-		unset($page['meta']['title']);
-	    } else
-		$page['title'] = trim($args['title']);
-	}
+    if(isset($args['title']) && !isset($page['title_dom'])) {
+	/*
+	 * 空文字は「消す」(page_write)。meta を直に落とすと、page_write() が古い ngram を
+	 * 数える前に題名が消え、消した題名の語が検索の索引に残る。
+	 */
+	$page['title'] = trim($args['title']);
     }
     if(isset($args['short_title']) && !isset($page['short_title'])) {
 	/*
@@ -106,10 +104,8 @@ function meta_write(&$args, $dom) {
 	$page['short_title'] = trim(preg_replace('/\s+/u', ' ', $args['short_title']));
     }
     if(isset($args['description'])) {
-	if($args['description'] === '')
-	    unset($page['description']);
-	else
-	    $page['description'] = $args['description'];
+	/* 空文字は「消す」(page_write。題名と同じ約束) */
+	$page['description'] = $args['description'];
     }
 
     $page['keep_mtime'] = true;
