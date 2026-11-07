@@ -1,0 +1,6 @@
+*ページの一覧
+カレンダーの日のページの一覧 (既定の形)。
+&pages([[GoldenMaster/Calendar/]],reverse);
+
+**目次の折りたたみ
+&pages([[GoldenMaster/Calendar/]],reverse,show=toc);

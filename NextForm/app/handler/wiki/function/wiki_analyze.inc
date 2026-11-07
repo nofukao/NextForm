@@ -46,7 +46,15 @@ function wiki_operator_popularpages(&$context, $dom, $tree) {
     $find_condition['analyze'] = $analyze_condition;
     $find_pages = page_find($pagename, $find_condition);
     $list_options['base_pagename'] = $pagename;
-    $section = pagelist_append($dom, $find_pages, $list_options);
+    /*
+     * 区切り (each=) の「次」のリンクと何画面目かは、ページと URL の引数から作る (&pages と同じ)。
+     * context は引数を読んだ後で入れる。先に入れると &pages と同じく ?tag= で絞るようになる。
+     * 閲覧数の無いページは今までどおり出さない (?pages_show_hidden= は読まない)。
+     */
+    $list_options['context'] = &$context;
+    $args = page_args($context['page']);
+    unset($args['pages_show_hidden']);
+    $section = pagelist_append($dom, $find_pages, $list_options, $args);
     if(!empty($section))
 	dom_remove_empty($section);
 }

@@ -37,6 +37,7 @@
 #  13. Markdown のページへのリンクに印 (type_markdown) を付けること。wiki のページ・
 #      無いページには付けない (色調で Markdown のページへのリンクの色を変えるため)
 #  14. 編集画面に記法の札 (Markdown / Wiki) が出ること
+#  21. フロントマターの値を引用符の 1 組で囲んだときの読み方
 #
 # ページを作って消すので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -1066,6 +1067,26 @@ check_eq "見出しが無いページのツールの目次に [TOC] の文字を
 helper write "MarkdownTest/BadPages" "$(printf -- '[PAGES what=ever]\n')" > /dev/null
 check_eq "読めない [PAGES …] は、画面と同じく検索の文字にも残す" "yes" \
          "$(contains "$(value_of "$(helper texts MarkdownTest/BadPages)" texts)" 'what=ever')"
+echo
+
+echo "21. フロントマターの値の引用符"
+# 値の全体を同じ引用符の 1 組で囲んだときは、その 1 組だけを外して中の逃がしを戻す (YAML と同じ)。
+# 囲んでいない値は今までどおり両端の空白と引用符を落とす
+fm_title() {
+    helper write "MarkdownTest/Quote" "$(printf -- '---\ntitle: %s\n---\n\n本文\n' "$1")" > /dev/null
+    value_of "$(helper meta "MarkdownTest/Quote" title)" value
+}
+check_eq "\"..\" の中の ' を残す" "'90s 特集" "$(fm_title "\"'90s 特集\"")"
+check_eq "\"..\" の中の \\\" と \\\\ を戻す" 'a "b" \c' "$(fm_title '"a \"b\" \\c"')"
+check_eq "'..' の中の '' を ' に戻す" "It's" "$(fm_title "'It''s'")"
+# ここから下は今までと同じ読み方であること (変えていないことの確かめ)
+check_eq "今までどおり: \"..\" で囲んだ # で始まる値" "#123 の修正" "$(fm_title '"#123 の修正"')"
+check_eq "今までどおり: 囲んでいない値は両端の引用符を落とす" "90s 特集" "$(fm_title "'90s 特集")"
+check_eq "今までどおり: ふつうの値" "会議メモ" "$(fm_title '会議メモ')"
+check_eq "今までどおり: 1 組で囲んだふつうの値" "会議メモ" "$(fm_title '"会議メモ"')"
+helper write "MarkdownTest/Quote" "$(printf -- '---\ntags:\n  - "a b"\n  - "'"'"'c'"'"'"\n---\n\n本文\n')" > /dev/null
+check_eq "今までどおり: タグは項目ごとに引用符を落とし、空白で分ける" "a b c" \
+         "$(value_of "$(helper tags "MarkdownTest/Quote")" tags)"
 echo
 
 helper cleanup > /dev/null

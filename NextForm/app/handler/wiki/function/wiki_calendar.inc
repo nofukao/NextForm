@@ -1,5 +1,12 @@
 <?php
 define('WIKI_CALENDAR_ONE_DAY', 60 * 60 * 24);
+/*
+ * 週表示で URL (calendar_behind / calendar_ahead) から広げられる週の数の上限 (前後それぞれ)。
+ * URL は誰でも書き換えられるので、上限が無いと誰でも長い範囲を描かせ、日のページの数だけ
+ * 目次の変換を走らせられた。本文に書いた behind= / ahead= は書き手の値なので収めず、
+ * 本文でこれより広く書いてあれば、URL の上限もその値にする。
+ */
+define('WIKI_CALENDAR_URL_WEEKS_MAX', 12);
 $WIKI_CALENDAR_WEEK_NAME = array('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
 $WIKI_CALENDAR_WEEK_NAME_TO_DAYOFWEEK = array(
     'sun' => 0, l('Sun') => 0,
@@ -32,7 +39,8 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 
     $args = page_args($context['page']);
 
-    if(!empty($args['calendar'])) {
+    /* URL の値。calendar[]=.. のような並びは文字ではないので使わない (trim() が TypeError になる) */
+    if(!empty($args['calendar']) && is_string($args['calendar'])) {
 	$d = $args['calendar'];
 	$d = trim($d, ' - /');
 	$d = str_replace('/', '-', $d);
@@ -47,6 +55,7 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
     }
 
     $basepagename = $context['page']['name'];
+    $show = '';
     wiki_parse_parameters(
 	$context, $tree,
 	array(
@@ -54,6 +63,7 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	    'equalities' => array(
 		'behind' => &$behind,
 		'ahead' => &$ahead,
+		'show' => &$show,
 		),
 	    'long_flags' => array(
 		'month' => array(&$calendar_mode, 'month'),
@@ -72,10 +82,19 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	$behind = 5;
 	$ahead = 5;
     } else {
+	/* 本文の behind= / ahead= は書き手の値。数字でなければ 0 (足し算が TypeError になる) */
+	$behind = max((int)$behind, 0);
+	$ahead = max((int)$ahead, 0);
+	/*
+	 * URL の値は上限に収める。本文でそれより広く書いてあれば、本文の値まで
+	 * (▲▼や「移動」は今の範囲を URL に写すので、本文の値より狭めない)。
+	 */
 	if(!empty($args['calendar_behind'])) 
-	    $behind = (int)$args['calendar_behind'];
+	    $behind = min(max((int)$args['calendar_behind'], 0),
+			  max(WIKI_CALENDAR_URL_WEEKS_MAX, $behind));
 	if(!empty($args['calendar_ahead'])) 
-	    $ahead = (int)$args['calendar_ahead'];
+	    $ahead = min(max((int)$args['calendar_ahead'], 0),
+			 max(WIKI_CALENDAR_URL_WEEKS_MAX, $ahead));
     }
 
     $dayrules = wiki_operator_calendar_get_dayrules(WIKI_CALENDAR_RULES_DEFAULT . "\n" . $target);
@@ -152,7 +171,14 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		$classes[] = 'other_month';
 	    if($day['name'] == $now_date)
 		$classes[] = 'today';
-	    if(page_is_exists($day['pagename']))
+	    /*
+	     * 読めない日のページは、無いページと同じに描く (&pages が一覧から落とすのと同じ)。
+	     * page_read() は読めないページで止まる (403 かログインの要求) ので、1 つ読めない
+	     * だけでカレンダーのあるページ全体が開けなくなっていた。
+	     */
+	    $is_day_page = page_is_exists($day['pagename']) &&
+		auth_has_permission($day['pagename'], 'read');
+	    if($is_day_page)
 		$classes[] = 'exists';
 
 	    $classes[] = 'week_' . $d;
@@ -179,10 +205,10 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		dom_append_text($span, $detail_day);
 	    }
 	    dom_append_text($a, $day['day']);
-	    if(page_is_exists($day['pagename']))
+	    if($is_day_page)
 		dom_set_attribute($a, 'data-link-pagename', $day['pagename']);
 	    
-	    if(!page_is_exists($day['pagename']))
+	    if(!$is_day_page)
 		dom_set_attribute($a, 'rel', 'nofollow');
 
 	    foreach($event_names as $event_name) {
@@ -191,11 +217,16 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	    }
 
 	    $dd = dom_append_child($dl, 'dd');
-	    if(page_is_exists($day['pagename'])) {
+	    if($is_day_page) {
 		$page = page_read($day['pagename']);
 		if(!empty($page['meta']['ticket']))
 		    dom_set_attribute($td, 'data-ref-ticket', $page['meta']['ticket']);
-		handle($page, $dd, 'summary');
+		$cell_title = (trim($show) === 'title') ? wiki_operator_calendar_cell_title($page) : '';
+		if($cell_title !== '') {
+		    $a = dom_append_page_link($dd, $cell_title, $day['pagename']);
+		    dom_append_class($a, 'title');
+		} else
+		    handle($page, $dd, 'summary');
 	    } else {
 		dom_append_text($dd, '');
 	    }
@@ -296,6 +327,19 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
     $a = dom_append_link($form, url_make(url_pagename($context['page'])), l('Back'), 'button');
     //if(!isset($args['calendar']))
     //dom_append_class($a, 'disabled');
+}
+
+/*
+ * show=title のときにセルに出す文字。短いタイトル → タイトル の順に選ぶ。
+ * どちらも無ければ空文字で、呼び出し側は今までどおり目次を出す (ページ名を出すと
+ * 日付と重なるため)。meta を読むだけで、本文は描かない。
+ */
+function wiki_operator_calendar_cell_title(&$page) {
+    foreach(array('short_title', 'title') as $key) {
+	if(isset($page['meta'][$key]) && trim($page['meta'][$key]) !== '')
+	    return trim($page['meta'][$key]);
+    }
+    return '';
 }
 
 function wiki_operator_calendar_get_dayrules($rules_text) {
@@ -470,7 +514,7 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 &title &&calendar
 
 *概要
- &calendar([[ページ名]], month, weeks, behind=N, ahead=N){
+ &calendar([[ページ名]], month, weeks, behind=N, ahead=N, show=title){
  イベント情報
  }
 カレンダーを表示します．さらにカレンダー上の1日を1ページに対応させて簡単なスケジュール帳としても利用できます．
@@ -484,7 +528,13 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 :month|一般的なカレンダーのように月を表示します．デフォルトで指定されています．
 :weeks|今週を基準に前後に数週間分表示します．表示する週はbehind,aheadパラメータで指定できます．
 :behind=N|weeksが指定された際にN週分過去の週を表示します(Nは整数)．
-:ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．
+:ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．画面の▲▼で広げられるのは，前後それぞれ12週までです．
+:{show=title|各マスに，要約(見出しの一覧)の代わりにその日のページの''短いタイトル''を出します．
+短いタイトルが無いページはタイトルを，どちらも無いページは要約を出します．
+短いタイトルは，タイトルから日付を除いたものなど，マスの場所で分かることを除いて書きます
+(Wiki記法の[[&&title(short):../title]]，Markdown記法のフロントマターの ""short_title:""，
+メタ情報の画面)．
+マスのタイトルは，その日のページへのリンクになります．}
 
 *対象
 対象には祝祭日等のイベントの情報が書けます．
@@ -571,7 +621,7 @@ function wiki_operator_calendar_get_day_page_info_for_external_tool($basepagenam
 &title &&calendar
 
 *Overview
- &calendar([[page name]], month, weeks, behind=N, ahead=N){
+ &calendar([[page name]], month, weeks, behind=N, ahead=N, show=title){
  event data
  }
 Shows a calendar. One day on the calendar can also be tied to one page, making a simple
@@ -586,7 +636,14 @@ Double clicking a box of the calendar edits the child page straight away.
 :month|show a month, like an ordinary calendar. Set by default.
 :weeks|show a few weeks around this week. Which weeks are shown is set by the behind and ahead parameters.
 :behind=N|with weeks set, show N weeks into the past (N is a whole number).
-:ahead=N|with weeks set, show N weeks into the future (N is a whole number).
+:ahead=N|with weeks set, show N weeks into the future (N is a whole number). The ▲ and ▼ buttons on the screen widen it up to 12 weeks each way.
+:{show=title|show the ''short title'' of the page for the day in each box, instead of
+its summary (the list of headings).
+A page without a short title shows its title, and a page with neither shows its summary.
+Write the short title without what the place of the box already tells, such as the date
+in the title ([[&&title(short):../title]] in Wiki notation, ""short_title:"" in the front
+matter in Markdown notation, or the meta information screen).
+The title in a box is a link to the page for the day.}
 
 *Target
 Data about events such as public holidays can be written as the target.

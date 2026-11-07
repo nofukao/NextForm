@@ -47,6 +47,23 @@ function meta_show(&$args, $dom) {
 	dom_append_text($small, l($title_notices[$type]));
     }
 
+    /*
+     * 短いタイトル (カレンダーのセルなど、場所で分かることを除いて出すところに使う)。
+     * 題名と同じく、本文に書く場所がある種別では本文が優先される。
+     */
+    $dt = dom_append_child($dl, 'dt');
+    dom_append_text($dt, l('Short title'));
+    $dd = dom_append_child($dl, 'dd');
+    $default_value = isset($page['meta']['short_title']) ? $page['meta']['short_title'] : '';
+    dom_append_child($dd, 'input', 'short_title',
+		     array('type' => 'text', 'name' => 'short_title', 'value' => $default_value));
+    $short_title_notices = array('wiki'     => 'overwritten with &title(short) wiki function',
+				 'markdown' => 'overwritten with front matter short_title');
+    if(isset($short_title_notices[$type])) {
+	$small = dom_append_child($dd, 'small');
+	dom_append_text($small, l($short_title_notices[$type]));
+    }
+
     $dt = dom_append_child($dl, 'dt');
     dom_append_text($dt, l('Description'));
     $dd = dom_append_child($dl, 'dd');
@@ -67,22 +84,28 @@ function meta_write(&$args, $dom) {
     $page = &target_page($args);
     title_set_pagename('Meta info of $pagename$', $page['name']);
    
-    if(isset($args['title'])) {
+    /* 本文が題名・短いタイトルを決めているかを、表示の経路を走らせて見る */
+    if(isset($args['title']) || isset($args['short_title'])) {
 	$dummy = dom_create_document();
 	handle($page, $dummy, 'show');
-	if(!isset($page['title_dom'])) {
-	    if($args['title'] === '') {
-		unset($page['title']);
-		unset($page['meta']['title']);
-	    } else
-		$page['title'] = trim($args['title']);
-	}
+    }
+    if(isset($args['title']) && !isset($page['title_dom'])) {
+	/*
+	 * 空文字は「消す」(page_write)。meta を直に落とすと、page_write() が古い ngram を
+	 * 数える前に題名が消え、消した題名の語が検索の索引に残る。
+	 */
+	$page['title'] = trim($args['title']);
+    }
+    if(isset($args['short_title']) && !isset($page['short_title'])) {
+	/*
+	 * 本文が決めていないときだけ使う。空文字は「消す」(page_write)。
+	 * meta を直に落とさない (題名の注意と同じ)。
+	 */
+	$page['short_title'] = trim(preg_replace('/\s+/u', ' ', $args['short_title']));
     }
     if(isset($args['description'])) {
-	if($args['description'] === '')
-	    unset($page['description']);
-	else
-	    $page['description'] = $args['description'];
+	/* 空文字は「消す」(page_write。題名と同じ約束) */
+	$page['description'] = $args['description'];
     }
 
     $page['keep_mtime'] = true;

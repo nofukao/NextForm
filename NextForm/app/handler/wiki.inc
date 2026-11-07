@@ -178,7 +178,7 @@ function wiki_texts(&$page) {
  * Markdown のフロントマターと同じ約束にしてある。
  */
 function wiki_normalize(&$page, $text) {
-    unset($page['title']);
+    unset($page['title'], $page['short_title']);
 
     $trial_dom = dom_create_document();
     wiki_convert($page, $trial_dom, $text);
@@ -188,6 +188,9 @@ function wiki_normalize(&$page, $text) {
 	$page['title'] = '';
 	unset($page['title_dom']);
     }
+    /* 短いタイトル (&title(short)) も同じ約束 */
+    if(!isset($page['short_title']))
+	$page['short_title'] = '';
 
     $offset = 0;
     $xpath = new DOMXPath(dom_owner($trial_dom));

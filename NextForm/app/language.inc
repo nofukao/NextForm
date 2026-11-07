@@ -266,6 +266,11 @@ $LANGUAGE['ja'] = array(
     '本文の&titleが優先されます．本文から&titleを消すとここの題名も消えます．',
     'overwritten with front matter title' =>
     'フロントマターのtitle:が優先されます．そちらを消すとここの題名も消えます．',
+    'Short title' => '短いタイトル',
+    'overwritten with &title(short) wiki function' =>
+    '本文の&title(short)が優先されます．本文から&title(short)を消すとここの短いタイトルも消えます．',
+    'overwritten with front matter short_title' =>
+    'フロントマターのshort_title:が優先されます．そちらを消すとここの短いタイトルも消えます．',
 
     'All pages' => '全ページ一覧',
     'Display table style' => '表形式で表示する',

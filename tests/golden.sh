@@ -43,6 +43,9 @@ TARGETS=(
     # 上書きできるのは URL の ?calendar= だけ。付けないと月が変わった日に落ちる
     # (2026-08 に採取したものが 09-01 から落ちた)。
     "Calendar=?GoldenMaster/Calendar&calendar=2026-08"
+    # ページの一覧 (&pages)。対象はカレンダーの日のページ (GoldenMaster/Calendar/ の下) だけに
+    # 絞ってあるので、ほかのページを作っても変わらない。
+    "Pages=?GoldenMaster/Pages"
     "Syntax=?GoldenMaster/Syntax"
     "Markdown=?GoldenMaster/Markdown"
     "MarkdownSummary=?GoldenMaster/Markdown&option=summary"
@@ -82,6 +85,8 @@ html = sys.stdin.read()
 m = re.search(r"<article class=\"main\">.*?</article>", html, re.S)
 out = m.group(0) if m else "<article class=\"main\"> NOT FOUND </article>"
 out = re.sub(r"data-ticket=\"[0-9a-f]{32}\"", "data-ticket=\"TICKET\"", out)
+# カレンダーのセルには日のページの ticket が付く。ページを書くたびに変わる。
+out = re.sub(r"data-ref-ticket=\"[0-9a-f]{32}\"", "data-ref-ticket=\"TICKET\"", out)
 out = re.sub(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}", "TIMESTAMP", out)
 out = re.sub(r"(compare[12]time=)\d+", r"\1EPOCH", out)
 out = re.sub(r"([&?]|&amp;)t=\d+", r"\1t=EPOCH", out)

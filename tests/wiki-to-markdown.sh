@@ -114,6 +114,8 @@ for f in "${FIXTURES}"/input/*.wiki; do
 done
 # タグは Wiki 記法の本文に書かないので、タグの画面と同じ経路で付ける
 helper set-tags WikiMdTest/Full タグA "タグ, B" > /dev/null
+# 短いタイトル (&title(short)) は、タグと同じフロントマターに並べる
+helper set-tags WikiMdTest/ShortTitleTags 日記 > /dev/null
 # &direct の行き先 (Direct.wiki)。変換は行き先の種類で書き方を変える
 PNG_80x60='iVBORw0KGgoAAAANSUhEUgAAAFAAAAA8CAIAAAB+RarbAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAWUlEQVRo3u3PQQEAQAQAMK5/MCGEEOEyeNsaLKsnLnlxjLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCw8M4HGT0DDH3NO/8AAAAASUVORK5CYII='
 PNG_20x15='iVBORw0KGgoAAAANSUhEUgAAABQAAAAPCAIAAABr+ngCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAEUlEQVQoz2NgGAWjYBQMIgAAA5MAATFpEvgAAAAASUVORK5CYII='

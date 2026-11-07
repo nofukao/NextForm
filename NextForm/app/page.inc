@@ -240,8 +240,23 @@ function page_write(&$page, &$contents, &$ticket = '', &$error = PAGE_WRITE_ERRO
 	else
 	    $page['meta']['title'] = $page['title'];
     }
-    if(isset($page['description']))
-	$page['meta']['description'] = $page['description'];
+    if(isset($page['short_title'])) {
+	/*
+	 * 短いタイトル (カレンダーのセルなど、場所で分かることを除いて出すところに使う)。
+	 * 題名と同じ約束で、空文字は「消す」。索引には入れない。
+	 */
+	if($page['short_title'] === '')
+	    unset($page['meta']['short_title']);
+	else
+	    $page['meta']['short_title'] = $page['short_title'];
+    }
+    if(isset($page['description'])) {
+	/* 説明も題名と同じ約束で、空文字は「消す」(説明も索引に入る) */
+	if($page['description'] === '')
+	    unset($page['meta']['description']);
+	else
+	    $page['meta']['description'] = $page['description'];
+    }
     if(isset($page['write_meta'])) {
 	/*
 	 * 種別とそれに付く meta を書き換える (「この版に戻す」と変換)。題名と同じく、
@@ -283,10 +298,10 @@ $PAGE_FILE_META_NAMES = array('Content-type', 'original_filename',
 /*
  * 旧版 ($backuptime) の本文と種別で、今のページを書き直す (履歴の「この版に戻す」)。
  * 戻す前の版は、同じ人が続けて保存したときでも必ず履歴に残す。
- * 題名とタグもその版のものにする。本文に書く場所がある種別では、戻した種別の
- * normalize が本文から取り直す (§7「本文を正とする」。Markdown の題名とタグ、
- * Wiki 記法の題名)。本文に書く場所が無いもの (Wiki 記法のタグ、text と file の
- * 題名とタグ) は版の meta から取る。説明・ロックなどほかの meta は今のまま。
+ * 題名・短いタイトル・タグもその版のものにする。本文に書く場所がある種別では、
+ * 戻した種別の normalize が本文から取り直す (§7「本文を正とする」。Markdown の
+ * 題名とタグ、Wiki 記法の題名)。本文に書く場所が無いもの (Wiki 記法のタグ、
+ * text と file の題名とタグ) は版の meta から取る。説明・ロックなどほかの meta は今のまま。
  * 種別 file の版は、中身に付く meta (Content-type・画像の寸法など) も版から取る。
  * 版を書いたときに測ったものなので、測り直さない。
  * ロック・権限・ticket は、今のページについて page_write() が確かめる。
@@ -319,7 +334,7 @@ function page_restore(&$page, $backuptime, &$ticket, &$error = PAGE_WRITE_ERROR_
 	$write_meta[$name] = ($type === 'file' && isset($backup_page['meta'][$name])) ?
 	    $backup_page['meta'][$name] : null;
 
-    unset($page['title'], $page['write_tag']);
+    unset($page['title'], $page['short_title'], $page['write_tag']);
     if($type === 'file') {
 	$contents = $fp;
     } else {
@@ -336,6 +351,8 @@ function page_restore(&$page, $backuptime, &$ticket, &$error = PAGE_WRITE_ERROR_
     /* normalize が本文から取らなかったものは、版の meta から (page_write() が書く。空は「消す」) */
     if(!isset($page['title']))
 	$page['title'] = default_value($backup_page['meta']['title'], '');
+    if(!isset($page['short_title']))
+	$page['short_title'] = default_value($backup_page['meta']['short_title'], '');
     if(!isset($page['write_tag']))
 	$page['write_tag'] = default_value($backup_page['meta']['tag'], '');
 

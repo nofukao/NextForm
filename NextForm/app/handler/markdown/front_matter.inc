@@ -31,13 +31,13 @@ class MarkdownFrontMatterParser
 	    if(!is_null($key) && preg_match('/^\s+-\s*(.*)$/', $line, $matches)) {
 		if(!is_array($data[$key]))
 		    $data[$key] = ($data[$key] === '') ? array() : array($data[$key]);
-		$data[$key][] = trim($matches[1], " \t\"'");
+		$data[$key][] = self::value($matches[1]);
 		continue;
 	    }
 
 	    if(preg_match('/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/', $line, $matches)) {
 		$key = $matches[1];
-		$data[$key] = trim($matches[2], " \t\"'");
+		$data[$key] = self::value($matches[2]);
 		continue;
 	    }
 
@@ -45,6 +45,22 @@ class MarkdownFrontMatterParser
 	    $key = null;
 	}
 	return $data;
+    }
+
+    /*
+     * 1 つの値。全体が同じ引用符の 1 組で囲まれていれば、その 1 組だけを外して中の逃がしを
+     * 戻す (YAML と同じ。"…" は \" と \\、'…' は '')。値の端に引用符がある値や、# で始まる値
+     * (よそのツールではコメントになる) を、囲んで書けるように。
+     * 囲まれていなければ、今までどおり両端の空白と引用符を落とす。
+     */
+    private static function value($value) {
+	$value = trim($value, " \t");
+	$length = strlen($value);
+	if($length >= 2 && $value[0] === '"' && $value[$length - 1] === '"')
+	    return preg_replace('/\\\\(["\\\\])/', '$1', substr($value, 1, -1));
+	if($length >= 2 && $value[0] === "'" && $value[$length - 1] === "'")
+	    return str_replace("''", "'", substr($value, 1, -1));
+	return trim($value, " \t\"'");
     }
 }
 ?>

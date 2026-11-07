@@ -1,4 +1,13 @@
 <?php
+/*
+ * show=toc で each= を書かなかったときに 1 画面に出す件数。目次は項目ごとに
+ * 本文を変換して作るので (Markdown の日記 1 ページで約 14 ms)、区切らないと
+ * 毎日増える一覧が年ごとに遅くなり、いつか時間切れで開けなくなる。
+ * Wiki のページは保存のときにも描くので、保存も同じだけ遅くなる。
+ * 全部を 1 画面に出したいときは each=0 と書く。
+ */
+define('PAGELIST_TOC_EACH', 50);
+
 function pagelist_append($dom, &$list_pages, $list_options = array(), $args = array()) {
     if(empty($list_pages))
 	return;
@@ -13,9 +22,19 @@ function pagelist_append($dom, &$list_pages, $list_options = array(), $args = ar
     if(!isset($list_options['context']))
 	$list_options['context'] = array();
     $context = $list_options['context'];
-    $offset = default_value($args['pages'], 0);
-    $each = default_value($list_options['each'], 0);
+    /*
+     * 何画面目か (?pages=) は URL なので、誰でも書き換えられる。数字でない値をそのまま
+     * 掛け算に使うと PHP 8 では TypeError (500) になるので、整数にして負は 1 画面目にする。
+     * 件数より先の画面は空なので、件数で抑える (大きすぎる値の掛け算が整数からあふれると、
+     * これも TypeError になる)。
+     * 1 画面の件数 (each=) も本文に書く値なので整数にする (数字でなければ 0 = 全件)。
+     */
     $pagenum = count($list_pages);
+    $offset = min(max(0, (int)default_value($args['pages'], 0)), $pagenum);
+    $show = default_value($list_options['show'], 'list');
+    if($show === 'toc' && !isset($list_options['each']))
+	$list_options['each'] = PAGELIST_TOC_EACH;
+    $each = (int)default_value($list_options['each'], 0);
     if($each > 0)
 	$pages = array_slice($list_pages, $offset * $each, $each);
     else
@@ -37,7 +56,6 @@ function pagelist_append($dom, &$list_pages, $list_options = array(), $args = ar
 	dom_set_attribute($a, 'data-link-pagename', $list_options['context']['page']['name']);
     }
 
-    $show = default_value($list_options['show'], 'list');
     if($show == 'table') {
 	$fields = pagelist_parse_fields(
 	    default_value($list_options['fields'], '[[title-pagename]] _'), $placeholders);
@@ -101,6 +119,8 @@ function pagelist_append($dom, &$list_pages, $list_options = array(), $args = ar
 	    $li = dom_append_child($ul, 'li');
 	    pagelist_set_page_attributes($li, $listpage);
 	    pagelist_append_fields($li, $listpage, $fields, $list_options);
+	    if($show === 'toc')
+		pagelist_append_toc($li, $listpage);
 	    dom_remove_empty($li);
 	} 
 	dom_remove_empty($ul);
@@ -166,6 +186,48 @@ function pagelist_append($dom, &$list_pages, $list_options = array(), $args = ar
     }
 
     return $section;
+}
+
+/*
+ * show=toc の項目の下に、そのページの目次を閉じた折りたたみで足す。
+ *
+ * 目次は種別の summary (ツールの「目次」と同じもの) で、項目は見出しへのリンク。
+ * handle() を通さずに種別の関数を直に呼ぶ。handle() はそのページを「読んだ」と
+ * 記録するので、一覧を開いただけで全部のページの未読の印が消えてしまう。
+ *
+ * 見出しが 1 つも無いページ (目次が書き出しの文字だけになる) と、wiki・markdown
+ * 以外の種別には付けない。開いても 1 文しか出ない折りたたみは、押す手間だけ増える。
+ */
+function pagelist_append_toc($dom, &$listpage) {
+    $type = page_get_type($listpage);
+    if($type !== 'wiki' && $type !== 'markdown')
+	return;
+    $summary = handler_function($listpage, 'summary');
+    if($summary === false || !function_exists($summary))
+	return;
+
+    $toc_page = $listpage;
+    $toc_dom = dom_create_document();
+    $summary($toc_page, $toc_dom, true);
+
+    $list = null;
+    foreach($toc_dom->childNodes as $section) {
+	if(!($section instanceof DOMElement))
+	    continue;
+	foreach($section->childNodes as $child) {
+	    if($child instanceof DOMElement && strtolower($child->nodeName) === 'ul') {
+		$list = $child;
+		break 2;
+	    }
+	}
+    }
+    if(is_null($list))
+	return;
+
+    $details = dom_append_child($dom, 'details', 'pages_toc');
+    $label = dom_append_child($details, 'summary');
+    dom_append_text($label, l('Summary'));
+    dom_append_dom_children($details, $toc_dom);
 }
 
 function pagelist_append_tree_item($li, &$node, $fields, $list_options, $pagename_prefix = '') {
@@ -332,8 +394,9 @@ function pagelist_apply_rules(&$pages, &$list_options, $args, &$placeholders) {
 	usort($pages, 'pagelist_page_compare');
     }
 
-    if(!empty($list_options['limit'])) {
-	$pages = array_slice($pages, 0, $list_options['limit']);
+    /* 本文に書く値なので整数にする (数字でなければ 0 = 抑えない。each= と同じ) */
+    if((int)default_value($list_options['limit'], 0) > 0) {
+	$pages = array_slice($pages, 0, (int)$list_options['limit']);
     }
 
     $list_options['hidden_num'] = $hidden_num;

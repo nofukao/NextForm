@@ -96,6 +96,7 @@
 ./tests/syntax-survey.sh    # wiki 記法の棚卸しツール (複製サイトを作る。要 sudo)
 ./tests/page-tool.sh        # ページを読み書きする道具 app/tool/page (複製サイトを作る。要 sudo)
 ./tests/mermaid.sh          # Markdown の図 (```mermaid)。BROWSER=1 でブラウザで見るページも作る (複製サイトを作る。要 sudo)
+./tests/short-title.sh      # 短いタイトル・カレンダーのタイトル・一覧の目次 (複製サイトを作る。要 sudo)
 ```
 
 - ゴールデンマスター(`tests/golden/`)+ HTTP スモーク(`tests/smoke.sh`)が主軸。

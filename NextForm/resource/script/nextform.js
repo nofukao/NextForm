@@ -967,6 +967,14 @@ Element.prototype.wikiRefPageObserve = function() {
 Element.prototype.wikiRefPageStartHandler = function(event) {
     event.stop();
 
+    /*
+     * 一覧の目次 (&pages(show=toc)) の折りたたみの中では編集を始めない。札を続けて
+     * 押して開け閉めしただけで、その項目のページの編集欄が開いてしまうため。
+     * 止めた (event.stop) ままにして、外側の節の編集にも渡さない。
+     */
+    if(event.findElement('details.pages_toc'))
+	return;
+
     if(editingFormIsLoading)
 	return;
     if(editingFormIsChange) {
