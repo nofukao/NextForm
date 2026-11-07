@@ -29,7 +29,8 @@ fork 元の ToraToraWiki 1.3.10 (rev.1285) からの差分という視点で書�
 - **`&pages(show=toc)` で、各ページの下に目次 (見出しの一覧) を閉じた折りたたみで付けられます。**
   押すと開き、項目は見出しへのリンクです。種別 wiki・Markdown のページで、見出しがあるときだけ
   付きます。目次はページごとに本文を読んで作るので、`each=` を書かなければ 50 件ずつ表示します
-  (`each=0` で全件)。`&datepages` と `&popularpages` でも使えます
+  (`each=0` で全件)。`&datepages` (`each=` を書かなければ今までどおり 30 件ずつ) と `&popularpages` でも
+  使えます
 - Wiki 記法から Markdown への変換で、`&title(short)` をフロントマターの `short_title:` にします
   (今までは `&title` として扱われ、題名を上書きしていました)
 - `&meta(short_title)` で短いタイトルを出せます。版の比較の「メタ情報の違い」にも出ます
