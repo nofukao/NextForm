@@ -49,7 +49,7 @@ function wiki_operator_redirect(&$context, $dom, $tree) {
 
 &title &&redirect
 *概要
- &include([[ページ名]], timeout=待ち時間);
+ &redirect([[ページ名]], timeout=待ち時間);
 指定されたページへ自動的に転送(移動)するようにします．
 
 *パラメータ

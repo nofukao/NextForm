@@ -181,6 +181,8 @@ eachを指定しないときは50件ずつ表示します．
 }
 :{name=ページ名|上記の&[&[ページ名&]&]で指定したページの子ページのうち，
 さらにここで指定したページ名のページだけを表示します．
+ページ名は全体(''日記/2026-11-08''の形)と比べます．子ページの名前で絞るときは，
+name=日記/2026-&* のように親のページ名から書きます(name=2026-&* では1件も出ません)．
 &*や?などのワイルドカードが使用できます．
 name=!ページ名 のように書くとこのページ名以外のページを表示します．
 name=ページ名1 ページ名2 ...のように複数書くといずれか(or)の条件になります．
@@ -287,7 +289,7 @@ fields, header, footerパラメータで使用できるようになります．
  状態:完了|none,                   //状態が完了のタスクは表示しない,
  状態#提案/保留/着手/完了,         //状態が提案, 保留, 着手, 完了の順番で並び替え,
  優先度#高/中/低,                  //状態が同じ場合は優先度で並び替え,
- 更新日時#desc,                    //さらに優先度が同じ場合は更新日時で並び替え,
+ mtime#desc,                       //さらに優先度が同じ場合は更新日時で並び替え,
  ) {
  &title @タイトル=&insert(once) ここにタイトル@
  :カテゴリ|&select($bq$本体機能/プラグイン/デザイン$bq$)@カテゴリ@
@@ -745,6 +747,8 @@ Give 0 to show them all.
 }
 :{name=page name|of the child pages of the &[&[page name&]&] above, show only the pages
 whose name is given here.
+The whole page name (in the form ''Diary/2026-11-08'') is compared. To narrow by the name of
+the child page, write it from the name of the parent, as in name=Diary/2026-&* (name=2026-&* matches nothing).
 Wildcards such as &* and ? can be used.
 Writing name=!page name shows the pages other than that one.
 Writing several, as in name=page1 page2 ..., makes it an "or" condition.

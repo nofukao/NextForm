@@ -631,18 +631,18 @@ PukiWikiのページや，@wikiのデータバックアップを取り込みま�
 サイトの高度な設定はindex.phpの中に定数の定義を追記することで行うことができます．
 定数の定義は以下の形式で行います．
  define('定数名', '定数の値');
-例えばデフォルトのページ種別を設定する定数''DEFAULT_PAGE_TYPE''を''text''にするにはindex.phpを以下のような内容に書き換えます．
+例えば新しいページを作る画面で最初に選ばれているページ種別を設定する定数''NEWPAGE_DEFAULT_TYPE''を''text''にするにはindex.phpを以下のような内容に書き換えます．
  (code)
  <?php
  // custom settings here -------
- define('DEFAULT_PAGE_TYPE', 'text'); 
+ define('NEWPAGE_DEFAULT_TYPE', 'text'); 
  
  // ----------------------------
  require_once('app/boot.inc');
  ?>
 
 またApache HTTP Serverを使用していれば定数名の先頭に''NEXTFORM_''をつけて
- SetEnv NEXTFORM_DEFAULT_PAGE_TYPE "text"
+ SetEnv NEXTFORM_NEWPAGE_DEFAULT_TYPE "text"
 といった記述をhttpd.confや.htaccessに記述することで同様に設定できます．
 ただし，[[サイト設定:.#サイト設定]]の画面にある項目にはSetEnvは効きません(index.phpのdefineを使ってください)．
 index.phpで定義した項目は，画面で変えても効きません．
@@ -1197,12 +1197,12 @@ Shows the number of hits per page. Counting needs settings on the server.
 Advanced site settings are made by adding constant definitions to index.php.
 A constant is defined in the following form.
  define('constant name', 'value of the constant');
-For example, to set the constant ''DEFAULT_PAGE_TYPE'', which sets the default page
-type, to ''text'', rewrite index.php to look like this:
+For example, to set the constant ''NEWPAGE_DEFAULT_TYPE'', which sets the page type
+chosen at first on the screen for making a new page, to ''text'', rewrite index.php to look like this:
  (code)
  <?php
  // custom settings here -------
- define('DEFAULT_PAGE_TYPE', 'text');
+ define('NEWPAGE_DEFAULT_TYPE', 'text');
  
  // ----------------------------
  require_once('app/boot.inc');
@@ -1210,7 +1210,7 @@ type, to ''text'', rewrite index.php to look like this:
 
 If you use the Apache HTTP Server, you can set the same thing by prefixing the
 constant name with ''NEXTFORM_'' and writing a line such as
- SetEnv NEXTFORM_DEFAULT_PAGE_TYPE "text"
+ SetEnv NEXTFORM_NEWPAGE_DEFAULT_TYPE "text"
 in httpd.conf or .htaccess.
 However, SetEnv does not work for the items on the [[Site preferences:.#Site preferences]] screen (use define in index.php).
 Items defined in index.php do not change even when they are changed on the screen.

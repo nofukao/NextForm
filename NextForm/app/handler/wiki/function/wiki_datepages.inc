@@ -93,7 +93,7 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
 
 *例
 ''予定''の子ページのうち2012-07-01から未来の子ページを20件づつ一覧表示します．
- &datepages([[予定]]], future, 20, 2012-07-01);
+ &datepages([[予定]], future, each=20, 2012-07-01);
 */
 
 
@@ -125,6 +125,6 @@ No target is given.
 
 *Example
 Lists the child pages of ''Schedule'' dated from 2012-07-01 into the future, 20 at a time.
- &datepages([[Schedule]]], future, 20, 2012-07-01);
+ &datepages([[Schedule]], future, each=20, 2012-07-01);
 */
 ?>
