@@ -17,7 +17,7 @@
 #      タイトルが無くても一緒に使える。消すと消える。並びの値は使わない
 #   2. Wiki 記法の &title(short){..} が meta に入り、タイトルには触らないこと。消すと消える
 #   3. &calendar(show=title) のセルが「短いタイトル → タイトル → 目次」の順になること。
-#      既定と知らない値は今のまま (目次)
+#      既定と知らない値もタイトル (v0.22 から。今までの目次は show=toc)
 #   4. &pages(show=toc) の項目に、閉じた折りたたみで目次が付くこと。見出しの無いページと
 #      text のページには付かない。一覧を開いても各ページを「読んだ」ことにしない
 #   5. show=toc で each= を書かなければ 50 件で区切ること。each=0 なら全件
@@ -268,10 +268,11 @@ C="$(cell_of "$CAL" "$D/2026-08-07")"
 check_eq "どちらも無ければ今の目次" "yes|yes" \
          "$(contains "$C" 'class="summary"')|$(contains "$C" '見出しだけ')"
 C="$(cell_of "$(main_html "$P/CalDefault&calendar=2026-08")" "$D/2026-08-03")"
-check_eq "show を書かなければ今のまま (目次)" "yes|no" \
+# v0.22 から既定は show=title (今までの目次は show=toc。tests/calendar.sh で見る)
+check_eq "show を書かなければタイトル (既定)" "no|yes" \
          "$(contains "$C" 'class="summary"')|$(contains "$C" '短いタイトル md')"
 C="$(cell_of "$(main_html "$P/CalUnknown&calendar=2026-08")" "$D/2026-08-03")"
-check_eq "知らない値も今のまま" "yes|no" \
+check_eq "知らない値も既定 (タイトル)" "no|yes" \
          "$(contains "$C" 'class="summary"')|$(contains "$C" '短いタイトル md')"
 # 週表示の範囲は URL で指定できる。上限なしだと誰でも重い表示を走らせられるので、URL の値は
 # 0〜12 週に収める (docs/development/design-review-fixes.md の 6)

@@ -23,7 +23,8 @@
 #   3. 設定表を Markdown の表で書いても読めること
 #   4. 2 回目からの差分の書き出し (force なし) で、カレンダー (&calendar) と
 #      日付の一覧 (&datepages) のあるページを書き直し、あとから作った日の
-#      ページも書き出すこと (docs/development/design-calendar-day-pages.md §10.1)
+#      ページも書き出すこと (docs/development/design-calendar-day-pages.md §10.1)。
+#      同じ日の 2 つ目のページも書き出し、「＋」(ページを作るリンク) は出さないこと
 #
 # 入力は tests/export-input/ にある。ボタン (?option=export) は通さず、
 # 書き出しの本体 export_pages() を直に呼ぶ (tests/export-helper.php)。
@@ -233,6 +234,8 @@ DAY1="$(helper month-day 1)"
 DAY2="$(helper month-day 2)"
 check_eq "1 つ目の日のページを書く" "written=1" \
          "$(helper write "ExportTest/Cal/${DAY1}" wiki "$(printf -- '&title{一日目のページ}\n本文\n')")"
+check_eq "  同じ日の 2 つ目のページを書く" "written=1" \
+         "$(helper write "ExportTest/Cal/${DAY1}_2" wiki "$(printf -- '&title{一日目の二つ目}\n本文\n')")"
 # 書き出したファイルがページより新しくないと、差分の書き出しは飛ばさない (秒で比べる)
 sleep 1
 OUT_CAL1="$(helper export ExportTest/ConfigCal cal)"
@@ -240,6 +243,13 @@ check_eq "1 回目: カレンダーと日付の一覧を書き出す" "success|s
          "$(output_of "$OUT_CAL1" ExportTest/Cal | cut -f2)|$(output_of "$OUT_CAL1" ExportTest/Dates | cut -f2)"
 check_eq "  1 つ目の日のページも書き出す" "success" \
          "$(output_of "$OUT_CAL1" "ExportTest/Cal/${DAY1}" | cut -f2)"
+# カレンダーの既定は show=title (v0.22)。マスのタイトルのリンクをたどって、同じ日の 2 つ目の
+# ページも書き出す。書き出す人は書けるが、「＋」(無いページを作るリンク) は書き出しに出さない
+check_eq "  同じ日の 2 つ目のページも書き出す" "success" \
+         "$(output_of "$OUT_CAL1" "ExportTest/Cal/${DAY1}_2" | cut -f2)"
+check_eq "  書き出したカレンダーに「＋」が出ない" "no" "$(contains "$(exported cal cal.html)" 'class="create"')"
+check_eq "  書き出しでエラーが出ない" "" \
+         "$(printf '%s\n' "$OUT_CAL1" | awk -F'\t' '$1 == "error" { print $2 }' | head -3)"
 sleep 1
 check_eq "2 つ目の日のページを書く" "written=1" \
          "$(helper write "ExportTest/Cal/${DAY2}" wiki "$(printf -- '&title{二日目のページ}\n本文\n')")"

@@ -9,7 +9,8 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
     $list_options = array('context' => &$context, 'show' => 'contents', 'each' => 30);
     $find_condition = array(
 	'is_ignore_system_page' => true,
-	'name_regex' => '|/' . DATEPAGE_REGEX . '$|',
+	/* 同じ日の 2 つ目からのページ (YYYY-MM-DD_2 ..) も拾う。決まりはカレンダーと同じ */
+	'name_regex' => '|/' . DATEPAGE_REGEX . DATEPAGE_NUMBER_REGEX . '$|',
 	'is_pagename_only' => true,
 	'is_children_only' => true,
 	'reverse' => true,

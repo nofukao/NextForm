@@ -75,6 +75,7 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 
     $basepagename = $context['page']['name'];
     $show = '';
+    $maxlength_value = '';
     wiki_parse_parameters(
 	$context, $tree,
 	array(
@@ -83,6 +84,7 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		'behind' => &$behind,
 		'ahead' => &$ahead,
 		'show' => &$show,
+		'maxlength' => &$maxlength_value,
 		),
 	    'long_flags' => array(
 		'month' => array(&$calendar_mode, 'month'),
@@ -90,6 +92,15 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 		),
 	    )
 	);
+    /*
+     * マスに出すもの。既定はタイトル (show=title。同じ日の複数のページも並べる)。
+     * 今までの目次の表示は show=toc。知らない値は既定にする。
+     */
+    $is_title_mode = (trim($show) !== 'toc');
+    /* マスの文字数の上限。1 以上の整数 (数字だけ) のときだけ効く。ほかは上限なし */
+    $maxlength = (is_string($maxlength_value) && ctype_digit(trim($maxlength_value))) ?
+	(int)trim($maxlength_value) : 0;
+
     if(!empty($args['calendar_mode'])) {
 	if($args['calendar_mode'] == 'month')
 	    $calendar_mode = 'month';
@@ -155,6 +166,13 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	$week[$w] = $day;
     }
 
+    /* show=title では、表に出る日のページ (2 つ目からを含む) を先に 1 度だけ探す */
+    $day_pages = array();
+    $day_numbers_max = array();
+    $deleted_numbers_max = null;	/* 「＋」を出すときに初めて探す */
+    if($is_title_mode)
+	wiki_operator_calendar_find_day_pages($basepagename, $weeks, $day_pages, $day_numbers_max);
+
     $table = dom_append_child($dom, 'table', 'calendar');
     dom_append_class($table, 'nosort');
     $thead = dom_append_child($table, 'thead');
@@ -195,8 +213,13 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	     * page_read() は読めないページで止まる (403 かログインの要求) ので、1 つ読めない
 	     * だけでカレンダーのあるページ全体が開けなくなっていた。
 	     */
-	    $is_day_page = page_is_exists($day['pagename']) &&
-		auth_has_permission($day['pagename'], 'read');
+	    if($is_title_mode) {
+		$pages_of_day = isset($day_pages[$day['name']]) ? $day_pages[$day['name']] : array();
+		$is_day_page = !empty($pages_of_day);
+	    } else {
+		$is_day_page = page_is_exists($day['pagename']) &&
+		    auth_has_permission($day['pagename'], 'read');
+	    }
 	    if($is_day_page)
 		$classes[] = 'exists';
 
@@ -216,19 +239,35 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	    $dl = dom_append_child($td, 'dl');
 	    $dt = dom_append_child($dl, 'dt', 'day');
 
-	    $uri = url_make($day['pagename']);
-	    $a = dom_append_link($dt, $uri, ''); 
+	    /*
+	     * show=title でページのある日の日付はリンクにしない (行き先が 1 つに決まらない。
+	     * ページへはマスのタイトルから行く)。小さい画面とサイドでは、マスを押すと中身が
+	     * 浮いて出る。日付のリンクが無くなってもキーボードで開けるよう、Tab で止まり
+	     * Enter で開けるようにする (nextform.js の calendarHelperSetup())。
+	     * ページの無い日の日付は今までどおり、1 つ目を作るリンク。
+	     */
+	    $is_date_text = $is_title_mode && $is_day_page;
+	    if($is_date_text) {
+		$day_label = $dt;
+		dom_set_attribute($dt, 'tabindex', '0');
+		dom_set_attribute($dt, 'role', 'button');
+	    } else {
+		$uri = url_make($day['pagename']);
+		$day_label = dom_append_link($dt, $uri, '');
+	    }
+	    /* span.day_detail は日付の中に置く (JavaScript と CSS が小さい画面の見分けに使う) */
 	    if(empty($preday) || $preday['month'] != $day['month']) {
 		$detail_day = substr($day['name'], 0, strlen($day['name']) - strlen($day['day']));
-		$span = dom_append_child($a, 'span', 'day_detail');
+		$span = dom_append_child($day_label, 'span', 'day_detail');
 		dom_append_text($span, $detail_day);
 	    }
-	    dom_append_text($a, $day['day']);
-	    if($is_day_page)
-		dom_set_attribute($a, 'data-link-pagename', $day['pagename']);
-	    
-	    if(!$is_day_page)
-		dom_set_attribute($a, 'rel', 'nofollow');
+	    dom_append_text($day_label, $day['day']);
+	    if(!$is_date_text) {
+		if($is_day_page)
+		    dom_set_attribute($day_label, 'data-link-pagename', $day['pagename']);
+		else
+		    dom_set_attribute($day_label, 'rel', 'nofollow');
+	    }
 
 	    foreach($event_names as $event_name) {
 		$dt = dom_append_child($dl, 'dt', 'event_name');
@@ -236,16 +275,37 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	    }
 
 	    $dd = dom_append_child($dl, 'dd');
-	    if($is_day_page) {
+	    if($is_day_page && $is_title_mode) {
+		wiki_operator_calendar_append_day_pages($dd, $td, $pages_of_day, $maxlength);
+		/*
+		 * 「＋」: 次の番号のページを作るリンク。書ける人にだけ出す。番号は、読めない
+		 * ページと消したページも含めたいちばん大きい番号の次 (消したページの名前を
+		 * 使い回すと、新しいページの履歴に消したページの古い版が出る)。消したページを
+		 * 探すのは、その日に書ける人に出すときだけ。静的な書き出しには出さない
+		 * (無いページへのリンクになる)。data-link-pagename も付けない (付けると
+		 * 書き出しが無いページを書き出そうとしてエラーになる)。
+		 */
+		if(empty($context['page']['is_export']) &&
+		   auth_has_permission($day['pagename'], 'write')) {
+		    if(is_null($deleted_numbers_max))
+			$deleted_numbers_max = wiki_operator_calendar_deleted_numbers_max($basepagename);
+		    $next = max(default_value($day_numbers_max[$day['name']], 1),
+				default_value($deleted_numbers_max[$day['name']], 0)) + 1;
+		    $next_pagename = $day['pagename'] . '_' . $next;
+		    if($next <= DATEPAGE_NUMBER_MAX && auth_has_permission($next_pagename, 'write')) {
+			$a = dom_append_link($dd, url_make($next_pagename), '＋', 'create');
+			dom_set_attribute($a, 'rel', 'nofollow');
+			dom_set_attribute($a, 'title', l('Add a page for this day'));
+			dom_set_attribute($a, 'aria-label', l('Add a page for this day'));
+		    }
+		}
+	    } else if($is_day_page) {
 		$page = page_read($day['pagename']);
 		if(!empty($page['meta']['ticket']))
 		    dom_set_attribute($td, 'data-ref-ticket', $page['meta']['ticket']);
-		$cell_title = (trim($show) === 'title') ? wiki_operator_calendar_cell_title($page) : '';
-		if($cell_title !== '') {
-		    $a = dom_append_page_link($dd, $cell_title, $day['pagename']);
-		    dom_append_class($a, 'title');
-		} else
-		    handle($page, $dd, 'summary');
+		handle($page, $dd, 'summary');
+		if($maxlength > 0)
+		    wiki_operator_calendar_cut_toc($dd, $dd, $maxlength);
 	    } else {
 		dom_append_text($dd, '');
 	    }
@@ -359,6 +419,219 @@ function wiki_operator_calendar_cell_title(&$page) {
 	    return trim($page['meta'][$key]);
     }
     return '';
+}
+
+/*
+ * show=title のときの日のページ。親の子ページを 1 度だけ探し、表に出る日の
+ * YYYY-MM-DD と YYYY-MM-DD_N (util.inc の DATEPAGE_NUMBER_REGEX) を拾う。
+ *   $day_pages[日付][番号]  ページ名。読めるものだけ、番号順
+ *   $numbers_max[日付]      いちばん大きい番号。読めないページも含める (「＋」の番号)
+ * page_find() は名前だけを見て、読む権限は確かめない。キャッシュに消したページが
+ * 残っていることがあるので、表に出る日のものは page_is_exists() で確かめる。
+ * 親が空のときは探さない (サイト全体を探すことになる)。1 つ目だけを見る。
+ */
+function wiki_operator_calendar_find_day_pages($basepagename, &$weeks, &$day_pages, &$numbers_max) {
+    $dates = array();
+    foreach($weeks as $week) {
+	foreach($week as $day)
+	    $dates[$day['name']] = true;
+    }
+
+    $names = array();
+    if($basepagename === '') {
+	foreach($dates as $date => $dummy)
+	    $names[] = '/' . $date;
+    } else {
+	$found = page_find($basepagename, wiki_operator_calendar_day_pages_condition($basepagename));
+	foreach($found as $found_page)
+	    $names[] = $found_page['name'];
+    }
+
+    foreach($names as $name) {
+	$parsed = datepage_parse($name);
+	if($parsed === false || !isset($dates[$parsed['date']]) || !page_is_exists($name))
+	    continue;
+	$date = $parsed['date'];
+	if(!isset($numbers_max[$date]) || $numbers_max[$date] < $parsed['number'])
+	    $numbers_max[$date] = $parsed['number'];
+	if(auth_has_permission($name, 'read'))
+	    $day_pages[$date][$parsed['number']] = $name;
+    }
+    foreach($day_pages as &$pages)
+	ksort($pages);
+}
+
+/* 日のページを探す条件 (親の子ページのうち、日付のページの名前のもの) */
+function wiki_operator_calendar_day_pages_condition($basepagename) {
+    return array(
+	'is_pagename_only' => true,
+	'is_children_only' => true,
+	'name_regex' => '|^' . preg_quote($basepagename . '/', '|') .
+			DATEPAGE_REGEX . DATEPAGE_NUMBER_REGEX . '$|',
+	);
+}
+
+/* 消した日のページのいちばん大きい番号 (日付ごと)。「＋」が消したページの名前を使わないように */
+function wiki_operator_calendar_deleted_numbers_max($basepagename) {
+    $numbers_max = array();
+    if($basepagename === '')
+	return $numbers_max;
+    $found = page_find_deleted($basepagename, wiki_operator_calendar_day_pages_condition($basepagename));
+    foreach($found as $found_page) {
+	$parsed = datepage_parse($found_page['name']);
+	if($parsed === false)
+	    continue;
+	if(!isset($numbers_max[$parsed['date']]) || $numbers_max[$parsed['date']] < $parsed['number'])
+	    $numbers_max[$parsed['date']] = $parsed['number'];
+    }
+    return $numbers_max;
+}
+
+/*
+ * show=title のページのある日のマスの中身。ページを番号順に箇条書き (ul.day_pages) に並べる。
+ * 項目ごとにそのページの data-ref-pagename と data-ref-ticket を付ける (一覧 &pages の項目と
+ * 同じ。その項目の上でダブルクリックすると、そのページを編集する)。マス (td) の ticket は
+ * 1 つ目のもので、1 つ目が無ければ付けない (マスのダブルクリックは 1 つ目を編集する)。
+ * 各ページは、短いタイトル → タイトル → (どちらも無ければ) 目次。
+ */
+function wiki_operator_calendar_append_day_pages($dd, $td, &$pages_of_day, $maxlength) {
+    $ul = dom_append_child($dd, 'ul', 'day_pages');
+    foreach($pages_of_day as $number => $pagename) {
+	$page = page_read($pagename);
+	$ticket = default_value($page['meta']['ticket'], '');
+	if($number == 1 && $ticket !== '')
+	    dom_set_attribute($td, 'data-ref-ticket', $ticket);
+
+	$li = dom_append_child($ul, 'li');
+	dom_set_attribute($li, 'data-ref-pagename', $pagename);
+	dom_set_attribute($li, 'data-ref-ticket', $ticket);
+
+	$title = wiki_operator_calendar_cell_title($page);
+	if($title !== '') {
+	    $text = wiki_operator_calendar_cut_string($title, $maxlength);
+	    $a = dom_append_page_link($li, $text, $pagename);
+	    dom_append_class($a, 'title');
+	    if($text !== $title)
+		dom_set_attribute($a, 'title', $title);
+	} else {
+	    wiki_operator_calendar_append_toc($li, $page);
+	    if($maxlength > 0)
+		wiki_operator_calendar_cut_toc($li, $li, $maxlength);
+	}
+    }
+}
+
+/*
+ * タイトルの無いページの目次 (show=title のとき)。種別の summary を直に呼ぶ。handle() を
+ * 通すと、カレンダーを開いただけでそのページを「読んだ」ことになる (一覧の目次と同じ考え)。
+ * 見出しはリンクにする (ツールの「目次」と同じ)。
+ * 日付がリンクでないので、そのページへのリンク (data-link-pagename) が 1 本も無ければ
+ * (見出しの無いページ・text・file・本文が空)、中身をそのページへのリンク 1 本に置き換える。
+ * リンクの文字は中身の文字 (書き出し)、文字も無ければページ名の最後の部分。
+ */
+function wiki_operator_calendar_append_toc($li, &$page) {
+    $summary = handler_function($page, 'summary');
+    if($summary !== false && function_exists($summary)) {
+	$toc_page = $page;
+	$summary($toc_page, $li, true);
+    }
+
+    $xpath = new DOMXPath(dom_owner($li));
+    foreach($xpath->query('.//a[@data-link-pagename]', $li) as $a) {
+	if($a->getAttribute('data-link-pagename') === $page['name'])
+	    return;
+    }
+    $text = trim($li->textContent);
+    while($li->firstChild)
+	$li->removeChild($li->firstChild);
+    dom_append_page_link($li, $text !== '' ? $text : page_get_simplename($page['name']), $page['name']);
+}
+
+/* 見た目の 1 文字 (書記素) ずつに分ける。不正な UTF-8 などで分けられなければ false */
+function wiki_operator_calendar_graphemes($text) {
+    if(preg_match_all('/\X/u', $text, $matches) === false)
+	return false;
+    return $matches[0];
+}
+
+/* $maxlength 文字 (見た目の 1 文字を 1) を超えたら切って「…」を付ける。0 は上限なし */
+function wiki_operator_calendar_cut_string($text, $maxlength) {
+    if($maxlength <= 0)
+	return $text;
+    $chars = wiki_operator_calendar_graphemes($text);
+    if($chars === false || count($chars) <= $maxlength)
+	return $text;
+    return implode('', array_slice($chars, 0, $maxlength)) . '…';
+}
+
+/*
+ * 目次 ($node の中) の文字を出てくる順に数え、$maxlength 文字に来たところで切って「…」を
+ * 付ける (先頭の見出しの途中で切れることもある)。後ろの文字は消し、空になった項目や入れ子の
+ * 箇条書きも消す。残った見出しはリンクのまま。文字のかたまりの前後の空白は数えない。
+ * 切ったときは、$title_holder の title 属性に見出しの全文を 1 行に 1 つずつ入れる
+ * (マウスを載せると出る)。数えられない文字があれば切らない。
+ */
+function wiki_operator_calendar_cut_toc($node, $title_holder, $maxlength) {
+    $xpath = new DOMXPath(dom_owner($node));
+    $texts = array();
+    $total = 0;
+    foreach($xpath->query('.//text()', $node) as $text) {
+	$chars = wiki_operator_calendar_graphemes(trim($text->data));
+	if($chars === false)
+	    return false;
+	$texts[] = array('node' => $text, 'chars' => $chars);
+	$total += count($chars);
+    }
+    if($total <= $maxlength)
+	return false;
+
+    $lines = wiki_operator_calendar_toc_lines($node, $xpath);
+    $left = $maxlength;
+    $is_cut = false;
+    foreach($texts as $text) {
+	if($is_cut) {
+	    $parent = $text['node']->parentNode;
+	    $parent->removeChild($text['node']);
+	    /* 空になった項目・リンク・箇条書きを、$node の手前まで消す */
+	    while($parent !== $node && trim($parent->textContent) === '' &&
+		  $parent->getElementsByTagName('img')->length == 0) {
+		$grandparent = $parent->parentNode;
+		$grandparent->removeChild($parent);
+		$parent = $grandparent;
+	    }
+	    continue;
+	}
+	$count = count($text['chars']);
+	if($count == 0)
+	    continue;
+	if($count < $left) {
+	    $left -= $count;
+	    continue;
+	}
+	$text['node']->data = implode('', array_slice($text['chars'], 0, $left)) . '…';
+	$is_cut = true;
+    }
+    dom_set_attribute($title_holder, 'title', implode("\n", $lines));
+    return true;
+}
+
+/* 目次の見出しの文字 (項目ごとに 1 つ。入れ子の箇条書きは除く)。項目が無ければ中身の文字 */
+function wiki_operator_calendar_toc_lines($node, $xpath) {
+    $items = $xpath->query('.//li', $node);
+    if($items->length == 0)
+	return array(trim($node->textContent));
+    $lines = array();
+    foreach($items as $item) {
+	$line = '';
+	foreach($item->childNodes as $child) {
+	    if(!($child instanceof DOMElement && strtolower($child->nodeName) === 'ul'))
+		$line .= $child->textContent;
+	}
+	$line = trim($line);
+	if($line !== '')
+	    $lines[] = $line;
+    }
+    return $lines;
 }
 
 function wiki_operator_calendar_get_dayrules($rules_text) {

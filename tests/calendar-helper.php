@@ -6,6 +6,12 @@
  *
  * 検査名:
  *   write <名前> <種別> <本文>    normalize を通して保存する (written=1/0)
+ *   delete <名前>                 ページを消す (deleted=1/0)
+ *   render <名前> [calendar の値] 管理者 (書ける人) としてページの本文を描いた HTML
+ *   views <名前>                  種別 wiki のページを描き、そのあいだに「読んだ」と
+ *                                 記録されたページ (views=<空白区切り>)
+ *   keepout <ページ名..>          ログインしていない利用者にそのページだけ読ませない
+ *                                 (ほかは read だけ。書かせない。saved=1/0)
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  * ページを書くので、必ず複製したサイトに対して実行すること。
@@ -49,6 +55,44 @@ switch($check) {
 
 case 'write':
     printf("written=%d\n", test_write($rest[0], $rest[1], $rest[2]) ? 1 : 0);
+    break;
+
+case 'delete':
+    $page = page_read($rest[0]);
+    printf("deleted=%d\n", page_delete($page) ? 1 : 0);
+    break;
+
+case 'render':
+    $page = page_read($rest[0]);
+    $page['is_main'] = true;
+    $page['args'] = array();
+    if(isset($rest[1]))
+	$page['args']['calendar'] = $rest[1];
+    $dom = dom_create_document();
+    wiki_convert($page, $dom);
+    echo(dom_save_html($dom));
+    echo("\n");
+    break;
+
+case 'views':
+    global $USER_HISTORY_PAGE_VIEW;
+    $USER_HISTORY_PAGE_VIEW = array('pages' => array());
+    $page = page_read($rest[0]);
+    $page['is_main'] = true;
+    $page['args'] = array('calendar' => '2026-08');
+    wiki_convert($page, dom_create_document());
+    printf("views=%s\n", implode(' ', array_keys($USER_HISTORY_PAGE_VIEW['pages'])));
+    break;
+
+case 'keepout':
+    /* ページごとの権限は先に書いたものから当てはめられるので、'*' を最後に置く */
+    global $AUTH_PERMISSIONS;
+    $permission = array();
+    foreach($rest as $pagename)
+	$permission[$pagename] = 'keepout';
+    $permission['*'] = 'read';
+    $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = $permission;
+    printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
     break;
 
 default:

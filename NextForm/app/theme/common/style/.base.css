@@ -387,6 +387,25 @@ table.calendar .summary ul {
     padding: 0;
     margin: 0 0 0 8px;
 }
+/*
+ * &calendar(show=title) の同じ日のページ。1 ページずつ並べ、印は付けない
+ * (1 ページのときは今までのタイトルと同じ見た目)。「＋」は次の番号のページを作る
+ * リンクで、字は小さく、指で押せるだけの大きさを取る。
+ */
+table.calendar dl dd ul.day_pages {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+table.calendar dl dd a.create {
+    display: inline-block;
+    min-width: 24px;
+    min-height: 24px;
+    line-height: 24px;
+    text-align: center;
+    font-size: 75%;
+    text-decoration: none;
+}
 table.calendar td.month_border.border_top {
     border-top: solid 2px black;
 }
