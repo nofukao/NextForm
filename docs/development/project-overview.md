@@ -1183,7 +1183,8 @@ AND は 2-gram 索引の候補の**交差**で実現している (`search_builti
 設計・却下した案は [design-calendar-day-pages.md](design-calendar-day-pages.md)。調べている途中で見つけた
 3 件 (差分の書き出しでカレンダーのページを飛ばす、URL の日付を時間帯によって前の日に読む、浮き出しの
 使われていない写し) は、利用者の指示 (2026-11-08) で、機能より先に別のブランチで直した (§10)。
-Mermaid 12.3.0 への更新もこの版に入れる予定。
+Mermaid は 12.3.0 に上げた (2026-11-08。elkjs 0.12 で ELK 本体は GPL も選べるようになったが、中の EMF・Xtext は
+EPL のままなので扱いは変えない。[design-markdown-mermaid.md](design-markdown-mermaid.md) §8)。
 
 ## 7. 確定した設計判断 (2026-08-02)
 

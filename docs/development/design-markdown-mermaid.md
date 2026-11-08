@@ -453,3 +453,34 @@ ES5 で書く (判断。古いブラウザでも構文エラーにならず、�
 問題が無かったところ: `securityLevel` などを図の中から緩める書き方、`classDef` の CSS の閉じ込め、
 `javascript:` のリンク、ツールチップ、SVG の差し込み方、図の id、1 ページに 1 回の判定、プレビュー、
 設定の判定、スクロールの補正、部品のライセンスの洗い出し。
+
+---
+
+## 8. 12.3.0 へ上げた (2026-11-08)
+
+利用者の判断 (2026-11-05 に次の版へ送り、2026-11-08 に進める)。12.3.0 (2026-11-03) は 12 系の最新で、
+Mermaid の勧告は 12 系には出ていない。変わった部品:
+
+| 部品 | 12.2.0 | 12.3.0 |
+|---|---|---|
+| DOMPurify | 3.4.12 | 3.4.17 (GHSA-55q2-fjhq-7xh7・GHSA-6688-9rhm-gjv2。どちらも `IN_PLACE` で呼んだときだけで、NextForm は該当しない) |
+| elkjs (ELK) | 0.9.3、EPL-2.0 | **0.12.0、EPL-2.0 OR GPL-3.0-or-later** |
+| elkjs の中の Xtext の実行用ライブラリ | 2.28.0、EPL-2.0 | 2.36.0、EPL-2.0 |
+| elkjs の中の EMF (GWT 版) | 2.12.4、EPL-1.0 | 2.12.4、EPL-1.0 (変わらない) |
+| elkjs の中の GWT | 2.10.0 | 2.11.0 (Apache-2.0) |
+| js-yaml | 4.3.0 | 4.3.2 |
+| uuid | 14.0.0 | 入っていない (Mermaid が使うのをやめた) |
+
+- **ELK 本体は GPL と両立するようになったが、elkjs に組み込まれた EMF (EPL-1.0) と Xtext の実行用
+  ライブラリ (EPL-2.0) は EPL だけのまま。** なので `diagram.js` の GPLv3 §7 の追加の許可と、同梱物の
+  規約 (§3.7) の例外は、そのまま要る。許可の条文 (「elkjs とその中に組み込まれたライブラリ」) は
+  12.3.0 にもそのまま当てはまるので変えていない。
+- 取り込みの道具 (`update-mermaid.py`) は、GPL-3.0 (only / or-later) を両立するライセンスの表に足し、
+  elkjs が GPL を選べる版なら、`THIRD-PARTY-LICENSES.txt` に「ELK 本体は二重ライセンス、EPL だけの
+  部品は EMF と Xtext」と書くようにした。`LICENSE`・`license.txt`・`diagram.js` のコメント・CLAUDE.md の
+  注も同じ中身に直した。
+- 12.3.0 の変更は、新しい図形 (BPMN)・矢印・流れ図の動き (`step`。`prefers-reduced-motion` では
+  動かない) と不具合の直し。`diagram.js` が使う設定 (`securityLevel`・`dompurifyConfig` など) と呼び方は
+  変わっていない。
+- 取り込んだ tgz の sha512 は npm の登録所の値と一致した。`tests/mermaid.sh` (サーバー側 26 件) が通る。
+  ブラウザでの確かめ (`BROWSER=1 ./tests/mermaid.sh` が出すページ) は利用者に見てもらう。

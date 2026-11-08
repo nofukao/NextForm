@@ -38,8 +38,9 @@
  * コードブロックのまま出るので、JavaScript が無効でも、読み込めなくても、
  * コードとして読める。
  *
- * **このファイルは nextform.js の関数を呼ばない。** Mermaid の中の ELK などは
- * EPL で GPLv3 と両立しない。Mermaid と組み合わさる GPL のコードをこのファイル
+ * **このファイルは nextform.js の関数を呼ばない。** Mermaid の中の elkjs に組み込まれた
+ * EMF と Xtext の実行用ライブラリは EPL だけで、GPLv3 と両立しない (ELK 本体は
+ * elkjs 0.12 から GPL も選べる)。Mermaid と組み合わさる GPL のコードをこのファイル
  * だけに閉じて、上の追加の許可を付けている (docs/development/
  * design-markdown-mermaid.md §2.6)。画面の文言はサーバーが <meta> で渡す。
  * 同じ理由で ES5 で書く。古いブラウザでも構文エラーにならず「描けない」と出せる。
