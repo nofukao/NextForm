@@ -25,8 +25,13 @@ function wiki_operator_popularpages(&$context, $dom, $tree) {
     }
 
     $pagename = '';
+    /*
+     * マニュアル (NextFormManual 以下) を除く (&pages・&recent と同じ。withsystem で含める)。
+     * 以前はこの指定を $list_options に入れていて、ページを探す条件に届かず、
+     * 0.6.0 までに焼き付けたマニュアルのページが保存先に残るサイトでは一覧に出ていた。
+     */
+    $find_condition = array('is_ignore_system_page' => true);
     $list_options = array(
-	'is_ignore_system_page' => true,
 	'limit' => 10,
 	'fields' => "[[title-pagename]] (pageview)",
 	'display_rules' => array(
