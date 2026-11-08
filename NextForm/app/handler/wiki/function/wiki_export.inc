@@ -51,7 +51,7 @@ function wiki_operator_export(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/FunctionAdvanced
-|export button|&&export(&[&[page name&]&], directory=destination directory path);|
+|[[export button:../../Function/export]]|&&export(&[&[page name&]&], directory=destination directory path);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/export

@@ -169,6 +169,9 @@ docs/wiki/作業記録/2026-10.md → ページ 作業記録/2026-10
 
 - **題名**: フロントマターの `title:` を書く。無ければ、本文の先頭の `#` 見出しが題名に
   なる (本文に `#` の見出しが 1 つだけのとき。`#` が 2 つ以上あると題名にならない)。
+- **短いタイトル**: 置き場所で分かること (日付など) を除いた題名を、同じフロントマターの
+  `short_title:` に書ける (NextForm 0.21.0 以降)。カレンダーのマスに出る。利用者や依頼に
+  指定があるときだけ書く。
 
   ```markdown
   ---
@@ -219,7 +222,7 @@ docs/wiki/作業記録/2026-10.md → ページ 作業記録/2026-10
 |---|---|---|
 | 0 | 成功 (`--dry-run` なら「書ける」) | — |
 | 1 | 断った。何も変えていない | `unknown_user` `guest_user` `no_permission` `exists` `locked` `type_mismatch` `not_text` `manual` `interrupted` |
-| 2 | 使い方の誤り | `invalid_name` `invalid_type` `empty_body` `invalid_encoding` `not_site_owner` |
+| 2 | 使い方の誤り | `invalid_name` `invalid_type` `empty_body` `invalid_encoding` `not_site_owner` `invalid_site` |
 | 3 | ページが無い (`read`) | `not_found` |
 | 4 | 保存できなかった | `write_failed` (`message` に理由) |
 

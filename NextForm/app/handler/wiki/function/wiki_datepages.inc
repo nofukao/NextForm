@@ -65,7 +65,7 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|list calendar pages|&&datepages(&[&[page name&]&], past, future);|
+|[[list calendar pages:../../Function/datepages]]|&&datepages(&[&[page name&]&], past, future);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/datepages
@@ -84,16 +84,18 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
 :past|現在から過去の日付のページを表示します．デフォルトで指定されています．
 :future|現在から未来の日付のページを表示します．
 :all|すべてのページを表示します．
-:reverse|表示の順序を逆にします．
+:reverse|新しい日付のページから表示します．デフォルトで指定されています(futureでは古い日付から表示します)．逆にするには!reverseと書きます．
 :each=表示ページ数|一度に表示する子ページの数を指定します．デフォルトは30です．日の数ではなくページの数です．
-:年-月-日|pastとfutureの基準を現在ではなく指定した日付にします．
+:年-月-日|pastとfutureの基準を現在ではなく指定した日付にします．past・future・allなどの後ろ(名前の付いていないパラメータの最後)に書きます．
+
+[[&&pages:../pages]]のパラメータ(show=toc，fields=，name=など)も使用できます．
 
 *対象
 対象は指定しません．
 
 *例
 ''予定''の子ページのうち2012-07-01から未来の子ページを20件づつ一覧表示します．
- &datepages([[予定]]], future, 20, 2012-07-01);
+ &datepages([[予定]], future, each=20, 2012-07-01);
 */
 
 
@@ -116,15 +118,17 @@ of a day comes before the first.
 :past|show pages dated from now into the past. Set by default.
 :future|show pages dated from now into the future.
 :all|show every page.
-:reverse|reverse the order they are shown in.
+:reverse|show the newest dates first. Set by default (with future, the oldest dates come first). Write !reverse to turn it around.
 :each=pages to show|how many child pages to show at a time. The default is 30. It counts pages, not days.
-:year-month-day|take the date given, rather than now, as the point past and future are measured from.
+:year-month-day|take the date given, rather than now, as the point past and future are measured from. Write it after past, future, all and so on (as the last of the parameters without a name).
+
+The parameters of [[&&pages:../pages]] (show=toc, fields=, name= and so on) can be used too.
 
 *Target
 No target is given.
 
 *Example
 Lists the child pages of ''Schedule'' dated from 2012-07-01 into the future, 20 at a time.
- &datepages([[Schedule]]], future, 20, 2012-07-01);
+ &datepages([[Schedule]], future, each=20, 2012-07-01);
 */
 ?>

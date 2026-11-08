@@ -167,7 +167,7 @@ $WIKI_ALIASES['bbs'] =
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|bulletin board|&&bbs;|
+|[[bulletin board:../../Function/bbs]]|&&bbs;|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/bbs

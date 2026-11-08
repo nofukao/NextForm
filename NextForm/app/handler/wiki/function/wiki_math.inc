@@ -143,7 +143,7 @@ function wiki_option_math_show(&$args, $dom) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|mathematical formula|&&math(inline, dpi=dpi of image){tex format}|
+|[[mathematical formula:../../Function/math]]|&&math(inline, dpi=dpi of image){tex format}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/math
@@ -159,7 +159,7 @@ function wiki_option_math_show(&$args, $dom) {
 :{inline|数式の高さを文中に収まるようにします．文中に数式を書く場合に使用します．
 &&mathの代わりに&&mathiと書くことでinlineを指定することもできます．
 }
-:dpi=画像のDPI|数式を画像に変換する際のDPIを設定します．数式の大きさを決定します．デフォルトは120です．
+:dpi=画像のDPI|数式を画像に変換する際のDPIを設定します．数式の大きさを決定します．デフォルトは120です．数字だけを書いても同じです．2から300の範囲で作ります．
 
 *対象
 対象には数式を書きます．数式はTeXの表記方法です．
@@ -194,7 +194,7 @@ To enable it, set the setting WIKI_MATH_ENABLE to 'true'. Enabling it calls for 
 sentence.
 Writing &&mathi instead of &&math also sets inline.
 }
-:dpi=DPI of the image|set the DPI used when turning the formula into an image. It decides the size of the formula. The default is 120.
+:dpi=DPI of the image|set the DPI used when turning the formula into an image. It decides the size of the formula. The default is 120. Writing just the number does the same. It is kept between 2 and 300.
 
 *Target
 Write the formula as the target. Formulas are written in TeX notation.

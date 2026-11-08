@@ -26,6 +26,9 @@ function wiki_operator_search(&$context, $dom, $tree) {
 *パラメータ
 パラメータは指定しません．
 
+サイトの検索の画面と同じ書き方(ORや-語，title:など)で探せます．マニュアルは含めずに探します
+([[検索:../../../SiteMenu#検索]])．
+
 *対象
 対象は指定しません．
 

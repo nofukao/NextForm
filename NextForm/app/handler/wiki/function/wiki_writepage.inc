@@ -58,7 +58,7 @@ function wiki_operator_writepage(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/FunctionAdvanced
-|page editing form|&&writepage(&[&[page name&]&], move){template}|
+|[[page editing form:../../Function/writepage]]|&&writepage(&[&[page name&]&], move){template}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/writepage
@@ -122,7 +122,7 @@ $WIKI_ALIASES['newpage'] = '&writepage(pagename, sequence, <PARAMS>){<TARGET>}';
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/FunctionAdvanced
-|create new page form|&&newpage(&[&[page name&]&], pagename, sequence){template}|
+|[[create new page form:../../Function/newpage]]|&&newpage(&[&[page name&]&], pagename, sequence){template}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/newpage

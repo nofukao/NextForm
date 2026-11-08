@@ -36,11 +36,11 @@ function wiki_operator_title(&$context, $dom, $tree) {
 
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[タイトルの設定:../../Function/title]]|&&title(show){タイトル}|
+|[[タイトルの設定:../../Function/title]]|&&title(show){タイトル} &&title(short){短いタイトル}|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|page title|&&title(show){page title}|
+|[[page title:../../Function/title]]|&&title(show){page title} &&title(short){short title}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/title
@@ -107,7 +107,7 @@ It is ''the text'' that decides the title.
 &&title overrides the title set in the metadata of the page.
 Remove &&title from the source and save, and ''the title in the metadata is
 removed too''.
-A title set on the metadata screen is replaced the next time the text is saved.
+A title set on the ''Meta info'' screen is replaced the next time the text is saved.
 This is so that the state of a page can be seen from its source.
 
 The front matter (""title:"") of a page of type Markdown follows the same promise.

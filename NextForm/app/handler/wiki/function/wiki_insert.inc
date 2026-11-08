@@ -102,7 +102,7 @@ function wiki_option_insert_write_value(&$page, $page_dom, &$contents, $position
 :{url|URLの入力を許可します．デフォルトで指定されています．
 無効にする場合は!urlと指定します．}
 :japanese|日本語を含む入力のみ許可します．
-:hint=入力のヒント|このフォームに何を入力するかのヒントを指定します．(placeholder属性を使用するためIEでは効果がありません．)
+:hint=入力のヒント|このフォームに何を入力するかのヒントを指定します．入力欄に薄く表示されます．
 :label=ラベル|ボタンに表示される文字を指定します．
 
 *対象

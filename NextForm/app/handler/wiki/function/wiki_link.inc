@@ -136,7 +136,7 @@ function wiki_operator_link_url_encode_replace($matches) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|functional link|&&link(&[&[page name&]&], edit){link words}|
+|[[functional link:../../Function/link]]|&&link(&[&[page name&]&], edit); or &&link(URL, open);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/link
@@ -186,7 +186,7 @@ function wiki_operator_link_url_encode_replace($matches) {
 &wikiexample{
 &link(edit){ここ}をクリックしてこのページを編集
 
-&link([[Side]],edit,open){新しいタブでメニューバーを編集する}
+&link([[Side]],edit,open){新しいタブでサイドバーを編集する}
 
 &link(http://www.google.com, open);
 }
@@ -200,7 +200,7 @@ $WIKI_ALIASES['direct'] = '&link(raw,<PARAMS>){<TARGET>}';
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|direct link to image or file|&&direct(&[&[page name&]&]){link words}|
+|[[direct link to image or file:../../Function/direct]]|&&direct(&[&[page name&]&]){link words}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/direct
@@ -299,7 +299,7 @@ the URL.
 :delete|make it a link to the delete screen.
 :rename|make it a link to the rename screen.
 :attach|make it a link to the attach screen.
-:meta|make it a link to the metadata.
+:meta|make it a link to the ''Meta info'' screen.
 :debuginfo|make it a link to the debug information screen.
 :newpage|make it a link to the new page screen.
 :allpage|make it a link to the list of all pages.

@@ -115,7 +115,7 @@ function wiki_operator_analyze_parse_parameters(&$context, $tree, &$condition) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|counter|&&counter(total, today, yesterday, allpages);|
+|[[counter:../../Function/counter]]|&&counter(total, today, yesterday, allpages);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/counter
@@ -167,18 +167,18 @@ day=0はtodayと，day=1はyesterdayと同じ効果になります．
 
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[人気のページ一覧:../../Function/popularpages]]|&&popularpages(total, today, yesterday, allpages, 件数);|
+|[[人気のページ一覧:../../Function/popularpages]]|&&popularpages(&[&[ページ名&]&], total, today, yesterday, 件数);|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|list of popular pages|&&popularpages(total, today, yesterday, allpages, number of pages);|
+|[[list of popular pages:../../Function/popularpages]]|&&popularpages(&[&[page name&]&], total, today, yesterday, number of pages);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/popularpages
 &title &&popularpages
 
 *概要
- &popularpages(total, today, yesterday, day=N, days=N, 件数);
+ &popularpages([[ページ名]], total, today, yesterday, day=N, days=N, 件数);
 人気のページ(アクセス数の多いページ)をアクセスの多い順に一覧表示します．
 
 アクセス数は，サイトの管理者であれば''管理ツール'' -> ''アクセス解析''からでも確認できます．
@@ -228,7 +228,7 @@ it is updated at a regular interval.
 Repeated accesses to the same page by the same user in a short time are not counted.
 
 The administrator of the site can also see the value of the counter at
-''Admin tools'' -> ''Access analysis''.
+''Admin tools'' -> ''Access analyzer''.
 
 *Note
 If you installed NextForm yourself, the administrator of the web server has to set up
@@ -270,11 +270,11 @@ No target is given.
 &title &&popularpages
 
 *Overview
- &popularpages(total, today, yesterday, day=N, days=N, number of pages);
+ &popularpages([[page name]], total, today, yesterday, day=N, days=N, number of pages);
 Lists the popular pages (the pages with the most accesses), most accessed first.
 
 The administrator of the site can also see the numbers of accesses at
-''Admin tools'' -> ''Access analysis''.
+''Admin tools'' -> ''Access analyzer''.
 
 *Note
 If you installed NextForm yourself, the administrator of the web server has to set up

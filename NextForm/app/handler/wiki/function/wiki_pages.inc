@@ -132,7 +132,7 @@ function wiki_operator_pages_parse_parameters(&$context, $tree, &$pagename, &$fi
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/FunctionAdvanced
-|list of pages (customizable)|&&pages(&[&[page name&]&], number of pages);|
+|[[list of pages (customizable):../../Function/pages]]|&&pages(&[&[page name&]&], number of pages);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/pages
@@ -166,7 +166,9 @@ function wiki_operator_pages_parse_parameters(&$context, $tree, &$pagename, &$fi
 :show=list|箇条書きでページを列挙します．デフォルトで指定されています．
 :show=tree|子ページを入れ子にしたツリー状の箇条書きでページを列挙します．
 :show=table|表でページ一覧を表示します．fieldsパラメータで表示したい項目を指定します．
-:show=contents|ページ名だけでなくページの内容も表示します．
+:{show=contents|ページ名だけでなくページの内容も表示します．内容は&&moreより前の部分です．
+show=contentsの一覧に出たページの中の&&pages(show=contents)は表示されません．}
+:show=date|更新した日ごとにまとめた箇条書きでページを列挙します(&&recentはこの形です)．
 :{show=toc|箇条書きでページを列挙し，各ページの下にそのページの目次(見出しの一覧)を閉じた折りたたみで付けます．
 押すと開きます．目次の項目はその見出しへのリンクです．
 種別wikiと種別Markdownのページで，見出しがあるときだけ付きます．
@@ -175,12 +177,14 @@ eachを指定しないときは50件ずつ表示します．
 サイドページには置かないでください(サイドページはどのページを開いても表示されるため，すべてのページが遅くなります)．
 }
 }
-:limit=件数|指定した件数のみ表示します．
+:limit=件数|指定した件数のみ表示します．数字だけを書いても同じです(&&pages(&[&[ページ名&]&], 10))．
 :{each=件数|一度に指定した件数だけ表示します．超えた分は次のページに表示されるようになります．
 0を指定すると全件を表示します．
 }
 :{name=ページ名|上記の&[&[ページ名&]&]で指定したページの子ページのうち，
 さらにここで指定したページ名のページだけを表示します．
+ページ名は全体(''日記/2026-11-08''の形)と比べます．子ページの名前で絞るときは，
+name=日記/2026-&* のように親のページ名から書きます(name=2026-&* では1件も出ません)．
 &*や?などのワイルドカードが使用できます．
 name=!ページ名 のように書くとこのページ名以外のページを表示します．
 name=ページ名1 ページ名2 ...のように複数書くといずれか(or)の条件になります．
@@ -199,7 +203,7 @@ tag=タグ1 タグ2 ...のように複数書くといずれか(or)の条件に�
 tag=タグ1, tag=タグ2, tag=..のように書くとすべてのタグを持つ(and)条件になります．
 }
 :{sort=順序|sort=mtimeの場合更新日時の順に, sort=btimeの場合作成日時の順に，
-sort=sizeの場合ページの容量の順に並び替えをします．
+sort=sizeの場合ページの容量の順に，sort=pageviewの場合アクセス数の多い順に並び替えをします．
 指定がない場合はページ名の順に表示されます．}
 :reverse|逆順に表示します．
 :children|直接の子ページのみを表示します．すなわち孫ページは表示されません．
@@ -218,6 +222,10 @@ sort=sizeの場合ページの容量の順に並び替えをします．
 :bdate|ページの作成日
 :editor|最終更新者
 :creator|作成者
+:type|ページの種別
+:size|ページの容量
+:content_type|ファイルの形式(種別fileのページ)
+:pageview|アクセス数(sort=pageviewのときと&&popularpages)
 :edit|編集ボタン
 :delete|削除ボタン
 :テンプレートで抽出した項目名|テンプレート(後述)で抽出した項目名
@@ -287,7 +295,7 @@ fields, header, footerパラメータで使用できるようになります．
  状態:完了|none,                   //状態が完了のタスクは表示しない,
  状態#提案/保留/着手/完了,         //状態が提案, 保留, 着手, 完了の順番で並び替え,
  優先度#高/中/低,                  //状態が同じ場合は優先度で並び替え,
- 更新日時#desc,                    //さらに優先度が同じ場合は更新日時で並び替え,
+ mtime#desc,                       //さらに優先度が同じ場合は更新日時で並び替え,
  ) {
  &title @タイトル=&insert(once) ここにタイトル@
  :カテゴリ|&select($bq$本体機能/プラグイン/デザイン$bq$)@カテゴリ@
@@ -369,14 +377,14 @@ $WIKI_ALIASES['childpages'] = '&pages(show=list, children, fields=[[title]], <PA
  &childpages;
 
 *エイリアス
-&&listpagesは以下のように定義されたエイリアスです．
+&&childpagesは以下のように定義されたエイリアスです．
 &pre{`$WIKI_ALIASES['childpages']`}
 */
 
 $WIKI_ALIASES['treepages'] = '&pages(show=tree, <PARAMS>){<TARGET>}';
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[ページ一覧(ツリー表示):../../Function/treepages]]|&&treepages(&[&[ページ名&]&]);|
+|[[ページ一覧(ツリー表示):../../Function/treepages]]|&&treepages(&[&[ページ名&]&], 件数);|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
@@ -513,11 +521,11 @@ $WIKI_ALIASES['blogpages'] =
     'footer=\'tags@'.l('Tags').'\' \'mtime@'.l('Last updated').'\', each=10, <PARAMS>){<TARGET>}';
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[ブログ記事一覧:../../Function/blogpages]]|&&blogpages(&[&[ページ名&]&], 件数);|
+|[[ブログ記事一覧:../../Function/blogpages]]|&&blogpages(&[&[ページ名&]&], each=件数);|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|list of blog articles|&&blogpages(&[&[page name&]&], number of articles);|
+|list of blog articles|&&blogpages(&[&[page name&]&], each=number of articles);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/blogpages
@@ -728,7 +736,9 @@ Write &[&[&]&] to cover every page.}
 :show=list|list the pages as a bulleted list. Set by default.
 :show=tree|list the pages as a tree, with child pages nested.
 :show=table|show the list of pages as a table. Name the fields you want with the fields parameter.
-:show=contents|show the contents of the pages as well as their names.
+:{show=contents|show the contents of the pages as well as their names. The contents are the part before &&more.
+A &&pages(show=contents) inside a page listed by show=contents shows nothing.}
+:show=date|list the pages as a bulleted list grouped by the date they were modified (&&recent uses this).
 :{show=toc|list the pages as a bulleted list, with the table of contents (the list of
 headings) of each page below it in a closed fold. Press it to open it. The items of the
 table of contents are links to the headings.
@@ -739,12 +749,14 @@ Do not put it on the side page (the side page is shown with every page, so every
 would become slow).
 }
 }
-:limit=number|show only the given number of pages.
+:limit=number|show only the given number of pages. Writing just the number does the same (&&pages(&[&[page name&]&], 10)).
 :{each=number|show the given number at a time. The rest go onto the next page.
 Give 0 to show them all.
 }
 :{name=page name|of the child pages of the &[&[page name&]&] above, show only the pages
 whose name is given here.
+The whole page name (in the form ''Diary/2026-11-08'') is compared. To narrow by the name of
+the child page, write it from the name of the parent, as in name=Diary/2026-&* (name=2026-&* matches nothing).
 Wildcards such as &* and ? can be used.
 Writing name=!page name shows the pages other than that one.
 Writing several, as in name=page1 page2 ..., makes it an "or" condition.
@@ -763,7 +775,7 @@ Writing several, as in tag=tag1 tag2 ..., makes it an "or" condition.
 Writing tag=tag1, tag=tag2, tag=.. makes it an "and" condition, carrying all of them.
 }
 :{sort=order|sort=mtime sorts by the time of modification, sort=btime by the time of
-creation and sort=size by the size of the page.
+creation, sort=size by the size of the page and sort=pageview by the number of views, most first.
 With nothing given, they are shown in order of page name.}
 :reverse|show them in the reverse order.
 :children|show only the direct child pages. Grandchild pages are not shown.
@@ -782,6 +794,10 @@ With nothing given, they are shown in order of page name.}
 :bdate|the date the page was created
 :editor|who modified it last
 :creator|who created it
+:type|the type of the page
+:size|the size of the page
+:content_type|the format of the file (pages of type file)
+:pageview|the number of views (with sort=pageview, and in &&popularpages)
 :edit|an edit button
 :delete|a delete button
 :a field pulled out by a template|a field pulled out by a template (see below)

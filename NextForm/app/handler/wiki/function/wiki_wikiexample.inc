@@ -21,7 +21,7 @@ function wiki_operator_wikiexample(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|notation example|&&wikiexample{target}|
+|[[notation example:../../Function/wikiexample]]|&&wikiexample{target}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/wikiexample

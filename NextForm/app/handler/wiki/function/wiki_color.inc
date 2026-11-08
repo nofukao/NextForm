@@ -34,7 +34,7 @@ function wiki_operator_bgcolor(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|text color|&&color(text color){text} or &&color(text color, background color){text}|
+|[[text color:../../Function/color]]|&&color(text color){text} or &&color(text color, background color){text}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/color

@@ -82,7 +82,7 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|preformatted text (function)|&&pre(code, linenum, nowrap){text}|
+|[[preformatted text (function):../../Function/pre]]|&&pre(code, linenum, nowrap){text}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/pre
@@ -97,6 +97,7 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 *パラメータ
 :code|対象テキストをプログラム言語としてハイライト表示します．
 :paa|プロポーショナルフォントを用いたアスキーアートに適した表示を行います．
+:{言語名|codeを指定した際に，言語の名前(php，jsなど)を書くとその言語として色分けします(class="language-言語名"を付けます)．}
 :linenum|codeを指定した際に行番号を表示します．
 :{linenum=行番号|codeを指定した際に行番号を表示します．行番号は指定された番号から開始されます．}
 :wrap|ページ幅より長い行を折り返します．
@@ -169,8 +170,10 @@ function wiki_operator_code(&$context, $dom, $tree) {
 プログラミング言語等のソースコードをハイライト表示します．
 
 *パラメータ
+:言語名|言語の名前(php，jsなど)を書くとその言語として色分けします．
 :linenum|行番号を表示します．
 :{linenum=行番号|行番号を表示します．行番号は指定された番号から開始されます．}
+:wrap, nowrap|長い行の折り返しを指定します([[&&pre:../pre]]と同じです)．
 
 *対象
 対象テキストにはプログラミング言語等のソースコードを書きます．
@@ -272,13 +275,14 @@ of every line.
 *Parameters
 :code|highlight the target text as a programming language.
 :paa|show it in a way suited to ASCII art made with a proportional font.
+:{language name|with code set, writing the name of a language (php, js and so on) colours it as that language (class="language-name" is added).}
 :linenum|show line numbers when code is set.
 :{linenum=line number|show line numbers when code is set. The numbering starts from the number given.}
 :wrap|wrap lines longer than the width of the page.
 :nowrap|do not wrap lines longer than the width of the page; scroll sideways instead.
 
 With neither wrap nor nowrap set, the setting of the site is followed
-(Admin tools &gt; Appearance &gt; long lines in preformatted text).
+(Admin tools &gt; Appearance theme preferences &gt; Long lines in preformatted text).
 With paa set, lines are never wrapped, because wrapping would break the picture.
 
 *Target

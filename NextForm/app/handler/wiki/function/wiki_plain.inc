@@ -32,7 +32,7 @@ function wiki_operator_plain(&$context, $node, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|plain text|&&plain(break){text}|
+|[[plain text:../../Function/plain]]|&&plain(break){text}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/plain
@@ -52,7 +52,7 @@ function wiki_operator_plain(&$context, $node, $tree) {
 }
 
 *対象
-対象テキストにはそのまま
+対象テキストには，そのまま表示したいテキストを書きます．
 
 *例
 

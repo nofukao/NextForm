@@ -316,6 +316,11 @@ function setup_read($name) {
 |{FILE_ALLOW_HTML|false|添付したHTMLファイルを開いたときに動かすか．falseならダウンロードになる．trueにするとwikiから隔離して動かすが，編集できる人は誰でもこのサイトのURLの下に好きな画面を出せる|}
 |{POST_ENCODING|none|フォームの送り方．ConoHa WINGなど，WAFのある共用サーバーで，本文に""'--""や""<script>""を書くと保存が「閲覧できません (Forbidden access)」で止まる場合はbase64にする．サイト設定の「フォームの送り方」でも選べる．詳しくは[[サイトの管理:..]]|}
 |{CLONE_ALLOWED_HOSTS||クローン元として許すホスト(1行に1つ．ホスト名かサイトのURLで，URLはホストの部分だけを見る)．プライベートなネットワーク(LANなど)のホストは，ここに書いたときだけクローン元にできる．サイト設定でも書ける．詳しくは[[他のNextFormのページをクローンする:../../SiteMenu#他のNextFormのページをクローンする]]|}
+|{CLONE_MAX_ATTACHMENTS|100|クローンで，1つのページから写せる添付ファイルの数の上限|}
+|{CLONE_MAX_PAGES|100|クローンで子ページも写すときに，写せる子孫のページの数の上限(添付ファイルのページを除く)|}
+|{CLONE_MAX_TOTAL_ATTACHMENTS|500|クローンで子ページも写すときに，全体で写せる添付ファイルの数の上限|}
+|{CLONE_MAX_TOTAL_BYTES|256 * 1024 * 1024|クローンで子ページも写すときに，本文と添付ファイルを合わせた大きさの上限(バイト)|}
+|{CLONE_MAX_FETCH_SECONDS|30|クローンで子ページも写すときに，取ってくるのにかける時間の上限(秒)|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|標準の日時のフォーマット(strftime形式)|}
 |{DATE_FORMAT|%Y-%m-%d|標準の日付のフォーマット(strftime形式)|}
 |{APP_DIR_PATH|./app(自動で設定されます)|NextFormのappディレクトリ|}
@@ -328,7 +333,7 @@ function setup_read($name) {
 |{CSRF_PROTECTION|true|状態を変える操作をPOSTかつ同一オリジンからのものに限る(切ると罠サイトからページを消せる)|}
 |{PAGE_FIND_CREATE_CACHE_TIME|0.01|内部で使用するページの一覧取得処理でこの秒数以上かかった結果はキャッシュする|}
 |{PAGE_FILE_IMAGE_RESIZE|max 640x640|種別fileのページで画像を表示する際のサイズ|}
-|{PAGE_FILE_IMAGE_RESIZE_MAX_SIZE|1048576|メモリ保護のためこのバイト数以上の画像ファイルはリサイズ処理を行わない|}
+|{PAGE_FILE_IMAGE_RESIZE_MAX_SIZE|524288|メモリ保護のためこのバイト数以上の画像ファイルはリサイズ処理を行わない|}
 |{PAGE_FILE_SHOW_GPS|false|種別fileのページでGPS情報を表示するか|}
 |{CONTENTS_READ_BUFFER_SIZE|4096|ページの内容を表示するときのバッファサイズ|}
 |{CONTENTS_READ_MAX_SIZE|1024 * 1024|メモリに読み込めるページ容量の最大サイズ|}
@@ -345,8 +350,6 @@ function setup_read($name) {
 |{FEED_DEFAULT_PAGE_NUM|20|フィードのデフォルトの件数|}
 |{USER_HISTORY_ENABLE|false|ユーザーが閲覧したページを記録する(試験的機能,非推奨)|}
 |{USER_HISTORY_UNREAD|false|未読ページへのリンクにマークをつける(USER_HISTORY_ENABLEをtrueにする必要あり)|}
-|{WIKI_ICON_IMAGE_WIDTH|16|顔文字等のアイコンの幅|}
-|{WIKI_ICON_IMAGE_HEIGHT|16|顔文字等のアイコンの高さ|}
 |{WIKI_TIME_DEFAULT_NEW_HOUR|24|[[&&time:../../Wiki/Function/time]]でNEW!を表示するデフォルトの時間|}
 |{WIKI_SUMMARY_IMAGE_RESIZE|max 100x100|画像ファイルのページが要約されるときの大きさ|}
 |{WIKI_CALENDAR_RULES_DEFAULT|省略(setup.inc参照)|[[&&calendar:../../Wiki/Function/calendar]]で常に表示されるイベント情報|}
@@ -380,6 +383,11 @@ function setup_read($name) {
 |{FILE_ALLOW_HTML|false|whether an attached HTML file runs when it is opened. With false it is downloaded. Setting it true runs it isolated from the wiki, but lets anyone who can edit show any page under the URL of this site|}
 |{POST_ENCODING|none|how forms are sent. On a shared server with a WAF, such as ConoHa WING, where saving a page with ""'--"" or ""<script>"" in it stops at "Forbidden access", set it to base64. It can also be chosen as "How forms are sent" in the site settings. See [[Site administration:..]] for details|}
 |{CLONE_ALLOWED_HOSTS||hosts allowed as clone sources (one per line, as a host name or the URL of the site; only the host part of a URL is used). A host on a private network (such as a LAN) can be cloned from only when it is written here. It can also be written in the site settings. See [[Cloning a page of another NextForm:../../SiteMenu#Cloning a page of another NextForm]] for details|}
+|{CLONE_MAX_ATTACHMENTS|100|the most attached files copied from one page in a clone|}
+|{CLONE_MAX_PAGES|100|the most descendant pages copied when a clone includes subpages (not counting pages of attached files)|}
+|{CLONE_MAX_TOTAL_ATTACHMENTS|500|the most attached files copied in all when a clone includes subpages|}
+|{CLONE_MAX_TOTAL_BYTES|256 * 1024 * 1024|the largest total size of the texts and attached files when a clone includes subpages (bytes)|}
+|{CLONE_MAX_FETCH_SECONDS|30|the longest time spent fetching when a clone includes subpages (seconds)|}
 |{TIME_FORMAT|%Y-%m-%d %H:%M:%S|the standard format for date and time (strftime form)|}
 |{DATE_FORMAT|%Y-%m-%d|the standard format for dates (strftime form)|}
 |{APP_DIR_PATH|./app (set automatically)|the app directory of NextForm|}
@@ -392,7 +400,7 @@ function setup_read($name) {
 |{CSRF_PROTECTION|true|limit operations that change state to POST from the same origin (turn it off and a trap site can delete pages)|}
 |{PAGE_FIND_CREATE_CACHE_TIME|0.01|cache the result of the internal page listing when it took at least this many seconds|}
 |{PAGE_FILE_IMAGE_RESIZE|max 640x640|the size at which images are shown in pages of type file|}
-|{PAGE_FILE_IMAGE_RESIZE_MAX_SIZE|1048576|to protect memory, image files of at least this many bytes are not resized|}
+|{PAGE_FILE_IMAGE_RESIZE_MAX_SIZE|524288|to protect memory, image files of at least this many bytes are not resized|}
 |{PAGE_FILE_SHOW_GPS|false|whether GPS data is shown in pages of type file|}
 |{CONTENTS_READ_BUFFER_SIZE|4096|the buffer size used when showing the contents of a page|}
 |{CONTENTS_READ_MAX_SIZE|1024 * 1024|the largest page that can be read into memory|}
@@ -409,8 +417,6 @@ function setup_read($name) {
 |{FEED_DEFAULT_PAGE_NUM|20|the default number of entries in a feed|}
 |{USER_HISTORY_ENABLE|false|record the pages a user has read (experimental, not recommended)|}
 |{USER_HISTORY_UNREAD|false|mark links to unread pages (USER_HISTORY_ENABLE has to be true)|}
-|{WIKI_ICON_IMAGE_WIDTH|16|the width of icons such as emoticons|}
-|{WIKI_ICON_IMAGE_HEIGHT|16|the height of icons such as emoticons|}
 |{WIKI_TIME_DEFAULT_NEW_HOUR|24|the default number of hours [[&&time:../../Wiki/Function/time]] shows NEW! for|}
 |{WIKI_SUMMARY_IMAGE_RESIZE|max 100x100|the size at which a page of an image file is summarized|}
 |{WIKI_CALENDAR_RULES_DEFAULT|omitted (see setup.inc)|the event data always shown by [[&&calendar:../../Wiki/Function/calendar]]|}
