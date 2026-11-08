@@ -115,7 +115,7 @@ function wiki_operator_analyze_parse_parameters(&$context, $tree, &$condition) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|counter|&&counter(total, today, yesterday, allpages);|
+|[[counter:../../Function/counter]]|&&counter(total, today, yesterday, allpages);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/counter
@@ -171,7 +171,7 @@ day=0はtodayと，day=1はyesterdayと同じ効果になります．
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|list of popular pages|&&popularpages(total, today, yesterday, allpages, number of pages);|
+|[[list of popular pages:../../Function/popularpages]]|&&popularpages(total, today, yesterday, allpages, number of pages);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/popularpages

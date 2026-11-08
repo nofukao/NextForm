@@ -143,7 +143,7 @@ function wiki_option_math_show(&$args, $dom) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|mathematical formula|&&math(inline, dpi=dpi of image){tex format}|
+|[[mathematical formula:../../Function/math]]|&&math(inline, dpi=dpi of image){tex format}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/math

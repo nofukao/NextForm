@@ -136,7 +136,7 @@ function wiki_operator_link_url_encode_replace($matches) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|functional link|&&link(&[&[page name&]&], edit){link words}|
+|[[functional link:../../Function/link]]|&&link(&[&[page name&]&], edit){link words}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/link
@@ -200,7 +200,7 @@ $WIKI_ALIASES['direct'] = '&link(raw,<PARAMS>){<TARGET>}';
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|direct link to image or file|&&direct(&[&[page name&]&]){link words}|
+|[[direct link to image or file:../../Function/direct]]|&&direct(&[&[page name&]&]){link words}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/direct

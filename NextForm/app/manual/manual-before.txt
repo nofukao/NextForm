@@ -298,7 +298,7 @@ Markdownの編集欄には，左に太い線も付きます．
 -戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
 -種別の違う版にも戻せます．Wiki記法からMarkdownに変換したページも，変換前の版に戻せばWiki記法に戻ります．
 -添付ファイル(種別file)は，中身とファイルの種類を戻します．
--ページを編集できる人だけが使えます．ロック中は，編集と同じく管理者とロックした本人だけです．
+-ページを編集できる人だけが使えます．ロック中は，編集と同じく管理者とロック可能の権限を持つユーザーだけです([[ロック:.#ロック]])．
 -確認の画面を開いたあとに誰かがページを編集していたときは，戻しません．
 
 削除したページの履歴も，そのページ名を開いて''履歴''を押せば見られます(''この版に戻す''は出ません．[[削除:.#削除]]を参照してください)．
@@ -664,6 +664,7 @@ index.phpで定義した項目は，画面で変えても効きません．
 |markdown_link_check|0.13.0で行き先が変わったMarkdownのリンクを出します|
 |markdown_change_check|0.14.0で見え方が変わったMarkdownの書き方を出します|
 |import_pukiwiki|PukiWikiの取り込みをコマンドで行います|
+|page|ページを一覧し，読み，書きます(AIに書かせる手順は[[AI向けのページ:../../AI]])|
 使い方は，それぞれのファイルの先頭に書いてあります．
 
 **アップグレード
@@ -858,7 +859,7 @@ Press ''Restore this version'' there, and the current page is overwritten with t
 -The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
 -A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
 -For an attached file (type file), its contents and file type are restored.
--Only those who can edit the page can use it. While the page is locked, only administrators and the user who locked it can, as with editing.
+-Only those who can edit the page can use it. While the page is locked, only administrators and users with the lock right can, as with editing ([[Lock:.#Lock]]).
 -If someone edits the page after the confirmation screen was opened, nothing is restored.
 
 The history of a deleted page can also be seen by opening that page name and clicking ''History'' (''Restore this version'' is not shown; see [[Delete:.#Delete]]).
@@ -1232,6 +1233,7 @@ Those who can log in to the server can use the tools in app/tool/. Run each of t
 |markdown_link_check|lists Markdown links whose destinations changed in 0.13.0|
 |markdown_change_check|lists Markdown writings that look different from 0.14.0 on|
 |import_pukiwiki|imports PukiWiki from the command line|
+|page|lists, reads and writes pages (the steps for having an AI write them are on [[the page for AI:../../AI]])|
 How to use each of them is written at the top of its file.
 
 **Upgrade
@@ -1458,6 +1460,7 @@ Wiki記法と違って，文中の一部分(強調や打ち消しだけ)や表�
 *[[フロントマター:../FrontMatter]]
 |目的|記法|h
 |[[題名:../FrontMatter#題名]]|文書の先頭の ""---"" の囲みに ""title: 題名""．無ければ先頭の唯一の ""# 題名""|
+|[[短いタイトル:../FrontMatter#短いタイトル]]|同じ囲みに ""short_title: 短いタイトル""|
 |[[タグ:../FrontMatter#タグ]]|同じ囲みに ""tags: [タグ1, タグ2]""|
 */
 
@@ -2078,6 +2081,7 @@ its own) or a single row of a table. A table is one unit as a whole.
 *[[Front matter:../FrontMatter]]
 |object|notation|h
 |[[title:../FrontMatter#Title]]|""title: the title"" inside the ""---"" fence at the very top; otherwise the only ""# the title"" at the top|
+|[[short title:../FrontMatter#Short title]]|""short_title: the short title"" inside the same fence|
 |[[tags:../FrontMatter#Tags]]|""tags: [tag1, tag2]"" inside the same fence|
 */
 
@@ -3187,12 +3191,13 @@ Press  ''Ctrl+Space'' or ''Ctrl+,(comma)'' or ''Alt+/(slash)'' in editing wiki s
 @manual $manualpage$/en/Wiki/CheatSheet/Standard
 &title Wiki Cheat Sheet
 |Object|Notation|h
-|paragraph|insert empty line|
-|strong|&'&'strong words&'&'|
-|emphasis|&'&'&'emphasized words&'&'&'|
-|strikeout|&%&%strikeout words&%&%|
-|link|&[&[page name&]&] or &[&[link words:page name&]&] or &[&[link words:URL&]&]|
-|symbol|put && before symbol|
+|[[paragraph:../../Basic#Paragraph]]|insert an empty line|
+|[[strong:../../Basic#Strong]]|&'&'strong words&'&'|
+|[[emphasis:../../Basic#Emphasis]]|&'&'&'emphasized words&'&'&'|
+|[[strikeout:../../Basic#Strikeout]]|&%&%strikeout words&%&%|
+|[[link:../../Basic#Link]]|&[&[page name&]&] or &[&[link words:page name&]&] or &[&[link words:URL&]&]|
+|[[symbol:../../Basic#Symbols]]|put && before the symbol|
+|[[showing text as it is:../../Basic#Showing text as it is]]|&"&"text shown as it is&"&"|
 */
 
 /**
@@ -3623,16 +3628,16 @@ Writing &, at the start of a line and CSV data after it shows the CSV data as a 
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Standard
-|section|&* heading|
-|itemization|&- item|
-|enumeration|&+ item|
-|definition list|&:term&|description|
-|preformatted text|&nbsp;preformatted text(line starts with space)|
-|quotation|&>quoted text|
-|separator line|&=&=&=&=|
-|calculation|&= expression|
-|table|&|cell1&|cell2&|...&|format|
-|table(csv format)|&,cell1&,cell2&,...|
+|[[section:../../LineHead#Sections]]|&* heading|
+|[[list (unordered):../../LineHead#Lists]]|&- item|
+|[[list (ordered):../../LineHead#Lists]]|&+ item|
+|[[description list:../../LineHead#Description lists]]|&:term&|description|
+|[[preformatted text:../../LineHead#Preformatted text]]|&nbsp;preformatted text (the line starts with a space)|
+|[[quote:../../LineHead#Quotes]]|&>quoted text|
+|[[horizontal rule:../../LineHead#Horizontal rules]]|&=&=&=&=|
+|[[calculation:../../LineHead#Calculation]]|&= expression|
+|[[table:../../LineHead#Tables]]|&|cell1&|cell2&|...&|format|
+|[[table (CSV form):../../LineHead#Tables in CSV form]]|&,cell1&,cell2&,...|
 */
 
 /**

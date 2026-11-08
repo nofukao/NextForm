@@ -82,7 +82,7 @@ function wiki_operator_pre_append(&$context, $dom, $block, $options) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|preformatted text (function)|&&pre(code, linenum, nowrap){text}|
+|[[preformatted text (function):../../Function/pre]]|&&pre(code, linenum, nowrap){text}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/pre

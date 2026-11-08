@@ -821,7 +821,7 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|calendar|&&calendar(&[&[page name&]&], month, weeks, behind=N, ahead=N, show=toc, maxlength=N);|
+|[[calendar:../../Function/calendar]]|&&calendar(&[&[page name&]&], month, weeks, behind=N, ahead=N, show=toc, maxlength=N);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/calendar

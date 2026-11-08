@@ -38,11 +38,11 @@ function wiki_operator_meta(&$context, $dom, $tree) {
 $WIKI_ALIASES['description'] = '&meta(description, <PARAMS>);';
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[メタ情報:../../Function/meta]]|&&meta(&[&[ページ名&]&], title, description);|
+|[[メタ情報:../../Function/meta]]|&&meta(&[&[ページ名&]&], title, short_title, description);|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|meta information|&&meta(&[&[page name&]&], title, description);|
+|meta information|&&meta(&[&[page name&]&], title, short_title, description);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/meta
@@ -50,8 +50,10 @@ $WIKI_ALIASES['description'] = '&meta(description, <PARAMS>);';
 &title &&meta
 
 *概要
- &meta([[ページ名]], title, description, tag);
+ &meta([[ページ名]], title, short_title, description, tag);
 ページのタイトルや説明，タグなどのメタ情報を表示します．
+表示する項目は1つだけ書きます(いくつか書くと最後の1つを表示します)．
+&&description は &&meta(description) と同じです．
 
 *パラメータ
 :&[&[ページ名&]&]|指定したページの情報を表示します．省略された場合は現在のページの情報になります．
@@ -59,6 +61,10 @@ $WIKI_ALIASES['description'] = '&meta(description, <PARAMS>);';
 :short_title|指定したページの短いタイトル (&&title(short)，フロントマターのshort_title:) を表示します．
 :description|指定したページの説明を表示します．
 :tag|指定したページのタグを表示します．
+:type|指定したページの種別を表示します．
+:{create_user, last_modify_user|指定したページを作成したユーザー，最後に更新したユーザーを表示します．}
+:{Content-type, original_filename, image_width, image_height, audio_duration, video_duration, video_width, video_height|
+添付ファイル(種別file)のページで，ファイルの形式・元のファイル名・画像の幅と高さ・音声の長さ・動画の長さと幅と高さを表示します．}
 :{separator=記号|複数のタグを列挙するときに使用する区切り記号を指定します．
 スペースはspace, カンマはcommaと指定してください．
 }

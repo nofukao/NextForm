@@ -84,7 +84,7 @@ function wiki_operator_time(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|time and date|&&time(new, left, elapsed){time and date}|
+|[[time and date:../../Function/time]]|&&time(new, left, elapsed){time and date}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/time

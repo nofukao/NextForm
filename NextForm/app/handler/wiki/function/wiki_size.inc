@@ -15,7 +15,7 @@ function wiki_operator_size(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|text size|&&size(N%){text} or &&size(Npt){text}|
+|[[text size:../../Function/size]]|&&size(N%){text} or &&size(Npt){text}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/size

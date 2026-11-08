@@ -217,7 +217,7 @@ $WIKI_ALIASES['comment'] = '&listadd(name,date,<PARAMS>){<TARGET>}';
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|comment form|&&comment(before, after, escape);|
+|[[comment form:../../Function/comment]]|&&comment(before, after, escape);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/comment

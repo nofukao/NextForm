@@ -132,7 +132,7 @@ function wiki_operator_pages_parse_parameters(&$context, $tree, &$pagename, &$fi
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/FunctionAdvanced
-|list of pages (customizable)|&&pages(&[&[page name&]&], number of pages);|
+|[[list of pages (customizable):../../Function/pages]]|&&pages(&[&[page name&]&], number of pages);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/pages
@@ -166,7 +166,9 @@ function wiki_operator_pages_parse_parameters(&$context, $tree, &$pagename, &$fi
 :show=list|箇条書きでページを列挙します．デフォルトで指定されています．
 :show=tree|子ページを入れ子にしたツリー状の箇条書きでページを列挙します．
 :show=table|表でページ一覧を表示します．fieldsパラメータで表示したい項目を指定します．
-:show=contents|ページ名だけでなくページの内容も表示します．
+:{show=contents|ページ名だけでなくページの内容も表示します．内容は&&moreより前の部分です．
+show=contentsの一覧に出たページの中の&&pages(show=contents)は表示されません．}
+:show=date|更新した日ごとにまとめた箇条書きでページを列挙します(&&recentはこの形です)．
 :{show=toc|箇条書きでページを列挙し，各ページの下にそのページの目次(見出しの一覧)を閉じた折りたたみで付けます．
 押すと開きます．目次の項目はその見出しへのリンクです．
 種別wikiと種別Markdownのページで，見出しがあるときだけ付きます．
@@ -175,7 +177,7 @@ eachを指定しないときは50件ずつ表示します．
 サイドページには置かないでください(サイドページはどのページを開いても表示されるため，すべてのページが遅くなります)．
 }
 }
-:limit=件数|指定した件数のみ表示します．
+:limit=件数|指定した件数のみ表示します．数字だけを書いても同じです(&&pages(&[&[ページ名&]&], 10))．
 :{each=件数|一度に指定した件数だけ表示します．超えた分は次のページに表示されるようになります．
 0を指定すると全件を表示します．
 }
@@ -201,7 +203,7 @@ tag=タグ1 タグ2 ...のように複数書くといずれか(or)の条件に�
 tag=タグ1, tag=タグ2, tag=..のように書くとすべてのタグを持つ(and)条件になります．
 }
 :{sort=順序|sort=mtimeの場合更新日時の順に, sort=btimeの場合作成日時の順に，
-sort=sizeの場合ページの容量の順に並び替えをします．
+sort=sizeの場合ページの容量の順に，sort=pageviewの場合アクセス数の多い順に並び替えをします．
 指定がない場合はページ名の順に表示されます．}
 :reverse|逆順に表示します．
 :children|直接の子ページのみを表示します．すなわち孫ページは表示されません．
@@ -220,6 +222,10 @@ sort=sizeの場合ページの容量の順に並び替えをします．
 :bdate|ページの作成日
 :editor|最終更新者
 :creator|作成者
+:type|ページの種別
+:size|ページの容量
+:content_type|ファイルの形式(種別fileのページ)
+:pageview|アクセス数(sort=pageviewのときと&&popularpages)
 :edit|編集ボタン
 :delete|削除ボタン
 :テンプレートで抽出した項目名|テンプレート(後述)で抽出した項目名
@@ -730,7 +736,9 @@ Write &[&[&]&] to cover every page.}
 :show=list|list the pages as a bulleted list. Set by default.
 :show=tree|list the pages as a tree, with child pages nested.
 :show=table|show the list of pages as a table. Name the fields you want with the fields parameter.
-:show=contents|show the contents of the pages as well as their names.
+:{show=contents|show the contents of the pages as well as their names. The contents are the part before &&more.
+A &&pages(show=contents) inside a page listed by show=contents shows nothing.}
+:show=date|list the pages as a bulleted list grouped by the date they were modified (&&recent uses this).
 :{show=toc|list the pages as a bulleted list, with the table of contents (the list of
 headings) of each page below it in a closed fold. Press it to open it. The items of the
 table of contents are links to the headings.
@@ -741,7 +749,7 @@ Do not put it on the side page (the side page is shown with every page, so every
 would become slow).
 }
 }
-:limit=number|show only the given number of pages.
+:limit=number|show only the given number of pages. Writing just the number does the same (&&pages(&[&[page name&]&], 10)).
 :{each=number|show the given number at a time. The rest go onto the next page.
 Give 0 to show them all.
 }
@@ -767,7 +775,7 @@ Writing several, as in tag=tag1 tag2 ..., makes it an "or" condition.
 Writing tag=tag1, tag=tag2, tag=.. makes it an "and" condition, carrying all of them.
 }
 :{sort=order|sort=mtime sorts by the time of modification, sort=btime by the time of
-creation and sort=size by the size of the page.
+creation, sort=size by the size of the page and sort=pageview by the number of views, most first.
 With nothing given, they are shown in order of page name.}
 :reverse|show them in the reverse order.
 :children|show only the direct child pages. Grandchild pages are not shown.
@@ -786,6 +794,10 @@ With nothing given, they are shown in order of page name.}
 :bdate|the date the page was created
 :editor|who modified it last
 :creator|who created it
+:type|the type of the page
+:size|the size of the page
+:content_type|the format of the file (pages of type file)
+:pageview|the number of views (with sort=pageview, and in &&popularpages)
 :edit|an edit button
 :delete|a delete button
 :a field pulled out by a template|a field pulled out by a template (see below)

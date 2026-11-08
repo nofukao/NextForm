@@ -36,11 +36,11 @@ function wiki_operator_title(&$context, $dom, $tree) {
 
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[タイトルの設定:../../Function/title]]|&&title(show){タイトル}|
+|[[タイトルの設定:../../Function/title]]|&&title(show){タイトル} &&title(short){短いタイトル}|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|page title|&&title(show){page title}|
+|[[page title:../../Function/title]]|&&title(show){page title} &&title(short){short title}|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/title

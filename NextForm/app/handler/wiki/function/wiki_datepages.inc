@@ -65,7 +65,7 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|list calendar pages|&&datepages(&[&[page name&]&], past, future);|
+|[[list calendar pages:../../Function/datepages]]|&&datepages(&[&[page name&]&], past, future);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/datepages

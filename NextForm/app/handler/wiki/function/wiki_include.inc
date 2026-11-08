@@ -111,7 +111,7 @@ function wiki_operator_include(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|Embedding content|&&include(&[&[page name&]&]); or &&include(URL);|
+|[[Embedding content:../../Function/include]]|&&include(&[&[page name&]&]); or &&include(URL);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/include

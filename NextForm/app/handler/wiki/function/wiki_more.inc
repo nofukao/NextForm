@@ -24,7 +24,7 @@ function wiki_operator_more(&$context, $dom, $tree) {
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|seperator of abstract|&&more;|
+|separator of abstract|&&more;|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/more
