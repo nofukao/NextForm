@@ -371,7 +371,7 @@ $WIKI_ALIASES['childpages'] = '&pages(show=list, children, fields=[[title]], <PA
  &childpages;
 
 *エイリアス
-&&listpagesは以下のように定義されたエイリアスです．
+&&childpagesは以下のように定義されたエイリアスです．
 &pre{`$WIKI_ALIASES['childpages']`}
 */
 

@@ -84,9 +84,11 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
 :past|現在から過去の日付のページを表示します．デフォルトで指定されています．
 :future|現在から未来の日付のページを表示します．
 :all|すべてのページを表示します．
-:reverse|表示の順序を逆にします．
+:reverse|新しい日付のページから表示します．デフォルトで指定されています(futureでは古い日付から表示します)．逆にするには!reverseと書きます．
 :each=表示ページ数|一度に表示する子ページの数を指定します．デフォルトは30です．日の数ではなくページの数です．
-:年-月-日|pastとfutureの基準を現在ではなく指定した日付にします．
+:年-月-日|pastとfutureの基準を現在ではなく指定した日付にします．past・future・allなどの後ろ(名前の付いていないパラメータの最後)に書きます．
+
+[[&&pages:../pages]]のパラメータ(show=toc，fields=，name=など)も使用できます．
 
 *対象
 対象は指定しません．
@@ -116,9 +118,11 @@ of a day comes before the first.
 :past|show pages dated from now into the past. Set by default.
 :future|show pages dated from now into the future.
 :all|show every page.
-:reverse|reverse the order they are shown in.
+:reverse|show the newest dates first. Set by default (with future, the oldest dates come first). Write !reverse to turn it around.
 :each=pages to show|how many child pages to show at a time. The default is 30. It counts pages, not days.
-:year-month-day|take the date given, rather than now, as the point past and future are measured from.
+:year-month-day|take the date given, rather than now, as the point past and future are measured from. Write it after past, future, all and so on (as the last of the parameters without a name).
+
+The parameters of [[&&pages:../pages]] (show=toc, fields=, name= and so on) can be used too.
 
 *Target
 No target is given.

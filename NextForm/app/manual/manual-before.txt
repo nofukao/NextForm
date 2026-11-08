@@ -406,7 +406,7 @@ Wiki記法は[[リンク:../Wiki/Basic#リンク]]を参照してください．
 ページの種別で''他のNextFormページのクローン''を選んで''作成''を押すと，
 クローン元のページのURLを入れる画面になります．
 URLを入れて''クローン''を押すと，そのページの本文と添付ファイルを同じ種別(Markdown，wiki，text，file)で写して，新しいページを作ります．
-題名とタグは本文に書いてあるので，一緒に写ります．
+本文に書いた題名・短いタイトル・タグ(Markdown記法のフロントマターや先頭の""#""，Wiki記法の&&title)は，本文と一緒に写ります．メタ情報の画面で付けたもの(種別wiki・text・fileのページのタグ，種別text・fileのページの題名など)は写りません．
 -写す添付ファイルは，写すページの直下のもの(""./画像.png""で参照するもの)だけです．ほかのページの添付ファイル(""../画像.png""など)は写しません．本文は書き換えないので，それへのリンクはリンク切れになります(このサイトに同じ名前のページがあれば，そちらを指します)．
 -履歴・ロック・権限と，ページや添付ファイルの説明は写しません．クローン元でログインが必要だったページも，写したあとはこのサイトの権限で見えるようになります．
 -ログインが必要なページは，URLの下の欄にそのサイトのユーザー名とパスワードを入れればクローンできます．要らなければ空欄のままでかまいません．入れたものは保存せず，そのクローンにだけ使います．対応しているのはNextFormのログイン(ダイジェスト認証)だけで，パスワードそのものはクローン元に送りません．この画面がhttpsでないときは，ブラウザからこのサイトまでパスワードが暗号化されずに送られるので，注意書きが出ます．入れたときは，取りに行く前にログインできることを確かめ(違っていれば何も写しません)，ログインしなくても読めるページも，その利用者として読みます．クローン元がhttpsからhttp(暗号化なし)に転送したときは，ログインの情報を送る前に止まり，続けるかを尋ねます．続けるときは「暗号化されていなくても続ける」にチェックを入れ，パスワードをもう一度入れて押します．初めからhttpのURLを入れたときは尋ねません．
@@ -515,7 +515,7 @@ URLの下のチェックボックスで，何を写すかを選べます．
 |添付したHTMLファイル|[[HTMLファイルの直接実行:../HtmlFile]]を参照してください|
 |フォームの送り方|下の''WAFに保存を止められるとき''を参照してください|
 |クローン元として許すホスト|[[他のNextFormのページをクローンする:../SiteMenu#他のNextFormのページをクローンする]]を参照してください|
-|Google API key|[[&&calendar:../Wiki/Function/calendar]]で予定を取るときに使います|
+|Google APIキー|[[&&calendar:../Wiki/Function/calendar]]で予定を取るときに使います|
 index.phpで定義した項目は，この画面で変えても効きません([[サイトの高度な設定:.#サイトの高度な設定]])．
 
 **WAFに保存を止められるとき(ConoHa WINGなど)
@@ -969,7 +969,7 @@ and [[Link:../Wiki/Basic#Link]] for Wiki notation.}
 Choose ''Clone of another NextForm page'' as the page type and press ''Create'';
 a screen to enter the URL of the page to clone appears.
 Enter the URL and press ''Clone'', and a new page is made by copying the text and the attached files of that page with the same type (Markdown, wiki, text or file).
-The title and the tags are written in the text, so they are copied with it.
+A title, a short title and tags written in the text (the front matter or the leading ""#"" in Markdown notation, &&title in Wiki notation) are copied with the text. Those set on the meta information screen (the tags of pages of type wiki, text and file, the titles of pages of type text and file, and so on) are not copied.
 -Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
 -History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
 -A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user. When the site to clone redirects from https to http (not encrypted), it stops before sending the login information and asks whether to continue. To continue, check ""Continue without encryption"", enter the password again and press the button. It does not ask when you enter an http URL from the start.
@@ -1676,7 +1676,7 @@ URLをそのまま書くとリンクになります．""www."" で始まる語�
 
 *目次
 ""[TOC]"" とだけ書いた行(前後は空行)は，そのページの見出しの目次になります(Wiki記法の &&index と同じ)．
-''ツール''の''目次''と同じ形で，項目を押すとその見出しに飛びます．
+''ページメニュー''の''目次''と同じ形で，項目を押すとその見出しに飛びます．
 
  [TOC]
  
@@ -2311,7 +2311,7 @@ The browser's own find-in-page cannot find contents that are folded away
 
 *Table of contents
 A line with only ""[TOC]"" (with blank lines around it) becomes the table of contents of the headings of the page (the same as &&index of Wiki notation).
-It has the same form as ''Table of contents'' in ''Tools'', and pressing an item jumps to that heading.
+It has the same form as ''Summary'' in the page menu, and pressing an item jumps to that heading.
 
  [TOC]
  
@@ -2686,7 +2686,7 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます．どちらも見出しは目次に載ります|
 |目次|&&index|""[TOC]"" とだけ書いた行|Markdown記法では，ほかのページの目次(&&index(&[&[ページ名&]&]))は書けません|
 |子ページのツリー|&&treepages|""[PAGES]"" とだけ書いた行|Markdown記法で書ける指定は，対象のページ・並べ方・件数・直下だけ(children)です．表や中身ごとの一覧は書けません|
-|節の終わりを明示|&*(end)|なし|同上|
+|節の終わりを明示|&*(end)|なし|Markdown記法の見出しは範囲を持たないので，終わりを示す書き方はありません|
 |他のページの取り込み|&&include(&[&[ページ名&]&])|段落にそれ1つだけの !&[説明&](ページ名)|Markdown記法では，文の途中に書いたときはリンクになります．大きさや配置の指定は説明の後ろに書きます([[リンク・画像・添付:../Markdown/Link#大きさ・配置・キャプション]])|
 |ファイルそのものを開くリンク|&&direct(&[&[./資料.pdf&]&]){説明}|!&[説明&](./資料.pdf)|PDF・テキスト・Wordなどは同じ働きです．Markdown(.md)は，表示した画面が開きます．画像・音声・動画は埋め込みになるので，文字のリンクにするときは &[説明&](./写真.png) と書きます(押すとファイルのページが開きます)|
 |部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
@@ -2708,11 +2708,11 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 次のようなことをしたいページは，種別wikiで作ってください．
 
 |やりたいこと|Wiki記法|h
-|ページの一覧(表・中身ごと・テンプレート)|&&pages &&subpage|
+|ページの一覧(表・中身ごと・テンプレート)|&&pages &&childpages &&listpages|
 |カレンダー|&&calendar &&datepages|
 |数値計算・表計算|行頭の &= と セルの &=|
-|検索結果の埋め込み|&&search|
-|新着・更新の一覧|&&feed &&mtime|
+|検索のフォーム|&&search|
+|新着・更新の一覧|&&recent &&feed|
 |文字の色や大きさ|&&color &&size|
 |配置の指定|&&align|
 |抜粋の区切り|&&more|
@@ -2789,7 +2789,7 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''. In both, the heading appears in the table of contents|
 |table of contents|&&index|a line with only ""[TOC]""|Markdown notation cannot write the table of contents of another page (&&index(&[&[page name&]&]))|
 |tree of subpages|&&treepages|a line with only ""[PAGES]""|Markdown notation can give the page, the order, the number and only the direct subpages (children). Lists as tables or with contents cannot be written|
-|marking the end of a section|&*(end)|none|as above|
+|marking the end of a section|&*(end)|none|A heading in Markdown notation spans no range, so there is no way to mark its end|
 |pulling in another page|&&include(&[&[page name&]&])|!&[description&](page name) alone in its paragraph|In Markdown notation, it is a link when written in the middle of a sentence. The size and placement are written after the description ([[Links, images and attachments:../Markdown/Link#Size, placement and caption]])|
 |a link that opens the file itself|&&direct(&[&[./document.pdf&]&]){description}|!&[description&](./document.pdf)|PDF, text, Word and so on work the same. A Markdown file (.md) opens the screen that shows it. Images, audio and video are embedded, so for a text link write &[description&](./photo.png) (pressing it opens the page of the file)|
 |unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
@@ -2812,11 +2812,11 @@ Functions of Wiki notation cannot be used in pages of type Markdown.
 Create a page of type wiki when you want to do any of the following.
 
 |what you want|Wiki notation|h
-|lists of pages (as tables, with contents, with templates)|&&pages &&subpage|
+|lists of pages (as tables, with contents, with templates)|&&pages &&childpages &&listpages|
 |calendars|&&calendar &&datepages|
 |calculation and spreadsheets|&= at the start of a line and &= in a cell|
-|embedding search results|&&search|
-|lists of new and updated pages|&&feed &&mtime|
+|a search form|&&search|
+|lists of new and updated pages|&&recent &&feed|
 |colour and size of text|&&color &&size|
 |alignment|&&align|
 |marking where the excerpt ends|&&more|

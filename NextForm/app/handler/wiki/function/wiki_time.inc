@@ -115,7 +115,7 @@ NEW!のみを表示して日時の表示が不要なときに!showと指定し�
 &wikiexample{
 2013年のお正月まであと&time(left){2013-1-1}です．
 
-このページが作成された日は&time(%Y/%m/%d){ &mtime; }です．
+このページが作成された日は&time(%Y/%m/%d){ &btime; }です．
 }
 */
 
@@ -151,7 +151,7 @@ It may contain other notation such as &&mtime;.
 &wikiexample{
 There is &time(left){2013-1-1} until the new year of 2013.
 
-This page was created on &time(%Y/%m/%d){ &mtime; }.
+This page was created on &time(%Y/%m/%d){ &btime; }.
 }
 */
 ?>

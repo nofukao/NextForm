@@ -843,25 +843,28 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 :&[&[ページ名&]&]|カレンダーで作成する子ページの親を指定します．指定がない場合は自分自身のページが親になります．
 :month|一般的なカレンダーのように月を表示します．デフォルトで指定されています．
 :weeks|今週を基準に前後に数週間分表示します．表示する週はbehind,aheadパラメータで指定できます．
-:behind=N|weeksが指定された際にN週分過去の週を表示します(Nは整数)．
-:ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．画面の▲▼で広げられるのは，前後それぞれ12週までです．
-:{show=toc|各マスに，タイトルの代わりにその日のページの要約(見出しの一覧)を出します(NextForm 0.21 までの表示です)．
+:behind=N|weeksが指定された際にN週分過去の週を表示します(Nは整数)．省略時は1です．
+:ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．省略時は3です．画面の▲▼で広げられるのは，前後それぞれ12週までです．
+:{show=toc|各マスに，タイトルの代わりにその日のページの目次(見出しの一覧)を出します(NextForm 0.21 までの表示です)．
 日付はその日のページへのリンクになり，同じ日の2つ目からのページは出ません．
 書かなければタイトルを出します(""show=title""と書いても同じです)．}
 :{maxlength=N|各マスに出す文字の数の上限です(Nは1以上の整数)．ページごとに数え，全角も半角も1文字と数えます．
 超えたところで切って「…」を付けます．切ったタイトルは，マウスを載せると全文が出ます．
-要約は見出しを順に数え，上限に来たところで切ります(先頭の見出しの途中で切れることもあります)．
+目次は見出しを順に数え，上限に来たところで切ります(先頭の見出しの途中で切れることもあります)．
 書かなければ切りません．}
 
 *マスに出るもの
 各マスには，その日のページの''短いタイトル''を出します．
-短いタイトルが無いページはタイトルを，どちらも無いページは要約(見出しの一覧)を出します．
+短いタイトルが無いページはタイトルを，どちらも無いページは目次(見出しの一覧)を出します．
 短いタイトルは，タイトルから日付を除いたものなど，マスの場所で分かることを除いて書きます
 (Wiki記法の[[&&title(short):../title]]，Markdown記法のフロントマターの ""short_title:""，
 メタ情報の画面)．
-マスのタイトルと要約の見出しは，そのページへのリンクになります．
+マスのタイトルと目次の見出しは，そのページへのリンクになります．
 見出しの無いページは書き出しの文字が，文字も無いページはページ名がリンクになります．
-狭い画面とサイドバーでは，ページのある日のマスに「...」が出て，押すと中身が出ます．
+マスに出すタイトルは，ページを保存したときに記録したものです．タイトルを記録しない古い版で保存したきりのページは，
+本文にタイトルを書いてあっても目次が出ます．1度保存し直すとタイトルが出ます．
+狭い画面とサイドバーでは，ページのある日のマスの中身は隠れていて(狭い画面では「...」が，サイドバーでは日付の下線が出ます)，
+マスを押すと中身が出ます．
 
 *同じ日のページ
 同じ日に2つ以上のページを作れます．ページ名は ''年-月-日''(1つ目)，''年-月-日_2''，''年-月-日_3''… です
@@ -870,7 +873,7 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 -書ける人には，最後に小さく「＋」が出ます．押すと，次の番号のページを作れます．
 番号は，いちばん大きい番号(消したページを含む)の次です．
 -ページの無い日は，日付を押すと1つ目のページを作れます．
--ページのタイトル(や要約)の上でダブルクリックするとそのページを，日付や余白の上でダブルクリックすると1つ目のページを編集します．
+-ページのタイトル(や目次)の上でダブルクリックするとそのページを，日付や余白の上でダブルクリックすると1つ目のページを編集します．
 -2つ目からのページは1つ目の子ページではなく兄弟です．1つ目の名前を変えたり，消したり，クローンしたりしても，一緒には動きません．
 -""show=toc""のときは，今までどおり1つ目のページだけを出します．
 
@@ -878,8 +881,8 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 対象には祝祭日等のイベントの情報が書けます．
 特になにも書かなくてもGoogleカレンダーを利用して通常の祝祭日が表示されるようになっていますが，
 Googleカレンダーを利用するにはCalendar APIへのアクセスが許可されたGoogle APIキーを取得し，
-サイトメニュー > 管理ツール > サイト設定 の Google API key に設定する必要があります．
-またSSL経由でAPIを利用するためphpの設定に""extension=openssl.so""が書かれている必要があります．
+サイトメニュー > 管理ツール > サイト設定 の Google APIキー に設定する必要があります．
+またSSL経由でAPIを利用するため，PHPのopensslの拡張が有効になっている必要があります(多くの環境では初めから有効です)．
 
 1行にひとつずつルールを書き，ルールは以下の2つが使用できます．
 -GoogleカレンダーのカレンダーID(APIキーの設定が必要)
@@ -974,8 +977,8 @@ Double clicking a box of the calendar edits the child page straight away.
 :&[&[page name&]&]|the parent of the child pages the calendar creates. With nothing given, the page itself is the parent.
 :month|show a month, like an ordinary calendar. Set by default.
 :weeks|show a few weeks around this week. Which weeks are shown is set by the behind and ahead parameters.
-:behind=N|with weeks set, show N weeks into the past (N is a whole number).
-:ahead=N|with weeks set, show N weeks into the future (N is a whole number). The ▲ and ▼ buttons on the screen widen it up to 12 weeks each way.
+:behind=N|with weeks set, show N weeks into the past (N is a whole number). 1 when not given.
+:ahead=N|with weeks set, show N weeks into the future (N is a whole number). 3 when not given. The ▲ and ▼ buttons on the screen widen it up to 12 weeks each way.
 :{show=toc|show the summary (the list of headings) of the page for the day in each box,
 instead of its title (how NextForm 0.21 and before showed it).
 The date is a link to the page for the day, and the second and later pages of a day are not shown.
@@ -995,7 +998,10 @@ in the title ([[&&title(short):../title]] in Wiki notation, ""short_title:"" in 
 matter in Markdown notation, or the meta information screen).
 The titles and the headings of a summary in a box are links to the page.
 For a page without headings the first words are the link, and for a page with no words, its page name.
-On a narrow screen and in the side bar, a box of a day with pages shows "...", and tapping it shows what is inside.
+The title in a box is the one recorded when the page was saved. A page last saved by an old version that did
+not record titles shows its summary even when its text has a title; saving it once again shows the title.
+On a narrow screen and in the side bar, what is inside a box of a day with pages is hidden (a narrow screen
+shows "...", and the side bar underlines the date), and tapping the box shows it.
 
 *Pages of the same day
 A day can have two or more pages. They are named ''year-month-day'' (the first),
@@ -1013,8 +1019,8 @@ Data about events such as public holidays can be written as the target.
 Ordinary public holidays are shown through Google Calendar even with nothing written,
 but using Google Calendar means getting a Google API key allowed to reach the Calendar
 API and setting it in site menu > Admin tools > Site preferences, under Google API key.
-The php settings also have to contain ""extension=openssl.so"", so that the API can be
-reached over SSL.
+The openssl extension of PHP also has to be enabled, so that the API can be reached over SSL
+(it is enabled from the start in most environments).
 
 Write one rule per line. Two kinds of rule can be used.
 -the calendar ID of a Google Calendar (the API key has to be set)
