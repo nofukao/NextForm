@@ -51,15 +51,27 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	$d = $args['calendar'];
 	$d = trim($d, ' - /');
 	$d = str_replace('/', '-', $d);
-	if(preg_match('/\d{4}/', $d)) {
+	/*
+	 * 年だけ・年と月だけのときは、その 1 日にする。値の全体で比べる。以前は 4 桁の
+	 * 数字があればいつも -01-01 を足し、2026-08-06 を 2026-08-06-01-01 にしていた
+	 * (strtotime は最後の -01 を UTC-1 時間と読み、日本より西の時間帯では前の日になる)。
+	 */
+	if(preg_match('/^\d{4}$/', $d)) {
 	    $d = $d . '-01-01';
-	} else if(preg_match('/\d{4}\-\d{2}/', $d)) {
+	} else if(preg_match('/^\d{4}\-\d{1,2}$/', $d)) {
 	    $d = $d . '-01';
 	}
 	$base_time = strtotime($d);
-	if($base_time == 0)
+	if($base_time === false)
 	    $base_time = $now;
     }
+    /*
+     * 表のマスは起点から 24 時間ずつ足して作る。夏時間のある時間帯で起点が 0 時台や
+     * 23 時台だと、切り替えをまたいだところで日付が重なったり抜けたりするので、
+     * 起点はその日の正午にそろえる (1 時間ずれても日付が変わらない)。
+     */
+    $base_time = mktime(12, 0, 0, (int)nf_date('%m', $base_time),
+			(int)nf_date('%d', $base_time), (int)nf_date('%Y', $base_time));
 
     $basepagename = $context['page']['name'];
     $show = '';
