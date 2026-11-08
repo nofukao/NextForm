@@ -10,8 +10,9 @@
  *   render <名前> [calendar の値] 管理者 (書ける人) としてページの本文を描いた HTML
  *   views <名前>                  種別 wiki のページを描き、そのあいだに「読んだ」と
  *                                 記録されたページ (views=<空白区切り>)
- *   keepout <ページ名..>          ログインしていない利用者にそのページだけ読ませない
- *                                 (ほかは read だけ。書かせない。saved=1/0)
+ *   guest <型>=<権限>..           ログインしていない利用者の権限を、ページ名の型 (fnmatch) ごとに
+ *                                 決める。先に書いたものが勝つ。権限は read・write・keepout などの
+ *                                 名前か、writeonly (読めないが書ける)。saved=1/0
  *
  * 結果は `key=value` の行で出す。判定は呼び出し側の shell が行う。
  * ページを書くので、必ず複製したサイトに対して実行すること。
@@ -84,13 +85,17 @@ case 'views':
     printf("views=%s\n", implode(' ', array_keys($USER_HISTORY_PAGE_VIEW['pages'])));
     break;
 
-case 'keepout':
-    /* ページごとの権限は先に書いたものから当てはめられるので、'*' を最後に置く */
+case 'guest':
+    /* ページごとの権限は先に書いたものから当てはめられるので、'*' は最後に書く */
     global $AUTH_PERMISSIONS;
     $permission = array();
-    foreach($rest as $pagename)
-	$permission[$pagename] = 'keepout';
-    $permission['*'] = 'read';
+    foreach($rest as $rule) {
+	list($pattern, $preset) = explode('=', $rule, 2);
+	if($preset === 'writeonly')
+	    $preset = array('read' => false, 'insert' => true, 'write' => true,
+			    'lock' => false, 'export' => false, 'admin' => false);
+	$permission[$pattern] = $preset;
+    }
     $AUTH_PERMISSIONS[AUTH_GUEST_USERNAME] = $permission;
     printf("saved=%d\n", auth_save_permissions() ? 1 : 0);
     break;

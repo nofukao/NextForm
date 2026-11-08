@@ -2402,12 +2402,22 @@ function calendarHelperSetup() {
 	    }
 	    td.observe('click', handlerToggle);
 	    /*
-	     * 日付がリンクでないマス (show=title でページのある日) は、日付に Tab で止まる
-	     * (tabindex)。Enter か Space で中身を開け閉めする。小さい画面とサイドでは中身が
-	     * 隠れているので、リンクの無い日付がキーボードからの入口になる。
+	     * 日付がリンクでないマス (show=title でページのある日)。中身が隠れているとき
+	     * (小さい画面とサイド) は、リンクの無い日付がキーボードからの入口になるので、
+	     * Tab で止まり (tabindex)、Enter か Space で中身を開け閉めできるようにする。
+	     * 広い画面では中身のリンクに直に届くので、押しても何も起きない止まり場所は作らない。
+	     * 画面の幅は変わるので、変わるたびに付け直す。
 	     */
-	    var day = td.down('dt.day[tabindex]');
-	    if(day) {
+	    var day = td.down('dl > dt.day');
+	    if(day && !day.down('a')) {
+		var updateTabStop = function() {
+		    if(span.getStyle('display') == 'none')
+			day.setAttribute('tabindex', '0');
+		    else
+			day.removeAttribute('tabindex');
+		};
+		updateTabStop();
+		Event.observe(window, 'resize', updateTabStop);
 		day.observe('keydown', function(event) {
 		    if(event.keyCode != Event.KEY_RETURN && event.keyCode != 32)
 			return;

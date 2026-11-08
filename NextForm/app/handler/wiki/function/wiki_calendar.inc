@@ -242,15 +242,14 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
 	    /*
 	     * show=title でページのある日の日付はリンクにしない (行き先が 1 つに決まらない。
 	     * ページへはマスのタイトルから行く)。小さい画面とサイドでは、マスを押すと中身が
-	     * 浮いて出る。日付のリンクが無くなってもキーボードで開けるよう、Tab で止まり
-	     * Enter で開けるようにする (nextform.js の calendarHelperSetup())。
+	     * 浮いて出る。日付のリンクが無くなってもキーボードで開けるよう、nextform.js の
+	     * calendarHelperSetup() が、中身が隠れているときだけ日付を Tab で止まり Enter で
+	     * 開けるものにする (広い画面に、押しても何も起きない止まり場所を作らない)。
 	     * ページの無い日の日付は今までどおり、1 つ目を作るリンク。
 	     */
 	    $is_date_text = $is_title_mode && $is_day_page;
 	    if($is_date_text) {
 		$day_label = $dt;
-		dom_set_attribute($dt, 'tabindex', '0');
-		dom_set_attribute($dt, 'role', 'button');
 	    } else {
 		$uri = url_make($day['pagename']);
 		$day_label = dom_append_link($dt, $uri, '');
@@ -542,9 +541,12 @@ function wiki_operator_calendar_append_toc($li, &$page) {
 	    return;
     }
     $text = trim($li->textContent);
+    /* Wiki 記法の目次は、文字の無いページでページ名の全体を出す。マスでは最後の部分にする */
+    if($text === '' || $text === $page['name'])
+	$text = page_get_simplename($page['name']);
     while($li->firstChild)
 	$li->removeChild($li->firstChild);
-    dom_append_page_link($li, $text !== '' ? $text : page_get_simplename($page['name']), $page['name']);
+    dom_append_page_link($li, $text, $page['name']);
 }
 
 /* 見た目の 1 文字 (書記素) ずつに分ける。不正な UTF-8 などで分けられなければ false */
@@ -586,19 +588,15 @@ function wiki_operator_calendar_cut_toc($node, $title_holder, $maxlength) {
 	return false;
 
     $lines = wiki_operator_calendar_toc_lines($node, $xpath);
+
+    /* 1 段目: 上限に来た文字を切り、その後ろの文字を消す (要素はまだ消さない) */
     $left = $maxlength;
     $is_cut = false;
+    $parents = array();
     foreach($texts as $text) {
 	if($is_cut) {
-	    $parent = $text['node']->parentNode;
-	    $parent->removeChild($text['node']);
-	    /* 空になった項目・リンク・箇条書きを、$node の手前まで消す */
-	    while($parent !== $node && trim($parent->textContent) === '' &&
-		  $parent->getElementsByTagName('img')->length == 0) {
-		$grandparent = $parent->parentNode;
-		$grandparent->removeChild($parent);
-		$parent = $grandparent;
-	    }
+	    $parents[] = $text['node']->parentNode;
+	    $text['node']->parentNode->removeChild($text['node']);
 	    continue;
 	}
 	$count = count($text['chars']);
@@ -611,8 +609,33 @@ function wiki_operator_calendar_cut_toc($node, $title_holder, $maxlength) {
 	$text['node']->data = implode('', array_slice($text['chars'], 0, $left)) . '…';
 	$is_cut = true;
     }
+
+    /*
+     * 2 段目: 空になった項目・リンク・箇条書きを、$node の手前まで消す。
+     * 先に消した要素の中にある要素は、もう $node につながっていないので飛ばす
+     * (上へたどると、親の無い要素に行き着く)。
+     */
+    foreach($parents as $parent) {
+	if(!wiki_operator_calendar_is_inside($parent, $node))
+	    continue;
+	while($parent !== $node && trim($parent->textContent) === '' &&
+	      $parent->getElementsByTagName('img')->length == 0) {
+	    $grandparent = $parent->parentNode;
+	    $grandparent->removeChild($parent);
+	    $parent = $grandparent;
+	}
+    }
     dom_set_attribute($title_holder, 'title', implode("\n", $lines));
     return true;
+}
+
+/* $element が $node の中に (まだ) つながっているか */
+function wiki_operator_calendar_is_inside($element, $node) {
+    for($e = $element; !is_null($e); $e = $e->parentNode) {
+	if($e === $node)
+	    return true;
+    }
+    return false;
 }
 
 /* 目次の見出しの文字 (項目ごとに 1 つ。入れ子の箇条書きは除く)。項目が無ければ中身の文字 */
