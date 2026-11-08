@@ -54,7 +54,7 @@ function search(&$query, $search_options = array()) {
 	$parsed = search_query_from_words($query);
 
     if(SEARCH_ENGINE === 'builtin')
-	return search_builtin($parsed, $search_options);
+	return search_order_manual_language(search_builtin($parsed, $search_options));
     else if(($engine = search_engine()) !== false) {
 	/*
 	 * 新しい書き方は builtin だけ。記号を落として渡すと「含まない」が
@@ -65,8 +65,41 @@ function search(&$query, $search_options = array()) {
 	    return array();
 	}
 	$words = search_query_words($parsed);
-	return $engine['search']($words, $search_options);
+	return search_order_manual_language($engine['search']($words, $search_options));
     }
+}
+
+/*
+ * サイトの言語 (LANG) でないマニュアルのページ (MANUAL_PAGENAME/<ほかの言語>/…) を、
+ * 結果の後ろに回す。英語の語はふつう英語のページに多く出てくるので、スコアの順だけでは
+ * 日本語のサイトでも英語のマニュアルが上に混ざる。前と後ろのそれぞれの中は今の順
+ * (スコアか更新日時) のまま。ふつうのページと、言語に依らないマニュアルのページ
+ * (入口・AI 向け) は前に置く (docs/development/design-manual-search-order.md)。
+ * 画面が 50 件ずつに区切る前に並べるので、サイトの言語のページがすべて先に出る。
+ */
+function search_order_manual_language($search_results) {
+    if(!is_array($search_results))
+	return $search_results;
+    $front = array();
+    $back = array();
+    foreach($search_results as $pagename => $search_result) {
+	if(search_is_other_language_manual((string)$pagename))
+	    $back[$pagename] = $search_result;
+	else
+	    $front[$pagename] = $search_result;
+    }
+    return $front + $back;
+}
+
+/* サイトの言語でない言語の木のマニュアルのページか (MANUAL_PAGENAME/en/… など) */
+function search_is_other_language_manual($pagename) {
+    global $SETUP_CONSTANTS;
+    if(!page_is_system_page($pagename))
+	return false;
+    /* MANUAL_PAGENAME の次の 1 段が言語 (入口の MANUAL_PAGENAME そのものは言語に依らない) */
+    $rest = (string)substr($pagename, strlen(MANUAL_PAGENAME) + 1);
+    $lang = explode('/', $rest)[0];
+    return $lang !== LANG && isset($SETUP_CONSTANTS['LANG']['options'][$lang]);
 }
 
 /*

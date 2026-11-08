@@ -464,7 +464,7 @@ URLの下のチェックボックスで，何を写すかを選べます．
 
 結果の画面では次のことを選べます．
 :順序|''出現頻度''(はじめの選択)は，語がよく出るページほど上にします．題名・タグ・説明・本文の順に重く数えます．''更新日時''は新しい順です．
-:マニュアル|''含めない''(はじめの選択)・''含める''・''マニュアルだけ''から選びます．結果の上の''マニュアルも含めて探す''などのリンクでも切り替えられます．マニュアルのページは題名でも探せます．マニュアルの更新日時はNextFormの版を出した日です．
+:マニュアル|''含めない''(はじめの選択)・''含める''・''マニュアルだけ''から選びます．結果の上の''マニュアルも含めて探す''などのリンクでも切り替えられます．マニュアルのページは題名でも探せます．サイトの言語(サイト設定の''言語'')のマニュアルのページを先に出し，ほかの言語のマニュアルのページはその後ろに出します．マニュアルの更新日時はNextFormの版を出した日です．
 -結果は50件ずつ出ます．
 -読む権限の無いページは結果に出ません．ログインしていないときに見つからなければ，ログインすると見つかることがあります．
 -結果を押して開いたページでは，探した語(正規表現なら一致した文字)に印が付きます．「含まない」語には付きません．''検索キーワード:''の横の×を押すと消えます．
@@ -1027,7 +1027,7 @@ Searching with a regular expression, or only with exclusion or dates, reads many
 
 The result screen offers the following.
 :Sort|''Frequency'' (chosen at first) puts pages where the words appear more often higher. Matches in the title count most, then the tags, the description and the text. ''Last updated'' is newest first.
-:Manual|Choose from ''Exclude'' (chosen at first), ''Include'' and ''Only the manual''. Links such as ''Search including the manual'' above the results also switch it. Manual pages can be found by their titles. The time a manual page was updated is the day the NextForm version was released.
+:Manual|Choose from ''Exclude'' (chosen at first), ''Include'' and ''Only the manual''. Links such as ''Search including the manual'' above the results also switch it. Manual pages can be found by their titles. Manual pages in the language of the site (''Language'' in the site preferences) come first, and manual pages in other languages come after them. The time a manual page was updated is the day the NextForm version was released.
 -Results are shown 50 at a time.
 -Pages you cannot read are not in the results. When you find nothing without logging in, logging in may find them.
 -On a page opened from the results, the searched words (for a regular expression, the matching characters) are marked. Words to exclude are not marked. Press the × beside ''Search keywords'' to clear them.
