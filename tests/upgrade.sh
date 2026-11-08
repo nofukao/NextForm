@@ -262,6 +262,13 @@ check_cmd "見覚えのないファイルが実行ログで報告される" \
 # ToraToraWiki に Markdown のページは無いので、行き先の変わるリンクも無い ([17])
 check_cmd "ToraToraWiki からは Markdown のリンクの案内を出さない" \
           "! grep -q 'Markdown のリンクの行き先' '${DIST}/upgrade.log'"
+# ToraToraWiki の &calendar も、マスに出すものの既定が変わる (0.22.0)
+check_cmd "ToraToraWiki からもカレンダーの見え方の案内を出す" \
+          "grep -q 'カレンダーの見え方が変わったところを確かめてください (0.22.0)' '${DIST}/upgrade.log'"
+check_cmd "  戻し方 (show=toc) を出す" \
+          "grep -q 'show=toc を書き足します' '${DIST}/upgrade.log'"
+check_cmd "  手順書にも同じ節がある" \
+          "grep -q '^### カレンダーの見え方が変わったところを確かめる ★0.22.0★$' '${REPO_ROOT}/docs/upgrade-guide.md'"
 echo
 
 # --- 新しいコードが入ったこと -----------------------------------------------
@@ -573,6 +580,8 @@ check_cmd "  調べるコマンドを出す" \
           "grep -q 'php .*/app/tool/markdown_change_check .*/index.php --user 管理者名' '${DIST}/from-0.13.log'"
 check_cmd "  0.13.0 からなら、リンクの行き先 (0.13.0) は知らせない" \
           "! grep -q 'Markdown のリンクの行き先を確かめてください' '${DIST}/from-0.13.log'"
+check_cmd "  0.22.0 より前からなので、カレンダーの見え方 (0.22.0) も知らせる" \
+          "grep -q 'カレンダーの見え方が変わったところを確かめてください (0.22.0)' '${DIST}/from-0.13.log'"
 check_cmd "  手順書にも同じコマンドがある" \
           "grep -q '^php app/tool/markdown_change_check /path/to/wiki/index.php --user 管理者名$' '${REPO_ROOT}/docs/upgrade-guide.md'"
 # 手順書のコマンドを実走する。tora2 の複製に Markdown のページは無い

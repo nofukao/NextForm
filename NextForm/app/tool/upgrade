@@ -803,6 +803,22 @@ if($up_old_version !== null && version_compare($up_old_version, '0.14.0', '<')) 
     upgrade_out("      php %s/app/tool/markdown_change_check %s --user 管理者名", $up_site, $up_index_real);
 }
 
+/*
+ * 0.22.0 で &calendar の各マスに出すものの既定を、目次からその日のページのタイトルに変えた
+ * (show=title が既定。今までの目次は show=toc。docs/development/design-calendar-day-pages.md)。
+ * ページには触らず、見え方が変わることと戻し方を知らせるだけにする。ToraToraWiki の
+ * &calendar も同じに変わるので、ToraToraWiki からも知らせる。
+ * docs/upgrade-guide.md の「カレンダーの見え方が変わったところを確かめる」と 1 対 1。
+ * 版数は、この変更を載せて配る版に合わせること。
+ */
+if($up_old_version === null || version_compare($up_old_version, '0.22.0', '<')) {
+    upgrade_out("");
+    upgrade_out("  カレンダーの見え方が変わったところを確かめてください (0.22.0):");
+    upgrade_out("    &calendar の各マスに、目次の代わりにその日のページのタイトルが出ます。ページのある日の");
+    upgrade_out("    日付はリンクでなくなり、同じ日の 2 つ目からのページ (年-月-日_2…) も並びます");
+    upgrade_out("    今までの見え方に戻すには、そのカレンダーに show=toc を書き足します (例 &calendar(show=toc))");
+}
+
 if($up_backup_path !== null) {
     upgrade_out("");
     upgrade_out("  問題があれば戻せます:");

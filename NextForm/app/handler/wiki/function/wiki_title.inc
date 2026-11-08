@@ -71,7 +71,7 @@ function wiki_operator_title(&$context, $dom, $tree) {
 }
 :{short|''短いタイトル''を設定します．ページのタイトルと見出しは変わりません．
 短いタイトルは，タイトルから置き場所で分かること(日付など)を除いたものです．
-カレンダー([[&&calendar(show=title):../calendar]])のマスに出ます．
+カレンダー([[&&calendar:../calendar]])のマスに出ます．
 タイトルと同じく本文が決め，ソースから消して保存すると消えます．
 サイトの検索の対象にはなりません．
 }
@@ -119,7 +119,7 @@ For example, to change the title and make a section heading at the same time, wr
 }
 :{short|set the ''short title''. The title and the heading of the page do not change.
 The short title is the title without what its place already tells (a date, for example).
-It is shown in the boxes of a calendar ([[&&calendar(show=title):../calendar]]).
+It is shown in the boxes of a calendar ([[&&calendar:../calendar]]).
 Like the title it is decided by the text: remove it from the source and save, and it
 is removed. It is not searched by the site search.
 }

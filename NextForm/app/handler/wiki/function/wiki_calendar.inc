@@ -794,11 +794,11 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[カレンダー:../../Function/calendar]]|&&calendar(&[&[ページ名&]&], month, weeks, behind=N, ahead=N);|
+|[[カレンダー:../../Function/calendar]]|&&calendar(&[&[ページ名&]&], month, weeks, behind=N, ahead=N, show=toc, maxlength=N);|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|calendar|&&calendar(&[&[page name&]&], month, weeks, behind=N, ahead=N);|
+|calendar|&&calendar(&[&[page name&]&], month, weeks, behind=N, ahead=N, show=toc, maxlength=N);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/calendar
@@ -806,12 +806,13 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 &title &&calendar
 
 *概要
- &calendar([[ページ名]], month, weeks, behind=N, ahead=N, show=title){
+ &calendar([[ページ名]], month, weeks, behind=N, ahead=N, show=toc, maxlength=N){
  イベント情報
  }
 カレンダーを表示します．さらにカレンダー上の1日を1ページに対応させて簡単なスケジュール帳としても利用できます．
 1日に対応するページは現在のページの子ページになり ''現在のページ名/年-月-日'' というページ名になります．
-カレンダー上の各マスにはその日のページの要約が表示されます．
+同じ日に2つ以上のページを作ることもできます(下の「同じ日のページ」)．
+カレンダー上の各マスにはその日のページのタイトルが表示されます(下の「マスに出るもの」)．
 カレンダーのマスをダブルクリックすることですぐに子ページを編集することができます．
 [[&&datepages:../datepages]]を使うと子ページを内容とともに一覧表示することもできます．
 
@@ -821,12 +822,34 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 :weeks|今週を基準に前後に数週間分表示します．表示する週はbehind,aheadパラメータで指定できます．
 :behind=N|weeksが指定された際にN週分過去の週を表示します(Nは整数)．
 :ahead=N|weeksが指定された際にN週分未来の週を表示します(Nは整数)．画面の▲▼で広げられるのは，前後それぞれ12週までです．
-:{show=title|各マスに，要約(見出しの一覧)の代わりにその日のページの''短いタイトル''を出します．
-短いタイトルが無いページはタイトルを，どちらも無いページは要約を出します．
+:{show=toc|各マスに，タイトルの代わりにその日のページの要約(見出しの一覧)を出します(NextForm 0.21 までの表示です)．
+日付はその日のページへのリンクになり，同じ日の2つ目からのページは出ません．
+書かなければタイトルを出します(""show=title""と書いても同じです)．}
+:{maxlength=N|各マスに出す文字の数の上限です(Nは1以上の整数)．ページごとに数え，全角も半角も1文字と数えます．
+超えたところで切って「…」を付けます．切ったタイトルは，マウスを載せると全文が出ます．
+要約は見出しを順に数え，上限に来たところで切ります(先頭の見出しの途中で切れることもあります)．
+書かなければ切りません．}
+
+*マスに出るもの
+各マスには，その日のページの''短いタイトル''を出します．
+短いタイトルが無いページはタイトルを，どちらも無いページは要約(見出しの一覧)を出します．
 短いタイトルは，タイトルから日付を除いたものなど，マスの場所で分かることを除いて書きます
 (Wiki記法の[[&&title(short):../title]]，Markdown記法のフロントマターの ""short_title:""，
 メタ情報の画面)．
-マスのタイトルは，その日のページへのリンクになります．}
+マスのタイトルと要約の見出しは，そのページへのリンクになります．
+見出しの無いページは書き出しの文字が，文字も無いページはページ名がリンクになります．
+狭い画面とサイドバーでは，ページのある日のマスに「...」が出て，押すと中身が出ます．
+
+*同じ日のページ
+同じ日に2つ以上のページを作れます．ページ名は ''年-月-日''(1つ目)，''年-月-日_2''，''年-月-日_3''… です
+(番号は9999まで)．
+-ページのある日は，日付がリンクにならず，その日のページを番号の順に並べます．
+-書ける人には，最後に小さく「＋」が出ます．押すと，次の番号のページを作れます．
+番号は，いちばん大きい番号(消したページを含む)の次です．
+-ページの無い日は，日付を押すと1つ目のページを作れます．
+-ページのタイトル(や要約)の上でダブルクリックするとそのページを，日付や余白の上でダブルクリックすると1つ目のページを編集します．
+-2つ目からのページは1つ目の子ページではなく兄弟です．1つ目の名前を変えたり，消したり，クローンしたりしても，一緒には動きません．
+-""show=toc""のときは，今までどおり1つ目のページだけを出します．
 
 *対象
 対象には祝祭日等のイベントの情報が書けます．
@@ -913,13 +936,14 @@ function wiki_operator_calendar_get_day_page_info_for_external_tool($basepagenam
 &title &&calendar
 
 *Overview
- &calendar([[page name]], month, weeks, behind=N, ahead=N, show=title){
+ &calendar([[page name]], month, weeks, behind=N, ahead=N, show=toc, maxlength=N){
  event data
  }
 Shows a calendar. One day on the calendar can also be tied to one page, making a simple
 scheduler. The page for a day is a child page of the current page, named
 ''current page name/year-month-day''.
-Each box of the calendar shows a summary of the page for that day.
+A day can also have two or more pages (see "Pages of the same day" below).
+Each box of the calendar shows the title of the page for that day (see "What a box shows" below).
 Double clicking a box of the calendar edits the child page straight away.
 [[&&datepages:../datepages]] lists the child pages with their contents.
 
@@ -929,13 +953,37 @@ Double clicking a box of the calendar edits the child page straight away.
 :weeks|show a few weeks around this week. Which weeks are shown is set by the behind and ahead parameters.
 :behind=N|with weeks set, show N weeks into the past (N is a whole number).
 :ahead=N|with weeks set, show N weeks into the future (N is a whole number). The ▲ and ▼ buttons on the screen widen it up to 12 weeks each way.
-:{show=title|show the ''short title'' of the page for the day in each box, instead of
-its summary (the list of headings).
-A page without a short title shows its title, and a page with neither shows its summary.
+:{show=toc|show the summary (the list of headings) of the page for the day in each box,
+instead of its title (how NextForm 0.21 and before showed it).
+The date is a link to the page for the day, and the second and later pages of a day are not shown.
+With nothing given, the title is shown (the same as writing ""show=title"").}
+:{maxlength=N|the most characters shown in a box (N is a whole number, 1 or more). Each page is
+counted on its own, and every character counts as one, whether full width or half width.
+Where it goes over, the text is cut and "…" is added. Hovering the mouse over a cut title shows it whole.
+A summary is counted heading by heading, in order, and cut where it reaches the limit
+(it can be cut in the middle of the first heading). With nothing given, nothing is cut.}
+
+*What a box shows
+Each box shows the ''short title'' of the page for the day.
+A page without a short title shows its title, and a page with neither shows its summary
+(the list of headings).
 Write the short title without what the place of the box already tells, such as the date
 in the title ([[&&title(short):../title]] in Wiki notation, ""short_title:"" in the front
 matter in Markdown notation, or the meta information screen).
-The title in a box is a link to the page for the day.}
+The titles and the headings of a summary in a box are links to the page.
+For a page without headings the first words are the link, and for a page with no words, its page name.
+On a narrow screen and in the side bar, a box of a day with pages shows "...", and tapping it shows what is inside.
+
+*Pages of the same day
+A day can have two or more pages. They are named ''year-month-day'' (the first),
+''year-month-day_2'', ''year-month-day_3'' and so on (up to 9999).
+-For a day with pages, the date is not a link, and the pages of the day are listed in the order of their numbers.
+-Anyone who can write sees a small "＋" at the end. Pressing it makes the page with the next number.
+The number is the one after the largest number, deleted pages included.
+-For a day without pages, pressing the date makes the first page.
+-Double clicking on the title (or the summary) of a page edits that page, and double clicking on the date or a blank part edits the first page.
+-The second and later pages are not child pages of the first but its siblings. Renaming, deleting or cloning the first page does not move them with it.
+-With ""show=toc"", only the first page is shown, as before.
 
 *Target
 Data about events such as public holidays can be written as the target.

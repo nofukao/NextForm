@@ -368,7 +368,7 @@ Markdownの編集欄には，左に太い線も付きます．
 *メタ情報
 ページの''タイトル''(題名)と''短いタイトル''と''説明''を決めます．
 :タイトル|ページ名とは別に表示する題名です．本文に題名が書いてあるとき(Wiki記法の[[&&title:../Wiki/Function/title]]，Markdown記法の ""title:"" か先頭の ""#"" 見出し)はそちらが使われ，ここで入れた題名は使われません．本文に題名が無いときはここで付けられますが，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．
-:短いタイトル|タイトルから，置き場所で分かること(日付など)を除いたものです．カレンダー([[&&calendar(show=title):../Wiki/Function/calendar]])のセルに出ます．本文に書いてあるとき(Wiki記法の&&title(short)，Markdown記法の ""short_title:"")はそちらが使われます．ほかはタイトルと同じ扱いで，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．サイトの検索の対象にはなりません．
+:短いタイトル|タイトルから，置き場所で分かること(日付など)を除いたものです．カレンダー([[&&calendar:../Wiki/Function/calendar]])のセルに出ます．本文に書いてあるとき(Wiki記法の&&title(short)，Markdown記法の ""short_title:"")はそちらが使われます．ほかはタイトルと同じ扱いで，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．サイトの検索の対象にはなりません．
 :説明|ページの説明です．検索エンジン向けの説明になり，サイトの検索の対象にもなります．本文を保存しても，''この版に戻す''をしても消えません．消すときは，欄を空にして保存します．
 */
 
@@ -930,7 +930,7 @@ Enabling it in the site settings lets you run it in the browser as it is
 *Meta info
 Sets the ''Title'', the ''Short title'' and the ''Description'' of the page.
 :Title|A title shown apart from the page name. When the text sets a title ([[&&title:../Wiki/Function/title]] in Wiki notation, ""title:"" or a single ""#"" heading at the top in Markdown notation), that one is used and the title entered here is not. When the text has no title you can set one here, but on pages of type wiki and Markdown it disappears the next time the text is saved.
-:Short title|The title without what its place already tells (a date, for example). It is shown in the cells of a calendar ([[&&calendar(show=title):../Wiki/Function/calendar]]). When the text sets one (&&title(short) in Wiki notation, ""short_title:"" in Markdown notation), that one is used. Otherwise it works like the title: on pages of type wiki and Markdown it disappears the next time the text is saved. It is not searched by the site search.
+:Short title|The title without what its place already tells (a date, for example). It is shown in the cells of a calendar ([[&&calendar:../Wiki/Function/calendar]]). When the text sets one (&&title(short) in Wiki notation, ""short_title:"" in Markdown notation), that one is used. Otherwise it works like the title: on pages of type wiki and Markdown it disappears the next time the text is saved. It is not searched by the site search.
 :Description|A description of the page. It becomes the description for search engines and is also searched by the site search. It is kept when the text is saved and when ''Restore this version'' is used. To remove it, empty the field and save.
 */
 
@@ -1953,7 +1953,7 @@ Wiki記法の &&title{} と同じで，ページ名とは別に表示される�
 *短いタイトル
 ""short_title:"" を書くと，それがそのページの''短いタイトル''になります．
 題名から，置き場所で分かること(日付など)を除いたものを書きます．
-カレンダー([[&&calendar(show=title):../../Wiki/Function/calendar]])のセルに出ます．
+カレンダー([[&&calendar:../../Wiki/Function/calendar]])のセルに出ます．
 
  ---
  title: 2026-11-06（金）カレンダーの手直し
@@ -2600,7 +2600,7 @@ table of contents either).
 Writing ""short_title:"" makes it the ''short title'' of the page.
 Write the title without what its place already tells (a date, for example).
 It is shown in the cells of a calendar
-([[&&calendar(show=title):../../Wiki/Function/calendar]]).
+([[&&calendar:../../Wiki/Function/calendar]]).
 
  ---
  title: 2026-11-06 (Fri) Fixing the calendar
