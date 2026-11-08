@@ -5,6 +5,6 @@
 # js       取り出した dist/mermaid.min.js の sha512 (16 進)
 #
 # 版を変えるときは手で書き換えず、update-mermaid.sh --pin <版> を使う。
-version=12.2.0
-tgz=sha512-w7nr/SFrLO7BaVTs3dQTvYSV6nYSBj0Yy9DjBhsIJtAcHqRzXSq4Pg32ujHZ/AdWsAMNEvvhbm5dt9E2tOiHzw==
-js=5f45db85e0acc1f9edec044b02030cbfff92e5ed05b1d0263efc16ac2aec6dd149fe5efe2381ff4e729288bcc6f50871789a30b5a60ea16dd7c251cdea052ba2
+version=12.3.0
+tgz=sha512-4113TdXeLAsMruJ79OpFL5O8+LTFXhQqZ260rF3tgUmiNAtRm4Uume04I+65PRN6yZ69J4f8rVYWW8zRk65UYw==
+js=09a127e8359827530cd261404fd9ef273777cf980fb174ccef0ce9adbf30c7ad795b34e74d2ac6adb2a4654a9ed6cdb89695b6ed7e07948ad216f426ff292a64

@@ -130,8 +130,8 @@
   ブラウザで動くもの (`resource/script/` の下) / それを呼ぶ GPL のコードが NextForm で
   新しく書いたファイルだけで、そのファイルに GPLv3 §7 の追加の許可を付ける /
   `LICENSE` に名前・ライセンス・条文の場所・ソースの入手先・GPLv3 の対象外であることを書く
-  (2026-10-29。Mermaid 12 が含む ELK・EMF の EPL。
-  `docs/development/design-markdown-mermaid.md` §2.6・§3.7)。
+  (2026-10-29。Mermaid 12 の elkjs に組み込まれた EMF・Xtext の EPL。ELK 本体は 12.3.0 の
+  elkjs 0.12 から GPL も選べる。`docs/development/design-markdown-mermaid.md` §2.6・§3.7)。
 - **`search-index.sh` は複製したサイトを作ってから走る。** 索引をわざと壊す検査を
   含むので、複製元 (`NF_SITE`) には触らない。リポジトリの作業ツリーを rsync して
   から検証するので、`deploy.sh` を先に走らせる必要はない。
