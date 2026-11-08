@@ -110,6 +110,22 @@ names = re.findall(r"<li><a [^>]*data-link-pagename=\"([^\"]*)\"", m.group(1)) i
 print(",".join(n.split("/", 1)[1] for n in names if n.startswith("SearchQueryTest/")))'
 }
 
+# 標準入力の検索の画面の結果の並びが、言語 $1 のマニュアルのページ (NextFormManual/<$1> とその下) を
+# すべて後ろに回しているか。「ordered|前の件数|後ろの件数」か「mixed|…」。前の件数は、ふつうの
+# ページ・ほかの言語のマニュアル・言語に依らないマニュアル (入口・AI) を合わせた数
+manual_order() {
+    python3 -I -c '
+import re, sys
+lang = sys.argv[1]
+html = sys.stdin.read()
+m = re.search(r"<ul class=\"search_result\">(.*?)</ul>", html, re.S)
+names = re.findall(r"<li><a [^>]*data-link-pagename=\"([^\"]*)\"", m.group(1)) if m else []
+later = [n == "NextFormManual/" + lang or n.startswith("NextFormManual/%s/" % lang) for n in names]
+first_later = later.index(True) if True in later else len(later)
+ordered = all(later[first_later:])
+print("%s|%d|%d" % ("ordered" if ordered else "mixed", later.count(False), later.count(True)))' "$1"
+}
+
 # 標準入力の検索の画面の結果の、マニュアルのページの数
 manual_count() {
     python3 -I -c '
@@ -397,6 +413,24 @@ check_eq "  「マニュアルも含めて探す」のリンク" "yes" "$(contai
 check_eq "前の ignore_system_page=on でも含めない" "0" "$(search_html '検索' '&ignore_system_page=on' | manual_count)"
 location=$(curl -sk -o /dev/null -w '%{redirect_url}' "${URL}/?option=search&top=1&manual=only&query=$(urlq '検索')")
 check_eq "Shift+Enter はその範囲の一番上へ"     "yes" "$(contains "$location" 'NextFormManual')"
+# サイトの言語 (この複製は日本語) でないマニュアルのページは、結果の後ろに回す
+# (docs/development/design-manual-search-order.md)。英語の語はふつう英語のページに多く出てくるので、
+# スコアの順だけでは英語のページが上に混ざる
+result=$(search_html 'pages' '&manual=only' | manual_order en)
+check_eq "マニュアルだけ: 英語のマニュアルは日本語のページの後ろ" "ordered" "${result%%|*}"
+check_eq "  どちらの言語のページも出ている (確かめが空振りしない)" "yes" \
+         "$(IFS='|' read -r _ a b <<< "$result"; [[ $a -gt 0 && $b -gt 0 ]] && echo yes || echo no)"
+check_eq "  マニュアルも含めても、英語のマニュアルは後ろ" "ordered" \
+         "$(search_html 'pages' '&manual=with' | manual_order en | cut -d'|' -f1)"
+check_eq "  更新日時の順でも、英語のマニュアルは後ろ" "ordered" \
+         "$(search_html 'pages' '&manual=only&order=mtime' | manual_order en | cut -d'|' -f1)"
+location=$(curl -sk -o /dev/null -w '%{redirect_url}' "${URL}/?option=search&top=1&manual=only&query=pages")
+check_eq "  一番上へ移ると、英語のページには移らない" "yes|no" \
+         "$(contains "$location" 'NextFormManual')|$(contains "$location" 'NextFormManual/en/')"
+index_php_with "define('LANG', 'en');"
+check_eq "英語のサイトでは、日本語のマニュアルを後ろに回す" "ordered" \
+         "$(search_html 'pages' '&manual=only' | manual_order ja | cut -d'|' -f1)"
+index_php_with ""
 echo
 
 echo "6. マニュアルの題名"
