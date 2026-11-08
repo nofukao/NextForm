@@ -384,7 +384,7 @@ $WIKI_ALIASES['childpages'] = '&pages(show=list, children, fields=[[title]], <PA
 $WIKI_ALIASES['treepages'] = '&pages(show=tree, <PARAMS>){<TARGET>}';
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[ページ一覧(ツリー表示):../../Function/treepages]]|&&treepages(&[&[ページ名&]&]);|
+|[[ページ一覧(ツリー表示):../../Function/treepages]]|&&treepages(&[&[ページ名&]&], 件数);|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
@@ -521,11 +521,11 @@ $WIKI_ALIASES['blogpages'] =
     'footer=\'tags@'.l('Tags').'\' \'mtime@'.l('Last updated').'\', each=10, <PARAMS>){<TARGET>}';
 /**
 @manual $manualpage$/ja/Wiki/CheatSheet/Function
-|[[ブログ記事一覧:../../Function/blogpages]]|&&blogpages(&[&[ページ名&]&], 件数);|
+|[[ブログ記事一覧:../../Function/blogpages]]|&&blogpages(&[&[ページ名&]&], each=件数);|
 */
 /**
 @manual $manualpage$/en/Wiki/CheatSheet/Function
-|list of blog articles|&&blogpages(&[&[page name&]&], number of articles);|
+|list of blog articles|&&blogpages(&[&[page name&]&], each=number of articles);|
 */
 /**
 @manual $manualpage$/ja/Wiki/Function/blogpages

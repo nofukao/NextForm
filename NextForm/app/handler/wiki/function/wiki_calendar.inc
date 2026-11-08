@@ -875,7 +875,7 @@ function wiki_operator_calendar_get_google_calender($id, $start, $end) {
 -ページの無い日は，日付を押すと1つ目のページを作れます．
 -ページのタイトル(や目次)の上でダブルクリックするとそのページを，日付や余白の上でダブルクリックすると1つ目のページを編集します．
 -2つ目からのページは1つ目の子ページではなく兄弟です．1つ目の名前を変えたり，消したり，クローンしたりしても，一緒には動きません．
--""show=toc""のときは，今までどおり1つ目のページだけを出します．
+-""show=toc""のときは，1つ目のページだけを出します．
 
 *対象
 対象には祝祭日等のイベントの情報が書けます．
@@ -995,7 +995,7 @@ A page without a short title shows its title, and a page with neither shows its 
 (the list of headings).
 Write the short title without what the place of the box already tells, such as the date
 in the title ([[&&title(short):../title]] in Wiki notation, ""short_title:"" in the front
-matter in Markdown notation, or the meta information screen).
+matter in Markdown notation, or the ''Meta info'' screen).
 The titles and the headings of a summary in a box are links to the page.
 For a page without headings the first words are the link, and for a page with no words, its page name.
 The title in a box is the one recorded when the page was saved. A page last saved by an old version that did
@@ -1012,7 +1012,7 @@ The number is the one after the largest number, deleted pages included.
 -For a day without pages, pressing the date makes the first page.
 -Double clicking on the title (or the summary) of a page edits that page, and double clicking on the date or a blank part edits the first page.
 -The second and later pages are not child pages of the first but its siblings. Renaming, deleting or cloning the first page does not move them with it.
--With ""show=toc"", only the first page is shown, as before.
+-With ""show=toc"", only the first page is shown.
 
 *Target
 Data about events such as public holidays can be written as the target.

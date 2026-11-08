@@ -104,7 +104,7 @@ new=時間の形式で指定するとNEW!を表示する時間を指定できま
 :{show|時刻を表示します．デフォルトで指定されています．
 NEW!のみを表示して日時の表示が不要なときに!showと指定します．}
 :{フォーマット|指定したフォーマットに従って日時を表示します．
-フォーマットは[[strftimeのフォーマット:http://php.net/manual/ja/function.strftime.php]]に従います．
+フォーマットは[[strftimeのフォーマット:https://www.php.net/manual/ja/function.strftime.php]]と同じ指定子で書きます(NextFormが自分で処理するので，PHPの版に依りません)．
 デフォルトは`TIME_FORMAT`です．}
 
 *対象
@@ -138,8 +138,8 @@ Giving it in the form new=hours sets how long NEW! is shown for.}
 :{show|show the time. Set by default.
 Write !show when only NEW! is wanted and the date itself is not.}
 :{format|show the date and time in the format given.
-The format follows the
-[[strftime format:http://php.net/manual/en/function.strftime.php]].
+The format uses the same conversion specifiers as the
+[[strftime format:https://www.php.net/manual/en/function.strftime.php]] (NextForm handles the specifiers itself, so it does not depend on the version of PHP).
 The default is `TIME_FORMAT`.}
 
 *Target

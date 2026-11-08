@@ -294,7 +294,7 @@ Markdownの編集欄には，左に太い線も付きます．
 
 ''ページメニュー''の''履歴''の一覧で，前の版の行の''この版に戻す''を押すと(前の版を表示した画面にもあります)，確認の画面になります．
 ''この版に戻す''を押すと，今のページをその版の本文と種別で上書きします．
--題名とタグも，その版のものに戻ります(Markdownの題名とタグ，Wiki記法の題名は本文から取り直します)．説明やロックなどは今のままです．
+-題名・短いタイトル・タグも，その版のものに戻ります(Markdownの題名・短いタイトル・タグ，Wiki記法の題名・短いタイトルは本文から取り直します)．説明やロックなどは今のままです．
 -戻す前の内容は，編集の間隔が短くても必ず履歴に残ります．なので，戻したこと自体も同じ方法で元に戻せます．
 -種別の違う版にも戻せます．Wiki記法からMarkdownに変換したページも，変換前の版に戻せばWiki記法に戻ります．
 -添付ファイル(種別file)は，中身とファイルの種類を戻します．
@@ -368,7 +368,7 @@ Markdownの編集欄には，左に太い線も付きます．
 *メタ情報
 ページの''タイトル''(題名)と''短いタイトル''と''説明''を決めます．
 :タイトル|ページ名とは別に表示する題名です．本文に題名が書いてあるとき(Wiki記法の[[&&title:../Wiki/Function/title]]，Markdown記法の ""title:"" か先頭の ""#"" 見出し)はそちらが使われ，ここで入れた題名は使われません．本文に題名が無いときはここで付けられますが，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．
-:短いタイトル|タイトルから，置き場所で分かること(日付など)を除いたものです．カレンダー([[&&calendar:../Wiki/Function/calendar]])のセルに出ます．本文に書いてあるとき(Wiki記法の&&title(short)，Markdown記法の ""short_title:"")はそちらが使われます．ほかはタイトルと同じ扱いで，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．サイトの検索の対象にはなりません．
+:短いタイトル|タイトルから，置き場所で分かること(日付など)を除いたものです．カレンダー([[&&calendar:../Wiki/Function/calendar]])のマスに出ます．本文に書いてあるとき(Wiki記法の&&title(short)，Markdown記法の ""short_title:"")はそちらが使われます．ほかはタイトルと同じ扱いで，種別wikiと種別Markdownのページでは，次に本文を保存すると消えます．サイトの検索の対象にはなりません．
 :説明|ページの説明です．検索エンジン向けの説明になり，サイトの検索の対象にもなります．本文を保存しても，''この版に戻す''をしても消えません．消すときは，欄を空にして保存します．
 */
 
@@ -855,7 +855,7 @@ Changing the tags or the meta info, and locking, also make a version.
 
 In the list of ''History'' in the ''page menu'', press ''Restore this version'' on the row of an older version (it is also on the page showing that version), and a confirmation screen appears.
 Press ''Restore this version'' there, and the current page is overwritten with the text and the type of that version.
--The title and the tags return to those of that version (the title and tags of Markdown and the title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
+-The title, the short title and the tags return to those of that version (the title, short title and tags of Markdown and the title and short title of Wiki notation are taken again from the text). The description, the lock and so on stay as they are.
 -The content before restoring is always kept in the history, even when the edits come close together. So restoring can itself be undone in the same way.
 -A version of a different type can be restored too. A page converted from Wiki notation to Markdown returns to Wiki notation when restored to the version before conversion.
 -For an attached file (type file), its contents and file type are restored.
@@ -931,7 +931,7 @@ Enabling it in the site settings lets you run it in the browser as it is
 *Meta info
 Sets the ''Title'', the ''Short title'' and the ''Description'' of the page.
 :Title|A title shown apart from the page name. When the text sets a title ([[&&title:../Wiki/Function/title]] in Wiki notation, ""title:"" or a single ""#"" heading at the top in Markdown notation), that one is used and the title entered here is not. When the text has no title you can set one here, but on pages of type wiki and Markdown it disappears the next time the text is saved.
-:Short title|The title without what its place already tells (a date, for example). It is shown in the cells of a calendar ([[&&calendar:../Wiki/Function/calendar]]). When the text sets one (&&title(short) in Wiki notation, ""short_title:"" in Markdown notation), that one is used. Otherwise it works like the title: on pages of type wiki and Markdown it disappears the next time the text is saved. It is not searched by the site search.
+:Short title|The title without what its place already tells (a date, for example). It is shown in the boxes of a calendar ([[&&calendar:../Wiki/Function/calendar]]). When the text sets one (&&title(short) in Wiki notation, ""short_title:"" in Markdown notation), that one is used. Otherwise it works like the title: on pages of type wiki and Markdown it disappears the next time the text is saved. It is not searched by the site search.
 :Description|A description of the page. It becomes the description for search engines and is also searched by the site search. It is kept when the text is saved and when ''Restore this version'' is used. To remove it, empty the field and save.
 */
 
@@ -970,7 +970,7 @@ and [[Link:../Wiki/Basic#Link]] for Wiki notation.}
 Choose ''Clone of another NextForm page'' as the page type and press ''Create'';
 a screen to enter the URL of the page to clone appears.
 Enter the URL and press ''Clone'', and a new page is made by copying the text and the attached files of that page with the same type (Markdown, wiki, text or file).
-A title, a short title and tags written in the text (the front matter or the leading ""#"" in Markdown notation, &&title in Wiki notation) are copied with the text. Those set on the meta information screen (the tags of pages of type wiki, text and file, the titles of pages of type text and file, and so on) are not copied.
+A title, a short title and tags written in the text (the front matter or the leading ""#"" in Markdown notation, &&title in Wiki notation) are copied with the text. Those set on the ''Meta info'' screen (the tags of pages of type wiki, text and file, the titles of pages of type text and file, and so on) are not copied.
 -Only the attached files directly under the copied pages (those referred to as ""./image.png"") are copied. Attached files of other pages (such as ""../image.png"") are not. The text is not rewritten, so links to them become broken (if this site has a page of the same name, they point to it).
 -History, lock, permissions and the descriptions of the page and its files are not copied. Pages that required login at the site to clone can be seen with the permissions of this site after they are copied.
 -A page that requires login can be cloned by entering the user name and password of that site in the fields below the URL. Leave them empty if not needed. What you enter is not saved and is used only for that clone. Only the login of NextForm (digest authentication) is supported, and the password itself is not sent to the site to clone. When this page is not https, the password travels unencrypted from the browser to this site, so a caution is shown. When you enter them, it first checks that it can log in (nothing is copied if not), and even pages that can be read without login are read as that user. When the site to clone redirects from https to http (not encrypted), it stops before sending the login information and asks whether to continue. To continue, check ""Continue without encryption"", enter the password again and press the button. It does not ask when you enter an http URL from the start.
@@ -1256,7 +1256,7 @@ It is decided at ''site menu'' > ''Admin tools'' > ''Tone preferences''.
 Rewrite only the colours you want to change and press ''Apply'' (at the top and at the bottom).
 
 You can also start from a tone that came with NextForm or from one you saved.
-Choose it in ''Load tone'' at the top and press ''Load'', and those colours are put
+Choose it in ''Load a tone'' at the top and press ''Load'', and those colours are put
 into the input fields. Nothing has changed at this point; they are used once you
 press ''Apply''.
 
@@ -1275,11 +1275,11 @@ and press ''Apply'' to follow the link colours.)
 *Saving a tone
 Once the colours are decided, enter an identifier and a display name in
 ''Save this tone'' and press ''Save''.
-It is saved on the server and appears in ''Load tone''.
+It is saved on the server and appears in ''Load a tone''.
 (Pressing ''Save'' applies it at the same time.)
 
-The identifier becomes the file name as it is, so only the characters a-z, 0-9 and
-. _ - can be used (up to 32 characters).
+The identifier becomes the file name as it is, so only letters, digits and
+. _ - can be used (up to 32 characters, starting with a letter or a digit).
 Put a name in your own language in the ''display name'' instead.
 
 Choose one in ''Delete a saved tone'' and press ''Delete'' to remove it.
@@ -1381,7 +1381,7 @@ To run it every 10 minutes with cron, for example, set up crontab like this
  $comment_end$10 * * * * php /var/www/nextform/app/tool/analyze_weblog /var/www/html/index.php http://example.jp/wiki/ /var/www/nextform-resume.txt /var/log/httpd/access_log >/dev/null 2>&1
 
 *The results
-The results can be seen at ''Admin tools'' -> ''Access analysis''.
+The results can be seen at ''Admin tools'' -> ''Access analyzer''.
 */
 
 /**
@@ -1857,7 +1857,7 @@ URLを書けば外部の画像もそのまま表示します．
 添付した画像・音声・動画はページに埋め込みます．
 画像の説明は，画像が出ないときや読み上げで使われる代替テキストになります．
 それ以外のファイルは説明を表示名にしたリンクになり，押すとそのファイルを開きます．
-説明を空にした ""![](ファイル名)"" では，ファイル名がリンクになります．
+説明を空にした ""![](ファイル名)"" では，ファイル名がリンクになります(動かすことを許したHTMLファイルでは''開く''になります．[[HTMLファイルの直接実行:../../HtmlFile]])．
 
 |ファイルの種類|""![説明](ファイル名)"" を押したとき|h
 |PDF・テキスト|ブラウザの中で表示します(表示できないブラウザではダウンロードになります)|
@@ -1909,7 +1909,7 @@ Markdown(.md)のファイルのページには，wikiの画面の中に表示す
 ""!link"" を付けないと，画像そのものへのリンクと重なります．
 
 ファイル名の後ろに引用符で囲んで書いた文字(Markdownのタイトルの欄．上の例の ""キャプション"")は，画像の下にキャプションとして出ます．
-キャプションと ""left""・""right"" は，その画像が段落にそれ1つだけのときに効きます．文中の画像では効きません(外部の画像のタイトルは，これまでどおりマウスを載せたときのヒントになります)．
+キャプションと ""left""・""right"" は，その画像が段落にそれ1つだけのときに効きます．文中の画像では効きません(外部の画像のタイトルは，マウスを載せたときのヒントになります)．
 
 *ページの取り込み
 ""![説明](ページ名)"" が段落にそれ1つだけのとき，ふつうのページ(Markdown・wiki・text)は，その場所に中身を取り込みます(Wiki記法の&&include と同じ)．
@@ -1956,7 +1956,7 @@ Wiki記法の &&title{} と同じで，ページ名とは別に表示される�
 *短いタイトル
 ""short_title:"" を書くと，それがそのページの''短いタイトル''になります．
 題名から，置き場所で分かること(日付など)を除いたものを書きます．
-カレンダー([[&&calendar:../../Wiki/Function/calendar]])のセルに出ます．
+カレンダー([[&&calendar:../../Wiki/Function/calendar]])のマスに出ます．
 
  ---
  title: 2026-11-06（金）カレンダーの手直し
@@ -2501,7 +2501,8 @@ Attached images, audio and video are embedded in the page.
 The description of an image becomes its alternative text, used when the image does
 not show and by screen readers.
 Any other file becomes a link with the description as its text, and pressing it opens
-the file. With an empty description, as in ""![](file name)"", the file name is the link.
+the file. With an empty description, as in ""![](file name)"", the file name is the link
+(for an HTML file allowed to run, it is ''Open''; see [[Running HTML files directly:../../HtmlFile]]).
 
 |Type of file|What pressing ""![description](file name)"" does|h
 |PDF, text|Shows it in the browser (browsers that cannot show it download it)|
@@ -2603,7 +2604,7 @@ table of contents either).
 *Short title
 Writing ""short_title:"" makes it the ''short title'' of the page.
 Write the title without what its place already tells (a date, for example).
-It is shown in the cells of a calendar
+It is shown in the boxes of a calendar
 ([[&&calendar:../../Wiki/Function/calendar]]).
 
  ---
@@ -2616,7 +2617,7 @@ The short title is not searched (it is usually part of the title, which is).
 
 *Tags
 Writing ""tags:"" makes them the tags of the page.
-They are the same tags you set from the ''Tag'' screen, and they appear in the tag list.
+They are the same tags you set from the ''Tags'' screen, and they appear in the tag list.
 Any of the following ways of writing them will do.
 
  tags: [minutes, meeting]
@@ -2644,7 +2645,7 @@ Remove ""title:"" (and the # heading at the top that stands in for it) and save,
 and the title is removed too;
 remove ""short_title:"" and save, and the short title is removed;
 remove ""tags:"" and save, and the tags are removed.
-Values set from the ''Meta information'' or ''Tag'' screens are replaced the next time
+Values set from the ''Meta info'' or ''Tags'' screens are replaced the next time
 the text is saved.
 This is so that the state of a page can be seen from its source.
 
@@ -2689,11 +2690,11 @@ Wiki記法は表示名が先，Markdown記法は対象が先になります．
 |見出し|&* 見出し|""## 見出し""(""#"" は題名に使います)|Wiki記法の節は次の節まで''範囲を持ちます''．Markdown記法の見出しは範囲を持ちません|
 |折りたたみ|&*(optional)|"":::details 見出し"" で囲む|Wiki記法は''節''をたたみます(見出しに付けるので範囲は節の終わりまで)．Markdown記法は''囲んだ範囲''をたたみます．どちらも見出しは目次に載ります|
 |目次|&&index|""[TOC]"" とだけ書いた行|Markdown記法では，ほかのページの目次(&&index(&[&[ページ名&]&]))は書けません|
-|子ページのツリー|&&treepages|""[PAGES]"" とだけ書いた行|Markdown記法で書ける指定は，対象のページ・並べ方・件数・直下だけ(children)です．表や中身ごとの一覧は書けません|
+|子ページのツリー|&&treepages|""[PAGES]"" とだけ書いた行|Markdown記法で書ける指定は，対象のページ・並べ方・件数・直下だけ(children)・マニュアルなども含める(withsystem)です．表や中身ごとの一覧は書けません|
 |節の終わりを明示|&*(end)|なし|Markdown記法の見出しは範囲を持たないので，終わりを示す書き方はありません|
 |他のページの取り込み|&&include(&[&[ページ名&]&])|段落にそれ1つだけの !&[説明&](ページ名)|Markdown記法では，文の途中に書いたときはリンクになります．大きさや配置の指定は説明の後ろに書きます([[リンク・画像・添付:../Markdown/Link#大きさ・配置・キャプション]])|
 |ファイルそのものを開くリンク|&&direct(&[&[./資料.pdf&]&]){説明}|!&[説明&](./資料.pdf)|PDF・テキスト・Wordなどは同じ働きです．Markdown(.md)は，表示した画面が開きます．画像・音声・動画は埋め込みになるので，文字のリンクにするときは &[説明&](./写真.png) と書きます(押すとファイルのページが開きます)|
-|部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
+|部分編集の単位|文中の一部・表の行まで細かく取れます|段落・見出し(節)・箇条書きの項目・表・コードブロック・引用・折りたたみ|どちらもダブルクリックで編集できます．Markdown記法では文中の一部分や表の1行だけは取り出せません|
 |箇条書きの中の空行|そこで箇条書きが''終わります''|終わりません．1つの箇条書きのままです|Wiki記法で2つに分けたいときは空行を入れます．Markdown記法では片方の記号を変えます(""- "" と ""* "")．どちらの記法でも，空行を入れた所だけが同じだけ空きます|
 |関連リスト(定義リスト)|&:項目&|説明|なし|Markdown記法では箇条書きか表で代用します|
 |表の書式指定|行末の h f c l r n など|区切り行で列の揃えを指定|Markdown記法で指定できるのは列の揃えだけです|
@@ -2792,11 +2793,11 @@ Wiki notation puts the display name first, Markdown notation puts the target fir
 |heading|&* heading|""## heading"" (""#"" is used for the title)|A section in Wiki notation ''spans a range'', up to the next section. A heading in Markdown notation spans no range|
 |folding|&*(optional)|wrap it in "":::details heading""|Wiki notation folds a ''section'' (it is put on the heading, so the range runs to the end of the section). Markdown notation folds ''the range you wrapped''. In both, the heading appears in the table of contents|
 |table of contents|&&index|a line with only ""[TOC]""|Markdown notation cannot write the table of contents of another page (&&index(&[&[page name&]&]))|
-|tree of subpages|&&treepages|a line with only ""[PAGES]""|Markdown notation can give the page, the order, the number and only the direct subpages (children). Lists as tables or with contents cannot be written|
+|tree of subpages|&&treepages|a line with only ""[PAGES]""|Markdown notation can give the page, the order, the number, only the direct subpages (children) and including the manual and so on (withsystem). Lists as tables or with contents cannot be written|
 |marking the end of a section|&*(end)|none|A heading in Markdown notation spans no range, so there is no way to mark its end|
 |pulling in another page|&&include(&[&[page name&]&])|!&[description&](page name) alone in its paragraph|In Markdown notation, it is a link when written in the middle of a sentence. The size and placement are written after the description ([[Links, images and attachments:../Markdown/Link#Size, placement and caption]])|
 |a link that opens the file itself|&&direct(&[&[./document.pdf&]&]){description}|!&[description&](./document.pdf)|PDF, text, Word and so on work the same. A Markdown file (.md) opens the screen that shows it. Images, audio and video are embedded, so for a text link write &[description&](./photo.png) (pressing it opens the page of the file)|
-|unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
+|unit of partial editing|down to a part of a line or a table row|paragraph, heading (section), list item, table, code block, quote, folding|Both are edited by double clicking. Markdown notation cannot take a part of a line or a single table row|
 |empty line inside a list|the list ''ends'' there|it does not end; it stays one list|In Wiki notation an empty line is how you split a list in two. In Markdown notation you change the marker of one of them (""- "" and ""* ""). In both notations only the place with the empty line gets a gap, of the same width|
 |description list|&:item&|description|none|In Markdown notation use a list or a table instead|
 |table formatting|h f c l r n and so on at the end of the row|column alignment in the separator row|All you can set in Markdown notation is the column alignment|
@@ -3166,8 +3167,8 @@ To do the same across several lines, use [[&&plain:../Function/plain]].
 /**
 @manual $manualpage$/en/Wiki/CheatSheet
 &title Wiki Cheat Sheet
-Press  ''Ctrl+Space'' or ''Ctrl+,(comma)'' or ''Alt+/(slash)'' in editing wiki source to open completion window.
-*[[Basic:../Basic]]，[[Line head notation:../LineHead]]
+Press ''Ctrl+Space'', ''Ctrl+,(comma)'' or ''Alt+/(slash)'' while editing the wiki source to open the completion window.
+*[[Basic:../Basic]], [[Line head notation:../LineHead]]
 &include([[./Standard]]);
 *[[Function:../Function]]
 &include([[./Function]]);
@@ -3880,7 +3881,7 @@ index.htmlはcss/style.cssをスタイルとして使用するようにはなっ
    </body>
  </html>
 このようなテンプレートを設定しエクスポートをすると，index.htmlにはテンプレートの内容が書き出されますが，
-テンプレート内の$title$の部分がページ名になり，
+テンプレート内の$title$の部分がページのタイトル(無ければページ名の最後の部分)になり，
 $contents$の部分が設定表の1列目で指定したページの内容になります．
 
 設定表の3列目，すなわちテンプレートの欄に何も書かなければ1列目の内容がそのまま書き出されます．
@@ -3891,7 +3892,7 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
 上記の$title$や$contents$のようにテンプレート内で特定のキーワードを書けば別の内容に置き換わります．
 キーワードには以下のようなものがあります．
 
-:$title$|ページ名または[[&&title:../Wiki/Function/title]]で設定されたタイトル(種別Markdownのページでは[[フロントマター:../Markdown/FrontMatter]]の ""title:"")
+:$title$|[[&&title:../Wiki/Function/title]]で設定されたタイトル．無ければページ名の最後の部分(/の後ろ)(種別Markdownのページでは[[フロントマター:../Markdown/FrontMatter]]の ""title:"")
 :$contents$|ページの内容
 :{$&[&[ページ名&]&]$|ページ名で指定したページの内容に置き換えます．
 ページ名はテンプレートのページから見た[[相対的な名前:..#相対ページ名]]でも構いません．
@@ -3899,7 +3900,9 @@ $contents$の部分が設定表の1列目で指定したページの内容にな
 :{$mtime$|ページの更新日時
  $mtime?format=%Y/%m/%d$
 のように書くことで任意のフォーマットにできます．
-フォーマットは[[strftimeのフォーマット:http://php.net/manual/ja/function.strftime.php]]に従います．
+フォーマットは[[strftimeのフォーマット:https://www.php.net/manual/ja/function.strftime.php]]と同じ指定子で書きます(NextFormが自分で処理するので，PHPの版に依りません)．
+ $mtime?format=%Y/%m/%d&prefix=更新: $
+のように，prefix=とsuffix=で前後に付ける文字も書けます(日時が無いときは何も出しません)．
 }
 :$btime$|ページの作成日時 (フォーマットの指定は$mtime$と同様)
 :$exporttime$|エクスポートした日時 (フォーマットの指定は$mtime$と同様)
@@ -4134,7 +4137,7 @@ Give it contents such as the following.
    </body>
  </html>
 Set a template like this and export, and the contents of the template are written to
-index.html, with the $title$ part of the template becoming the page name and the
+index.html, with the $title$ part of the template becoming the title of the page (or the last part of the page name) and the
 $contents$ part becoming the contents of the page named in the first column of the
 setup table.
 
@@ -4151,7 +4154,7 @@ Write a particular keyword in the template, such as the $title$ and $contents$ a
 and it is replaced by something else.
 The keywords are as follows.
 
-:$title$|the page name, or the title set by [[&&title:../Wiki/Function/title]] (for a page of type Markdown, ""title:"" in the [[front matter:../Markdown/FrontMatter]])
+:$title$|the title set by [[&&title:../Wiki/Function/title]]; without one, the last part of the page name (after the last /) (for a page of type Markdown, ""title:"" in the [[front matter:../Markdown/FrontMatter]])
 :$contents$|the contents of the page
 :{$&[&[page name&]&]$|replaced by the contents of the page named.
 The page name may be a [[relative name:..#Relative page names]] seen from the template
@@ -4160,8 +4163,11 @@ page.
 :{$mtime$|the time the page was modified
  $mtime?format=%Y/%m/%d$
 Written like this it can take any format.
-The format follows the
-[[strftime format:http://php.net/manual/en/function.strftime.php]].
+The format uses the same conversion specifiers as the
+[[strftime format:https://www.php.net/manual/en/function.strftime.php]] (NextForm handles them
+itself, so it does not depend on the version of PHP).
+ $mtime?format=%Y/%m/%d&prefix=Updated: $
+Written like this, prefix= and suffix= add text before and after it (nothing is shown when there is no time).
 }
 :$btime$|the time the page was created (the format is set as for $mtime$)
 :$exporttime$|the time of the export (the format is set as for $mtime$)

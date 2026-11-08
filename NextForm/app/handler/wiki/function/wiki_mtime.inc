@@ -48,7 +48,7 @@ function wiki_operator_btime(&$context, $dom, $tree) {
 
 *パラメータ
 :&[&[ページ名&]&]|指定したページの更新日時を表示します．省略した場合は現在のページになります．
-:{フォーマット|[[strftimeのフォーマット:http://php.net/manual/ja/function.strftime.php]]に従います．
+:{フォーマット|[[strftimeのフォーマット:https://www.php.net/manual/ja/function.strftime.php]]と同じ指定子で書きます(NextFormが自分で処理するので，PHPの版に依りません)．
 デフォルトは`TIME_FORMAT`です．}
 
 *対象
@@ -83,7 +83,7 @@ function wiki_operator_btime(&$context, $dom, $tree) {
 
 *パラメータ
 :&[&[ページ名&]&]|指定したページの作成日時を表示します．省略した場合は現在のページになります．
-:{フォーマット|[[strftimeのフォーマット:http://php.net/manual/ja/function.strftime.php]]に従います．
+:{フォーマット|[[strftimeのフォーマット:https://www.php.net/manual/ja/function.strftime.php]]と同じ指定子で書きます(NextFormが自分で処理するので，PHPの版に依りません)．
 デフォルトは`TIME_FORMAT`です．}
 
 *対象

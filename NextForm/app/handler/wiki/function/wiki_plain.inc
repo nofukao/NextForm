@@ -52,7 +52,7 @@ function wiki_operator_plain(&$context, $node, $tree) {
 }
 
 *対象
-対象テキストにはそのまま
+対象テキストには，そのまま表示したいテキストを書きます．
 
 *例
 
