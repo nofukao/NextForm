@@ -73,11 +73,14 @@ code() {
     curl -sk -o /dev/null -w '%{http_code}' "$@"
 }
 
-# 削除されたページの一覧 (ログインしていない人の画面) に、そのページ名が出るか
+# 削除されたページの一覧 (ログインしていない人の画面) に、そのページ名が出るか。
+# grep -q を管 (|) の後ろに置かない。見つけた時点で grep -q が終わると、前の grep が書き込み先を
+# 失って SIGPIPE で終わり、pipefail の下では全体が失敗になる (一覧に出ていても「no」になっていた。
+# 画面が長いほど起きやすい)。いったん変数に取ってから見る
 deleted_listed() {
-    curl -sk "${LISTS_TEST_URL}/?option=deletedpage" \
-        | grep -o 'data-link-pagename="[^"]*"' | grep -qxF "data-link-pagename=\"$1\"" \
-        && echo yes || echo no
+    local links
+    links="$(curl -sk "${LISTS_TEST_URL}/?option=deletedpage" | grep -o 'data-link-pagename="[^"]*"')"
+    if grep -qxF "data-link-pagename=\"$1\"" <<< "$links"; then echo yes; else echo no; fi
 }
 
 # タグ一覧 (ログインしていない人の画面) のタグの件数。出ていなければ "なし"
