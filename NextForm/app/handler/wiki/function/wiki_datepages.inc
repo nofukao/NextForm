@@ -3,6 +3,8 @@ $WIKI_OPERATORS_FUNCTION['datepages'] = true;
 function wiki_operator_datepages(&$context, $dom, $tree) {
     if(!empty($context['texts_only']))
 	return;
+    /* 一覧は日のページの増減で変わる。差分の書き出しのために印を立てる (&pages と同じ) */
+    $context['page']['depend_pages_unknown'] = true;
     $pagename = $context['page']['name'];
     $list_options = array('context' => &$context, 'show' => 'contents', 'each' => 30);
     $find_condition = array(

@@ -5,11 +5,17 @@
  *   php export-helper.php <index.php> <管理者ユーザー名> <検査名> [引数..]
  *
  * 検査名:
- *   export <設定表のページ> <書き出し先>
- *                   export_pages() を強制 (force) で走らせる。書き出し先は
+ *   export <設定表のページ> <書き出し先> [diff]
+ *                   export_pages() を強制 (force) で走らせる。diff を付けると
+ *                   強制しない (2 回目からの差分の書き出し。変わっていない
+ *                   ページは結果が skip になる)。書き出し先は
  *                   EXPORT_DIR_PATH から見たディレクトリ。1 行 1 出力で
  *                   output<TAB>ページ名<TAB>ファイル名<TAB>結果 を出し、
  *                   画面に出るはずだったエラーを error<TAB>文 で出す
+ *   write <名前> <種別> <本文>
+ *                   normalize を通して保存する (written=1/0)
+ *   month-day <日>  サイトの時間帯で、今月のその日の日付のページ名 (YYYY-MM-DD)。
+ *                   カレンダーは今月を描くので、日のページはこの名前で作る
  *
  * **ボタン (?option=export) を通さず、書き出しの本体を直に呼ぶ。**
  * ボタンの経路は管理者の資格情報が要るうえ、書き出しの中身は
@@ -38,10 +44,35 @@ $GLOBALS['AUTH_GET_USER_CACHE'] = array('name' => $admin, 'method' => 'digest');
 message_init();
 head_tags_init();
 
+/* 編集画面の保存と同じ順 (種別を決めてから normalize → page_write) */
+function test_write($pagename, $type, $contents) {
+    $page = page_create($pagename);
+    storage_page_read($page);
+    $page['meta']['type'] = $type;
+    page_setup($page);
+
+    $normalize = handler_function($page, 'normalize');
+    if($normalize !== false)
+	$contents = $normalize($page, $contents);
+
+    $page['meta']['type'] = $type;
+    $ticket = default_value($page['meta']['ticket'], '');
+    return page_write($page, $contents, $ticket);
+}
+
 switch($check) {
 
+case 'write':
+    printf("written=%d\n", test_write($rest[0], $rest[1], $rest[2]) ? 1 : 0);
+    break;
+
+case 'month-day':
+    printf("%s%02d\n", nf_date('%Y-%m-', time()), (int)$rest[0]);
+    break;
+
 case 'export':
-    $export_data = export_pages($rest[0], $rest[1], true);
+    $is_force = !(isset($rest[2]) && $rest[2] === 'diff');
+    $export_data = export_pages($rest[0], $rest[1], $is_force);
     foreach($export_data as $export_datum) {
 	foreach($export_datum['outputs'] as $output) {
 	    printf("output\t%s\t%s\t%s\n", $export_datum['pagename'],
