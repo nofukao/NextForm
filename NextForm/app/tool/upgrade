@@ -817,6 +817,7 @@ if($up_old_version === null || version_compare($up_old_version, '0.22.0', '<')) 
     upgrade_out("    &calendar の各マスに、目次の代わりにその日のページのタイトルが出ます。ページのある日の");
     upgrade_out("    日付はリンクでなくなり、同じ日の 2 つ目からのページ (年-月-日_2…) も並びます");
     upgrade_out("    今までの見え方に戻すには、そのカレンダーに show=toc を書き足します (例 &calendar(show=toc))");
+    upgrade_out("    タイトルを書いてあるのに目次が出る日のページは、1 度保存し直すとタイトルが出ます");
 }
 
 if($up_backup_path !== null) {

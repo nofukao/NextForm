@@ -267,6 +267,8 @@ check_cmd "ToraToraWiki からもカレンダーの見え方の案内を出す" 
           "grep -q 'カレンダーの見え方が変わったところを確かめてください (0.22.0)' '${DIST}/upgrade.log'"
 check_cmd "  戻し方 (show=toc) を出す" \
           "grep -q 'show=toc を書き足します' '${DIST}/upgrade.log'"
+check_cmd "  保存し直すとタイトルが出ることを出す" \
+          "grep -q '1 度保存し直すとタイトルが出ます' '${DIST}/upgrade.log'"
 check_cmd "  手順書にも同じ節がある" \
           "grep -q '^### カレンダーの見え方が変わったところを確かめる ★0.22.0★$' '${REPO_ROOT}/docs/upgrade-guide.md'"
 echo
