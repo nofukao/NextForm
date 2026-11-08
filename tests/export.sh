@@ -14,13 +14,16 @@
 # しか変換しておらず、種別 Markdown のページは**原文をそのまま HTML の枠に
 # 流し込んで**いた (記号が残り、生の HTML もエスケープされずに出る)。
 #
-# ここで固定するのは次の 3 つ。
+# ここで固定するのは次の 4 つ。
 #
 #   1. 種別 wiki の書き出しがこれまでどおりであること (リンクの張り替え・
 #      添付の書き出し・編集用の属性を落とすこと)
 #   2. 種別 Markdown のページも HTML に変換して書き出すこと。wiki と同じく
 #      リンクを張り替え、ページ内のリンクは見出しに届くこと
 #   3. 設定表を Markdown の表で書いても読めること
+#   4. 2 回目からの差分の書き出し (force なし) で、カレンダー (&calendar) と
+#      日付の一覧 (&datepages) のあるページを書き直し、あとから作った日の
+#      ページも書き出すこと (docs/development/design-calendar-day-pages.md §10.1)
 #
 # 入力は tests/export-input/ にある。ボタン (?option=export) は通さず、
 # 書き出しの本体 export_pages() を直に呼ぶ (tests/export-helper.php)。
@@ -219,6 +222,42 @@ OUT_MD="$(helper export ExportTest/ConfigMd md-config)"
 check_eq "表のリンクのページを書き出す" "by-md-config.html	success" \
          "$(output_of "$OUT_MD" ExportTest/Markdown)"
 check_eq "  中身は変換した HTML" "yes" "$(contains "$(exported md-config by-md-config.html)" '<strong>強調</strong>')"
+echo
+
+echo "4. 差分の書き出しとカレンダー"
+# 本文が変わらないページは、2 回目から書き直さずに飛ばし、前回覚えたリンク先だけを
+# たどる。カレンダーと日付の一覧は、日のページを足しても本文が変わらないので、
+# 印 (depend_pages_unknown) を立てて毎回書き直させる。
+# カレンダーは今月を描くので、日のページは今月の 1 日と 2 日に作る。
+DAY1="$(helper month-day 1)"
+DAY2="$(helper month-day 2)"
+check_eq "1 つ目の日のページを書く" "written=1" \
+         "$(helper write "ExportTest/Cal/${DAY1}" wiki "$(printf -- '&title{一日目のページ}\n本文\n')")"
+# 書き出したファイルがページより新しくないと、差分の書き出しは飛ばさない (秒で比べる)
+sleep 1
+OUT_CAL1="$(helper export ExportTest/ConfigCal cal)"
+check_eq "1 回目: カレンダーと日付の一覧を書き出す" "success|success" \
+         "$(output_of "$OUT_CAL1" ExportTest/Cal | cut -f2)|$(output_of "$OUT_CAL1" ExportTest/Dates | cut -f2)"
+check_eq "  1 つ目の日のページも書き出す" "success" \
+         "$(output_of "$OUT_CAL1" "ExportTest/Cal/${DAY1}" | cut -f2)"
+sleep 1
+check_eq "2 つ目の日のページを書く" "written=1" \
+         "$(helper write "ExportTest/Cal/${DAY2}" wiki "$(printf -- '&title{二日目のページ}\n本文\n')")"
+OUT_CAL2="$(helper export ExportTest/ConfigCal cal diff)"
+echo "  (2 回目の書き出しで出たエラー: $(printf '%s\n' "$OUT_CAL2" | awk -F'\t' '$1 == "error" { printf "%s / ", $2; n++ } END { if(!n) printf "なし" }'))"
+check_eq "2 回目 (差分): カレンダーを書き直す" "success" \
+         "$(output_of "$OUT_CAL2" ExportTest/Cal | cut -f2)"
+check_eq "  日付の一覧も書き直す" "success" \
+         "$(output_of "$OUT_CAL2" ExportTest/Dates | cut -f2)"
+DAY2_OUT="$(output_of "$OUT_CAL2" "ExportTest/Cal/${DAY2}")"
+DAY2_FILE="${DAY2_OUT%%	*}"
+check_eq "  あとから作った日のページを書き出す" "success" "${DAY2_OUT##*	}"
+check_eq "  書き出したカレンダーに、あとから作った日のページへのリンクがある" "yes" \
+         "$([[ -n "$DAY2_FILE" ]] && contains "$(exported cal cal.html)" "${DAY2_FILE##*/}\"" || echo no)"
+check_eq "  書き出した日付の一覧に、あとから作った日のページが出る" "yes" \
+         "$(contains "$(exported cal dates.html)" '二日目のページ')"
+check_eq "  変わっていない日のページは飛ばす (差分の書き出しはそのまま)" "skip" \
+         "$(output_of "$OUT_CAL2" "ExportTest/Cal/${DAY1}" | cut -f2)"
 echo
 
 if [[ $fail -eq 0 ]]; then

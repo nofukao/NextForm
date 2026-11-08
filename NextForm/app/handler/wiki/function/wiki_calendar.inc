@@ -27,6 +27,13 @@ function wiki_operator_calendar(&$context, $dom, $tree) {
     if(!empty($context['texts_only']))
 	return;
 
+    /*
+     * マスは日のページの有無とタイトルで変わり、本文は変わらない。差分の書き出しが
+     * このページを飛ばして、あとから作った日のページを書き出さないように、
+     * &pages と同じく「何に依るか分からない (毎回書き直す)」の印を立てる。
+     */
+    $context['page']['depend_pages_unknown'] = true;
+
     $target = wiki_get_target_string($tree);
 
     $now = time();
