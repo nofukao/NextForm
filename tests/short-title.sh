@@ -341,6 +341,21 @@ check_eq "&popularpages の区切り: 1 画面目は 1 位、「次」はその�
          "$(contains "$H" "data-ref-pagename=\"$D/2026-08-05\"")|$(contains "$H" "href=\"?$P/Popular&amp;pages=1\"")"
 check_eq "  2 画面目は 2 位" "yes|no" \
          "$(contains "$(main_html "$P/Popular&pages=1")" "data-ref-pagename=\"$D/2026-08-04\"")|$(contains "$(main_html "$P/Popular&pages=1")" "data-ref-pagename=\"$D/2026-08-05\"")"
+# &popularpages は、&pages や &recent と同じくマニュアル (NextFormManual 以下) を出さない。
+# 組み込みのマニュアルは保存先に実体が無いので候補に入らないが、0.6.0 までに焼き付けたマニュアルの
+# ページが保存先に残っているサイトでは出ていた (除く指定を、読まれない側の配列に入れていた)。
+# 焼き付けた残りを、ふつうのページの保存先の名前を変えて作る
+helper write "$P/BakedManual" wiki "$(printf -- '焼き付けたマニュアルの残り\n')" > /dev/null
+BAKED_FROM="$(php -r 'echo bin2hex($argv[1]);' "$P/BakedManual")"
+BAKED_TO="$(php -r 'echo bin2hex($argv[1]);' "NextFormManual/ja/ZZBaked")"
+sudo mv "${SITE}/storage/page/${BAKED_FROM}" "${SITE}/storage/page/${BAKED_TO}"
+helper pageview "NextFormManual/ja/ZZBaked" 1000 > /dev/null
+helper write "$P/PopularSite" wiki "$(printf -- '&popularpages;\n')" > /dev/null
+H="$(main_html "$P/PopularSite")"
+check_eq "&popularpages: 焼き付けたマニュアルの残りは出さない (閲覧数のあるふつうのページは出る)" "no|yes" \
+         "$(contains "$H" 'data-ref-pagename="NextFormManual/')|$(contains "$H" "data-ref-pagename=\"$D/2026-08-05\"")"
+check_eq "  withsystem を書けば出す (&pages と同じ)" "yes" \
+         "$(helper write "$P/PopularSystem" wiki "$(printf -- '&popularpages(withsystem);\n')" > /dev/null; contains "$(main_html "$P/PopularSystem")" 'data-ref-pagename="NextFormManual/ja/ZZBaked"')"
 helper write "$P/PopularAll" wiki "$(printf -- '&popularpages([[%s/]]);\n' "$D")" > /dev/null
 check_eq "  閲覧数の無いページは ?pages_show_hidden=true でも出さない (今までどおり)" "2|2" \
          "$(count_items "$(main_html "$P/PopularAll")" "$D/")|$(count_items "$(main_html "$P/PopularAll&pages_show_hidden=true")" "$D/")"
