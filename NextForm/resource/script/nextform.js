@@ -2381,37 +2381,6 @@ function calendarHelperSetup() {
 		    return handlerOff(event);
 	    }
 	    
-	    var handler = function(event) {
-		if(span.getStyle('display') != 'none')
-		    return;
-		if(event.altKey || event.ctrlKey)
-		    return;
-		
-		if(dd.getStyle('display') == 'none') {
-		    dds.each(function(hdd) {hdd.hide(); });
-		    var width = tbody.getWidth() * 0.75;
-		    if(!dd.down('h1.pages')) {
-			var h = dd.insertBefore(new Element('h1', {'class': 'pages'}), dd.firstChild);
-			var link = h.appendChild(new Element('a', {'href': td.down('dl > dt > a').getAttribute('href')}));
-			link.appendChild(document.createTextNode(td.getAttribute('data-ref-pagename')));
-			var link = h.appendChild(new Element('button', {'class': 'button close'}).update('&times;'));
-		    }
-		    dd.addClassName('popup');
-		    dd.style.display = 'block';
-		    dd.style.position = 'absolute';
-		    dd.style.marginLeft = '-' + (width / 2 + 16) + 'px';
-		    dd.style.marginTop = '12px';
-		    dd.style.left = '50%';
-		    dd.style.width = width + 'px';
-		    dd.style.padding = '16px';
-		    dd.style.backgroundColor = td.getStyle('background-color');
-		    dd.style.border = 'solid 1px';
-		    if(dd.style.backgroundColor == 'transparent' || dd.style.backgroundColor == 'rgba(0, 0, 0, 0)')
-			dd.style.backgroundColor = td.up('body').getStyle('background-color');
-		} else {
-		    dd.hide();
-		}
-	    };
 	    if(typeof this.ontouchstart == 'undefined') {
 		var motionHandler = function (f)  {
 		    return function(mevent) {
