@@ -2350,8 +2350,17 @@ function calendarHelperSetup() {
 		var width = tbody.getWidth() * 0.75;
 		if(!dd.down('h1.pages')) {
 		    var h = dd.insertBefore(new Element('h1', {'class': 'pages'}), dd.firstChild);
-		    var link = h.appendChild(new Element('a', {'href': td.down('dl > dt > a').getAttribute('href')}));
-		    link.appendChild(document.createTextNode(td.getAttribute('data-ref-pagename')));
+		    /*
+		     * 見出しは日付のページの名前。日付がリンクのとき (目次の表示) はその行き先へ
+		     * のリンクにする。&calendar(show=title) でページのある日は日付がリンクでない
+		     * (同じ日に複数のページがある) ので、文字だけにする。ページへは中身のタイトルから。
+		     * 名前は文字として足す (update() は HTML として読むので使わない)。
+		     */
+		    var dayLink = td.down('dl > dt > a');
+		    var label = h;
+		    if(dayLink)
+			label = h.appendChild(new Element('a', {'href': dayLink.getAttribute('href')}));
+		    label.appendChild(document.createTextNode(td.getAttribute('data-ref-pagename')));
 		    var link = h.appendChild(new Element('button', {'class': 'button close'}).update('&times;'));
 		}
 		dd.addClassName('popup');
@@ -2392,6 +2401,32 @@ function calendarHelperSetup() {
 		td.observe('mouseout', motionHandler(handlerOff));
 	    }
 	    td.observe('click', handlerToggle);
+	    /*
+	     * 日付がリンクでないマス (show=title でページのある日)。中身が隠れているとき
+	     * (小さい画面とサイド) は、リンクの無い日付がキーボードからの入口になるので、
+	     * Tab で止まり (tabindex)、Enter か Space で中身を開け閉めできるようにする。
+	     * 広い画面では中身のリンクに直に届くので、押しても何も起きない止まり場所は作らない。
+	     * 画面の幅は変わるので、変わるたびに付け直す。
+	     */
+	    var day = td.down('dl > dt.day');
+	    if(day && !day.down('a')) {
+		var updateTabStop = function() {
+		    if(span.getStyle('display') == 'none')
+			day.setAttribute('tabindex', '0');
+		    else
+			day.removeAttribute('tabindex');
+		};
+		updateTabStop();
+		Event.observe(window, 'resize', updateTabStop);
+		day.observe('keydown', function(event) {
+		    if(event.keyCode != Event.KEY_RETURN && event.keyCode != 32)
+			return;
+		    if(span.getStyle('display') != 'none')
+			return;
+		    event.stop();
+		    handlerToggle(event);
+		});
+	    }
 	});
     });
 }

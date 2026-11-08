@@ -62,5 +62,28 @@ while IFS= read -r wiki; do
     fi
 done < <(find "$INPUT_DIR" -type f)
 
+# カレンダーの日のページ (GoldenMaster/Calendar/ の下) は、画面からの保存と同じ経路
+# (app/tool/page。種別の normalize を通る) で書く。gen-pages.php は normalize を通さず、
+# meta にタイトル・短いタイトルが入らないので、カレンダーのマス (既定はタイトル) に
+# タイトルが出なくなる。ほかのフィクスチャは今までどおり gen-pages.php で入れる。
+CALENDAR_DAYS="GoldenMaster/Calendar"
+sudo rm -rf "$WORK/input/$CALENDAR_DAYS"
+
 sudo -u "$OWNER" php "$WORK/gen-pages.php" "$INDEX_PATH" --dir "$WORK/input" \
      --user "${WIKI_ADMIN:-admin}"
+
+for day in "$INPUT_DIR/$CALENDAR_DAYS"/*; do
+    case "$day" in
+        *.wiki) type=wiki ;;
+        *.md)   type=markdown ;;
+        *)      echo "カレンダーの日のページにできないファイルです: $day" >&2; exit 1 ;;
+    esac
+    name="${day#${INPUT_DIR}/}"
+    name="${name%.*}"
+    if ! ( cd "$INSTANCE_DIR" && sudo -u "$OWNER" php app/tool/page "$INDEX_PATH" write "$name" \
+               --user "${WIKI_ADMIN:-admin}" --type "$type" < "$day" > /dev/null ); then
+        echo "書けませんでした: $name" >&2
+        exit 1
+    fi
+    echo "write $name [$type] (app/tool/page) .. ok"
+done

@@ -611,6 +611,16 @@ function time_get_timezones() {
 }
 
 define('DATEPAGE_REGEX', '\d{4}\-\d{2}\-\d{2}');
+/*
+ * 同じ日の 2 つ目からのページの名前の後ろ (YYYY-MM-DD_2 .. YYYY-MM-DD_9999)。
+ * 1 つ目は今までどおり YYYY-MM-DD で、_1 は付けない (拾うと 1 つ目が 2 つになる)。
+ * 先頭に 0 を付けた番号 (_02) も拾わない。4 桁までにするのは、手で大きな番号の
+ * ページを作られても、カレンダーの「次の番号」が整数からあふれないようにするため。
+ * 番号は 1 つ目の括弧で取れる。名前の正規表現の区切りに | を使うので、中で | は使わない
+ * (先読みで「0 で始まらない」「1 だけではない」を書く)。
+ */
+define('DATEPAGE_NUMBER_REGEX', '(?:_((?!0)(?!1(?!\d))\d{1,4}))?');
+define('DATEPAGE_NUMBER_MAX', 9999);
 
 function datepage_format($t) {
     return nf_date('%Y-%m-%d', $t);
@@ -620,12 +630,23 @@ function datepage_is_date($string) {
     return preg_match('|^' . DATEPAGE_REGEX . '$|', $string);
 }
 
+/*
+ * 日付のページの名前 (/YYYY-MM-DD か /YYYY-MM-DD_N で終わる) なら、日付と
+ * 番号 (1 つ目は 1) を返す。そうでなければ false。
+ */
+function datepage_parse($pagename) {
+    if(!preg_match('|/(' . DATEPAGE_REGEX . ')' . DATEPAGE_NUMBER_REGEX . '$|', $pagename, $matches))
+	return false;
+    return array('date' => $matches[1],
+		 'number' => (isset($matches[2]) && $matches[2] !== '') ? (int)$matches[2] : 1);
+}
+
 function datepage_is_datepage($pagename, &$date = null) {
-    if(preg_match('|/(' . DATEPAGE_REGEX . ')$|', $pagename, $maches)) {
-	$date = $maches[1];
-	return true;
-    }
-    return false;
+    $parsed = datepage_parse($pagename);
+    if($parsed === false)
+	return false;
+    $date = $parsed['date'];
+    return true;
 }
 
 function options_parse($text) {

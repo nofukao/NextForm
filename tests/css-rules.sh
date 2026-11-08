@@ -84,6 +84,15 @@ rules_common() {
     check "一覧の目次の折りたたみの札が押せると分かる" \
           "bool(re.search(r'details\.pages_toc\s*>\s*summary\s*\{[^}]*cursor:\s*pointer', css, re.S))"
 
+    # カレンダーの同じ日のページ (&calendar(show=title))。箇条書きの印を付けず、1 ページの
+    # ときは今までのタイトルと同じ見た目にする。「＋」は小さい字でも指で押せる大きさにする。
+    check "カレンダーの同じ日のページの箇条書きに印を付けない" \
+          "bool(re.search(r'table\.calendar[^{},]*ul\.day_pages\s*\{[^}]*list-style:\s*none', css, re.S))"
+    check "カレンダーの「＋」は指で押せる幅 (24px 以上)" \
+          "bool(re.search(r'table\.calendar[^{},]*a\.create\s*\{[^}]*min-width:\s*(2[4-9]|[3-9][0-9])px', css, re.S))"
+    check "カレンダーの「＋」は指で押せる高さ (24px 以上)" \
+          "bool(re.search(r'table\.calendar[^{},]*a\.create\s*\{[^}]*min-height:\s*(2[4-9]|[3-9][0-9])px', css, re.S))"
+
     # 折りたたみ (:::details) の summary が押せると分かること。
     # cursor が既定のままだと、畳まれた見出しがただの太字に見えて誰も押さない。
     check "折りたたみの summary に cursor: pointer がある" \

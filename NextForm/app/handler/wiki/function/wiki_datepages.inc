@@ -9,7 +9,8 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
     $list_options = array('context' => &$context, 'show' => 'contents', 'each' => 30);
     $find_condition = array(
 	'is_ignore_system_page' => true,
-	'name_regex' => '|/' . DATEPAGE_REGEX . '$|',
+	/* 同じ日の 2 つ目からのページ (YYYY-MM-DD_2 ..) も拾う。決まりはカレンダーと同じ */
+	'name_regex' => '|/' . DATEPAGE_REGEX . DATEPAGE_NUMBER_REGEX . '$|',
 	'is_pagename_only' => true,
 	'is_children_only' => true,
 	'reverse' => true,
@@ -75,6 +76,8 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
  &datepages([[ページ名]], past, future, all, reverse, each=表示ページ数, 年-月-日);
 ページ名で指定されたページの子ページのうち日付の形式(YYYY-MM-DD)をしているページを一覧表示します．
 [[&&calendar:../calendar]]を使用して作られた各日のページを時系列順に表示するのに適しています．
+同じ日の2つ目からのページ(YYYY-MM-DD_2，YYYY-MM-DD_3…)も出ます．
+並びはページ名の順なので，reverse(既定)では同じ日の2つ目が1つ目より前に来ます．
 
 *パラメータ
 :&[&[ページ名&]&]|一覧表示する子ページの親を指定します．指定がない場合は自分自身のページが親になります．
@@ -82,7 +85,7 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
 :future|現在から未来の日付のページを表示します．
 :all|すべてのページを表示します．
 :reverse|表示の順序を逆にします．
-:each=表示ページ数|一度に表示する子ページの数を指定します．デフォルトは30です．
+:each=表示ページ数|一度に表示する子ページの数を指定します．デフォルトは30です．日の数ではなくページの数です．
 :年-月-日|pastとfutureの基準を現在ではなく指定した日付にします．
 
 *対象
@@ -104,6 +107,9 @@ function wiki_operator_datepages(&$context, $dom, $tree) {
 Lists the child pages of the page named whose names are in date form (YYYY-MM-DD).
 It suits showing the pages for each day made with [[&&calendar:../calendar]]
 in order of time.
+The second and later pages of a day (YYYY-MM-DD_2, YYYY-MM-DD_3 and so on) are listed too.
+They are in the order of the page names, so with reverse (the default) the second page
+of a day comes before the first.
 
 *Parameters
 :&[&[page name&]&]|the parent of the child pages to list. With nothing given, the page itself is the parent.
@@ -111,7 +117,7 @@ in order of time.
 :future|show pages dated from now into the future.
 :all|show every page.
 :reverse|reverse the order they are shown in.
-:each=pages to show|how many child pages to show at a time. The default is 30.
+:each=pages to show|how many child pages to show at a time. The default is 30. It counts pages, not days.
 :year-month-day|take the date given, rather than now, as the point past and future are measured from.
 
 *Target

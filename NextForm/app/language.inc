@@ -85,6 +85,7 @@ $LANGUAGE['ja'] = array(
     'Return' => '戻る',
     'Monthly' => '月',
     'Weekly' => '週',
+    'Add a page for this day' => 'この日にページを足す',
     'Download' => 'ダウンロード',
 
     'First' => '最初',

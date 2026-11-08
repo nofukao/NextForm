@@ -18,7 +18,15 @@
 #      2026-08-06-01-01 と補い、最後の -01 を UTC-1 時間と読んで前の日になっていた
 #      (月の表示で ▶ を押しても次の月へ進めなかった)。夏時間の切り替えをまたいでも、
 #      表の日付が重なったり抜けたりしないこと
-#   2. PHP の警告が出ないこと
+#   2. 同じ日に複数のページ (YYYY-MM-DD, YYYY-MM-DD_2 …)。既定 (show=title) では、ページのある日の
+#      日付はただの文字で、タイトルを番号順に並べ、書ける人にだけ「＋」(次の番号を作るリンク) を出す。
+#      拾う名前 (_2〜_9999、先頭の 0 なし)、消したページの番号を使わないこと、読めないページ
+#   3. マスからどのページにもたどれること (タイトルの無いページ。目次の見出し・書き出しのリンク)。
+#      カレンダーを開いても日のページを「読んだ」にしないこと。ダブルクリックの編集の属性
+#   4. show=toc (今までの目次の表示) は今のまま。知らない show= の値は既定 (タイトル)
+#   5. maxlength= (マスの文字数の上限)。ページごとに数え、見た目の 1 文字を 1 とする
+#   6. &datepages が _N のページも拾うこと
+#   7. PHP の警告が出ないこと
 #
 # ページを作るので、必ず複製したサイトに対して実行する。
 # 複製元には触らない。sudo が要る。
@@ -76,6 +84,24 @@ main_html() {
         | tr '\001' '\n'
 }
 
+# <article class="main"> の中だけ。中に入れ子の <article> があっても (&datepages は各ページを
+# <article> で囲む) 外側の </article> まで取る。サイドの一覧などは含めない
+main_nested_html() {
+    curl -sk "${URL}/?$1" | python3 -c '
+import re, sys
+s = sys.stdin.read()
+i = s.find("<article class=\"main\">")
+if i < 0:
+    sys.exit()
+depth = 0
+for m in re.finditer(r"<article\b|</article>", s[i:]):
+    depth += 1 if m.group(0) != "</article>" else -1
+    if depth == 0:
+        print(s[i:i + m.end()])
+        break
+'
+}
+
 # カレンダーの HTML $1 の表の日付のまとめ。
 #   <その月のマスの最初>..<最後>|dup=<重なった日の数>|gap=<抜けた日の数>
 # 月の表示では前後の月のマス (other_month) を除いた範囲、週の表示ではすべてのマス。
@@ -102,6 +128,125 @@ import re, sys
 m = re.search(r"<a href=\"[^\"]*[?&;]calendar=([0-9-]+)[^\"]*\" class=\"button next\"", sys.stdin.read())
 print(m.group(1) if m else "")
 '
+}
+
+# カレンダーの HTML $1 から、日のページ $2 のマス (<td>..</td>) の中身
+cell_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+m = re.search(r"<td[^>]*data-ref-pagename=\"%s\"[^>]*>(.*?)</td>" % re.escape(sys.argv[1]),
+              sys.stdin.read(), re.S)
+print(m.group(1) if m else "")
+' "$2"
+}
+
+# カレンダーの HTML $1 から、日のページ $2 のマスの開きタグ (<td ...>)
+td_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+m = re.search(r"<td[^>]*data-ref-pagename=\"%s\"[^>]*>" % re.escape(sys.argv[1]), sys.stdin.read())
+print(m.group(0) if m else "")
+' "$2"
+}
+
+# マスの HTML $1 の日付 (<dt class="day">..</dt>)
+day_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+m = re.search(r"<dt[^>]*class=\"day\"[^>]*>.*?</dt>", sys.stdin.read(), re.S)
+print(m.group(0) if m else "")
+'
+}
+
+# マスの HTML $1 のタイトル (class に title を含むリンク) の文字を、並んだ順に | でつなぐ
+titles_of() {
+    printf '%s' "$1" | python3 -c '
+import html, re, sys
+s = sys.stdin.read()
+ts = re.findall(r"<a [^>]*class=\"[^\"]*\btitle\b[^\"]*\"[^>]*>(.*?)</a>", s, re.S)
+print("|".join(html.unescape(re.sub(r"<[^>]*>", "", t)) for t in ts))
+'
+}
+
+# マスの HTML $1 のタイトルのリンクの title 属性 (無ければ空) を、並んだ順に | でつなぐ
+title_attrs_of() {
+    printf '%s' "$1" | python3 -c '
+import html, re, sys
+s = sys.stdin.read()
+out = []
+for tag in re.findall(r"<a [^>]*class=\"[^\"]*\btitle\b[^\"]*\"[^>]*>", s):
+    m = re.search(r"\stitle=\"([^\"]*)\"", tag)
+    out.append(html.unescape(m.group(1)) if m else "")
+print("|".join(out))
+'
+}
+
+# マスの HTML $1 のページの項目 (li) の data-ref-pagename を、並んだ順に空白でつなぐ
+items_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+print(" ".join(re.findall(r"<li[^>]*data-ref-pagename=\"([^\"]*)\"", sys.stdin.read())))
+'
+}
+
+# マスの HTML $1 の項目ごとに「名前:そのページへのリンクがあるか (yes/no)」を空白でつなぐ
+linked_items_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+s = sys.stdin.read()
+starts = [(m.start(), m.group(1)) for m in re.finditer(r"<li[^>]*data-ref-pagename=\"([^\"]*)\"", s)]
+out = []
+for i, (pos, name) in enumerate(starts):
+    end = starts[i + 1][0] if i + 1 < len(starts) else len(s)
+    part = s[pos:end]
+    ok = re.search(r"<a [^>]*data-link-pagename=\"%s\"" % re.escape(name), part)
+    out.append("%s:%s" % (name.rsplit("/", 1)[-1], "yes" if ok else "no"))
+print(" ".join(out))
+'
+}
+
+# マスの HTML $1 の中の空の要素 (中身の無い li・ul・a) の数
+empty_elements_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+print(len(re.findall(r"<li[^>]*>\s*</li>|<ul[^>]*>\s*</ul>|<a [^>]*>\s*</a>", sys.stdin.read())))
+'
+}
+
+# マスの開きタグ $1 の data-ref-ticket の値
+ticket_of() {
+    printf '%s' "$1" | sed -n 's/.*data-ref-ticket="\([^"]*\)".*/\1/p' | head -1
+}
+
+# マスの HTML $1 の「＋」(class に create を含むリンク) の行き先 (無ければ空)
+create_of() {
+    printf '%s' "$1" | python3 -c '
+import html, re, sys
+m = re.search(r"<a [^>]*class=\"[^\"]*\bcreate\b[^\"]*\"[^>]*>", sys.stdin.read())
+h = re.search(r"\shref=\"([^\"]*)\"", m.group(0)) if m else None
+print(html.unescape(h.group(1)) if h else "")
+'
+}
+
+# マスの HTML $1 の「＋」の開きタグ
+create_tag_of() {
+    printf '%s' "$1" | python3 -c '
+import re, sys
+m = re.search(r"<a [^>]*class=\"[^\"]*\bcreate\b[^\"]*\"[^>]*>", sys.stdin.read())
+print(m.group(0) if m else "")
+'
+}
+
+# 文字列が含まれるか (yes/no)。curl | grep -q は pipefail で落ちるので使わない
+contains() {
+    case "$1" in
+        *"$2"*) echo yes ;;
+        *)      echo no  ;;
+    esac
+}
+
+value_of() {
+    printf '%s\n' "$1" | sed -n "s/^$2=//p" | head -1
 }
 
 if [[ ! -d "$NF_SITE" ]]; then
@@ -182,7 +327,187 @@ check_eq "読めない値は今日にする (200 で表が出る)" "200|yes" \
          "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/Month&calendar=abc")|$([[ "$(cal_summary "$(main_html "$P/Month&calendar=abc")")" != none ]] && echo yes || echo no)"
 echo
 
-echo "2. PHP の警告"
+# --- 2 から 6 で使う日のページ (2026-08) ---
+D="$P/Diary"
+w() { helper write "$@" > /dev/null; }
+# 同じ日に 4 つ。番号順に並ぶ (_10 は _3 の後)
+w "$D/2026-08-03"    markdown "$(printf -- '---\nshort_title: 一つ目\n---\n\n## 朝\n\n本文\n')"
+w "$D/2026-08-03_2"  markdown "$(printf -- '---\ntitle: 2026-08-03 二つ目\n---\n\n本文\n')"
+w "$D/2026-08-03_3"  wiki     "$(printf -- '&title(short){三つ目}\n*節\n本文\n')"
+w "$D/2026-08-03_10" markdown "$(printf -- '---\nshort_title: 十番目\n---\n\n本文\n')"
+# 1 つ目が無く、_9 と _10 だけの日
+w "$D/2026-08-04_9"  markdown "$(printf -- '---\nshort_title: 九番目\n---\n\n本文\n')"
+w "$D/2026-08-04_10" markdown "$(printf -- '---\nshort_title: 十番目の二\n---\n\n本文\n')"
+# 拾わない名前だけの日
+for n in 1 02 x 10000; do
+    w "$D/2026-08-05_$n" markdown "$(printf -- '---\nshort_title: 拾わない\n---\n\n本文\n')"
+done
+# 間を消した日 (_2 を消しても _3 は出る。「＋」は _4)
+w "$D/2026-08-06"    markdown "$(printf -- '---\nshort_title: 六日\n---\n\n本文\n')"
+w "$D/2026-08-06_2"  markdown "$(printf -- '---\nshort_title: 消す\n---\n\n本文\n')"
+w "$D/2026-08-06_3"  markdown "$(printf -- '---\nshort_title: 残る\n---\n\n本文\n')"
+helper delete "$D/2026-08-06_2" > /dev/null
+# いちばん大きい番号を消した日 (消した名前を使わない。「＋」は _3)
+w "$D/2026-08-07"    markdown "$(printf -- '---\nshort_title: 七日\n---\n\n本文\n')"
+w "$D/2026-08-07_2"  markdown "$(printf -- '---\nshort_title: 消す七日\n---\n\n本文\n')"
+helper delete "$D/2026-08-07_2" > /dev/null
+# 次の番号が 4 桁を超える日 (「＋」を出さない)
+w "$D/2026-08-10"      markdown "$(printf -- '---\nshort_title: 十日\n---\n\n本文\n')"
+w "$D/2026-08-10_9999" markdown "$(printf -- '---\nshort_title: 最後\n---\n\n本文\n')"
+# タイトルの無いページ
+w "$D/2026-08-11"   wiki     "$(printf -- '*見出しA\n本文\n')"
+w "$D/2026-08-11_2" wiki     "$(printf -- '見出しの無いWiki\n')"
+w "$D/2026-08-11_3" markdown "$(printf -- 'Markdownの書き出し。\n')"
+w "$D/2026-08-11_4" text     "$(printf -- 'テキストの書き出し\n')"
+w "$D/2026-08-11_5" markdown "$(printf -- '---\ntags: [x]\n---\n')"
+w "$D/2026-08-11_6" wiki     "$(printf -- '----\n')"
+# 読めないページ (未ログインの人に)
+w "$D/2026-08-12"   markdown "$(printf -- '---\nshort_title: 読める\n---\n\n本文\n')"
+w "$D/2026-08-12_2" markdown "$(printf -- '---\nshort_title: 読めない\n---\n\n本文\n')"
+w "$D/2026-08-13_2" markdown "$(printf -- '---\nshort_title: 読めないだけ\n---\n\n本文\n')"
+# 文字数の上限
+w "$D/2026-08-14"   markdown "$(printf -- '---\nshort_title: あいうえお\n---\n\n本文\n')"
+w "$D/2026-08-14_2" markdown "$(printf -- '---\nshort_title: ab\n---\n\n本文\n')"
+w "$D/2026-08-14_3" markdown "$(printf -- '---\nshort_title: 👨‍👩‍👧x🇯🇵y\n---\n\n本文\n')"
+w "$D/2026-08-17"   wiki     "$(printf -- '*見出しいち\n**見出しに\n*見出しさん\n')"
+# 見出しがリンクや強調で終わる・中身の無い子の見出しがある (切ったあとに空白の文字や空の要素が残る)
+w "$D/2026-08-18"   wiki     "$(printf -- '*長い見出しです\n*[[%s]]\n' "$P/Cal")"
+w "$D/2026-08-19"   wiki     "$(printf -- "*長い見出しです\n*''強調''\n")"
+w "$D/2026-08-20"   wiki     "$(printf -- '*長い見出しです\n*写真\n**\n')"
+# 読めないが書ける人 (未ログインの人に、この日だけ書かせる)
+w "$D/2026-08-21"   markdown "$(printf -- '---\nshort_title: 二十一日\n---\n\n本文\n')"
+w "$D/2026-08-21_2" markdown "$(printf -- '---\nshort_title: 読めないが書ける\n---\n\n本文\n')"
+
+w "$P/Cal"      wiki "$(printf -- '&calendar([[%s]]);\n' "$D")"
+w "$P/Toc"      wiki "$(printf -- '&calendar([[%s]],show=toc);\n' "$D")"
+w "$P/Unknown"  wiki "$(printf -- '&calendar([[%s]],show=foo);\n' "$D")"
+w "$P/Max"      wiki "$(printf -- '&calendar([[%s]],maxlength=3);\n' "$D")"
+w "$P/Max7"     wiki "$(printf -- '&calendar([[%s]],maxlength=7);\n' "$D")"
+w "$P/MaxToc"   wiki "$(printf -- '&calendar([[%s]],show=toc,maxlength=7);\n' "$D")"
+w "$P/MaxToc3"  wiki "$(printf -- '&calendar([[%s]],show=toc,maxlength=3);\n' "$D")"
+w "$P/MaxZero"  wiki "$(printf -- '&calendar([[%s]],maxlength=0);\n' "$D")"
+w "$P/MaxNeg"   wiki "$(printf -- '&calendar([[%s]],maxlength=-1);\n' "$D")"
+w "$P/MaxStr"   wiki "$(printf -- '&calendar([[%s]],maxlength=20abc);\n' "$D")"
+w "$P/Dates"    wiki "$(printf -- '&datepages([[%s]],all);\n' "$D")"
+w "$P/Past"     wiki "$(printf -- '&datepages([[%s]],past,2026-08-04);\n' "$D")"
+w "$P/Empty"    wiki "$(printf -- '&calendar([[]]);\n')"
+check_eq "未ログインの人の権限を決める (ほとんど読むだけ。読めないページ、読めないが書けるページ)" "saved=1" \
+         "$(helper guest "$D/2026-08-12_2=keepout" "$D/2026-08-13_2=keepout" \
+                         "$D/2026-08-21_2=writeonly" "$D/2026-08-21*=write" "*=read")"
+
+GUEST="$(main_html "$P/Cal&calendar=2026-08")"
+ADMIN="$(helper render "$P/Cal" 2026-08)"
+
+echo "2. 同じ日に複数のページ (既定 = show=title)"
+C="$(cell_of "$ADMIN" "$D/2026-08-03")"
+check_eq "タイトルを番号順に並べる (_10 は _3 の後)" "一つ目|2026-08-03 二つ目|三つ目|十番目" "$(titles_of "$C")"
+check_eq "  ページごとの項目に、そのページの名前 (ダブルクリックで編集するページ)" \
+         "$D/2026-08-03 $D/2026-08-03_2 $D/2026-08-03_3 $D/2026-08-03_10" "$(items_of "$C")"
+check_eq "  項目ごとに ticket が付く" "4" \
+         "$(printf '%s' "$C" | grep -o '<li[^>]*data-ref-ticket="[^"]\+"' | wc -l)"
+# Tab で止まるようにするのは JavaScript (calendarHelperSetup) が狭い画面とサイドでだけ行う。
+# 広い画面と静的な書き出しに、押しても何も起きない止まり場所を作らないため
+check_eq "  日付はリンクでない (HTML には Tab の止まり場所を付けない)" "no|no|no" \
+         "$(contains "$(day_of "$C")" '<a ')|$(contains "$(day_of "$C")" 'tabindex')|$(contains "$(day_of "$C")" 'role=')"
+T1="$(printf '%s' "$C" | sed -n 's/.*<li[^>]*data-ref-pagename="[^"]*\/2026-08-03" data-ref-ticket="\([^"]*\)".*/\1/p' | head -1)"
+check_eq "  マスの ticket は 1 つ目のページのもの" "yes|$T1" \
+         "$([[ -n "$T1" ]] && echo yes || echo no)|$(ticket_of "$(td_of "$ADMIN" "$D/2026-08-03")")"
+check_eq "  「＋」は書ける人に、いちばん大きい番号の次 (_11)" "?$D/2026-08-03_11" "$(create_of "$C")"
+T="$(create_tag_of "$C")"
+check_eq "  「＋」は nofollow、説明つき、エクスポートがたどらない" "yes|yes|no" \
+         "$(contains "$T" 'rel="nofollow"')|$(contains "$T" 'aria-label="')|$(contains "$T" 'data-link-pagename')"
+check_eq "  未ログインの人 (書けない) には「＋」を出さない" "" "$(create_of "$(cell_of "$GUEST" "$D/2026-08-03")")"
+check_eq "  未ログインの人にもタイトルは同じに並ぶ" "一つ目|2026-08-03 二つ目|三つ目|十番目" \
+         "$(titles_of "$(cell_of "$GUEST" "$D/2026-08-03")")"
+C="$(cell_of "$ADMIN" "$D/2026-08-04")"
+check_eq "1 つ目が無く _9 と _10 だけの日もページのある日" "九番目|十番目の二|yes" \
+         "$(titles_of "$C")|$(contains "$(td_of "$ADMIN" "$D/2026-08-04")" 'exists')"
+check_eq "  マスに ticket は付けない (1 つ目が無い)。「＋」は _11" "no|?$D/2026-08-04_11" \
+         "$(contains "$(td_of "$ADMIN" "$D/2026-08-04")" 'data-ref-ticket')|$(create_of "$C")"
+C="$(cell_of "$ADMIN" "$D/2026-08-05")"
+check_eq "_1・_02・_x・5 桁の番号は拾わない (ページの無い日)" "yes||no|" \
+         "$([[ -n "$(td_of "$ADMIN" "$D/2026-08-05")" ]] && echo yes || echo no)|$(titles_of "$C")|$(contains "$(td_of "$ADMIN" "$D/2026-08-05")" 'exists')|$(create_of "$C")"
+check_eq "  ページの無い日の日付は、1 つ目を作るリンクのまま" "yes|yes" \
+         "$(contains "$(day_of "$C")" "href=\"?$D/2026-08-05\"")|$(contains "$(day_of "$C")" 'rel="nofollow"')"
+C="$(cell_of "$ADMIN" "$D/2026-08-06")"
+check_eq "間の _2 を消しても _3 は出る。「＋」は _4" "六日|残る|?$D/2026-08-06_4" "$(titles_of "$C")|$(create_of "$C")"
+C="$(cell_of "$ADMIN" "$D/2026-08-07")"
+check_eq "消したページの番号は使わない (_2 を消した日の「＋」は _3)" "七日|?$D/2026-08-07_3" "$(titles_of "$C")|$(create_of "$C")"
+C="$(cell_of "$ADMIN" "$D/2026-08-10")"
+check_eq "次の番号が 4 桁を超えるなら「＋」を出さない" "十日|最後|" "$(titles_of "$C")|$(create_of "$C")"
+check_eq "読めないページは並べない (未ログイン)" "読める" "$(titles_of "$(cell_of "$GUEST" "$D/2026-08-12")")"
+check_eq "  読める人には並ぶ" "読める|読めない" "$(titles_of "$(cell_of "$ADMIN" "$D/2026-08-12")")"
+C="$(cell_of "$GUEST" "$D/2026-08-13")"
+check_eq "  読めないページだけの日は、ページの無い日と同じ" "no||yes" \
+         "$(contains "$(td_of "$GUEST" "$D/2026-08-13")" 'exists')|$(titles_of "$C")|$(contains "$(day_of "$C")" "href=\"?$D/2026-08-13\"")"
+check_eq "  読める人には出る" "読めないだけ" "$(titles_of "$(cell_of "$ADMIN" "$D/2026-08-13")")"
+C="$(cell_of "$GUEST" "$D/2026-08-21")"
+check_eq "読めないが書ける人: 読めないページは並べず、「＋」の番号には数える (_3)" "二十一日|?$D/2026-08-21_3" \
+         "$(titles_of "$C")|$(create_of "$C")"
+check_eq "親が空のカレンダーでも開ける" "200" "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/Empty")"
+echo
+
+echo "3. マスからどのページにもたどれる"
+C="$(cell_of "$GUEST" "$D/2026-08-11")"
+check_eq "タイトルの無いページにも、そのページへのリンクがある" \
+         "2026-08-11:yes 2026-08-11_2:yes 2026-08-11_3:yes 2026-08-11_4:yes 2026-08-11_5:yes 2026-08-11_6:yes" "$(linked_items_of "$C")"
+check_eq "  見出しのあるページは目次 (見出しへのリンク)" "yes" \
+         "$(contains "$C" "href=\"?$D/2026-08-11#")"
+check_eq "  文字の無いページは、ページ名の最後の部分 (Markdown・Wiki)" "yes|yes" \
+         "$(contains "$C" '>2026-08-11_5</a>')|$(contains "$C" '>2026-08-11_6</a>')"
+check_eq "カレンダーを開いても、日のページを「読んだ」にしない (目次の表示では今までどおり読んだにする)" "no|yes" \
+         "$(contains "$(value_of "$(helper views "$P/Cal")" views)" "$D/")|$(contains "$(value_of "$(helper views "$P/Toc")" views)" "$D/")"
+echo
+
+echo "4. show=toc (今までの目次の表示) と知らない値"
+C="$(cell_of "$(main_html "$P/Toc&calendar=2026-08")" "$D/2026-08-03")"
+check_eq "目次を出し、日付はリンク、2 つ目以降と「＋」は出ない" "yes|yes|no|" \
+         "$(contains "$C" '朝')|$(contains "$(day_of "$C")" "href=\"?$D/2026-08-03\"")|$(contains "$C" '二つ目')|$(create_of "$C")"
+check_eq "知らない show= の値は既定 (タイトル)" "一つ目|2026-08-03 二つ目|三つ目|十番目" \
+         "$(titles_of "$(cell_of "$(main_html "$P/Unknown&calendar=2026-08")" "$D/2026-08-03")")"
+echo
+
+echo "5. maxlength= (マスの文字数の上限)"
+C="$(cell_of "$(main_html "$P/Max&calendar=2026-08")" "$D/2026-08-14")"
+check_eq "ページごとに切って「…」。見た目の 1 文字を 1 と数える" "あいう…|ab|👨‍👩‍👧x🇯🇵…" "$(titles_of "$C")"
+check_eq "  切ったタイトルは title 属性に全文。切らなければ付けない" "あいうえお||👨‍👩‍👧x🇯🇵y" "$(title_attrs_of "$C")"
+check_eq "  ちょうど上限の文字数なら切らない" "一つ目" \
+         "$(titles_of "$(cell_of "$(main_html "$P/Max&calendar=2026-08")" "$D/2026-08-03")" | cut -d'|' -f1)"
+for page in Max7 MaxToc; do
+    C="$(cell_of "$(main_html "$P/$page&calendar=2026-08")" "$D/2026-08-17")"
+    check_eq "目次を見出しの順に数えて切る ($page)" "yes|yes|no|yes|0" \
+             "$(contains "$C" '見出しいち')|$(contains "$C" '見出…')|$(contains "$C" '>見出しさん')|$(contains "$C" 'title="見出しいち')|$(empty_elements_of "$C")"
+done
+# 見出しがリンクや強調で終わると、目次に空白だけの文字が残る。切ったあとの文字と空になった
+# 要素を消すとき、先に消した要素の中の文字に当たって止まる (500) ことがあった
+for page in Max MaxToc3; do
+    check_eq "リンクや強調で終わる見出し・中身の無い見出しがあっても開ける ($page)" "200" \
+             "$(curl -sk -o /dev/null -w '%{http_code}' "${URL}/?$P/$page&calendar=2026-08")"
+    for day in 2026-08-18 2026-08-19 2026-08-20; do
+        C="$(cell_of "$(main_html "$P/$page&calendar=2026-08")" "$D/$day")"
+        check_eq "  $day ($page): 切って「…」、全文は title、空の要素を残さない" "yes|yes|0" \
+                 "$(contains "$C" '長い見…')|$(contains "$C" 'title="長い見出しです')|$(empty_elements_of "$C")"
+    done
+done
+for page in MaxZero MaxNeg MaxStr; do
+    check_eq "上限にならない値は切らない ($page)" "あいうえお" \
+             "$(titles_of "$(cell_of "$(main_html "$P/$page&calendar=2026-08")" "$D/2026-08-14")" | cut -d'|' -f1)"
+done
+echo
+
+echo "6. &datepages が _N のページも拾う"
+DP="$(main_nested_html "$P/Dates")"
+check_eq "_N のページが出る" "yes|yes" \
+         "$(contains "$DP" "data-link-pagename=\"$D/2026-08-03_2\"")|$(contains "$DP" "data-link-pagename=\"$D/2026-08-04_10\"")"
+check_eq "  拾わない名前は出ない" "no|no|no" \
+         "$(contains "$DP" "$D/2026-08-05_x\"")|$(contains "$DP" "$D/2026-08-05_1\"")|$(contains "$DP" "$D/2026-08-05_02\"")"
+# 名前の全体で比べると 2026-08-04_9 は 2026-08-04 より後になり、past で落ちる
+DP="$(main_nested_html "$P/Past")"
+check_eq "past は日付の部分で比べる (2026-08-04_9 と 2026-08-03_2 は出て、2026-08-06 は出ない)" "yes|yes|no" \
+         "$(contains "$DP" "data-link-pagename=\"$D/2026-08-04_9\"")|$(contains "$DP" "data-link-pagename=\"$D/2026-08-03_2\"")|$(contains "$DP" "data-link-pagename=\"$D/2026-08-06\"")"
+echo
+
+echo "7. PHP の警告"
 log_after=$(sudo wc -l "$PHP_ERROR_LOG" 2>/dev/null | awk '{print $1}')
 log_after="${log_after:-0}"
 NEW_LOG="$(sudo tail -n +"$((log_before + 1))" "$PHP_ERROR_LOG" 2>/dev/null | grep -v '^$' || true)"
